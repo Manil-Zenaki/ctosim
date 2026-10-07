@@ -18,6 +18,9 @@ Read `docs/WORKFLOW.md` and `docs/ARCHITECTURE.md` first.
 
 - Describe observable behaviour and the public API; no implementation
   hints and no suggested test cases (do not lead the test author).
+- Answer each question in Codex's `.questions.md` on its own merits. Before
+  confirming an assumption, check it is achievable with the engine
+  (probe JavaRosa if unsure); never confirm a batch wholesale.
 - Commit public API stubs (methods throw `UnsupportedOperationException`)
   in the same `docs(spec)` step so tests compile — stubs only, no logic.
 
