@@ -145,8 +145,6 @@ class FormLoaderFunctionTest {
         }
         cases.add(Arguments.of("setvalue", "probe-action", "",
                 "<setvalue event=\"odk-instance-first-load\" ref=\"/data/result\" value=\"concat('set:', probe-action())\"/>", INPUT));
-        cases.add(Arguments.of("body ref", "probe-ref", "", "",
-                "<input ref=\"/data/answer[probe-ref() = '']\"><label>Answer</label></input>"));
         cases.add(Arguments.of("choice-filter nodeset", "probe-filter", "", "",
                 "<select1 ref=\"/data/choice\"><label>Choice</label>"
                         + "<itemset nodeset=\"instance('options')/items/item[probe-filter() = '']\">"
@@ -169,6 +167,17 @@ class FormLoaderFunctionTest {
         LoadedForm form = locationForm(attributes, actions, body);
         assertEquals(Set.of(name), form.stubbedFunctions());
         assertEquals("", evaluate(form.newEntryController(), name + "()"));
+    }
+
+    @Test void bodyControlRefPredicateCallingAStubIsRejectedAtLoadTimeWithSourceAndReason() {
+        FormLoadException error = assertThrows(FormLoadException.class, () -> locationForm("", "",
+                "<input ref=\"/data/answer[probe-ref() = '']\"><label>Answer</label></input>"));
+        String message = error.getMessage();
+        assertNotNull(message, "A load failure needs a diagnostic message");
+        assertTrue(message.contains("locations.xml"), () -> "Diagnostic must name the source: " + message);
+        String explanation = message.replace("locations.xml", "").replaceAll("[\\p{Punct}\\s]", "");
+        assertTrue(explanation.codePoints().filter(Character::isLetter).count() >= 3,
+                () -> "Diagnostic must contain an explanation beyond the source name: " + message);
     }
 
     @Test void functionsInChoiceFiltersCanBeEvaluatedWhenChoicesAreRequested() throws Exception {
