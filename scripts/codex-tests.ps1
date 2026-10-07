@@ -66,9 +66,13 @@ $log = ".codex-runs/$stamp-$specBase$(if ($Dispute) { '-dispute' }).log"
 $last = ".codex-runs/$stamp-$specBase-last.md"
 
 Write-Host "Running Codex (fresh session) on $specRel ..."
-& $codex exec --sandbox workspace-write --cd $repo --output-last-message $last $prompt 2>&1 |
-    Tee-Object -FilePath $log | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Codex exited with code $LASTEXITCODE; see $log" }
+# Codex writes progress to stderr; in Windows PowerShell 5.1 that must not be fatal.
+$ErrorActionPreference = 'Continue'
+$prompt | & $codex exec --sandbox workspace-write --cd $repo --output-last-message $last - 2>&1 |
+    ForEach-Object { "$_" } | Tee-Object -FilePath $log | Out-Null
+$codexExit = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
+if ($codexExit -ne 0) { throw "Codex exited with code $codexExit; see $log" }
 
 $session = (Select-String -Path $log -Pattern 'session id:\s*(\S+)' | Select-Object -First 1).Matches.Groups[1].Value
 
