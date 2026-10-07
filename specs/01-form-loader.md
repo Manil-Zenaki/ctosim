@@ -127,3 +127,24 @@ intended behaviour. In particular:
   expression sites, including calls in branches that are never taken;
   text inside string literals, labels, comments and instance data is not
   a reference.
+
+## Amendment: engine limit on body `ref` predicates
+
+Assumption 10 of the questions file said a body predicate that calls a
+stubbed function "must be loadable even if JavaRosa checks it early". That
+confirmation was wrong and is withdrawn for one case.
+
+While parsing, JavaRosa checks each body control's `ref` against the
+instance using a new, empty evaluation context that it creates itself
+(`FormInstanceParser.verifyControlBindings`). No custom function can be
+registered in that context, so the engine rejects a form in which a body
+control's `ref` has a predicate that calls a stubbed function. ODK Collect
+rejects such a form for the same reason. Therefore:
+
+- A form in which a **body control's `ref`** calls a stubbed function in a
+  predicate is rejected by the engine: `load` throws `FormLoadException`
+  (the "engine rejects the form" case).
+- This does not affect any other expression site. In particular, stubbed
+  functions in `bind` attributes, `setvalue` values, itemset `nodeset`
+  (choice filters) and itemset label/value `ref` are evaluable and listed
+  by `stubbedFunctions()`.
