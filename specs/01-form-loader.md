@@ -112,3 +112,18 @@ for unreadable files) and says what is wrong in plain words. When the
 failure comes from an underlying exception, it is kept as the cause.
 
 Passing a `null` path, stream or source name throws `NullPointerException`.
+
+## Clarifications (answers to `01-form-loader.questions.md`)
+
+All fourteen assumptions recorded by the test author are confirmed as the
+intended behaviour. In particular:
+
+- `today()` and `now()` keep their native, clock-dependent behaviour in
+  this module. Freezing the clock for reproducible simulations is a
+  concern of the form walker (spec 04), not of the loader.
+- A loaded form keeps its own copy of the definition: opening a session
+  never re-reads the original file or stream.
+- A function reference is any syntactic XPath function call at the listed
+  expression sites, including calls in branches that are never taken;
+  text inside string literals, labels, comments and instance data is not
+  a reference.
