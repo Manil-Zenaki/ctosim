@@ -1,0 +1,14 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:ev="http://www.w3.org/2001/xml-events">
+  <h:head>
+    <h:title>Expression locations</h:title>
+    <model>
+      <instance><data id="locations"><answer>initial</answer><result/><choice/></data></instance>
+      <instance id="options"><items><item><name>a</name><label>Alpha</label></item></items></instance>
+      <bind nodeset="/data/answer" type="string" __BIND_ATTRIBUTES__/>
+      <bind nodeset="/data/result" type="string"/>
+      <bind nodeset="/data/choice" type="select1"/>
+      __ACTIONS__
+    </model>
+  </h:head>
+  <h:body>__BODY__</h:body>
+</h:html>

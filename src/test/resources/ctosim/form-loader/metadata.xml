@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" id="wrong-html-id" version="wrong-html-version">
+  <h:head>
+    <h:title> 
+      Enquête  café — 東京 &amp; 家庭 🌍
+    </h:title>
+    <model id="wrong-model-id">
+      <instance id="wrong-instance-wrapper-id">
+        <household id="ménage-東京" version="0007.02-beta"><answer>naïve — नमस्ते 🌍</answer></household>
+      </instance>
+      <instance id="lookup"><items id="wrong-secondary-id" version="999"><item><name>x</name></item></items></instance>
+      <bind nodeset="/household/answer" type="string"/>
+    </model>
+  </h:head>
+  <h:body><input ref="/household/answer"><label>Réponse</label></input></h:body>
+</h:html>

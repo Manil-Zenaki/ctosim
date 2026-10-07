@@ -1,0 +1,16 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head>
+    <h:title>Independent sessions</h:title>
+    <model>
+      <instance><data id="sessions"><answer>initial</answer><amount>7</amount><doubled/><summary/></data></instance>
+      <bind nodeset="/data/answer" type="string"/>
+      <bind nodeset="/data/amount" type="int"/>
+      <bind nodeset="/data/doubled" type="int" calculate="/data/amount * 2"/>
+      <bind nodeset="/data/summary" type="string" calculate="concat(/data/answer, ':', /data/doubled)"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/answer"><label>Answer</label></input>
+    <input ref="/data/amount"><label>Amount</label></input>
+  </h:body>
+</h:html>

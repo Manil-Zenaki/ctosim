@@ -1,0 +1,16 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head>
+    <h:title>Native functions</h:title>
+    <model>
+      <instance><data id="native"><choice>a</choice><result/></data></instance>
+      <bind nodeset="/data/choice" type="select1"/>
+      <bind nodeset="/data/result" type="string" calculate="concat(if(selected('a b', 'a'), 'yes', 'no'), ':', count-selected('a b'), ':', jr:choice-name(/data/choice, '/data/choice'), ':', string(today()))"/>
+    </model>
+  </h:head>
+  <h:body>
+    <select1 ref="/data/choice"><label>Choice</label>
+      <item><label>Alpha</label><value>a</value></item>
+      <item><label>Beta</label><value>b</value></item>
+    </select1>
+  </h:body>
+</h:html>

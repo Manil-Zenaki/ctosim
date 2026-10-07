@@ -1,0 +1,12 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head>
+    <h:title>username() and title-only-function()</h:title>
+    <model>
+      <!-- pulldata('not a reference') and comment-only-function() -->
+      <instance><data id="decoys"><answer>duration() text-only-function()</answer><result/></data></instance>
+      <bind nodeset="/data/answer" type="string"/>
+      <bind nodeset="/data/result" type="string" calculate="concat('pulldata()', &quot;username()&quot;, 'literal-only-function()')"/>
+    </model>
+  </h:head>
+  <h:body><input ref="/data/answer"><label>phone-call-log() label-only-function()</label></input></h:body>
+</h:html>

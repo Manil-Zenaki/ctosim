@@ -1,0 +1,8 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head><h:title>Missing primary id</h:title><model>
+    <instance id="wrapper-id-does-not-count"><data><answer/></data></instance>
+    <instance id="lookup"><items id="secondary-id-does-not-count"/></instance>
+    <bind nodeset="/data/answer" type="string"/>
+  </model></h:head>
+  <h:body><input ref="/data/answer"><label>Answer</label></input></h:body>
+</h:html>

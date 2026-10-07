@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head>
+    <h:title>Minimal form</h:title>
+    <model>
+      <instance><data id="minimal"><answer>initial</answer></data></instance>
+      <bind nodeset="/data/answer" type="string"/>
+    </model>
+  </h:head>
+  <h:body><input ref="/data/answer"><label>Answer</label></input></h:body>
+</h:html>

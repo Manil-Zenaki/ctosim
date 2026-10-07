@@ -1,0 +1,14 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Nested session isolation</h:title><model>
+    <instance><data id="nested-sessions"><household>
+      <member jr:template=""><name/></member>
+      <member><name>Initial member</name></member>
+    </household></data></instance>
+    <bind nodeset="/data/household/member/name" type="string"/>
+  </model></h:head>
+  <h:body><group ref="/data/household"><label>Household</label>
+    <repeat nodeset="/data/household/member">
+      <input ref="/data/household/member/name"><label>Member name</label></input>
+    </repeat>
+  </group></h:body>
+</h:html>
