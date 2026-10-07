@@ -1,0 +1,18 @@
+# Build output
+target/
+
+# Local tooling (Maven distribution, etc.)
+.tools/
+
+# Codex run transcripts (kept locally for audit, not versioned)
+.codex-runs/
+
+# Simulation outputs
+out/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
