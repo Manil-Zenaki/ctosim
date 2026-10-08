@@ -1,0 +1,49 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head>
+    <h:title>Simulated session contract</h:title>
+    <model>
+      <instance>
+        <data id="simulated-session">
+          <tick>0</tick><answer>initial</answer><doubled/>
+          <today_value/><now_value/><elapsed/><draw/><generated_uuid/><sticky_draw/>
+          <started/><finished/><meta><instanceID/></meta>
+          <action_today/><action_now/><action_elapsed/><action_draw/><action_uuid/>
+          <operator/><device/><subscriber/><sim/><phone/><function_operator/>
+        </data>
+      </instance>
+      <bind nodeset="/data/tick" type="int"/>
+      <bind nodeset="/data/answer" type="string"/>
+      <bind nodeset="/data/doubled" type="int" calculate="/data/tick * 2"/>
+      <bind nodeset="/data/today_value" type="date" calculate="if(/data/tick &gt;= 0, today(), today())"/>
+      <bind nodeset="/data/now_value" type="dateTime" calculate="if(/data/tick &gt;= 0, now(), now())"/>
+      <bind nodeset="/data/elapsed" type="decimal" calculate="duration() + 0 * /data/tick"/>
+      <bind nodeset="/data/draw" type="decimal" calculate="if(/data/tick &gt;= 0, random(), 0)"/>
+      <bind nodeset="/data/generated_uuid" type="string" calculate="if(/data/tick &gt;= 0, uuid(), '')"/>
+      <bind nodeset="/data/sticky_draw" type="decimal" calculate="once(if(/data/tick &gt;= 0, random(), 0))"/>
+      <bind nodeset="/data/started" type="dateTime" jr:preload="timestamp" jr:preloadParams="start"/>
+      <bind nodeset="/data/finished" type="dateTime" jr:preload="timestamp" jr:preloadParams="end"/>
+      <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+      <bind nodeset="/data/action_today" type="date"/>
+      <bind nodeset="/data/action_now" type="dateTime"/>
+      <bind nodeset="/data/action_elapsed" type="decimal"/>
+      <bind nodeset="/data/action_draw" type="decimal"/>
+      <bind nodeset="/data/action_uuid" type="string"/>
+      <setvalue event="odk-instance-first-load" ref="/data/action_today" value="today()"/>
+      <setvalue event="odk-instance-first-load" ref="/data/action_now" value="now()"/>
+      <setvalue event="odk-instance-first-load" ref="/data/action_elapsed" value="duration()"/>
+      <setvalue event="odk-instance-first-load" ref="/data/action_draw" value="random()"/>
+      <setvalue event="odk-instance-first-load" ref="/data/action_uuid" value="uuid()"/>
+      <bind nodeset="/data/operator" type="string" jr:preload="property" jr:preloadParams="username"/>
+      <bind nodeset="/data/device" type="string" jr:preload="property" jr:preloadParams="deviceid"/>
+      <bind nodeset="/data/subscriber" type="string" jr:preload="property" jr:preloadParams="subscriberid"/>
+      <bind nodeset="/data/sim" type="string" jr:preload="property" jr:preloadParams="simserial"/>
+      <bind nodeset="/data/phone" type="string" jr:preload="property" jr:preloadParams="phonenumber"/>
+      <bind nodeset="/data/function_operator" type="string" calculate="username()"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/tick"><label>Recalculate</label></input>
+    <input ref="/data/answer"><label>Answer</label></input>
+  </h:body>
+</h:html>

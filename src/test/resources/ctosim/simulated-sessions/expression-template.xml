@@ -1,0 +1,16 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head>
+    <h:title>Single simulated expression</h:title>
+    <model>
+      <instance><data id="simulated-expression"><tick>0</tick><result/></data></instance>
+      <bind nodeset="/data/tick" type="int"/>
+      <bind nodeset="/data/result" type="__TYPE__" __ATTRIBUTES__/>
+      __ACTIONS__
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/tick"><label>Recalculate</label>__TICK_ACTIONS__</input>
+    <input ref="/data/result"><label>Result</label></input>
+  </h:body>
+</h:html>
