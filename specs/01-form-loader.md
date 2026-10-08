@@ -148,3 +148,22 @@ rejects such a form for the same reason. Therefore:
   functions in `bind` attributes, `setvalue` values, itemset `nodeset`
   (choice filters) and itemset label/value `ref` are evaluable and listed
   by `stubbedFunctions()`.
+
+## Amendment 2: metadata preloads
+
+Real SurveyCTO forms contain metadata fields that the engine fills when an
+instance is created: XForm binds with `jr:preload="property"` (parameters
+`deviceid`, `subscriberid`, `simserial`, `phonenumber`, `username`),
+`jr:preload="timestamp"` (parameters `start`, `end`) and `jr:preload="uid"`.
+
+- A form containing any of these binds loads, and `newEntryController()`
+  returns an initialised session (no exception), exactly as for any other
+  form. This must hold without the caller configuring anything in the
+  engine beforehand.
+- In a new session, a field preloaded with property `username` has the
+  string value `"simulated"` (the same value as the `username()` stub).
+  Fields preloaded with properties `deviceid`, `subscriberid`, `simserial`
+  or `phonenumber` have no value (the instance node's value is `null`).
+- Timestamp and uid preloads keep the engine's native behaviour (current
+  time; random identifier). Their values are not deterministic in this
+  module.
