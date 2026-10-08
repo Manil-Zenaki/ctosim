@@ -10,7 +10,9 @@
 param(
     [Parameter(Mandatory = $true)][string]$Spec,
     [switch]$Dispute,
-    [switch]$NoCommit
+    [switch]$NoCommit,
+    # Restricts a run to one part of the spec, e.g. a newly added amendment.
+    [string]$Focus
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,6 +59,13 @@ under src/test/java (and fixtures under src/test/resources). Record ambiguities 
 assumptions you made in $questions. Make sure the tests compile with: mvnw.cmd -o -q test-compile
 (failing tests are expected because the module is not implemented yet).
 "@
+    if ($Focus) {
+        $prompt += @"
+
+Existing tests for this spec are already committed and must be kept. In this run, add tests
+only for this part of the spec: $Focus. Put them in new test classes; do not rewrite existing ones.
+"@
+    }
 }
 
 # --- Run Codex --------------------------------------------------------------
@@ -95,7 +104,9 @@ if ($inScope.Count -eq 0) { Write-Warning 'Codex produced no test changes.'; exi
 if ($NoCommit) { Write-Host "Changes left uncommitted. Transcript: $log"; exit 0 }
 
 git add -- $inScope
-$subject = if ($Dispute) { "test($module): adjudicate disputed tests" } else { "test($module): add unit tests from spec" }
+$subject = if ($Dispute) { "test($module): adjudicate disputed tests" }
+           elseif ($Focus) { "test($module): add tests for $Focus" }
+           else { "test($module): add unit tests from spec" }
 $body = "Written by Codex in a fresh session from $specRel only.`n`nTest-Author: codex`nCodex-Session: $session"
 git commit -q -m $subject -m $body
 if ($LASTEXITCODE -ne 0) { throw 'git commit failed.' }
