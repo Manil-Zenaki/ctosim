@@ -1,0 +1,214 @@
+# Spec 02 — XLSForm converter
+
+## Purpose
+
+Convert a SurveyCTO spreadsheet form definition (XLSForm, `.xlsx`) into an
+XForm (XML) that the form engine of module 01 accepts, together with a
+**field catalog** that records, for every field, the SurveyCTO type it had
+in the spreadsheet. SurveyCTO XLSForms differ from the ODK XLSForms that
+`pyxform` expects; this module normalises those differences and then
+delegates the conversion itself to `pyxform`.
+
+Language: Python 3.10+. Package `ctosim_xlsform`, in `converter/src/`.
+Dependencies: `pyxform` 4.5.0, `openpyxl`.
+
+## Public API
+
+```python
+from ctosim_xlsform import convert_xlsform, ConversionResult, FieldInfo, ConversionError
+
+result: ConversionResult = convert_xlsform(path)       # path: str or os.PathLike
+```
+
+```python
+@dataclass(frozen=True)
+class FieldInfo:
+    name: str            # the row's `name`
+    type: str            # the row's SurveyCTO `type`, as written (see "Type text")
+    xpath: str           # absolute path of the node in the XForm primary instance
+    row: int             # 1-based row number on the `survey` sheet
+
+@dataclass(frozen=True)
+class ConversionResult:
+    xform: str                   # the XForm document, as text
+    form_id: str
+    title: str
+    version: str | None
+    fields: tuple[FieldInfo, ...]
+    warnings: tuple[str, ...]
+
+    def write(self, xform_path, catalog_path=None) -> None: ...
+
+class ConversionError(Exception): ...
+```
+
+Command line:
+
+```
+python -m ctosim_xlsform INPUT.xlsx -o OUTPUT.xml
+```
+
+## Behaviour
+
+### Input
+
+- The input is an `.xlsx` workbook with a `survey` sheet and, usually, a
+  `choices` and a `settings` sheet. Other sheets (for example SurveyCTO's
+  `help-survey`) are ignored.
+- The first row of each sheet holds the column headers. Header text is
+  matched after removing leading and trailing white space; matching is
+  case-sensitive except where stated.
+- Cells hold literal values. When a cell holds an Excel formula, the value
+  Excel stored with the file (the cached result) is used. A formula with
+  no stored result counts as an empty cell.
+- Completely empty rows are ignored.
+- The input file is never modified.
+
+### Column names
+
+SurveyCTO column names on the `survey` sheet are understood as their ODK
+equivalents. The rename applies to the column name with or without a
+language suffix (`relevance` and `relevance:Amharic` alike):
+
+| SurveyCTO column | ODK equivalent |
+|---|---|
+| `relevance` | `relevant` |
+| `read only` | `read_only` |
+| `constraint message` | `constraint_message` |
+| `required message` | `required_message` |
+
+Translations given as `column:Language` (single colon) are kept: the
+XForm contains one translation per language that appears in any label,
+hint or message column, using the language name as written. When the form
+has at least one translated column, the unsuffixed columns form the
+translation named by the `default_language` setting, or `default` when
+that setting is absent or empty, and that translation is the XForm's
+default (`default="true()"`).
+
+SurveyCTO columns with no runtime meaning are ignored: `note`,
+`response_note`, `publishable`, `minimum_seconds`, `disabled` (see below),
+`accuracy_threshold`, `mediatype`.
+
+### Disabled rows
+
+A `survey` row whose `disabled` cell is `yes` (case-insensitive, ignoring
+surrounding white space) is left out of the form. When that row is a
+`begin group` or `begin repeat`, every row up to and including its
+matching `end group` / `end repeat` is left out as well. Each block left
+out produces one warning naming its first row and its `name`.
+
+### Field types
+
+`type` text is read after trimming and collapsing runs of white space to
+one space.
+
+SurveyCTO-only types are converted as follows. All other types are passed
+to `pyxform` unchanged.
+
+| SurveyCTO `type` | Becomes | Value in the XForm |
+|---|---|---|
+| `calculate_here` | `calculate` | keeps its `calculation` |
+| `caseid`, `comments`, `text audit`, `audio audit`, `speed violations count`, `speed violations list`, `speed violations audit` | `calculate` | empty string (`calculation` = `''`) |
+| any type whose first word is `sensor_statistic` or `sensor_stream` | `calculate` | empty string |
+| `enumerator` | `text` | (a visible text question) |
+
+Each converted row produces one warning naming its row, `name` and
+original type. In the field catalog, these rows keep their original type.
+
+### Expressions
+
+In the `relevance`, `constraint`, `calculation`, `required`,
+`choice_filter` and `repeat_count` cells, a call to `selected()` whose
+second argument is a bare numeric literal (optionally negative, with an
+optional decimal part, e.g. `1`, `-99`, `2.5`) is rewritten with that
+literal quoted: `selected(${q}, 1)` becomes `selected(${q}, '1')`.
+White space inside the call is allowed. Nothing else in the expression
+changes; in particular, text inside string literals is never rewritten,
+and a numeric literal that is already quoted is left as it is.
+
+### Choices
+
+Duplicate `name`/`value` entries within one choice list are accepted
+(SurveyCTO allows them, `pyxform` does not by default). SurveyCTO's
+`value` column on the `choices` sheet is accepted as the choice name
+column.
+
+### Settings
+
+- `form_id`, `form_title` and `version` come from row 2 of the
+  `settings` sheet.
+- When there is no `settings` sheet, or `form_id` is empty, the form id is
+  the input file name without its extension, with every character that is
+  not an ASCII letter, digit, `_` or `-` replaced by `_`, prefixed with
+  `f_` when it does not start with a letter. When `form_title` is empty,
+  the title is the form id.
+- `version` is returned as text exactly as stored (a number such as
+  `2407241039.0` read from Excel is given as `"2407241039"`; a whole
+  number never carries a decimal part). An empty version gives `None` and
+  the XForm then has no `version` attribute.
+
+### Output
+
+- `xform` is a complete XForm document (UTF-8 text) whose primary instance
+  root element is `data`, with attributes `id` = `form_id` and, when
+  present, `version`. It loads with module 01's `FormLoader`.
+- `fields` lists every `survey` row that produces a node in the primary
+  instance, in sheet order: questions, notes, calculates, metadata fields
+  (`start`, `end`, `deviceid`, ...), converted SurveyCTO-only types, and
+  `begin group` / `begin repeat` rows (whose node is the group element).
+  `end group` / `end repeat` rows and disabled rows are not listed.
+- `FieldInfo.xpath` is the node's absolute path in the instance, from the
+  root: `/data/<group>/.../<name>`, with no positional predicates; for
+  fields inside repeats it is the path of the repeated template node, e.g.
+  `/data/members/age`.
+- `warnings` contains the messages described above, in sheet order.
+- Conversion is deterministic: converting the same file twice gives
+  identical `xform` text and identical `fields` and `warnings`.
+
+### Writing results
+
+`write(xform_path, catalog_path=None)` writes the XForm as UTF-8 to
+`xform_path` and the field catalog to `catalog_path`. When
+`catalog_path` is `None`, it is `xform_path` with its extension replaced
+by `.fields.json` (`out/form.xml` → `out/form.fields.json`). Existing
+files are overwritten. The catalog is UTF-8 JSON:
+
+```json
+{
+  "form_id": "household",
+  "title": "IOM Household",
+  "version": "2407241039",
+  "fields": [
+    {"name": "caseid", "type": "caseid", "xpath": "/data/caseid", "row": 8}
+  ]
+}
+```
+
+with the keys in that order, indented by two spaces, ending with a newline.
+
+### Command line
+
+- `python -m ctosim_xlsform INPUT.xlsx -o OUTPUT.xml` converts and writes
+  both files as `write(OUTPUT.xml)` does, prints each warning on its own
+  line to standard error, and exits with status 0.
+- On a `ConversionError`, it prints the error message to standard error,
+  writes no file, and exits with status 1.
+- Missing arguments or an unknown option: a usage message on standard
+  error and exit status 2.
+
+### Errors
+
+`convert_xlsform` raises `ConversionError` — never another exception
+type — when:
+
+- the file does not exist, cannot be read, or is not an `.xlsx` workbook;
+- there is no `survey` sheet, or it has no `type` or no `name` column;
+- groups or repeats are not balanced (an `end` without a matching
+  `begin`, or a `begin` never closed);
+- a `select_one` / `select_multiple` refers to a choice list that does
+  not exist;
+- `pyxform` rejects the form for any other reason.
+
+The message names the input file and says what is wrong; when the problem
+is tied to a row, the message includes the row number. When the failure
+comes from an underlying exception, it is kept as the cause (`__cause__`).

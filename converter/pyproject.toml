@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ctosim-xlsform"
+version = "0.1.0"
+description = "Convert SurveyCTO XLSForms to XForms for the ctosim simulator"
+requires-python = ">=3.10"
+dependencies = ["pyxform==4.5.0", "openpyxl>=3.1"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
