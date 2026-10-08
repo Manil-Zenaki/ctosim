@@ -1,0 +1,15 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head>
+    <h:title>One metadata preload</h:title>
+    <model>
+      <instance><data id="single-preload"><metadata/><answer>initial</answer></data></instance>
+      <bind nodeset="/data/metadata" type="__TYPE__" jr:preload="__PRELOAD__" __PARAMS__/>
+      <bind nodeset="/data/answer" type="string"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/metadata"><label>Metadata</label></input>
+    <input ref="/data/answer"><label>Answer</label></input>
+  </h:body>
+</h:html>

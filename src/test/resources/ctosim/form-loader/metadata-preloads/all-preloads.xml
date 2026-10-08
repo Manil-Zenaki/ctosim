@@ -1,0 +1,33 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head>
+    <h:title>All metadata preloads</h:title>
+    <model>
+      <instance>
+        <data id="all-preloads">
+          <device/><subscriber/><sim/><phone/><operator/>
+          <started/><finished/><identifier/>
+          <audit><second_operator/><second_identifier/></audit>
+          <answer>initial</answer><amount>7</amount><doubled/><operator_copy/>
+        </data>
+      </instance>
+      <bind nodeset="/data/device" type="string" jr:preload="property" jr:preloadParams="deviceid"/>
+      <bind nodeset="/data/subscriber" type="string" jr:preload="property" jr:preloadParams="subscriberid"/>
+      <bind nodeset="/data/sim" type="string" jr:preload="property" jr:preloadParams="simserial"/>
+      <bind nodeset="/data/phone" type="string" jr:preload="property" jr:preloadParams="phonenumber"/>
+      <bind nodeset="/data/operator" type="string" jr:preload="property" jr:preloadParams="username"/>
+      <bind nodeset="/data/started" type="dateTime" jr:preload="timestamp" jr:preloadParams="start"/>
+      <bind nodeset="/data/finished" type="dateTime" jr:preload="timestamp" jr:preloadParams="end"/>
+      <bind nodeset="/data/identifier" type="string" jr:preload="uid"/>
+      <bind nodeset="/data/audit/second_operator" type="string" jr:preload="property" jr:preloadParams="username"/>
+      <bind nodeset="/data/audit/second_identifier" type="string" jr:preload="uid"/>
+      <bind nodeset="/data/answer" type="string"/>
+      <bind nodeset="/data/amount" type="int"/>
+      <bind nodeset="/data/doubled" type="int" calculate="/data/amount * 2"/>
+      <bind nodeset="/data/operator_copy" type="string" calculate="/data/operator"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/answer"><label>Answer</label></input>
+  </h:body>
+</h:html>

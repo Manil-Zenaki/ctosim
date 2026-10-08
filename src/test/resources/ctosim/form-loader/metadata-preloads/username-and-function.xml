@@ -1,0 +1,13 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head>
+    <h:title>Preloaded and calculated username</h:title>
+    <model>
+      <instance><data id="username-preload"><operator/><function_result/><answer/></data></instance>
+      <bind nodeset="/data/operator" type="string" jr:preload="property" jr:preloadParams="username"/>
+      <bind nodeset="/data/function_result" type="string" calculate="username()"/>
+      <bind nodeset="/data/answer" type="string"/>
+    </model>
+  </h:head>
+  <h:body><input ref="/data/answer"><label>Answer</label></input></h:body>
+</h:html>

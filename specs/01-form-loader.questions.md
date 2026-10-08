@@ -138,3 +138,100 @@ stub signatures were inspected; no production implementation was read.
     **Assumption:** The message-only constructor preserves its message and has
     no cause; the message/cause constructor preserves both arguments.
     **Tests:** `exceptionConstructorsPreserveMessageAndCause`.
+
+## Amendment 2: metadata preload questions and assumptions
+
+These additions concern only Amendment 2. No production source was inspected
+for this run. Existing tests and the earlier questions above are preserved.
+The tests do not install property managers, register preload handlers, or
+manually initialize a returned session.
+
+15. **Question:** Does preserving native timestamp behavior require `end` to
+    contain a timestamp immediately upon session creation?
+    **Assumption:** No. "Keep the engine's native behaviour" includes its
+    lifecycle: JavaRosa 6.0.0 initializes `start` on creation, leaves `end`
+    unset, and fills `end` during native instance post-processing. Tests call
+    the returned session's public `FormDef.postProcessInstance()` to check
+    this lifecycle; they do not inject or configure a preloader. This native
+    lifecycle was checked in the cached JavaRosa dependency, not repository
+    production code. No automatic finalization at session creation is assumed.
+    **Tests:** `endTimestampIsUnsetUntilNativePostProcessing`,
+    `endTimestampUsesTheCurrentTimeDuringNativePostProcessing`,
+    `nativePreloadsAlsoWorkThroughThePathOverload`,
+    `allPreloadsCoexistInAnInitializedSessionWithoutCallerConfiguration`,
+    `postProcessingMixedMetadataPopulatesEndWithoutChangingStartOrUid`,
+    `postProcessingOneSessionDoesNotPopulateEndInOtherSessions`.
+
+16. **Question:** What timestamp precision, serialization, and clock tolerance
+    are required?
+    **Assumption:** A `dateTime` field has a Java date/time answer whose instant
+    is near the operation that populates it. Tests bracket that operation with
+    the system clock and allow one second for precision loss. They impose no
+    timezone, textual format, exact instant, or inequality between rapidly
+    opened sessions. As with other wall-clock tests, the machine clock is
+    assumed not to jump during a single operation. No clock or seed is set.
+    **Tests:** All tests using `FormLoaderPreloadTestSupport.assertCurrentTimestamp`,
+    especially `startTimestampUsesTheCurrentTimeWhenEachSessionIsInitialized`.
+
+17. **Question:** Must a uid have a particular UUID prefix/version/format, be
+    reproducible, or satisfy a statistical distribution?
+    **Assumption:** Only a nonblank string identifier and per-session native
+    generation are required. Tests impose no prefix, length, UUID version,
+    fixed seed, distribution, or pairwise uniqueness requirement. A batch of
+    16 sessions must contain more than one identifier, detecting a fixed value
+    or an identifier generated once at load time; accidental equality across
+    the entire batch of native random identifiers is negligible. Subsequent
+    session creation must preserve identifiers in already-open sessions.
+    **Tests:** `uidWithoutPreloadParamsHasANonemptyStringValueImmediately`,
+    `uidIsGeneratedPerSessionInsteadOfCopyingOneIdentifierFromTheLoadedForm`,
+    `nestedUidBindIsInitializedAlongsideTheTopLevelUid`, and combined/path uid
+    checks using `FormLoaderPreloadTestSupport.identifier`.
+
+18. **Question:** What if a preloaded node already has a nonempty default,
+    has its own calculate expression, or uses an unlisted preload parameter?
+    **Assumption:** The amendment does not specify precedence or error handling
+    for these cases, so no expectation is added. Fixtures use initially empty
+    metadata nodes, string types for properties/uids and dateTime for timestamps.
+    The uid fixture omits `jr:preloadParams`, as the amendment specifies none.
+    No cases for unknown properties, missing property parameters, or unknown
+    preload types are tested.
+    **Tests:** All three new preload test classes use these fixture conventions.
+
+19. **Question:** Do preload semantics depend on instance field names, nesting,
+    body controls, or the literal `jr` prefix?
+    **Assumption:** The specified binds select the fields and parameters select
+    the properties. Therefore the same semantics apply to arbitrarily named
+    fields, nested fields, multiple binds for the same property, and metadata
+    without visible controls. An equivalent XML namespace prefix is valid,
+    consistent with confirmed assumption 4. Repeat-creation timing is not
+    specified by Amendment 2 and is left untested.
+    **Tests:** `preloadAttributesAreRecognizedByNamespaceRatherThanLiteralPrefix`,
+    `repeatedPropertyBindsAlsoPopulateNestedInstanceFields`,
+    `nestedUidBindIsInitializedAlongsideTheTopLevelUid`, and the isolated and
+    combined preload tests (which deliberately use non-property field names).
+
+20. **Question:** How do preload binds interact with calculations, stub inventory,
+    and session isolation?
+    **Assumption:** Existing initialization/isolation rules continue to apply:
+    calculations can read preloaded values before navigation, an answer in one
+    session is private to it, and normal answers do not regenerate metadata.
+    Preload attribute values are not XPath function calls, so they do not add
+    entries to `stubbedFunctions()`. An explicit `username()` calculation is
+    still listed and returns the same value as the username property preload.
+    **Tests:** `calculationsCanReadThePreloadedUsernameImmediately`,
+    `metadataPreloadsDoNotPreventOrdinaryDefaultsAndCalculations`,
+    `answeringAMetadataFieldCannotChangeOtherSessionsPreloadedValues`,
+    `answeringAnOrdinaryQuestionDoesNotRegenerateMetadata`,
+    `preloadNamesAreNotReportedAsStubbedXPathFunctions`,
+    `preloadedUsernameAgreesWithTheUsernameFunctionInEachSession`.
+
+21. **Question:** Must preloads overwrite a property manager installed by other
+    application code, and must tests prove operation in a fresh process?
+    **Assumption:** The explicit requirement is that callers need not configure
+    the engine. These tests perform no configuration and can run on their own
+    in a fresh Maven test fork. Behavior with an externally configured property
+    manager is not specified and is not tested; no global manager is reset or
+    changed by the tests.
+    **Tests:** `eachPropertyAloneLoadsAndOpensAnInitializedSession`,
+    `eachNativePreloadAloneLoadsAndOpensAtTheBeginning`, and all other preload
+    tests.
