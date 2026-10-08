@@ -167,3 +167,9 @@ instance is created: XForm binds with `jr:preload="property"` (parameters
 - Timestamp and uid preloads keep the engine's native behaviour (current
   time; random identifier). Their values are not deterministic in this
   module.
+
+Clarification: assumptions 15–18 of the questions file are confirmed, each
+checked against JavaRosa 6.0.0 behaviour (`end` is filled only when the
+instance is post-processed; timestamps are compared to the clock with a
+one-second tolerance; a uid is only required to be a non-blank string
+generated per session; unlisted preload situations are unspecified).
