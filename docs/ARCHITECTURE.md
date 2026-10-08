@@ -47,21 +47,37 @@ value, and on rejection proposes another one, up to a retry limit.
 Each module has a specification in `specs/` that is the contract for its
 tests. Modules are built in this order:
 
-| # | Module | Responsibility |
-|---|--------|----------------|
-| 01 | `FormLoader` | Read an XForm file, return a parsed form; make SurveyCTO-specific XPath functions evaluable (stubs). Clear errors for unreadable or invalid forms. |
-| 02 | `SimulationConfig` | Read and validate an optional JSON config: seed, missing/refusal rates, repeat-count ranges, per-field overrides (fixed value, range, choice weights). |
-| 03 | `AnswerGenerator` | Given one question (type, choices, bounds) and a random source, propose a candidate answer. Pure and deterministic for a given seed. |
-| 04 | `FormWalker` | Walk one submission through the engine: answer relevant questions, retry on constraint violations, decide repeat counts, return the filled instance. |
-| 05 | `SurveyCtoExporter` | Flatten submissions into SurveyCTO's wide CSV layout (repeat suffixes, split select_multiple columns, metadata columns). |
-| 06 | `Simulator` + CLI | Orchestrate n submissions with a seed and write outputs plus a run report. |
+| # | Module | Language | Responsibility |
+|---|--------|----------|----------------|
+| 01 | `FormLoader` | Java | Read an XForm file, return a parsed form; make SurveyCTO-specific XPath functions evaluable (stubs); serve metadata preloads. Clear errors for unreadable or invalid forms. |
+| 02 | XLSForm converter | Python | Turn a SurveyCTO XLSForm (`.xlsx`) into an XForm the engine accepts, plus a field catalog recording SurveyCTO-only field types. |
+| 03 | `SurveyCtoFunctions` | Java | Real implementations of the SurveyCTO functions that change form logic (`index()`, `choice-label()`, `rank-value()`, list functions, ...), replacing their stubs. |
+| 04 | `SimulationConfig` | Java | Read and validate an optional JSON config: seed, missing/refusal rates, repeat-count ranges, per-field overrides (fixed value, range, choice weights). |
+| 05 | `AnswerGenerator` | Java | Given one question (type, choices, bounds) and a random source, propose a candidate answer. Pure and deterministic for a given seed. |
+| 06 | `FormWalker` | Java | Walk one submission through the engine: answer relevant questions, retry on constraint violations, decide repeat counts, fix clock-dependent values, return the filled instance. |
+| 07 | `SurveyCtoExporter` | Java | Flatten submissions into SurveyCTO's wide CSV layout (repeat suffixes, split select_multiple columns, metadata columns). |
+| 08 | `Simulator` + CLI | Java | Orchestrate n submissions with a seed and write outputs plus a run report. |
 
 ## Input formats
 
-- **XForm XML** (the form definition SurveyCTO serves for a deployed form) is
-  the canonical input.
-- An **XLSForm** (`.xlsx`) can be converted to XForm with `pyxform`; this
-  conversion is a later, optional front end.
+Researchers hold their forms as **SurveyCTO XLSForms** (`.xlsx`). These are
+not plain ODK XLSForms, so `pyxform` alone rejects most of them. Observed on
+the published forms in `samples/forms/` (see `samples/SOURCES.md`):
+
+- SurveyCTO column names: `relevance`, `read only`, `constraint message`,
+  `required message` (ODK: `relevant`, `read_only`, ...).
+- SurveyCTO-only field types: `caseid`, `comments`, `text audit`,
+  `audio audit`, `speed violations ...`, `calculate_here`, ...
+- `selected(${x}, 1)` with an unquoted number, which SurveyCTO accepts and
+  JavaRosa rejects.
+- Duplicate choice values within a list, and forms without a `settings`
+  sheet.
+- SurveyCTO-only XPath functions that drive skip logic (`index()`,
+  `choice-label()`, `rank-value()`): stubbing them is not enough, they need
+  real implementations (module 03).
+
+Module 02 normalises these and calls `pyxform`; the resulting **XForm XML**
+is the canonical input of the Java engine.
 
 ## Determinism
 
