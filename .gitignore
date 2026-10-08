@@ -16,3 +16,11 @@ out/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Python virtual environment
+.venv/
+__pycache__/
+
+# Downloaded sample data and scratch probes (see samples/SOURCES.md)
+samples/raw/
+samples/_probe/
