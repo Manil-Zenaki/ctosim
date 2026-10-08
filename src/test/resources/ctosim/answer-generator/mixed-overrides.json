@@ -1,0 +1,13 @@
+{
+  "missingRate": 0.27,
+  "specialRate": 0.35,
+  "fields": {
+    "answer": {
+      "min": -2.4,
+      "max": 4.7,
+      "texts": ["first", "café 村", ""],
+      "weights": {"z": 0.25, "a": 0.75, "m": 2},
+      "missingRate": 0.19
+    }
+  }
+}
