@@ -1,0 +1,214 @@
+"""Reading a SurveyCTO workbook and normalising it into an ODK XLSForm for pyxform."""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+from typing import Any
+
+from ._expressions import quote_numeric_selected_arguments
+
+COLUMN_RENAMES = {
+    "relevance": "relevant",
+    "read only": "read_only",
+    "constraint message": "constraint_message",
+    "required message": "required_message",
+}
+
+IGNORED_COLUMNS = {"note", "response_note", "publishable", "minimum_seconds", "disabled",
+                   "accuracy_threshold", "mediatype"}
+
+EXPRESSION_COLUMNS = ("relevant", "constraint", "calculation", "required", "choice_filter", "repeat_count")
+
+EMPTY_CALCULATE_TYPES = {"caseid", "comments", "text audit", "audio audit", "speed violations count",
+                         "speed violations list", "speed violations audit"}
+SENSOR_TYPE_WORDS = {"sensor_statistic", "sensor_stream"}
+
+# Settings passed through to pyxform; the others (encryption keys, submission URLs) have no
+# bearing on a simulation.
+PASSED_SETTINGS = ("default_language", "instance_name")
+
+_STRUCTURE = re.compile(r"(begin|end)[ _](group|repeat)")
+_SELECT = re.compile(r"(select_one|select_multiple) (\S+)")
+
+
+class NormalizationError(Exception):
+    """A problem in the spreadsheet itself; the message names the row when there is one."""
+
+
+@dataclass
+class Sheet:
+    headers: list[str]
+    rows: list[list[Any]]  # rows[k] is sheet row k + 2; empty rows are kept (as all-None)
+
+    def column(self, name: str) -> int | None:
+        return self.headers.index(name) if name in self.headers else None
+
+
+@dataclass
+class Normalized:
+    survey: Sheet
+    choices: Sheet | None
+    settings: dict[str, Any]
+    fields: list[tuple[str, str, str, int]] = field(default_factory=list)  # name, type, xpath, row
+    warnings: list[str] = field(default_factory=list)
+
+
+def read_sheet(worksheet) -> Sheet:
+    rows = [list(r) for r in worksheet.iter_rows(values_only=True)]
+    if not rows:
+        return Sheet([], [])
+    headers = [str(h).strip() if h is not None else "" for h in rows[0]]
+    body = []
+    for r in rows[1:]:
+        r = r + [None] * (len(headers) - len(r))
+        body.append(r[: len(headers)] if len(headers) else r)
+    return Sheet(headers, body)
+
+
+def is_empty(row: list[Any]) -> bool:
+    return all(v is None or (isinstance(v, str) and v.strip() == "") for v in row)
+
+
+def text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> Normalized:
+    if "type" not in survey.headers or "name" not in survey.headers:
+        missing = "type" if "type" not in survey.headers else "name"
+        raise NormalizationError(f"the survey sheet has no '{missing}' column (it needs 'type' and 'name')")
+
+    disabled_col = survey.column("disabled")
+    out = Normalized(_renamed_survey(survey), choices, _settings(settings))
+    s = out.survey
+    t_col, n_col = s.column("type"), s.column("name")
+    if s.column("calculation") is None:
+        s.headers.append("calculation")
+        for r in s.rows:
+            r.append(None)
+    c_col = s.column("calculation")
+
+    list_names = _choice_list_names(choices)
+    stack: list[tuple[str, int, str]] = []  # (kind, row number, name)
+    skip_until_depth: int | None = None
+    disabled_depth = 0
+
+    for k, row in enumerate(s.rows):
+        number = k + 2
+        if is_empty(row):
+            continue
+        type_text = " ".join(text(row[t_col]).split())
+        name = text(row[n_col]).strip()
+        structure = _STRUCTURE.fullmatch(type_text)
+
+        if skip_until_depth is not None:
+            if structure:
+                disabled_depth += 1 if structure.group(1) == "begin" else -1
+            _blank(row)
+            if disabled_depth == 0:
+                skip_until_depth = None
+            continue
+
+        if disabled_col is not None and text(survey.rows[k][disabled_col]).strip().lower() == "yes":
+            if structure and structure.group(1) == "begin":
+                out.warnings.append(f"row {number}: disabled {structure.group(2)} '{name}' and its contents are left out")
+                skip_until_depth, disabled_depth = len(stack), 1
+            else:
+                out.warnings.append(f"row {number}: disabled field '{name}' is left out")
+            _blank(row)
+            continue
+
+        row[t_col] = type_text
+        if structure:
+            kind = structure.group(2)
+            if structure.group(1) == "begin":
+                out.fields.append((name, type_text, _xpath(stack, name), number))
+                stack.append((kind, number, name))
+            else:
+                if not stack:
+                    raise NormalizationError(f"row {number}: 'end {kind}' has no matching 'begin {kind}' (groups are not balanced)")
+                open_kind, open_row, open_name = stack.pop()
+                if open_kind != kind:
+                    raise NormalizationError(f"row {number}: 'end {kind}' does not match 'begin {open_kind}' "
+                                             f"'{open_name}' on row {open_row} (groups and repeats are not balanced)")
+            continue
+
+        select = _SELECT.match(type_text)
+        if select and select.group(2) not in list_names:
+            raise NormalizationError(f"row {number}: choice list '{select.group(2)}' used by '{name}' "
+                                     f"does not exist on the choices sheet")
+
+        converted = _convert_type(type_text)
+        if converted is not None:
+            new_type, empty_value = converted
+            row[t_col] = new_type
+            if empty_value:
+                row[c_col] = "''"
+            target = "a hidden calculate" if new_type == "calculate" else "a text question"
+            out.warnings.append(f"row {number}: field '{name}' of SurveyCTO type '{type_text}' becomes {target}")
+
+        out.fields.append((name, type_text, _xpath(stack, name), number))
+
+    if stack:
+        kind, number, name = stack[-1]
+        raise NormalizationError(f"row {number}: 'begin {kind}' '{name}' is never closed by an 'end {kind}' "
+                                 f"(groups and repeats are not balanced)")
+
+    for col_name in EXPRESSION_COLUMNS:
+        col = s.column(col_name)
+        if col is not None:
+            for row in s.rows:
+                if isinstance(row[col], str):
+                    row[col] = quote_numeric_selected_arguments(row[col])
+    return out
+
+
+def _renamed_survey(survey: Sheet) -> Sheet:
+    keep = []
+    headers = []
+    for i, h in enumerate(survey.headers):
+        base, sep, lang = h.partition(":")
+        if base in IGNORED_COLUMNS or h == "":
+            continue
+        keep.append(i)
+        headers.append(COLUMN_RENAMES.get(base, base) + (":" + lang if sep else ""))
+    return Sheet(headers, [[r[i] for i in keep] for r in survey.rows])
+
+
+def _settings(settings: Sheet | None) -> dict[str, Any]:
+    if settings is None or not settings.rows:
+        return {}
+    row = settings.rows[0]
+    return {h: row[i] for i, h in enumerate(settings.headers) if h}
+
+
+def _choice_list_names(choices: Sheet | None) -> set[str]:
+    if choices is None or choices.column("list_name") is None:
+        return set()
+    col = choices.column("list_name")
+    return {text(r[col]).strip() for r in choices.rows if not is_empty(r)}
+
+
+def _convert_type(type_text: str) -> tuple[str, bool] | None:
+    """(new type, whether its value is the empty string) for SurveyCTO-only types."""
+    if type_text == "calculate_here":
+        return "calculate", False
+    if type_text in EMPTY_CALCULATE_TYPES or type_text.split(" ")[0] in SENSOR_TYPE_WORDS:
+        return "calculate", True
+    if type_text == "enumerator":
+        return "text", False
+    return None
+
+
+def _xpath(stack: list[tuple[str, int, str]], name: str) -> str:
+    return "/data/" + "/".join([entry[2] for entry in stack] + [name])
+
+
+def _blank(row: list[Any]) -> None:
+    for i in range(len(row)):
+        row[i] = None
