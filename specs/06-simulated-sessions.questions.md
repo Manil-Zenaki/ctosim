@@ -178,3 +178,21 @@ function handlers, preload handlers, or manually initialize returned sessions.
   its `S:` path. This avoids the wrapper's null-Target error and Java's
   `AccessDeniedException` when canonicalizing the original long JAR paths.
   No wrapper, POM, production source, or dependency versions were changed.
+
+## Dispute adjudication validation (2026-10-08)
+
+- **Question:** Can the wrapper's existing Maven distribution and cached
+  dependency JARs be made accessible to the build account?
+- **Assumption:** This is an environment blocker, not evidence about the
+  tests or implementation. `mvnw.cmd -o -q test` failed before Maven started
+  because the wrapper attempted a distribution download and could not
+  connect. The existing `.tools/apache-maven-3.9.16/bin/mvn.cmd` was then
+  invoked directly with `-o -q test`; compilation failed on the cached
+  `hamcrest-all-1.3.jar`. Diagnostic retries with `-e` reached `testCompile`
+  but reported `java.nio.file.AccessDeniedException` for the cached
+  `apiguardian-api-1.1.2.jar`. No repository copies, drive mappings, or
+  dependency installations were attempted. The earlier validation above
+  does not establish compilation of this adjudication's change.
+- **Tests:** The four corrected `now()` cases of
+  `simulatedFunctionsAreAvailableInEveryBooleanBindAttribute`; the full
+  test suite could not run, and test compilation remains unverified.

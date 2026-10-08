@@ -19,7 +19,7 @@ class SimulatedSessionExpressionTest {
     static Stream<Arguments> booleanLocations() {
         return Stream.of("relevant", "required", "readonly", "constraint").flatMap(location -> Stream.of(
                 Arguments.of(location, "today() = date('2040-02-28')"),
-                Arguments.of(location, "now() > date('2040-02-28') and now() < date('2040-02-29')"),
+                Arguments.of(location, "format-date-time(now(), '%Y-%m-%d %H:%M') = '2040-02-28 23:59'"),
                 Arguments.of(location, "duration() = 0"),
                 Arguments.of(location, "random() >= 0 and random() < 1"),
                 Arguments.of(location, "string-length(uuid()) = 36")));
