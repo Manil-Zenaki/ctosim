@@ -27,5 +27,7 @@ Read `docs/WORKFLOW.md` and `docs/ARCHITECTURE.md` first.
 ## Build
 
 ```
-JAVA_HOME="/c/Program Files/StataNow19/utilities/java/windows-x64/zulu-jdk21.0.11" ./mvnw -o -q test
+JAVA_HOME="/c/Program Files/StataNow19/utilities/java/windows-x64/zulu-jdk21.0.11" MAVEN_USER_HOME="$PWD/.tools/maven-home" ./mvnw -o -q test
 ```
+
+Maven's repository is `.tools/m2` (`.mvn/maven.config`); `.tools/` is not versioned.

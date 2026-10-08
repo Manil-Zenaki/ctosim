@@ -30,6 +30,9 @@ if (-not $codex) { throw 'Codex CLI not found (install it or the ChatGPT VS Code
 if (-not $env:JAVA_HOME) {
     $env:JAVA_HOME = 'C:\Program Files\StataNow19\utilities\java\windows-x64\zulu-jdk21.0.11'
 }
+# Project-local Maven distribution and repository (see .mvn/maven.config): the Codex sandbox
+# cannot read the user's ~/.m2, and copying it on every run filled .tools with duplicates.
+$env:MAVEN_USER_HOME = Join-Path $repo '.tools\maven-home'
 
 # --- Preconditions ----------------------------------------------------------
 $specPath = (Resolve-Path $Spec).Path

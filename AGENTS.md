@@ -52,8 +52,13 @@ is right, and explain your decision at the end of the disputes file.
 
 ## Build
 
-- Java: `mvnw.cmd -o -q test`. Dependencies are already in the local Maven
-  cache; work offline.
+- Java: `mvnw.cmd -o -q test`. Dependencies are already in the project's
+  Maven repository `.tools/m2` (set in `.mvn/maven.config`), and the
+  calling script sets `MAVEN_USER_HOME` to `.tools/maven-home`; work
+  offline. Do not copy Maven repositories or map drives; if the build
+  cannot start, say so in your questions file.
+- Put any temporary files (logs, probes) under `.codex-runs/`, never under
+  `.tools/` or elsewhere in the repository.
 - Python: `.venv\Scripts\python -m pytest converter/tests -q`. The package
   is installed in the virtual environment in editable mode; do not install
   anything (there is no network).
