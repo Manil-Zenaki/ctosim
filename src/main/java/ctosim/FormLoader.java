@@ -105,10 +105,10 @@ public final class FormLoader {
         Element titleElement = child(head, XHTML_NS, "title");
         String title = titleElement == null ? "" : titleElement.getTextContent().strip();
 
-        // The engine works on a copy whose index() calls are made distinct (see IndexCalls).
+        // The engine works on a copy whose expressions are adapted to the engine (see EngineExpressions).
         byte[] engineXml;
         try {
-            engineXml = IndexCalls.rewrite((Document) doc.cloneNode(true), xml);
+            engineXml = EngineExpressions.rewrite((Document) doc.cloneNode(true), xml);
         } catch (TransformerException e) {
             throw new FormLoadException(source + ": the form could not be prepared for the engine (" + e.getMessage() + ")", e);
         }

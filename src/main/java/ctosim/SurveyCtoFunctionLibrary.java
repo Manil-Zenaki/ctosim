@@ -45,7 +45,7 @@ final class SurveyCtoFunctionLibrary {
     static List<IFunctionHandler> handlers(FormDef form) {
         return List.of(
                 fn("index", 0, 0, (a, ec) -> index(ec)),
-                fn(IndexCalls.INTERNAL_NAME, 1, 1, (a, ec) -> index(ec)),
+                fn(EngineExpressions.INTERNAL_INDEX, 1, 1, (a, ec) -> index(ec)),
                 fn("choice-label", 2, 2, (a, ec) -> choiceLabel(form, a)),
                 fn("relevant", 1, 1, (a, ec) -> relevant(a[0], ec)),
                 fn("empty", 1, 1, (a, ec) -> str(a[0]).isEmpty()),
