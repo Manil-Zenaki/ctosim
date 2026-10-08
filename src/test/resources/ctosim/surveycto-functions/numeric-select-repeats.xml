@@ -1,0 +1,19 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Numeric selection in repeat context</h:title><model>
+    <instance><data id="numeric-select-repeats">
+      <row jr:template=""><number>1</number><result/><visible/><inner jr:template=""><number>2.5</number><result/></inner></row>
+      <row><number>1</number><result/><visible/><inner><number>2.5</number><result/></inner><inner><number>-3.25</number><result/></inner></row>
+      <row><number>2</number><result/><visible/><inner><number>0</number><result/></inner></row>
+    </data></instance>
+    <bind nodeset="/data/row/number" type="int"/>
+    <bind nodeset="/data/row/result" type="string" calculate="concat('[', selected(__ROW_NUMBER__, '1'), ':', count-selected(__ROW_NUMBER__), ':', selected-at(__ROW_NUMBER__, 0), ']')"/>
+    <bind nodeset="/data/row/visible" type="string" relevant="selected(__ROW_NUMBER__, '1')"/>
+    <bind nodeset="/data/row/inner/number" type="decimal"/>
+    <bind nodeset="/data/row/inner/result" type="string" calculate="concat('[', selected(__INNER_NUMBER__, '2.5'), ':', count-selected(__INNER_NUMBER__), ':', selected-at(__INNER_NUMBER__, 0), ']')"/>
+  </model></h:head>
+  <h:body><repeat nodeset="/data/row">
+    <input ref="/data/row/number"><label>Row number</label></input>
+    <input ref="/data/row/visible"><label>Visible for one</label></input>
+    <repeat nodeset="/data/row/inner"><input ref="/data/row/inner/number"><label>Inner number</label></input></repeat>
+  </repeat></h:body>
+</h:html>

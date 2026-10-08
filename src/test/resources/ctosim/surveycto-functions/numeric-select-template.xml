@@ -1,0 +1,28 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:ev="http://www.w3.org/2001/xml-events">
+  <h:head><h:title>Numeric select expressions</h:title><model>
+    <instance><data id="numeric-select"><number>1</number><decimal>2.5</decimal><blank/><arm/><text>01 2.5 東京</text><single>1</single><many>1 2.5</many><result/><target/></data></instance>
+    <bind nodeset="/data/number" type="int"/>
+    <bind nodeset="/data/decimal" type="decimal"/>
+    <bind nodeset="/data/blank" type="int"/>
+    <bind nodeset="/data/arm" type="string" calculate="1"/>
+    <bind nodeset="/data/text" type="string"/>
+    <bind nodeset="/data/single" type="select1"/>
+    <bind nodeset="/data/many" type="select"/>
+    <bind nodeset="/data/result" type="string" __RESULT_BIND__/>
+    <bind nodeset="/data/target" type="int" __TARGET_BIND__/>
+    __ACTION__
+  </model></h:head>
+  <h:body>
+    <input ref="/data/number"><label>Integer</label></input>
+    <input ref="/data/decimal"><label>Decimal</label></input>
+    <input ref="/data/blank"><label>Initially empty</label></input>
+    <input ref="/data/text"><label>Text</label></input>
+    <select1 ref="/data/single"><label>Single</label>
+      <item><label>One</label><value>1</value></item><item><label>Two</label><value>2</value></item>
+    </select1>
+    <select ref="/data/many"><label>Multiple</label>
+      <item><label>One</label><value>1</value></item><item><label>Fraction</label><value>2.5</value></item>
+    </select>
+    <input ref="/data/target"><label>Target</label></input>
+  </h:body>
+</h:html>

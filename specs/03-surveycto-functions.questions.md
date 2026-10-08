@@ -57,3 +57,33 @@ Tests are derived from spec 03 and its explicit relationship to spec 01. No repo
 14. **How are hash arguments converted to strings?**
     Assumption: the native XPath spellings apply (integer 42 becomes `42`, booleans `true`/`false`, missing field value empty); UTF-8 has no BOM or implicit Unicode normalization. The test oracle uses Java's standard SHA-256 on independently specified joined strings, including empty arguments and U+001F boundaries. Date/time and nonfinite numeric representations are not asserted.
     Tests: `SurveyCtoScalarFunctionsTest.hashIsLowercaseSha256OfUtf8ValuesSeparatedByUnitSeparator`, `hashAcceptsManyArgumentsAndIncludesEveryArgument`.
+
+## Amendment 2: numeric select arguments
+
+15. **Does "any expression of the form" include body predicates and output expressions?**
+    Assumption: this amendment's explicit parenthetical defines the required sites: the five bind attributes (`calculate`, `relevant`, `constraint`, `required`, `readonly`) and setvalue values. No new numeric-coercion requirement is asserted for body ref/nodeset predicates, labels, output expressions, or unrelated XML attributes. Numeric literals, field references, and nested expressions at the listed sites are all covered, including relative and absolute references in repeats.
+    Tests: `SurveyCtoNumericSelectCalculationTest`, `SurveyCtoNumericSelectBindingTest`, `SurveyCtoNumericSelectContextTest`.
+
+16. **Which native select semantics should be asserted beyond the amendment's examples?**
+    Assumption: only the first argument changes, through XPath string conversion. Ordinary finite integers and decimals (including zero and negatives) are single tokens; matching remains exact and token-based, so numeric 1 does not match `01` or `1.0`. Existing text retains leading zeros and Unicode. Zero-based selected-at position 1 is beyond a singleton and yields the native empty string. The tests do not specify new rules for nonfinite numbers, dates, booleans, numeric second arguments, negative/fractional positions, whitespace tokenization, or invalid arity. Those are not new behaviors defined by this amendment.
+    Tests: `SurveyCtoNumericSelectCalculationTest.numericExpressions`, `stringExpressions`, and the corresponding parameterized calculate/setvalue tests.
+
+17. **Does amendment 2 change result types or how calculated results are stored?**
+    Assumption: it changes the first argument only. selected still produces Boolean, count-selected Double, and selected-at String at XPath evaluation time. Calculate results are subject to the answer-storage conversion described in Amendment 1. Most assertions wrap output in brackets to avoid confusing storage conversion with function semantics; a separate test evaluates expressions retrieved from a stored constraint through JavaRosa's public API to check raw result types. The calculated arm is explicitly checked to hold IntegerData even with a string bind.
+    Tests: `SurveyCtoNumericSelectBindingTest.allThreeFunctionsPreserveTheirXpathResultTypesInStoredExpressions`, `SurveyCtoNumericSelectCalculationTest.calculatedStringFieldActuallyHoldsANumber`, and bracketed result assertions in all new classes.
+
+18. **What execution order is required between first-load setvalue actions and calculates?**
+    Assumption: no new ordering guarantee is introduced. Setvalue tests use the engine's `odk-instance-first-load` event with typed instance defaults, empty fields, and literal/computed arguments. Cases using the calculated arm replace that reference with numeric literal 1 solely for the action test, avoiding an assumption about whether the arm has been calculated yet. Each form is opened twice to check actions in every session.
+    Tests: `SurveyCtoNumericSelectBindingTest.instanceFirstLoadSetvalueUsesNumericStringCoercion`.
+
+19. **What should tests require for calls parsed outside the form?**
+    Assumption: "not affected" means the session must preserve JavaRosa's native outcome, including its exception type when native evaluation fails. The tests compare freshly parsed calls against a fresh JavaRosa evaluation context over the same instance, rather than imposing an additional coercion rule or hard-coding exception behavior for all three functions. All positive numeric-coercion tests use stored form expressions, not external XPath calls.
+    Tests: `SurveyCtoNumericSelectCalculationTest.expressionsParsedOutsideTheFormRetainNativeEvaluationBehavior`.
+
+20. **How should the real-form acceptance condition be evaluated when ancestors are irrelevant?**
+    Assumption: acceptance concerns each question/group's stored treatment relevance expression. Tests first enable the interview through its availability, introduction, one-member household, respondent availability, and consent answers so that references to the treatment fields are not masked as empty. They set both treatment fields through FormDef.setValue with IntegerData, then obtain the actual stored conditions from the engine's public triggerables API and evaluate them in the target node context, independently of whether a downstream list group is currently visible. No replacement XPath is parsed, and neither the sample XML nor instance nodes are directly edited. All four combinations of the two arms are covered; the expected branch values come from the published form's bindings. Synthetic bind tests additionally verify relevance updates on instance nodes.
+    Tests: `SurveyCtoNumericSelectRealFormTest.publishedTreatmentRelevancesEvaluateWithoutExceptionsAndFollowStoredNumbers`, `SurveyCtoNumericSelectBindingTest.numericSelectCallsWorkInEveryBooleanBindAndUpdateAfterAnswers`.
+
+21. **Must random arm assignment be reproducible or produce both arms in a small sample?**
+    Assumption: Amendment 2 supplies no seed or distribution guarantee. The once/random pattern is checked against each session's actual stored arm, without a probabilistic assertion that both values appear. Deterministic cases and explicit real-form assignments independently exercise both arms. Numeric answer changes, clearing values, fresh sessions, existing repeats, nested repeats, and engine-created repeats are tested without requiring a new scheduling policy.
+    Tests: `SurveyCtoNumericSelectContextTest.randomOnceCalculatedArmBranchesAccordingToItsStoredNumberInEverySession`, `SurveyCtoNumericSelectRealFormTest`, and the update/context tests in the new classes.
