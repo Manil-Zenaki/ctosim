@@ -108,3 +108,17 @@ particular: `duration()` is local clock arithmetic, unaffected by daylight
 saving changes (3); `xforms-value-changed` setvalue actions in the body
 are part of the form's expressions (5); opening simulated sessions never
 reseeds the randomness of ordinary sessions (12).
+
+## Amendment 1: comparing `now()` with dates
+
+`now()` returns the clock's date-time as the engine's date value, as
+stated above. When the engine converts a date value to a number — which it
+does for `<`, `>`, `<=`, `>=` and arithmetic — JavaRosa 6.0.0's
+`XPathFuncExpr.toNumeric` uses `DateUtils.daysSinceEpoch`, the **whole**
+number of days since 1970-01-01. The time of day is dropped. So, on
+2040-02-28 at 23:59:58, `now() > date('2040-02-28')` is `false` and
+`now() < date('2040-02-29')` is `true`, in a simulated session exactly as
+in an ordinary one with the real clock. This is the engine's native
+semantics and this module keeps it. To compare times of day, forms use
+`decimal-date-time(now())` or `format-date-time(now(), ...)`, which keep
+the time.
