@@ -1,0 +1,23 @@
+{
+  "seed": -9007199254740993,
+  "submissions": 321,
+  "start": "2024-02-29T23:59:58",
+  "fieldworkDays": 365,
+  "missingRate": 0.125,
+  "specialRate": 0.75,
+  "specialValues": ["99", "-99", "refusé"],
+  "repeats": {"min": 0, "max": 17},
+  "integerRange": {"min": -12.5, "max": 45.75},
+  "decimalRange": {"min": -100.25, "max": 9999.5},
+  "fields": {
+    "z_fixed": {"value": "  café 東京 😀  ", "missingRate": 0.2},
+    "age": {"min": -15.5, "max": 64.25, "missingRate": 0},
+    "dob": {"min": "1950-01-01", "max": "2008-12-31"},
+    "region": {"weights": {"z": 0, "2": 3.5, "A": 5}},
+    "village_name": {"texts": ["Mojo", "Adama", "Mojo", "Bishoftu"]},
+    "phone": {"missingRate": 1},
+    "Consent": {"value": 1.0},
+    "consent": {"value": "0"},
+    "école": {"texts": ["élève", "東京", "😀", "", "  "]}
+  }
+}
