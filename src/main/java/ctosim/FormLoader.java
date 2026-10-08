@@ -16,6 +16,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 import org.javarosa.core.model.FormDef;
 import org.javarosa.core.services.PropertyManager;
 import org.javarosa.model.xform.XFormsModule;
@@ -104,10 +105,17 @@ public final class FormLoader {
         Element titleElement = child(head, XHTML_NS, "title");
         String title = titleElement == null ? "" : titleElement.getTextContent().strip();
 
-        FormDef probe = parseWithEngine(xml, source);
+        // The engine works on a copy whose index() calls are made distinct (see IndexCalls).
+        byte[] engineXml;
+        try {
+            engineXml = IndexCalls.rewrite((Document) doc.cloneNode(true), xml);
+        } catch (TransformerException e) {
+            throw new FormLoadException(source + ": the form could not be prepared for the engine (" + e.getMessage() + ")", e);
+        }
+        FormDef probe = parseWithEngine(engineXml, source);
         SortedSet<String> stubbed = stubbedFunctions(doc, probe, source);
 
-        LoadedForm form = new LoadedForm(xml, source, formId, version, title,
+        LoadedForm form = new LoadedForm(engineXml, source, formId, version, title,
                 Collections.unmodifiableSortedSet(stubbed));
         try {
             form.newEntryController();
@@ -125,7 +133,7 @@ public final class FormLoader {
             if (def == null) {
                 throw new FormLoadException(source + ": the form engine could not parse the form");
             }
-            SurveyCtoFunctions.register(def.getEvaluationContext());
+            SurveyCtoFunctions.register(def);
             return def;
         } catch (FormLoadException e) {
             throw e;

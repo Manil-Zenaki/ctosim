@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.javarosa.core.model.FormDef;
 import org.javarosa.core.model.condition.EvaluationContext;
 import org.javarosa.core.model.condition.IFunctionHandler;
 
@@ -49,8 +50,13 @@ final class SurveyCtoFunctions {
         return NAMED_STUBS.containsKey(name);
     }
 
-    /** Makes the named stubs and the catch-all fallback evaluable in the given context. */
-    static void register(EvaluationContext context) {
+    /**
+     * Makes SurveyCTO functions evaluable in the form's sessions: real implementations
+     * (spec 03), fixed-value stubs, and the catch-all fallback for any other unknown function.
+     */
+    static void register(FormDef form) {
+        EvaluationContext context = form.getEvaluationContext();
+        SurveyCtoFunctionLibrary.handlers(form).forEach(context::addFunctionHandler);
         NAMED_STUBS.forEach((name, value) -> context.addFunctionHandler(new ConstantFunction(name, value)));
         context.addFallbackFunctionHandler((name, args, ec) -> FALLBACK_VALUE);
     }
