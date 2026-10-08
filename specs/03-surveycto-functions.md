@@ -127,3 +127,13 @@ the instance is created).
 In a session where that repeat has N ≥ 1 instances created through the
 engine, the `instancenumber` of the k-th instance has the value `"k"`
 (the field is a string field) for every k from 1 to N.
+
+## Clarifications (answers to `03-surveycto-functions.questions.md`)
+
+All fourteen assumptions were reviewed one by one and are confirmed as the
+intended behaviour. In particular: `index()` gives the structural position
+of the repeat instance, whatever the relevance of its siblings (13); list
+separators are literal and item comparison is exact (3); `short-geopoint`
+and `geo-scatter` do not validate their input (5, 6); a one-millimetre
+tolerance for `distance-between` is appropriate (11); any exception from
+evaluation satisfies the arity rule (10).
