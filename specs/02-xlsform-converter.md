@@ -212,3 +212,34 @@ type — when:
 The message names the input file and says what is wrong; when the problem
 is tied to a row, the message includes the row number. When the failure
 comes from an underlying exception, it is kept as the cause (`__cause__`).
+
+## Clarifications (answers to `02-xlsform-converter.questions.md`)
+
+Each of the fifteen points was reviewed on its own. Assumptions 1–13 and
+15 are confirmed. Point 14 is right that pytest cannot prove the XForm
+loads in the Java `FormLoader`; that check belongs to a later Java
+integration test over the converted sample forms, not to this module's
+unit tests.
+
+## Amendment 1: XForm representation produced by pyxform
+
+The conversion itself is delegated to `pyxform` 4.5.0, and the XForm keeps
+pyxform's representation. Two consequences that tests on the XML must
+take into account:
+
+- **Choice lists.** Every choice list is written as a secondary instance
+  `<instance id="LIST_NAME">` whose `<root>` holds one `<item>` per choice,
+  in sheet order, with the choice value in a `<name>` child and its label
+  in a `<label>` child (or an `itext` reference when the form is
+  translated). Select controls do not contain inline `<item>` elements;
+  they reference their list with `<itemset nodeset="instance('LIST_NAME')/root/item...">`
+  (followed by the choice filter predicate, when there is one). Duplicate
+  values appear as separate `<item>` elements.
+- **Repeat counts.** A `repeat_count` expression is not written on the
+  `<repeat>` element itself. pyxform adds a hidden calculated node named
+  `<repeat name>_count` next to the repeat (for a repeat at
+  `/data/target`, the node `/data/target_count`), whose `bind` carries the
+  expression in its `calculate` attribute; the `<repeat>` element's
+  `jr:count` refers to that node. The `selected()` rewriting therefore
+  shows in that bind's `calculate`. This generated node is not a survey
+  row and is not listed in `fields`.
