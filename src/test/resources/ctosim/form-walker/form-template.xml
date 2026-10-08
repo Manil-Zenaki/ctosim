@@ -1,0 +1,10 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa" xmlns:odk="http://www.opendatakit.org/xforms">
+  <h:head><h:title>Form walker contract</h:title><model>
+    <instance><data id="walker-contract">__INSTANCE__</data></instance>
+    __SECONDARY__
+    __BINDS__
+    __ACTIONS__
+  </model></h:head>
+  <h:body>__BODY__</h:body>
+</h:html>

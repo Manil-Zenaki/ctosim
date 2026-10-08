@@ -1,0 +1,27 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head><h:title>Filtered choices</h:title><model>
+    <instance><data id="walker-filtered"><region/><one/><many/></data></instance>
+    <instance id="options"><root>
+      <item><code>z</code><label>Zed</label><region>west</region></item>
+      <item><code>a</code><label>Aye</label><region>east</region></item>
+      <item><code>m</code><label>Em</label><region>west</region></item>
+      <item><code>b</code><label>Bee</label><region>west</region></item>
+    </root></instance>
+    <bind nodeset="/data/region" type="string"/>
+    <bind nodeset="/data/one" type="select1"/>
+    <bind nodeset="/data/many" type="select"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/region"><label>Region</label></input>
+    <select1 ref="/data/one"><label>One</label>
+      <itemset nodeset="instance('options')/root/item[region = /data/region]">
+        <label ref="label"/><value ref="code"/>
+      </itemset>
+    </select1>
+    <select ref="/data/many"><label>Many</label>
+      <itemset nodeset="instance('options')/root/item[region = /data/region]">
+        <label ref="label"/><value ref="code"/>
+      </itemset>
+    </select>
+  </h:body>
+</h:html>
