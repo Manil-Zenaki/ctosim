@@ -182,3 +182,8 @@ Acceptance: in a session of `ethiopia_migration_household.xml` in which
 `/data/interview_begin/direct_or_list` holds the number 1 or 2, evaluating
 the relevance of the questions that test it with `selected()` raises no
 exception and follows the stored value.
+
+Clarification: assumptions 15–21 of the questions file were reviewed one
+by one and are confirmed (in particular 19: a call parsed outside the form
+keeps the engine's native outcome, since the change applies to the form's
+own expressions).
