@@ -192,3 +192,12 @@ form in `samples/xforms/` completes without exception. In each result,
 `instanceXml()` is a well-formed XML document whose root element has the
 form's `id`, `start()` is within the fieldwork period, and `end()` is not
 before `start()`.
+
+## Clarifications (answers to `07-form-walker.questions.md`)
+
+All thirteen assumptions were reviewed one by one and are confirmed. In
+particular: the instance root and repeat templates count as element names,
+secondary instances do not (1); any override for a field disables the
+"existing value" rule, and a blank or failed answer then clears the old
+value (4); read-only comes first, then existing value, then unsupported
+control (4); `walk` has no upper bound tied to `config.submissions()` (2).
