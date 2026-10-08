@@ -5,7 +5,7 @@ import re
 import pytest
 
 from ctosim_xlsform import FieldInfo, convert_xlsform
-from xform_assertions import assert_row_mentioned, bind_for, elements, instance_paths
+from xform_assertions import assert_choice_list, assert_row_mentioned, bind_for, elements, instance_paths
 
 
 EMPTY_CALCULATE_TYPES = [
@@ -227,10 +227,8 @@ def test_choices_accept_name_or_value_and_duplicates_within_a_list(workbook_fact
     result = convert_xlsform(workbook_factory(survey=[["type", "name", "label"], [f"{select_type} opts", "q", "Q"]],
         choices=[["list_name", choice_column, "label"], ["opts", "a", "First A"],
                  ["opts", "a", "Second A"], ["opts", "b", "B"]]))
-    control = next(node for node in elements(result.xform, element) if node.get("ref") == "/data/q")
-    assert [node.text for node in elements(control, "value")] == ["a", "a", "b"]
-    assert ["".join(node.itertext()) for item in elements(control, "item")
-            for node in elements(item, "label")] == ["First A", "Second A", "B"]
+    assert_choice_list(result, "q", element, "opts",
+                       [("a", "First A"), ("a", "Second A"), ("b", "B")])
     assert result.fields[0].type == f"{select_type} opts"
 
 
@@ -239,9 +237,8 @@ def test_choice_lists_remain_separate_when_values_overlap(workbook_factory):
         ["select_one left", "one", "One"], ["select_one right", "two", "Two"]],
         choices=[["list_name", "value", "label"], ["left", "a", "Left A"],
                  ["right", "a", "Right A"], ["right", "b", "Right B"]]))
-    controls = {node.get("ref"): node for node in elements(result.xform, "select1")}
-    assert [node.text for node in elements(controls["/data/one"], "value")] == ["a"]
-    assert [node.text for node in elements(controls["/data/two"], "value")] == ["a", "b"]
+    assert_choice_list(result, "one", "select1", "left", [("a", "Left A")])
+    assert_choice_list(result, "two", "select1", "right", [("a", "Right A"), ("b", "Right B")])
 
 
 @pytest.mark.parametrize("column, attribute", [("relevance", "relevant"), ("constraint", "constraint"),
@@ -259,8 +256,16 @@ def test_numeric_selected_argument_is_quoted_in_every_expression_column(workbook
         rows += [[field_type, "target", "Target", original]]
     result = convert_xlsform(workbook_factory(survey=rows,
         choices=[["list_name", "name", "label"], ["opts", "1", "One"], ["opts", "2", "Two"]]))
-    if column in {"choice_filter", "repeat_count"}:
-        nodes = elements(result.xform, "itemset" if column == "choice_filter" else "repeat")
+    if column == "repeat_count":
+        assert bind_for(result, "target_count").get("calculate").strip() == expected
+        repeats = [node for node in elements(result.xform, "repeat")
+                   if node.get("nodeset") == "/data/target"]
+        assert len(repeats) == 1
+        assert repeats[0].get("{http://openrosa.org/javarosa}count", "").strip() == "/data/target_count"
+        assert "/data/target_count" in instance_paths(result)
+        assert "/data/target_count" not in [field.xpath for field in result.fields]
+    elif column == "choice_filter":
+        nodes = elements(result.xform, "itemset")
         values = [value for node in nodes for key, value in node.attrib.items() if key.rsplit("}", 1)[-1] == attribute]
         assert any(expected in value for value in values), values
     else:

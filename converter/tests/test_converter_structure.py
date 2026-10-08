@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from ctosim_xlsform import ConversionResult, FieldInfo, convert_xlsform
-from xform_assertions import elements, instance_paths, local_name, primary_root
+from xform_assertions import assert_choice_list, elements, instance_paths, local_name, primary_root
 
 
 @pytest.mark.parametrize("path_kind", [str, Path])
@@ -143,8 +143,7 @@ def test_empty_choices_and_settings_rows_do_not_create_entries(workbook_factory)
         survey=[["type", "name", "label"], ["select_one opts", "q", "Q"]],
         choices=[["list_name", "name", "label"], [], ["opts", "a", "A"], []],
         settings=[["form_id", "form_title"], ["form", "Title"], []]))
-    values = [node.text for item in elements(result.xform, "item") for node in elements(item, "value")]
-    assert values == ["a"]
+    assert_choice_list(result, "q", "select1", "opts", [("a", "A")])
 
 
 def test_catalog_follows_sheet_order_including_groups_repeats_and_metadata(workbook_factory):
@@ -215,7 +214,7 @@ def test_cached_formula_result_is_used_for_choices(workbook_factory, set_formula
         choices=[["list_name", "value", "label"], ["opts", '="a"', "Alpha"]])
     set_formula_cache(path, 2, "B2", "a")
     result = convert_xlsform(path)
-    assert "a" in [node.text for node in elements(result.xform, "value")]
+    assert_choice_list(result, "q", "select1", "opts", [("a", "Alpha")])
 
 
 def test_cached_formula_result_controls_disabled_rows(workbook_factory, set_formula_cache):

@@ -56,3 +56,62 @@ The rewrite is applied; it is just not on the `<repeat>` element.
 **Requested change:** for `repeat_count`, assert on the `calculate` of the
 bind for `/data/target_count` (and that the repeat's `jr:count` refers to
 that node).
+
+## Adjudication
+
+Both disputes are upheld against the tests. The current spec, including
+Amendment 1, is the authority for these decisions; no implementation source
+was read. The required behaviors remain tested, but the original XML-location
+expectations contradict the amendment and have been corrected.
+
+### Dispute 1 decision: correct all seven choice cases
+
+Amendment 1 explicitly requires a secondary instance for each choice list,
+with ordered `<item>` children under `<root>`, values in `<name>`, and labels
+in `<label>` for these untranslated fixtures. It also requires select controls
+to reference their list through an itemset instead of containing inline items.
+
+- `test_choices_accept_name_or_value_and_duplicates_within_a_list` (four
+  cases): retain both column aliases and both select types. Check the `opts`
+  secondary instance for all three value/label pairs in order, including both
+  `a` entries and their distinct labels, and check the control's itemset
+  reference. Keep the original catalog-type assertion.
+- `test_choice_lists_remain_separate_when_values_overlap`: check the `left`
+  and `right` instances independently, including their distinct labels and
+  ordered values, and require each control to reference its own list.
+- `test_empty_choices_and_settings_rows_do_not_create_entries`: require
+  exactly the single expected choice in the `opts` instance and the correct
+  itemset reference, preserving the check that blank rows add no choices.
+- `test_cached_formula_result_is_used_for_choices`: require the cached `a`
+  value and its `Alpha` label in the `opts` instance, with the correct itemset
+  reference. Searching for an inline `<value>` was not justified.
+
+These checks share a test-only assertion helper that also verifies the absence
+of inline items. No fixture or conversion expectation has been relaxed.
+
+### Dispute 2 decision: correct all five repeat-count cases
+
+For `test_numeric_selected_argument_is_quoted_in_every_expression_column`,
+the five `repeat_count-count` cases retain their original expected quoting
+for `0`, `1`, `-99`, `2.5`, and `-0.5`. Amendment 1 explicitly places the
+expression in the `calculate` attribute of the bind for `/data/target_count`;
+expecting that expression in the repeat's count attribute was incorrect.
+
+The corrected cases compare that bind's calculation to the expected rewritten
+expression and verify that the `/data/target` repeat's `jr:count` refers to
+`/data/target_count`. They also check that this generated node exists in the
+primary instance and is excluded from `fields`, as the amendment requires.
+Assertions for the other expression columns are retained.
+
+### Validation
+
+Ran `.venv\Scripts\python -m pytest converter/tests -q --tb=no`: all 223
+tests collected and ran without import errors; 3 passed and 220 failed.
+A focused rerun of
+`test_minimal_workbook_needs_neither_choices_nor_settings` with `--tb=line`
+reported `NotImplementedError: not implemented` from the public
+`convert_xlsform` entry point. Thus this checkout does not reproduce the
+implementation state described in the dispute's opening paragraph, and a
+passing behavioral run cannot be confirmed here. Traceback source display
+was suppressed; implementation code was not read or changed.
+`git diff --check` passed.
