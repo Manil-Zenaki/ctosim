@@ -169,3 +169,12 @@ be read, is not valid JSON, or breaks any rule above. The message:
 
 When the failure comes from an underlying exception (I/O, JSON syntax), it
 is kept as the cause.
+
+## Clarifications (answers to `04-simulation-config.questions.md`)
+
+All twelve assumptions were reviewed one by one and are confirmed. In
+particular: integer keys are checked on the exact JSON number, before any
+floating-point rounding, so every `long` seed is exact (6); `parse` accepts
+a leading U+FEFF like `load` accepts a UTF-8 byte-order mark (3);
+`withSeed` and `withSubmissions` return a distinct object even when the
+value does not change (11).
