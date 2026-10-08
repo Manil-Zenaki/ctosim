@@ -37,7 +37,7 @@ class SurveyCtoRealFormsTest {
     }
 
     @ParameterizedTest(name = "Household roster with {0} engine-created instances") @ValueSource(ints = {1, 3, 25})
-    void realHouseholdRosterCalculatesStringInstanceNumbers(int count) throws Exception {
+    void realHouseholdRosterCalculatesIntegerInstanceNumbers(int count) throws Exception {
         LoadedForm loaded = FormLoader.load(Path.of("samples", "xforms", "ethiopia_migration_household.xml"));
         var session = loaded.newEntryController();
         var form = session.getModel().getForm();
@@ -58,7 +58,7 @@ class SurveyCtoRealFormsTest {
         }
         for (int k = 0; k < count; k++) {
             Object number = value(child(container.getChild("hhroster", k), "instancenumber"));
-            assertValue(Integer.toString(k + 1), number);
+            assertValue(Integer.valueOf(k + 1), number);
         }
     }
 
