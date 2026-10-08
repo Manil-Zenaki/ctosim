@@ -24,3 +24,5 @@ __pycache__/
 # Downloaded sample data and scratch probes (see samples/SOURCES.md)
 samples/raw/
 samples/_probe/
+*.egg-info/
+.pytest_cache/

@@ -43,14 +43,26 @@ if (git status --porcelain) { throw 'Working tree is not clean; commit or stash 
 if ($Dispute -and -not (Test-Path $disputes)) { throw "No disputes file: $disputes" }
 
 # --- Prompt -----------------------------------------------------------------
+$isPython = (Get-Content $specPath -Raw) -match '(?m)^Language:\s*Python'
+$testDir = if ($isPython) { 'converter/tests' } else { 'src/test' }
+$mainDir = if ($isPython) { 'converter/src' } else { 'src/main' }
+
 if ($Dispute) {
     $prompt = @"
 Read AGENTS.md. You are adjudicating a dispute about the tests for the spec $specRel.
-Read the spec, then $disputes, then the disputed tests under src/test/.
+Read the spec, then $disputes, then the disputed tests under $testDir/.
 Decide strictly on the spec. If a test is wrong, fix it. If it is right, keep it.
 Append your decision and reasoning for each disputed point at the end of $disputes.
-Run the tests to make sure they compile. Do not read implementation code under src/main/
+Run the tests to make sure they compile or import. Do not read implementation code under $mainDir/
 beyond the public signatures.
+"@
+} elseif ($isPython) {
+    $prompt = @"
+Read AGENTS.md, then the spec $specRel. Write comprehensive pytest tests for this module
+under converter/tests (fixtures under converter/tests/fixtures). Record ambiguities and the
+assumptions you made in $questions. Make sure the tests are collected without errors with:
+.venv\Scripts\python -m pytest converter/tests -q --collect-only
+(failing tests are expected because the module is not implemented yet).
 "@
 } else {
     $prompt = @"
@@ -86,7 +98,7 @@ if ($codexExit -ne 0) { throw "Codex exited with code $codexExit; see $log" }
 $session = (Select-String -Path $log -Pattern 'session id:\s*(\S+)' | Select-Object -First 1).Matches.Groups[1].Value
 
 # --- Enforce Codex's write scope --------------------------------------------
-$allowed = '^(src/test/|' + [regex]::Escape($questions) + '$|' + [regex]::Escape($disputes) + '$)'
+$allowed = '^(src/test/|converter/tests/|' + [regex]::Escape($questions) + '$|' + [regex]::Escape($disputes) + '$)'
 $changed = @(git status --porcelain --untracked-files=all | ForEach-Object { $_.Substring(3) -replace '"', '' })
 $outOfScope = @($changed | Where-Object { $_ -notmatch $allowed })
 if ($outOfScope.Count -gt 0) {

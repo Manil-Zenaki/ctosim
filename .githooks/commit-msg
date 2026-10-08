@@ -6,16 +6,16 @@
 msg_file="$1"
 staged=$(git diff --cached --name-only)
 
-touches_tests=$(printf '%s\n' "$staged" | grep -c '^src/test/')
-touches_main=$(printf '%s\n' "$staged" | grep -c '^src/main/')
+touches_tests=$(printf '%s\n' "$staged" | grep -cE '^(src/test/|converter/tests/)')
+touches_main=$(printf '%s\n' "$staged" | grep -cE '^(src/main/|converter/src/)')
 
 if [ "$touches_tests" -gt 0 ] && [ "$touches_main" -gt 0 ]; then
-    echo "commit-msg: a commit may not change both src/test/ and src/main/." >&2
+    echo "commit-msg: a commit may not change both tests and production code." >&2
     exit 1
 fi
 
 if [ "$touches_tests" -gt 0 ] && ! grep -q '^Test-Author: codex' "$msg_file"; then
-    echo "commit-msg: changes under src/test/ require a 'Test-Author: codex' trailer." >&2
+    echo "commit-msg: test changes (src/test/, converter/tests/) require a 'Test-Author: codex' trailer." >&2
     echo "Tests are written by Codex via scripts/codex-tests.ps1." >&2
     exit 1
 fi
