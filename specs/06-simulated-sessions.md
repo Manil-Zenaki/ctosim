@@ -100,3 +100,11 @@ time and kept afterwards.
 ## Errors
 
 `newSimulatedSession(null, seed)` throws `NullPointerException`.
+
+## Clarifications (answers to `06-simulated-sessions.questions.md`)
+
+All thirteen assumptions were reviewed one by one and are confirmed. In
+particular: `duration()` is local clock arithmetic, unaffected by daylight
+saving changes (3); `xforms-value-changed` setvalue actions in the body
+are part of the form's expressions (5); opening simulated sessions never
+reseeds the randomness of ordinary sessions (12).
