@@ -48,6 +48,14 @@ public final class LoadedForm {
     }
 
     /**
+     * Opens a session whose clock-dependent values come from {@code clock} and whose random
+     * values come from {@code seed}. See specs/06-simulated-sessions.md.
+     */
+    public FormEntryController newSimulatedSession(SimulatedClock clock, long seed) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    /**
      * Opens a session over a fresh, initialised instance of the form. The definition is
      * reparsed from the loaded bytes so that no state is shared between sessions.
      */
