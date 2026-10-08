@@ -1,86 +1,156 @@
 package ctosim;
 
+import java.io.IOException;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /** Settings of a simulation run, read from an optional JSON file. See specs/04-simulation-config.md. */
 public final class SimulationConfig {
 
-    SimulationConfig() {
+    static final int MAX_SUBMISSIONS = 1_000_000;
+
+    static final List<String> DEFAULT_SPECIAL_VALUES = List.of(
+            "-99", "-98", "-97", "-96", "-88", "-77", "-999", "-888", "-777", "97", "98", "99", "999");
+
+    private final long seed;
+    private final int submissions;
+    private final LocalDateTime start;
+    private final int fieldworkDays;
+    private final double missingRate;
+    private final double specialRate;
+    private final List<String> specialValues;
+    private final int repeatMin;
+    private final int repeatMax;
+    private final NumericRange integerRange;
+    private final NumericRange decimalRange;
+    private final SortedSet<String> overriddenFields;
+    private final Map<String, FieldOverride> fields;
+
+    SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
+                     double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
+                     NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields) {
+        this.seed = seed;
+        this.submissions = submissions;
+        this.start = start;
+        this.fieldworkDays = fieldworkDays;
+        this.missingRate = missingRate;
+        this.specialRate = specialRate;
+        this.specialValues = List.copyOf(specialValues);
+        this.repeatMin = repeatMin;
+        this.repeatMax = repeatMax;
+        this.integerRange = integerRange;
+        this.decimalRange = decimalRange;
+        this.fields = Collections.unmodifiableMap(new TreeMap<>(fields));
+        this.overriddenFields = Collections.unmodifiableSortedSet(new TreeSet<>(fields.keySet()));
     }
 
     public static SimulationConfig defaults() {
-        throw new UnsupportedOperationException("not implemented");
+        return new SimulationConfig(1, 100, LocalDateTime.of(2026, 1, 5, 8, 0, 0), 30, 0.05, 0.02,
+                DEFAULT_SPECIAL_VALUES, 1, 3, new NumericRange(0, 100), new NumericRange(0, 1000), Map.of());
     }
 
     public static SimulationConfig parse(String json, String sourceName) throws ConfigException {
-        throw new UnsupportedOperationException("not implemented");
+        Objects.requireNonNull(json, "json");
+        Objects.requireNonNull(sourceName, "sourceName");
+        return ConfigParser.parse(json, sourceName);
     }
 
     public static SimulationConfig load(Path path) throws ConfigException {
-        throw new UnsupportedOperationException("not implemented");
+        Objects.requireNonNull(path, "path");
+        String source = path.toString();
+        byte[] bytes;
+        try {
+            bytes = Files.readAllBytes(path);
+        } catch (IOException e) {
+            throw new ConfigException(source + ": the file cannot be read (" + e + ")", e);
+        }
+        String json;
+        try {
+            json = StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(bytes)).toString();
+        } catch (CharacterCodingException e) {
+            throw new ConfigException(source + ": the file is not valid UTF-8 text", e);
+        }
+        return ConfigParser.parse(json, source);
     }
 
     public long seed() {
-        throw new UnsupportedOperationException("not implemented");
+        return seed;
     }
 
     public int submissions() {
-        throw new UnsupportedOperationException("not implemented");
+        return submissions;
     }
 
     public LocalDateTime start() {
-        throw new UnsupportedOperationException("not implemented");
+        return start;
     }
 
     public int fieldworkDays() {
-        throw new UnsupportedOperationException("not implemented");
+        return fieldworkDays;
     }
 
     public double missingRate() {
-        throw new UnsupportedOperationException("not implemented");
+        return missingRate;
     }
 
     public double specialRate() {
-        throw new UnsupportedOperationException("not implemented");
+        return specialRate;
     }
 
     public List<String> specialValues() {
-        throw new UnsupportedOperationException("not implemented");
+        return specialValues;
     }
 
     public int repeatMin() {
-        throw new UnsupportedOperationException("not implemented");
+        return repeatMin;
     }
 
     public int repeatMax() {
-        throw new UnsupportedOperationException("not implemented");
+        return repeatMax;
     }
 
     public NumericRange integerRange() {
-        throw new UnsupportedOperationException("not implemented");
+        return integerRange;
     }
 
     public NumericRange decimalRange() {
-        throw new UnsupportedOperationException("not implemented");
+        return decimalRange;
     }
 
     public Optional<FieldOverride> field(String name) {
-        throw new UnsupportedOperationException("not implemented");
+        return Optional.ofNullable(fields.get(name));
     }
 
     public SortedSet<String> overriddenFields() {
-        throw new UnsupportedOperationException("not implemented");
+        return overriddenFields;
     }
 
     public SimulationConfig withSeed(long seed) {
-        throw new UnsupportedOperationException("not implemented");
+        return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
+                specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
-        throw new UnsupportedOperationException("not implemented");
+        if (submissions < 1 || submissions > MAX_SUBMISSIONS) {
+            throw new IllegalArgumentException("submissions must be between 1 and " + MAX_SUBMISSIONS + ": " + submissions);
+        }
+        return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
+                specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields);
     }
 }
