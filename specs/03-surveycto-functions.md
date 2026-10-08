@@ -125,8 +125,8 @@ the instance is created).
 `/data/member_interviewed/hhroster` (count given by the integer field
 `/data/hh_count_06`) has a field `instancenumber` calculated as `index()`.
 In a session where that repeat has N ≥ 1 instances created through the
-engine, the `instancenumber` of the k-th instance has the value `"k"`
-(the field is a string field) for every k from 1 to N.
+engine, the `instancenumber` of the k-th instance holds the number k for
+every k from 1 to N (see Amendment 1 for how the engine stores it).
 
 ## Clarifications (answers to `03-surveycto-functions.questions.md`)
 
@@ -137,3 +137,14 @@ separators are literal and item comparison is exact (3); `short-geopoint`
 and `geo-scatter` do not validate their input (5, 6); a one-millimetre
 tolerance for `distance-between` is appropriate (11); any exception from
 evaluation satisfies the arity rule (10).
+
+## Amendment 1: how the engine stores numeric results
+
+The acceptance paragraph first said that `instancenumber` holds the
+string `"k"` because the field is declared as a string. That was wrong.
+JavaRosa stores a `calculate` result through `IAnswerData.wrapData`, which
+turns any whole-number result into an `IntegerData` whatever the field's
+declared type (only boolean fields are treated differently). `index()`
+returns a whole number, so the k-th `instancenumber` holds `IntegerData`
+with value k (`getValue()` returns the `Integer` k). Formatting values as
+text in SurveyCTO's export layout is the job of the exporter (module 07).
