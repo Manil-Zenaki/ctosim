@@ -17,6 +17,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.javarosa.core.model.FormDef;
+import org.javarosa.core.services.PropertyManager;
 import org.javarosa.model.xform.XFormsModule;
 import org.javarosa.xform.util.XFormUtils;
 import org.javarosa.xpath.parser.XPathSyntaxException;
@@ -40,6 +41,8 @@ public final class FormLoader {
     static {
         // Engine-wide setup required by some native functions, e.g. jr:choice-name.
         new XFormsModule().registerModule();
+        // Served to metadata fields such as deviceid and username (jr:preload="property").
+        PropertyManager.setPropertyManager(new SimulatedProperties());
     }
 
     private FormLoader() {

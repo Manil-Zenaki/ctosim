@@ -19,7 +19,7 @@ final class SurveyCtoFunctions {
     private static final Map<String, Object> NAMED_STUBS = Map.of(
             "pulldata", "",
             "plug-in-metadata", "",
-            "username", "simulated",
+            "username", SimulatedProperties.USERNAME,
             "duration", 0.0,
             "phone-call-log", "",
             "phone-call-duration", 0.0);
