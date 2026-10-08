@@ -1,0 +1,1693 @@
+{
+  "form_id": "household_survey",
+  "title": "Household Survey",
+  "version": "2206191528",
+  "fields": [
+    {
+      "name": "starttime",
+      "type": "start",
+      "xpath": "/data/starttime",
+      "row": 2
+    },
+    {
+      "name": "endtime",
+      "type": "end",
+      "xpath": "/data/endtime",
+      "row": 3
+    },
+    {
+      "name": "deviceid",
+      "type": "deviceid",
+      "xpath": "/data/deviceid",
+      "row": 4
+    },
+    {
+      "name": "subscriberid",
+      "type": "subscriberid",
+      "xpath": "/data/subscriberid",
+      "row": 5
+    },
+    {
+      "name": "simid",
+      "type": "simserial",
+      "xpath": "/data/simid",
+      "row": 6
+    },
+    {
+      "name": "devicephonenum",
+      "type": "phonenumber",
+      "xpath": "/data/devicephonenum",
+      "row": 7
+    },
+    {
+      "name": "username",
+      "type": "username",
+      "xpath": "/data/username",
+      "row": 8
+    },
+    {
+      "name": "duration",
+      "type": "calculate",
+      "xpath": "/data/duration",
+      "row": 9
+    },
+    {
+      "name": "caseid",
+      "type": "caseid",
+      "xpath": "/data/caseid",
+      "row": 10
+    },
+    {
+      "name": "gps",
+      "type": "geopoint",
+      "xpath": "/data/gps",
+      "row": 11
+    },
+    {
+      "name": "text_audit",
+      "type": "text audit",
+      "xpath": "/data/text_audit",
+      "row": 12
+    },
+    {
+      "name": "field_comments",
+      "type": "comments",
+      "xpath": "/data/field_comments",
+      "row": 13
+    },
+    {
+      "name": "username_check",
+      "type": "note",
+      "xpath": "/data/username_check",
+      "row": 15
+    },
+    {
+      "name": "instruction",
+      "type": "note",
+      "xpath": "/data/instruction",
+      "row": 17
+    },
+    {
+      "name": "a_district_id",
+      "type": "select_one district",
+      "xpath": "/data/a_district_id",
+      "row": 19
+    },
+    {
+      "name": "a_district",
+      "type": "calculate",
+      "xpath": "/data/a_district",
+      "row": 20
+    },
+    {
+      "name": "a_kg_id",
+      "type": "select_one kg",
+      "xpath": "/data/a_kg_id",
+      "row": 21
+    },
+    {
+      "name": "a_kg",
+      "type": "calculate",
+      "xpath": "/data/a_kg",
+      "row": 22
+    },
+    {
+      "name": "a_community",
+      "type": "calculate",
+      "xpath": "/data/a_community",
+      "row": 23
+    },
+    {
+      "name": "a_enum_id",
+      "type": "select_one enumerator",
+      "xpath": "/data/a_enum_id",
+      "row": 25
+    },
+    {
+      "name": "a_enum_name",
+      "type": "calculate",
+      "xpath": "/data/a_enum_name",
+      "row": 26
+    },
+    {
+      "name": "a_team_id",
+      "type": "calculate",
+      "xpath": "/data/a_team_id",
+      "row": 27
+    },
+    {
+      "name": "a_team_name",
+      "type": "calculate",
+      "xpath": "/data/a_team_name",
+      "row": 28
+    },
+    {
+      "name": "hhid",
+      "type": "select_one hhid",
+      "xpath": "/data/hhid",
+      "row": 30
+    },
+    {
+      "name": "a_pl_hhh_fn",
+      "type": "calculate",
+      "xpath": "/data/a_pl_hhh_fn",
+      "row": 31
+    },
+    {
+      "name": "a_pl_hhh_gnd",
+      "type": "calculate",
+      "xpath": "/data/a_pl_hhh_gnd",
+      "row": 32
+    },
+    {
+      "name": "a_pl_pgv_fn",
+      "type": "calculate",
+      "xpath": "/data/a_pl_pgv_fn",
+      "row": 33
+    },
+    {
+      "name": "a_pl_pgv_gnd",
+      "type": "calculate",
+      "xpath": "/data/a_pl_pgv_gnd",
+      "row": 34
+    },
+    {
+      "name": "a_pl_ch_fn",
+      "type": "calculate",
+      "xpath": "/data/a_pl_ch_fn",
+      "row": 35
+    },
+    {
+      "name": "a_pl_ch_gnd",
+      "type": "calculate",
+      "xpath": "/data/a_pl_ch_gnd",
+      "row": 36
+    },
+    {
+      "name": "a_pl_ch_age",
+      "type": "calculate",
+      "xpath": "/data/a_pl_ch_age",
+      "row": 37
+    },
+    {
+      "name": "b_consent_note",
+      "type": "note",
+      "xpath": "/data/b_consent_note",
+      "row": 38
+    },
+    {
+      "name": "c_consent_qs_ans",
+      "type": "select_one yesno",
+      "xpath": "/data/c_consent_qs_ans",
+      "row": 40
+    },
+    {
+      "name": "c_consent_understand",
+      "type": "select_one yesno",
+      "xpath": "/data/c_consent_understand",
+      "row": 41
+    },
+    {
+      "name": "c_consent",
+      "type": "select_one yesno",
+      "xpath": "/data/c_consent",
+      "row": 42
+    },
+    {
+      "name": "consented_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp",
+      "row": 44
+    },
+    {
+      "name": "aud_consent",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/aud_consent",
+      "row": 46
+    },
+    {
+      "name": "aud_audit",
+      "type": "audio audit",
+      "xpath": "/data/consented_grp/aud_audit",
+      "row": 47
+    },
+    {
+      "name": "ac_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/ac_note",
+      "row": 49
+    },
+    {
+      "name": "e_hhh_relig",
+      "type": "select_one religion",
+      "xpath": "/data/consented_grp/e_hhh_relig",
+      "row": 52
+    },
+    {
+      "name": "e_hhh_relig_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/e_hhh_relig_osp",
+      "row": 53
+    },
+    {
+      "name": "e_hhh_native",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/e_hhh_native",
+      "row": 54
+    },
+    {
+      "name": "e_hhh_howlong",
+      "type": "integer",
+      "xpath": "/data/consented_grp/e_hhh_howlong",
+      "row": 55
+    },
+    {
+      "name": "f_intro_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/f_intro_note",
+      "row": 57
+    },
+    {
+      "name": "f_hhm_cnt",
+      "type": "integer",
+      "xpath": "/data/consented_grp/f_hhm_cnt",
+      "row": 58
+    },
+    {
+      "name": "f_hhm_into_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/f_hhm_into_note",
+      "row": 59
+    },
+    {
+      "name": "f_hr_rpt",
+      "type": "begin repeat",
+      "xpath": "/data/consented_grp/f_hr_rpt",
+      "row": 61
+    },
+    {
+      "name": "f_hr_ind_r",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_ind_r",
+      "row": 62
+    },
+    {
+      "name": "f_hr_fn_r",
+      "type": "text",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_fn_r",
+      "row": 64
+    },
+    {
+      "name": "f_hr_note_r",
+      "type": "note",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_note_r",
+      "row": 65
+    },
+    {
+      "name": "f_hr_age_r",
+      "type": "integer",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_age_r",
+      "row": 66
+    },
+    {
+      "name": "tmp_age_check_note_r",
+      "type": "note",
+      "xpath": "/data/consented_grp/f_hr_rpt/tmp_age_check_note_r",
+      "row": 67
+    },
+    {
+      "name": "f_hr_age_mon_r",
+      "type": "integer",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_age_mon_r",
+      "row": 68
+    },
+    {
+      "name": "tmp_age_check_note_2_r",
+      "type": "note",
+      "xpath": "/data/consented_grp/f_hr_rpt/tmp_age_check_note_2_r",
+      "row": 69
+    },
+    {
+      "name": "f_hr_age_full_mon_r",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_age_full_mon_r",
+      "row": 70
+    },
+    {
+      "name": "f_hr_gnd_r",
+      "type": "select_one gender",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_gnd_r",
+      "row": 72
+    },
+    {
+      "name": "f_hr_rel_r",
+      "type": "select_one relation",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_rel_r",
+      "row": 73
+    },
+    {
+      "name": "f_hr_mar_r",
+      "type": "select_one marital",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_mar_r",
+      "row": 74
+    },
+    {
+      "name": "f_hr_mar_osp_r",
+      "type": "text",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_mar_osp_r",
+      "row": 75
+    },
+    {
+      "name": "f_hr_mar_hhm_r",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_mar_hhm_r",
+      "row": 76
+    },
+    {
+      "name": "f_hr_dis_r",
+      "type": "select_one yesnodkref",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_dis_r",
+      "row": 78
+    },
+    {
+      "name": "f_hr_lead_r",
+      "type": "select_multiple position",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_lead_r",
+      "row": 79
+    },
+    {
+      "name": "f_hr_lead_osp_r",
+      "type": "text",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_lead_osp_r",
+      "row": 80
+    },
+    {
+      "name": "f_hr_lead_major_r",
+      "type": "select_one position",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_lead_major_r",
+      "row": 82
+    },
+    {
+      "name": "f_hr_rel_tc_r",
+      "type": "select_one tc_relate",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_rel_tc_r",
+      "row": 84
+    },
+    {
+      "name": "f_hr_pgv_care_yn_r",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/f_hr_rpt/f_hr_pgv_care_yn_r",
+      "row": 85
+    },
+    {
+      "name": "tmp_hr_add_r",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/f_hr_rpt/tmp_hr_add_r",
+      "row": 87
+    },
+    {
+      "name": "f_tc_age",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/f_tc_age",
+      "row": 90
+    },
+    {
+      "name": "hhm_rpt_cnt",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/hhm_rpt_cnt",
+      "row": 92
+    },
+    {
+      "name": "tmp_hhm_sum",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_hhm_sum",
+      "row": 93
+    },
+    {
+      "name": "h_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/h_grp",
+      "row": 96
+    },
+    {
+      "name": "h_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/h_grp/h_note",
+      "row": 97
+    },
+    {
+      "name": "h_rooms",
+      "type": "integer",
+      "xpath": "/data/consented_grp/h_grp/h_rooms",
+      "row": 98
+    },
+    {
+      "name": "h_ownership",
+      "type": "select_one ownership",
+      "xpath": "/data/consented_grp/h_grp/h_ownership",
+      "row": 99
+    },
+    {
+      "name": "h_ownership_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/h_grp/h_ownership_osp",
+      "row": 100
+    },
+    {
+      "name": "h_electricity",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/h_grp/h_electricity",
+      "row": 101
+    },
+    {
+      "name": "h_floor",
+      "type": "select_one floor",
+      "xpath": "/data/consented_grp/h_grp/h_floor",
+      "row": 102
+    },
+    {
+      "name": "h_floor_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/h_grp/h_floor_osp",
+      "row": 103
+    },
+    {
+      "name": "h_wall",
+      "type": "select_one wall",
+      "xpath": "/data/consented_grp/h_grp/h_wall",
+      "row": 104
+    },
+    {
+      "name": "h_wall_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/h_grp/h_wall_osp",
+      "row": 105
+    },
+    {
+      "name": "h_roof",
+      "type": "select_one roof",
+      "xpath": "/data/consented_grp/h_grp/h_roof",
+      "row": 106
+    },
+    {
+      "name": "h_roof_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/h_grp/h_roof_osp",
+      "row": 107
+    },
+    {
+      "name": "h_cook_fuel",
+      "type": "select_one cooking_fuel",
+      "xpath": "/data/consented_grp/h_grp/h_cook_fuel",
+      "row": 108
+    },
+    {
+      "name": "h_cook_fuel_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/h_grp/h_cook_fuel_osp",
+      "row": 109
+    },
+    {
+      "name": "h_light_fuel",
+      "type": "select_one lighting_fuel",
+      "xpath": "/data/consented_grp/h_grp/h_light_fuel",
+      "row": 110
+    },
+    {
+      "name": "h_light_fuel_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/h_grp/h_light_fuel_osp",
+      "row": 111
+    },
+    {
+      "name": "h_water_src",
+      "type": "select_one water_src",
+      "xpath": "/data/consented_grp/h_grp/h_water_src",
+      "row": 112
+    },
+    {
+      "name": "h_water_src_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/h_grp/h_water_src_osp",
+      "row": 113
+    },
+    {
+      "name": "h_toilet",
+      "type": "select_one toilet",
+      "xpath": "/data/consented_grp/h_grp/h_toilet",
+      "row": 114
+    },
+    {
+      "name": "h_toilet_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/h_grp/h_toilet_osp",
+      "row": 115
+    },
+    {
+      "name": "i_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/i_note",
+      "row": 119
+    },
+    {
+      "name": "i_phone_num",
+      "type": "integer",
+      "xpath": "/data/consented_grp/i_phone_num",
+      "row": 120
+    },
+    {
+      "name": "i_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/i_grp",
+      "row": 121
+    },
+    {
+      "name": "tmp_i_label",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/tmp_i_label",
+      "row": 122
+    },
+    {
+      "name": "i_radio",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_radio",
+      "row": 123
+    },
+    {
+      "name": "i_fridge",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_fridge",
+      "row": 124
+    },
+    {
+      "name": "i_bicycle",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_bicycle",
+      "row": 125
+    },
+    {
+      "name": "i_tv",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_tv",
+      "row": 126
+    },
+    {
+      "name": "i_video",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_video",
+      "row": 127
+    },
+    {
+      "name": "i_motorbike",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_motorbike",
+      "row": 128
+    },
+    {
+      "name": "i_car",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_car",
+      "row": 129
+    },
+    {
+      "name": "i_tractor",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_tractor",
+      "row": 130
+    },
+    {
+      "name": "i_farm_equip",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_farm_equip",
+      "row": 131
+    },
+    {
+      "name": "i_sewing_mach",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_sewing_mach",
+      "row": 132
+    },
+    {
+      "name": "i_bed",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_bed",
+      "row": 133
+    },
+    {
+      "name": "i_mattress",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_mattress",
+      "row": 134
+    },
+    {
+      "name": "i_table_chair",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_table_chair",
+      "row": 135
+    },
+    {
+      "name": "i_stool",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_stool",
+      "row": 136
+    },
+    {
+      "name": "i_sofa",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_sofa",
+      "row": 137
+    },
+    {
+      "name": "i_fan",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_fan",
+      "row": 138
+    },
+    {
+      "name": "i_kero_lamp",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_kero_lamp",
+      "row": 139
+    },
+    {
+      "name": "i_watch",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_watch",
+      "row": 140
+    },
+    {
+      "name": "i_woven_mat",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_woven_mat",
+      "row": 141
+    },
+    {
+      "name": "i_torch",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_torch",
+      "row": 142
+    },
+    {
+      "name": "i_cabinet",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_cabinet",
+      "row": 143
+    },
+    {
+      "name": "i_cooking_pot",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_cooking_pot",
+      "row": 144
+    },
+    {
+      "name": "i_mosquito_net",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_mosquito_net",
+      "row": 145
+    },
+    {
+      "name": "i_iron_electric",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_iron_electric",
+      "row": 146
+    },
+    {
+      "name": "i_iron_coal",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_iron_coal",
+      "row": 147
+    },
+    {
+      "name": "i_gas_stove",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/i_grp/i_gas_stove",
+      "row": 148
+    },
+    {
+      "name": "j_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/j_note",
+      "row": 152
+    },
+    {
+      "name": "j_land_yn",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/j_land_yn",
+      "row": 153
+    },
+    {
+      "name": "j_land_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/j_land_grp",
+      "row": 154
+    },
+    {
+      "name": "j_land_size",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/j_land_grp/j_land_size",
+      "row": 155
+    },
+    {
+      "name": "j_land_value",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/j_land_grp/j_land_value",
+      "row": 156
+    },
+    {
+      "name": "k_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/k_note",
+      "row": 160
+    },
+    {
+      "name": "k_own_yn",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/k_own_yn",
+      "row": 161
+    },
+    {
+      "name": "k_sel",
+      "type": "select_multiple livestock",
+      "xpath": "/data/consented_grp/k_sel",
+      "row": 162
+    },
+    {
+      "name": "k_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/k_grp",
+      "row": 163
+    },
+    {
+      "name": "k_note_2",
+      "type": "note",
+      "xpath": "/data/consented_grp/k_grp/k_note_2",
+      "row": 164
+    },
+    {
+      "name": "k_cow",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_cow",
+      "row": 165
+    },
+    {
+      "name": "k_bull",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_bull",
+      "row": 166
+    },
+    {
+      "name": "k_calf",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_calf",
+      "row": 167
+    },
+    {
+      "name": "k_horse",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_horse",
+      "row": 168
+    },
+    {
+      "name": "k_donkey",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_donkey",
+      "row": 169
+    },
+    {
+      "name": "k_goat",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_goat",
+      "row": 170
+    },
+    {
+      "name": "k_sheep",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_sheep",
+      "row": 171
+    },
+    {
+      "name": "k_pig",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_pig",
+      "row": 172
+    },
+    {
+      "name": "k_guinea_fowl",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_guinea_fowl",
+      "row": 173
+    },
+    {
+      "name": "k_ordinary_fowl",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_ordinary_fowl",
+      "row": 174
+    },
+    {
+      "name": "k_other_poultry",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_other_poultry",
+      "row": 175
+    },
+    {
+      "name": "k_rabbit",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_rabbit",
+      "row": 176
+    },
+    {
+      "name": "k_turkey",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_turkey",
+      "row": 177
+    },
+    {
+      "name": "k_guinea_pig",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_guinea_pig",
+      "row": 178
+    },
+    {
+      "name": "k_grass_cutter",
+      "type": "integer",
+      "xpath": "/data/consented_grp/k_grp/k_grass_cutter",
+      "row": 179
+    },
+    {
+      "name": "l_hh_rank_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/l_hh_rank_note",
+      "row": 183
+    },
+    {
+      "name": "l_hh_rank_first",
+      "type": "select_one activities",
+      "xpath": "/data/consented_grp/l_hh_rank_first",
+      "row": 184
+    },
+    {
+      "name": "l_hh_rank_first_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/l_hh_rank_first_osp",
+      "row": 185
+    },
+    {
+      "name": "tmp_l_hh_rank_first_dsp",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_l_hh_rank_first_dsp",
+      "row": 186
+    },
+    {
+      "name": "l_hh_rank_sec",
+      "type": "select_one activities",
+      "xpath": "/data/consented_grp/l_hh_rank_sec",
+      "row": 187
+    },
+    {
+      "name": "l_hh_rank_sec_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/l_hh_rank_sec_osp",
+      "row": 188
+    },
+    {
+      "name": "tmp_l_hh_rank_sec_dsp",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_l_hh_rank_sec_dsp",
+      "row": 189
+    },
+    {
+      "name": "l_hh_rank_third",
+      "type": "select_one activities",
+      "xpath": "/data/consented_grp/l_hh_rank_third",
+      "row": 190
+    },
+    {
+      "name": "l_hh_rank_third_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/l_hh_rank_third_osp",
+      "row": 191
+    },
+    {
+      "name": "tmp_l_hh_rank_third_dsp",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_l_hh_rank_third_dsp",
+      "row": 192
+    },
+    {
+      "name": "l_hh_earn_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/l_hh_earn_grp",
+      "row": 194
+    },
+    {
+      "name": "l_hh_earn_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/l_hh_earn_grp/l_hh_earn_note",
+      "row": 195
+    },
+    {
+      "name": "l_hh_earn_first",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/l_hh_earn_grp/l_hh_earn_first",
+      "row": 196
+    },
+    {
+      "name": "l_hh_earn_sec",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/l_hh_earn_grp/l_hh_earn_sec",
+      "row": 197
+    },
+    {
+      "name": "l_hh_earn_third",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/l_hh_earn_grp/l_hh_earn_third",
+      "row": 198
+    },
+    {
+      "name": "l_hd_rank_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/l_hd_rank_note",
+      "row": 201
+    },
+    {
+      "name": "l_hd_rank_first",
+      "type": "select_one activities",
+      "xpath": "/data/consented_grp/l_hd_rank_first",
+      "row": 202
+    },
+    {
+      "name": "l_hd_rank_first_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/l_hd_rank_first_osp",
+      "row": 203
+    },
+    {
+      "name": "tmp_l_hd_rank_first_dsp",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_l_hd_rank_first_dsp",
+      "row": 204
+    },
+    {
+      "name": "l_hd_rank_sec",
+      "type": "select_one activities",
+      "xpath": "/data/consented_grp/l_hd_rank_sec",
+      "row": 205
+    },
+    {
+      "name": "l_hd_rank_sec_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/l_hd_rank_sec_osp",
+      "row": 206
+    },
+    {
+      "name": "tmp_l_hd_rank_sec_dsp",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_l_hd_rank_sec_dsp",
+      "row": 207
+    },
+    {
+      "name": "l_hd_rank_third",
+      "type": "select_one activities",
+      "xpath": "/data/consented_grp/l_hd_rank_third",
+      "row": 208
+    },
+    {
+      "name": "l_hd_rank_third_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/l_hd_rank_third_osp",
+      "row": 209
+    },
+    {
+      "name": "tmp_l_hd_rank_third_dsp",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_l_hd_rank_third_dsp",
+      "row": 210
+    },
+    {
+      "name": "l_hd_earn_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/l_hd_earn_grp",
+      "row": 212
+    },
+    {
+      "name": "l_hd_earn_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/l_hd_earn_grp/l_hd_earn_note",
+      "row": 213
+    },
+    {
+      "name": "l_hd_earn_first",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/l_hd_earn_grp/l_hd_earn_first",
+      "row": 214
+    },
+    {
+      "name": "l_hd_earn_sec",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/l_hd_earn_grp/l_hd_earn_sec",
+      "row": 215
+    },
+    {
+      "name": "l_hd_earn_third",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/l_hd_earn_grp/l_hd_earn_third",
+      "row": 216
+    },
+    {
+      "name": "l_pg_rank_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/l_pg_rank_note",
+      "row": 219
+    },
+    {
+      "name": "l_pg_rank_first",
+      "type": "select_one activities",
+      "xpath": "/data/consented_grp/l_pg_rank_first",
+      "row": 220
+    },
+    {
+      "name": "l_pg_rank_first_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/l_pg_rank_first_osp",
+      "row": 221
+    },
+    {
+      "name": "tmp_l_pg_rank_first_dsp",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_l_pg_rank_first_dsp",
+      "row": 222
+    },
+    {
+      "name": "l_pg_rank_sec",
+      "type": "select_one activities",
+      "xpath": "/data/consented_grp/l_pg_rank_sec",
+      "row": 223
+    },
+    {
+      "name": "l_pg_rank_sec_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/l_pg_rank_sec_osp",
+      "row": 224
+    },
+    {
+      "name": "tmp_l_pg_rank_sec_dsp",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_l_pg_rank_sec_dsp",
+      "row": 225
+    },
+    {
+      "name": "l_pg_rank_third",
+      "type": "select_one activities",
+      "xpath": "/data/consented_grp/l_pg_rank_third",
+      "row": 226
+    },
+    {
+      "name": "l_pg_rank_third_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/l_pg_rank_third_osp",
+      "row": 227
+    },
+    {
+      "name": "tmp_l_pg_rank_third_dsp",
+      "type": "calculate",
+      "xpath": "/data/consented_grp/tmp_l_pg_rank_third_dsp",
+      "row": 228
+    },
+    {
+      "name": "l_pg_earn_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/l_pg_earn_grp",
+      "row": 230
+    },
+    {
+      "name": "l_pg_earn_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/l_pg_earn_grp/l_pg_earn_note",
+      "row": 231
+    },
+    {
+      "name": "l_pg_earn_first",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/l_pg_earn_grp/l_pg_earn_first",
+      "row": 232
+    },
+    {
+      "name": "l_pg_earn_sec",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/l_pg_earn_grp/l_pg_earn_sec",
+      "row": 233
+    },
+    {
+      "name": "l_pg_earn_third",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/l_pg_earn_grp/l_pg_earn_third",
+      "row": 234
+    },
+    {
+      "name": "m_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/m_note",
+      "row": 238
+    },
+    {
+      "name": "m_mon_exp",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/m_mon_exp",
+      "row": 239
+    },
+    {
+      "name": "m_mon_exp_cat",
+      "type": "select_one category",
+      "xpath": "/data/consented_grp/m_mon_exp_cat",
+      "row": 240
+    },
+    {
+      "name": "m_wk_exp_food",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/m_wk_exp_food",
+      "row": 241
+    },
+    {
+      "name": "m_wk_food_gift",
+      "type": "select_one yesnodkref",
+      "xpath": "/data/consented_grp/m_wk_food_gift",
+      "row": 242
+    },
+    {
+      "name": "m_wk_food_gift_amt",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/m_wk_food_gift_amt",
+      "row": 243
+    },
+    {
+      "name": "m_wk_food_grown",
+      "type": "select_one yesnodkref",
+      "xpath": "/data/consented_grp/m_wk_food_grown",
+      "row": 244
+    },
+    {
+      "name": "m_wk_food_grown_amt",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/m_wk_food_grown_amt",
+      "row": 245
+    },
+    {
+      "name": "m_wk_tobacco_amt",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/m_wk_tobacco_amt",
+      "row": 246
+    },
+    {
+      "name": "m_mon_inc",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/m_mon_inc",
+      "row": 247
+    },
+    {
+      "name": "m_mon_inc_cat",
+      "type": "select_one category",
+      "xpath": "/data/consented_grp/m_mon_inc_cat",
+      "row": 248
+    },
+    {
+      "name": "m_yr_inc_gifts_amt",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/m_yr_inc_gifts_amt",
+      "row": 249
+    },
+    {
+      "name": "m_yr_inc_gave",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/m_yr_inc_gave",
+      "row": 250
+    },
+    {
+      "name": "n_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/n_note",
+      "row": 253
+    },
+    {
+      "name": "n_loan_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/n_loan_grp",
+      "row": 254
+    },
+    {
+      "name": "tmp_n_loan_label",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_loan_grp/tmp_n_loan_label",
+      "row": 255
+    },
+    {
+      "name": "n_loan_bank",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_loan_grp/n_loan_bank",
+      "row": 256
+    },
+    {
+      "name": "n_loan_ngo",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_loan_grp/n_loan_ngo",
+      "row": 257
+    },
+    {
+      "name": "n_loan_shop",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_loan_grp/n_loan_shop",
+      "row": 258
+    },
+    {
+      "name": "n_loan_lenders",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_loan_grp/n_loan_lenders",
+      "row": 259
+    },
+    {
+      "name": "n_loan_relatives",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_loan_grp/n_loan_relatives",
+      "row": 260
+    },
+    {
+      "name": "n_loan_osp_yn",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/n_loan_grp/n_loan_osp_yn",
+      "row": 261
+    },
+    {
+      "name": "n_loan_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/n_loan_osp",
+      "row": 263
+    },
+    {
+      "name": "n_loan_amt",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/n_loan_amt",
+      "row": 264
+    },
+    {
+      "name": "n_save_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/n_save_grp",
+      "row": 266
+    },
+    {
+      "name": "tmp_n_save_label",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_save_grp/tmp_n_save_label",
+      "row": 267
+    },
+    {
+      "name": "n_save_life",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_save_grp/n_save_life",
+      "row": 268
+    },
+    {
+      "name": "n_save_bank",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_save_grp/n_save_bank",
+      "row": 269
+    },
+    {
+      "name": "n_save_microfinance",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_save_grp/n_save_microfinance",
+      "row": 270
+    },
+    {
+      "name": "n_save_susu",
+      "type": "select_one yesnodk",
+      "xpath": "/data/consented_grp/n_save_grp/n_save_susu",
+      "row": 271
+    },
+    {
+      "name": "n_save_osp_yn",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/n_save_grp/n_save_osp_yn",
+      "row": 272
+    },
+    {
+      "name": "n_save_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/n_save_osp",
+      "row": 274
+    },
+    {
+      "name": "n_save_amt",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/n_save_amt",
+      "row": 275
+    },
+    {
+      "name": "o_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/o_note",
+      "row": 278
+    },
+    {
+      "name": "o_prep",
+      "type": "select_multiple preparations",
+      "xpath": "/data/consented_grp/o_prep",
+      "row": 279
+    },
+    {
+      "name": "o_prep_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/o_prep_osp",
+      "row": 280
+    },
+    {
+      "name": "o_prep_most_imp",
+      "type": "select_one preparations",
+      "xpath": "/data/consented_grp/o_prep_most_imp",
+      "row": 282
+    },
+    {
+      "name": "o_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/o_grp",
+      "row": 284
+    },
+    {
+      "name": "temp_o_labels",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/temp_o_labels",
+      "row": 285
+    },
+    {
+      "name": "o_fire_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_fire_yn",
+      "row": 286
+    },
+    {
+      "name": "o_flood_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_flood_yn",
+      "row": 287
+    },
+    {
+      "name": "o_drought_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_drought_yn",
+      "row": 288
+    },
+    {
+      "name": "o_food_short_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_food_short_yn",
+      "row": 289
+    },
+    {
+      "name": "o_ls_died_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_ls_died_yn",
+      "row": 290
+    },
+    {
+      "name": "o_crops_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_crops_yn",
+      "row": 291
+    },
+    {
+      "name": "o_ls_stolen_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_ls_stolen_yn",
+      "row": 292
+    },
+    {
+      "name": "o_crops_stolen_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_crops_stolen_yn",
+      "row": 293
+    },
+    {
+      "name": "o_death_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_death_yn",
+      "row": 294
+    },
+    {
+      "name": "o_jobloss_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_jobloss_yn",
+      "row": 295
+    },
+    {
+      "name": "o_injury_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_injury_yn",
+      "row": 296
+    },
+    {
+      "name": "o_crime_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_crime_yn",
+      "row": 297
+    },
+    {
+      "name": "o_divorce_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_divorce_yn",
+      "row": 298
+    },
+    {
+      "name": "o_birth_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_birth_yn",
+      "row": 299
+    },
+    {
+      "name": "o_pay_edu_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_pay_edu_yn",
+      "row": 300
+    },
+    {
+      "name": "o_moved_yn",
+      "type": "select_one yesnoref",
+      "xpath": "/data/consented_grp/o_grp/o_moved_yn",
+      "row": 301
+    },
+    {
+      "name": "o_osp_yn",
+      "type": "select_one yesno",
+      "xpath": "/data/consented_grp/o_grp/o_osp_yn",
+      "row": 302
+    },
+    {
+      "name": "o_osp",
+      "type": "text",
+      "xpath": "/data/consented_grp/o_osp",
+      "row": 304
+    },
+    {
+      "name": "o_det_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/o_det_grp",
+      "row": 306
+    },
+    {
+      "name": "temp_o_year_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/o_det_grp/temp_o_year_note",
+      "row": 307
+    },
+    {
+      "name": "o_fire_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_fire_year",
+      "row": 308
+    },
+    {
+      "name": "o_flood_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_flood_year",
+      "row": 309
+    },
+    {
+      "name": "o_drought_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_drought_year",
+      "row": 310
+    },
+    {
+      "name": "o_food_short_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_food_short_year",
+      "row": 311
+    },
+    {
+      "name": "o_ls_died_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_ls_died_year",
+      "row": 312
+    },
+    {
+      "name": "o_crops_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_crops_year",
+      "row": 313
+    },
+    {
+      "name": "o_ls_stolen_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_ls_stolen_year",
+      "row": 314
+    },
+    {
+      "name": "o_crops_stolen_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_crops_stolen_year",
+      "row": 315
+    },
+    {
+      "name": "o_death_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_death_year",
+      "row": 316
+    },
+    {
+      "name": "o_jobloss_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_jobloss_year",
+      "row": 317
+    },
+    {
+      "name": "o_injury_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_injury_year",
+      "row": 318
+    },
+    {
+      "name": "o_crime_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_crime_year",
+      "row": 319
+    },
+    {
+      "name": "o_divorce_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_divorce_year",
+      "row": 320
+    },
+    {
+      "name": "o_birth_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_birth_year",
+      "row": 321
+    },
+    {
+      "name": "o_pay_edu_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_pay_edu_year",
+      "row": 322
+    },
+    {
+      "name": "o_moved_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_moved_year",
+      "row": 323
+    },
+    {
+      "name": "o_osp_year",
+      "type": "select_one shock_year",
+      "xpath": "/data/consented_grp/o_det_grp/o_osp_year",
+      "row": 324
+    },
+    {
+      "name": "p_grp",
+      "type": "begin group",
+      "xpath": "/data/consented_grp/p_grp",
+      "row": 328
+    },
+    {
+      "name": "p_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/p_grp/p_note",
+      "row": 329
+    },
+    {
+      "name": "p_pub_presch",
+      "type": "select_one transport",
+      "xpath": "/data/consented_grp/p_grp/p_pub_presch",
+      "row": 330
+    },
+    {
+      "name": "p_pub_presch_time",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/p_grp/p_pub_presch_time",
+      "row": 331
+    },
+    {
+      "name": "p_priv_presh",
+      "type": "select_one transport",
+      "xpath": "/data/consented_grp/p_grp/p_priv_presh",
+      "row": 332
+    },
+    {
+      "name": "p_priv_presh_time",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/p_grp/p_priv_presh_time",
+      "row": 333
+    },
+    {
+      "name": "p_tc_presch",
+      "type": "select_one transport",
+      "xpath": "/data/consented_grp/p_grp/p_tc_presch",
+      "row": 334
+    },
+    {
+      "name": "p_tc_presch_time",
+      "type": "decimal",
+      "xpath": "/data/consented_grp/p_grp/p_tc_presch_time",
+      "row": 335
+    },
+    {
+      "name": "r_note",
+      "type": "note",
+      "xpath": "/data/consented_grp/r_note",
+      "row": 339
+    },
+    {
+      "name": "resp_contact",
+      "type": "text",
+      "xpath": "/data/consented_grp/resp_contact",
+      "row": 340
+    },
+    {
+      "name": "s_int_lang",
+      "type": "select_one language",
+      "xpath": "/data/s_int_lang",
+      "row": 345
+    },
+    {
+      "name": "s_int_lang_osp",
+      "type": "text",
+      "xpath": "/data/s_int_lang_osp",
+      "row": 346
+    },
+    {
+      "name": "s_int_accom_yn",
+      "type": "select_one yesno",
+      "xpath": "/data/s_int_accom_yn",
+      "row": 347
+    },
+    {
+      "name": "s_int_accom",
+      "type": "select_multiple monitor",
+      "xpath": "/data/s_int_accom",
+      "row": 348
+    },
+    {
+      "name": "s_int_accom_osp",
+      "type": "text",
+      "xpath": "/data/s_int_accom_osp",
+      "row": 349
+    }
+  ]
+}

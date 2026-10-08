@@ -19,3 +19,18 @@ curl -L -o raw/ethiopia-migration/list_replication_files.7z "https://zenodo.org/
 curl -L -o raw/ipa-household/household_survey.dta "https://raw.githubusercontent.com/PovertyAction/surveycto-extractor/main/sample/household_survey.dta"
 curl -L -A "Mozilla/5.0" -o raw/ethiopia-mnh/MOESM5_ESM.csv "https://static-content.springer.com/esm/art%3A10.1186%2Fs12978-025-02241-5/MediaObjects/12978_2025_2241_MOESM5_ESM.csv"
 ```
+
+## Converted XForms
+
+`xforms/` holds the XForms produced from the forms above by the converter
+(module 02), with their field catalogs, so the Java modules can be tested
+on real forms without running Python. Regenerate with:
+
+```
+for b in ethiopia_migration_household ipa_household_survey ethiopia_mnh_facility; do
+  .venv/Scripts/python -m ctosim_xlsform samples/forms/$b.xlsx -o samples/xforms/$b.xml
+done
+```
+
+The two other forms are not converted: as published they are invalid (see
+the notes above), and the converter rejects them with the offending row.
