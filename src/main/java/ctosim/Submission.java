@@ -6,30 +6,46 @@ import java.util.List;
 /** One simulated submission. See specs/07-form-walker.md. */
 public final class Submission {
 
-    Submission() {
+    private final int number;
+    private final String instanceXml;
+    private final LocalDateTime start;
+    private final LocalDateTime end;
+    private final int answered;
+    private final List<String> warnings;
+
+    Submission(int number, String instanceXml, LocalDateTime start, LocalDateTime end, int answered,
+               List<String> warnings) {
+        this.number = number;
+        this.instanceXml = instanceXml;
+        this.start = start;
+        this.end = end;
+        this.answered = answered;
+        this.warnings = List.copyOf(warnings);
     }
 
     public int number() {
-        throw new UnsupportedOperationException("not implemented");
+        return number;
     }
 
+    /** The instance as serialised by the engine, as UTF-8 text. */
     public String instanceXml() {
-        throw new UnsupportedOperationException("not implemented");
+        return instanceXml;
     }
 
     public LocalDateTime start() {
-        throw new UnsupportedOperationException("not implemented");
+        return start;
     }
 
     public LocalDateTime end() {
-        throw new UnsupportedOperationException("not implemented");
+        return end;
     }
 
+    /** Questions for which the engine accepted an answer from the walker. */
     public int answered() {
-        throw new UnsupportedOperationException("not implemented");
+        return answered;
     }
 
     public List<String> warnings() {
-        throw new UnsupportedOperationException("not implemented");
+        return warnings;
     }
 }
