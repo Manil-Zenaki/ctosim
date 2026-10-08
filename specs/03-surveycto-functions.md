@@ -148,3 +148,37 @@ declared type (only boolean fields are treated differently). `index()`
 returns a whole number, so the k-th `instancenumber` holds `IntegerData`
 with value k (`getValue()` returns the `Integer` k). Formatting values as
 text in SurveyCTO's export layout is the job of the exporter (module 07).
+
+## Amendment 2: select functions on numeric values
+
+SurveyCTO stores every field value as text, so `selected()` works on any
+field. A common pattern assigns a treatment arm at random and branches on
+it: `calculate` `arm` = `once(int(2*random())+1)`, then
+`relevance` = `selected(${arm}, '1')`. In the engine, `arm` holds a number
+(see Amendment 1), and the engine's native `selected()` fails with a
+`ClassCastException` on a numeric first argument. The real form
+`ethiopia_migration_household.xml` does exactly this
+(`/data/interview_begin/direct_or_list`, `/data/interview_begin/intervention_or_control`).
+
+In every session, the first argument of `selected(a, b)`,
+`selected-at(a, n)` and `count-selected(a)`, in any expression of the form
+(the `bind` attributes and `setvalue` values listed in spec 01), is used
+through its string value, as XPath `string()` gives it: a number `1` is
+`"1"`, `2.5` is `"2.5"`. Consequently:
+
+- `selected(a, '1')` is `true` when `a` holds the number 1, and `false`
+  when it holds 2;
+- `count-selected(a)` is `1` when `a` holds a number;
+- `selected-at(a, 0)` is the string value of the number `a` holds;
+- a field holding no value behaves as the empty string (not selected,
+  count 0), as before.
+
+Behaviour for arguments that already have a string value (select
+questions, text fields) is unchanged. Calls typed directly into an
+XPath expression that is not part of the form (for example evaluated by a
+test through the session's evaluation context) are not affected.
+
+Acceptance: in a session of `ethiopia_migration_household.xml` in which
+`/data/interview_begin/direct_or_list` holds the number 1 or 2, evaluating
+the relevance of the questions that test it with `selected()` raises no
+exception and follows the stored value.
