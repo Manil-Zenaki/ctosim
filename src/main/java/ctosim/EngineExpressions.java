@@ -3,6 +3,7 @@ package ctosim;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -29,6 +30,11 @@ import org.w3c.dom.NodeList;
  *   engine stores such results as numbers and its select functions then fail. The first
  *   argument of {@code selected}, {@code selected-at} and {@code count-selected} is wrapped in
  *   {@code string()}, which leaves text values unchanged.</li>
+ *   <li><b>Time and randomness.</b> {@code today()}, {@code now()}, {@code random()} and
+ *   {@code uuid()} become internal functions whose meaning depends on the session (native, or
+ *   simulated clock and seed; see {@link SessionEnvironment}). {@code random()} and
+ *   {@code uuid()} are numbered like {@code index()}, so that two identical
+ *   {@code once(random())} binds are not merged into a single draw.</li>
  * </ul>
  */
 final class EngineExpressions {
@@ -36,6 +42,17 @@ final class EngineExpressions {
     static final String INTERNAL_INDEX = "ctosim-index";
 
     private static final Set<String> SELECT_FUNCTIONS = Set.of("selected", "selected-at", "count-selected");
+
+    /** Zero-argument calls replaced by internal functions; see the class comment and SessionEnvironment. */
+    private static final Map<String, String> ZERO_ARGUMENT_REWRITES = Map.of(
+            "index", INTERNAL_INDEX,
+            "today", SessionEnvironment.TODAY,
+            "now", SessionEnvironment.NOW,
+            "random", SessionEnvironment.RANDOM,
+            "uuid", SessionEnvironment.UUID);
+
+    /** Calls whose identical copies the engine must not merge into one evaluation. */
+    private static final Set<String> NUMBERED = Set.of("index", "random", "uuid");
     private static final String[] BIND_EXPRESSIONS = {"calculate", "relevant", "constraint", "required", "readonly"};
 
     private EngineExpressions() {
@@ -94,8 +111,13 @@ final class EngineExpressions {
                 int close = closingParen(expr, open);
                 if (close > 0) {
                     List<String> args = splitArguments(expr.substring(open + 1, close));
-                    if (name.equals("index") && args.size() == 1 && args.get(0).isBlank()) {
-                        out.append(INTERNAL_INDEX).append('(').append(++indexCounter[0]).append(')');
+                    String internal = ZERO_ARGUMENT_REWRITES.get(name);
+                    if (internal != null && args.size() == 1 && args.get(0).isBlank()) {
+                        out.append(internal).append('(');
+                        if (NUMBERED.contains(name)) {
+                            out.append(++indexCounter[0]);
+                        }
+                        out.append(')');
                         i = close + 1;
                         continue;
                     }
@@ -136,7 +158,7 @@ final class EngineExpressions {
             return null;
         }
         String name = expr.substring(at, end);
-        if (!name.equals("index") && !SELECT_FUNCTIONS.contains(name)) {
+        if (!ZERO_ARGUMENT_REWRITES.containsKey(name) && !SELECT_FUNCTIONS.contains(name)) {
             return null;
         }
         int next = skipSpaces(expr, end);

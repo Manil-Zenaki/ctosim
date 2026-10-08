@@ -57,6 +57,7 @@ final class SurveyCtoFunctions {
     static void register(FormDef form) {
         EvaluationContext context = form.getEvaluationContext();
         SurveyCtoFunctionLibrary.handlers(form).forEach(context::addFunctionHandler);
+        SessionEnvironment.registerNative(form);
         NAMED_STUBS.forEach((name, value) -> context.addFunctionHandler(new ConstantFunction(name, value)));
         context.addFallbackFunctionHandler((name, args, ec) -> FALLBACK_VALUE);
     }

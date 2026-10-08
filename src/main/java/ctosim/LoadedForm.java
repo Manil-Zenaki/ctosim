@@ -1,5 +1,6 @@
 package ctosim;
 
+import java.util.Objects;
 import java.util.SortedSet;
 import org.javarosa.core.model.FormDef;
 import org.javarosa.core.model.instance.InstanceInitializationFactory;
@@ -52,7 +53,10 @@ public final class LoadedForm {
      * values come from {@code seed}. See specs/06-simulated-sessions.md.
      */
     public FormEntryController newSimulatedSession(SimulatedClock clock, long seed) {
-        throw new UnsupportedOperationException("not implemented");
+        Objects.requireNonNull(clock, "clock");
+        FormDef def = parse();
+        SessionEnvironment.registerSimulated(def, clock, seed);
+        return start(def);
     }
 
     /**
@@ -60,13 +64,19 @@ public final class LoadedForm {
      * reparsed from the loaded bytes so that no state is shared between sessions.
      */
     public FormEntryController newEntryController() {
-        FormDef def;
+        return start(parse());
+    }
+
+    private FormDef parse() {
         try {
-            def = FormLoader.parseWithEngine(xml, sourceName);
+            return FormLoader.parseWithEngine(xml, sourceName);
         } catch (FormLoadException e) {
             // The same bytes parsed successfully when the form was loaded.
             throw new IllegalStateException(e.getMessage(), e);
         }
+    }
+
+    private static FormEntryController start(FormDef def) {
         def.initialize(true, new InstanceInitializationFactory());
         return new FormEntryController(new FormEntryModel(def));
     }
