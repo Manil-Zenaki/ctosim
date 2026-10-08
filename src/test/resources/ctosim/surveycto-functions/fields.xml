@@ -1,0 +1,36 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Choices and relevance</h:title><model>
+    <instance><data id="surveycto-fields"><parent_on>1</parent_on><child_on>1</child_on><selection>b</selection><choice>a</choice><many>a b</many><plain>text</plain><label/>
+      <outer><inner><field>stored</field><own_hidden>stored</own_hidden></inner></outer><direct>stored</direct><unanswered/>
+    </data></instance>
+    <itext>
+      <translation lang="English" default=""><text id="a"><value>Apple</value></text><text id="b"><value>Banana</value></text><text id="one"><value>One</value></text></translation>
+      <translation lang="French"><text id="a"><value>Pomme</value></text><text id="b"><value>Banane mûre</value></text><text id="one"><value>Un</value></text></translation>
+    </itext>
+    <bind nodeset="/data/parent_on" type="int"/><bind nodeset="/data/child_on" type="int"/>
+    <bind nodeset="/data/selection" type="string"/>
+    <bind nodeset="/data/choice" type="select1"/><bind nodeset="/data/many" type="select"/>
+    <bind nodeset="/data/plain" type="string"/>
+    <bind nodeset="/data/label" type="string" calculate="choice-label(/data/choice, /data/selection)"/>
+    <bind nodeset="/data/outer" relevant="/data/parent_on = 1"/>
+    <bind nodeset="/data/outer/inner" relevant="/data/child_on = 1"/>
+    <bind nodeset="/data/outer/inner/field" type="string"/>
+    <bind nodeset="/data/outer/inner/own_hidden" type="string" relevant="false()"/>
+    <bind nodeset="/data/direct" type="string" relevant="/data/child_on = 1"/>
+    <bind nodeset="/data/unanswered" type="string"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/parent_on"><label>Parent</label></input><input ref="/data/child_on"><label>Child</label></input>
+    <input ref="/data/selection"><label>Label value</label></input>
+    <select1 ref="/data/choice"><label>Choice</label>
+      <item><label ref="jr:itext('a')"/><value>a</value></item><item><label ref="jr:itext('b')"/><value>b</value></item><item><label ref="jr:itext('one')"/><value>1</value></item>
+      <item><label>Japanese choice</label><value>東京</value></item>
+    </select1>
+    <select ref="/data/many"><label>Many</label><item><label ref="jr:itext('a')"/><value>a</value></item><item><label ref="jr:itext('b')"/><value>b</value></item></select>
+    <input ref="/data/plain"><label>Text</label></input>
+    <group ref="/data/outer"><label>Outer</label><group ref="/data/outer/inner"><label>Inner</label>
+      <input ref="/data/outer/inner/field"><label>Field</label></input><input ref="/data/outer/inner/own_hidden"><label>Hidden</label></input>
+    </group></group>
+    <input ref="/data/direct"><label>Direct</label></input><input ref="/data/unanswered"><label>Unanswered</label></input>
+  </h:body>
+</h:html>

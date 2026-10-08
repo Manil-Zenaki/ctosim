@@ -1,0 +1,13 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Ranking</h:title><model>
+    <instance><data id="surveycto-ranking"><position>1</position><rank/>
+      <row jr:template=""><score/></row>__ROWS__
+    </data></instance>
+    <bind nodeset="/data/position" type="int"/>
+    <bind nodeset="/data/row/score" type="string"/>
+    <bind nodeset="/data/rank" type="int" calculate="rank-index(/data/position, /data/row/score)"/>
+  </model></h:head>
+  <h:body><input ref="/data/position"><label>Position</label></input>
+    <repeat nodeset="/data/row"><input ref="/data/row/score"><label>Score</label></input></repeat>
+  </h:body>
+</h:html>

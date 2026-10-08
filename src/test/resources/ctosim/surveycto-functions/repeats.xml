@@ -1,0 +1,47 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Repeat contexts</h:title><model>
+    <instance><data id="surveycto-repeats">
+      <outside/><group><position/></group>
+      <row jr:template=""><position/><nested><position/></nested><visible/><required/><readonly/><constrained/><score/><choice>a</choice><label/>
+        <inner jr:template=""><position/></inner>
+      </row>
+      <row><position/><nested><position/></nested><visible/><required/><readonly/><constrained/><score>10</score><choice>a</choice><label/>
+        <inner><position/></inner><inner><position/></inner><inner><position/></inner>
+      </row>
+      <row><position/><nested><position/></nested><visible/><required/><readonly/><constrained/><score>30</score><choice>b</choice><label/>
+        <inner><position/></inner>
+      </row>
+      <gated jr:template=""><position/></gated><gated><position/></gated><gated><position/></gated><gated><position/></gated>
+    </data></instance>
+    <bind nodeset="/data/outside" type="int" calculate="index()"/>
+    <bind nodeset="/data/group/position" type="int" calculate="index()"/>
+    <bind nodeset="/data/row/position" type="int" calculate="index()"/>
+    <bind nodeset="/data/row/nested/position" type="int" calculate="index()"/>
+    <bind nodeset="/data/row/inner/position" type="int" calculate="index()"/>
+    <bind nodeset="/data/row/visible" type="string" relevant="index() = 1"/>
+    <bind nodeset="/data/row/required" type="string" required="index() = 2"/>
+    <bind nodeset="/data/row/readonly" type="string" readonly="index() = 2"/>
+    <bind nodeset="/data/row/constrained" type="int" constraint=". = index()"/>
+    <bind nodeset="/data/row/score" type="string"/>
+    <bind nodeset="/data/row/choice" type="select1"/>
+    <bind nodeset="/data/row/label" type="string" calculate="choice-label(../choice, ../choice)"/>
+    <bind nodeset="/data/gated" relevant="index() != 2"/>
+    <bind nodeset="/data/gated/position" type="int" calculate="index()"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/outside"><label>Outside</label></input>
+    <group ref="/data/group"><label>Nonrepeat group</label><input ref="/data/group/position"><label>Position</label></input></group>
+    <repeat nodeset="/data/row">
+      <input ref="/data/row/position"><label>Position</label></input>
+      <group ref="/data/row/nested"><label>Nested group</label><input ref="/data/row/nested/position"><label>Position</label></input></group>
+      <input ref="/data/row/visible"><label>Visible</label></input>
+      <input ref="/data/row/required"><label>Required</label></input>
+      <input ref="/data/row/readonly"><label>Readonly</label></input>
+      <input ref="/data/row/constrained"><label>Constrained</label></input>
+      <input ref="/data/row/score"><label>Score</label></input>
+      <select1 ref="/data/row/choice"><label>Choice</label><item><label>Alpha</label><value>a</value></item><item><label>Beta</label><value>b</value></item></select1>
+      <repeat nodeset="/data/row/inner"><input ref="/data/row/inner/position"><label>Inner position</label></input></repeat>
+    </repeat>
+    <repeat nodeset="/data/gated"><input ref="/data/gated/position"><label>Gated position</label></input></repeat>
+  </h:body>
+</h:html>

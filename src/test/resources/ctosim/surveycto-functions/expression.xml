@@ -1,0 +1,19 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>SurveyCTO expression</h:title><model>
+    <instance><data id="surveycto-expression"><text>AbC café 東京</text><number>1234.5</number><zero>0</zero><blank/><choice>a</choice><many>a b</many><hidden>retained</hidden><result/></data></instance>
+    <bind nodeset="/data/text" type="string"/>
+    <bind nodeset="/data/number" type="decimal"/>
+    <bind nodeset="/data/zero" type="int"/>
+    <bind nodeset="/data/blank" type="string"/>
+    <bind nodeset="/data/choice" type="select1"/>
+    <bind nodeset="/data/many" type="select"/>
+    <bind nodeset="/data/hidden" type="string" relevant="false()"/>
+    <bind nodeset="/data/result" type="string" calculate="concat('[', __EXPRESSION__, ']')"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/text"><label>Text</label></input>
+    <input ref="/data/number"><label>Number</label></input>
+    <select1 ref="/data/choice"><label>Choice</label><item><label>Alpha</label><value>a</value></item><item><label>Beta</label><value>b</value></item><item><label>One</label><value>1</value></item></select1>
+    <select ref="/data/many"><label>Many</label><item><label>Alpha</label><value>a</value></item><item><label>Beta</label><value>b</value></item></select>
+  </h:body>
+</h:html>
