@@ -177,3 +177,11 @@ places, altitude `0` and accuracy `5`.
   `kind`, `choices` or `appearance` is `null`, or when `choices` contains
   `null`. Its `choices()` is an unmodifiable copy (later changes to the
   list passed in do not affect it).
+
+## Clarifications (answers to `05-answer-generator.questions.md`)
+
+All fifteen assumptions were reviewed one by one and are confirmed. In
+particular: decimal half-up rounding applies to the number's ordinary
+decimal value (`2.345` → `2.35`) (6); integers are not limited to the
+32-bit range (5); a select question with no choices is blank even when
+required or fixed, since the blank rule comes first (12).
