@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.function.Supplier;
 import org.javarosa.core.model.FormDef;
@@ -45,8 +46,11 @@ final class SessionEnvironment {
         ec.addFunctionHandler(function(UUID, PropertyUtils::genUUID));
     }
 
-    /** Simulated behaviour: time from {@code clock}, randomness from {@code seed}. */
-    static void registerSimulated(FormDef form, SimulatedClock clock, long seed) {
+    /**
+     * Simulated behaviour: time from {@code clock}, randomness from {@code seed}, device
+     * properties (deviceid, username, ...) from {@code properties}.
+     */
+    static void registerSimulated(FormDef form, SimulatedClock clock, long seed, Map<String, String> properties) {
         Draws draws = new Draws(seed);
         LocalDateTime opened = clock.now();
         EvaluationContext ec = form.getEvaluationContext();
@@ -57,7 +61,10 @@ final class SessionEnvironment {
         ec.addFunctionHandler(function("duration",
                 () -> (double) Math.floorDiv(Duration.between(opened, clock.now()).toNanos(), 1_000_000_000L)));
 
+        ec.addFunctionHandler(function("username", () -> properties.getOrDefault("username", "")));
+
         form.getPreloader().addPreloadHandler(new TimestampPreload(clock));
+        form.getPreloader().addPreloadHandler(new PropertyPreload(properties));
         form.getPreloader().addPreloadHandler(new UidPreload(draws));
     }
 
@@ -183,6 +190,31 @@ final class SessionEnvironment {
                 node.setAnswer(new DateTimeData(toDate(clock.now())));
                 return true;
             }
+            return false;
+        }
+    }
+
+    /** Metadata fields read from the device (jr:preload="property"): the session's own values. */
+    private static final class PropertyPreload implements IPreloadHandler {
+        private final Map<String, String> properties;
+
+        PropertyPreload(Map<String, String> properties) {
+            this.properties = properties;
+        }
+
+        @Override
+        public String preloadHandled() {
+            return "property";
+        }
+
+        @Override
+        public IAnswerData handlePreload(String params) {
+            String value = properties.get(params);
+            return value == null || value.isEmpty() ? null : new StringData(value);
+        }
+
+        @Override
+        public boolean handlePostProcess(TreeElement node, String params) {
             return false;
         }
     }

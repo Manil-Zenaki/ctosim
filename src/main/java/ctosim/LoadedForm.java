@@ -1,5 +1,6 @@
 package ctosim;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
 import org.javarosa.core.model.FormDef;
@@ -61,10 +62,7 @@ public final class LoadedForm {
      * values come from {@code seed}. See specs/06-simulated-sessions.md.
      */
     public FormEntryController newSimulatedSession(SimulatedClock clock, long seed) {
-        Objects.requireNonNull(clock, "clock");
-        FormDef def = parse();
-        SessionEnvironment.registerSimulated(def, clock, seed);
-        return start(def);
+        return newSimulatedSession(clock, seed, Map.of("username", SimulatedProperties.USERNAME));
     }
 
     /**
@@ -72,8 +70,13 @@ public final class LoadedForm {
      * {@code properties}. See specs/06-simulated-sessions.md, Amendment 2.
      */
     public FormEntryController newSimulatedSession(SimulatedClock clock, long seed,
-                                                   java.util.Map<String, String> properties) {
-        throw new UnsupportedOperationException("not implemented");
+                                                   Map<String, String> properties) {
+        Objects.requireNonNull(clock, "clock");
+        Objects.requireNonNull(properties, "properties");
+        Map<String, String> copy = Map.copyOf(properties); // rejects null keys and values
+        FormDef def = parse();
+        SessionEnvironment.registerSimulated(def, clock, seed, copy);
+        return start(def);
     }
 
     /**
