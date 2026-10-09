@@ -262,7 +262,8 @@ A `calculate_here` row becomes, in the XForm:
   `ctosim:calculate-here`, whose value is the row's `calculation`,
   rewritten by the rules of "Expressions" and with `${field}` references
   replaced by paths exactly as pyxform replaces them in a `calculate`
-  (an empty calculation gives an empty attribute);
+  (an empty calculation gives no attribute: the field is then an empty
+  read-only question);
 - the root element declares the prefix `ctosim` for the namespace
   `urn:ctosim:xforms`, in addition to the namespaces the form's own
   settings declare.
