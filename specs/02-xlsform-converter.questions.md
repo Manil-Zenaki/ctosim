@@ -180,3 +180,76 @@ workbook's OOXML. No persistent workbook fixtures or published forms are needed.
   is tested by repeating conversion of the same workbook. No invented capacity
   limit or statistical distribution is imposed.
 - **Tests:** `test_conversion_is_deterministic_and_never_modifies_input`.
+
+## Amendment review
+
+The spec's Clarifications confirm points 1-13 and 15 above and place the
+Java-loader check in a later integration suite. Those decisions are retained.
+The current suite also incorporates both amendments. In particular, the two
+older assertions that expected a `calculate` attribute on `calculate_here`
+now expect `{urn:ctosim:xforms}calculate-here` instead. No production code or
+public stub bodies were read while updating the tests.
+
+## 16. Namespace settings syntax and prefix collisions
+
+- **Question:** What column and value syntax declares the form's own namespaces
+  in settings? What happens if settings already assign `ctosim` to another URI?
+- **Assumption:** The required `ctosim` prefix must be declared on the document
+  root and resolve to `urn:ctosim:xforms`. The spec does not define the input
+  syntax for additional namespace declarations or collision precedence; no
+  guessed settings syntax or collision policy is tested. Preservation of
+  user-declared namespaces remains an explicit coverage gap pending that syntax.
+- **Tests:** `test_calculate_here_declares_the_required_prefix_on_the_root`,
+  `test_form_without_calculate_here_has_no_custom_attribute_or_namespace`.
+
+## 17. Empty and disabled calculate_here rows
+
+- **Question:** Must an empty-calculation row still add the namespace? Does a
+  disabled `calculate_here` count as a row that requires that declaration?
+- **Assumption:** An enabled row with no calculation is still a read-only text
+  question, so it declares `ctosim` but has neither calculation attribute.
+  Missing columns, empty cells, and uncached formulas all supply no calculation.
+  A disabled row is removed before conversion, produces only its omission
+  warning, and does not introduce the namespace. Whitespace-only calculations
+  are not assigned an empty/nonempty interpretation.
+- **Tests:** `test_empty_or_uncached_calculation_is_an_empty_read_only_question`,
+  `test_calculate_here_without_a_calculation_column_is_an_empty_question`,
+  `test_disabled_calculate_here_adds_only_an_omission_warning`.
+
+## 18. calculate_here reference expansion and discarded columns
+
+- **Question:** What formatting and relative/absolute paths should its custom
+  expression use inside groups/repeats? What happens with translated labels and
+  hints when the row's label and hint columns are discarded?
+- **Assumption:** A normal `calculate` in the same scope is the public-output
+  reference for pyxform's expansion, as Amendment 2 explicitly requires.
+  Tests also independently check numeric quoting and absence of `${...}`.
+  Unsuffixed discarded columns must not change the result; changing `label`
+  cannot replace the field-name label. Translated-column removal and translated
+  name-label fallback remain untested because their interaction with the
+  global translation rule is not explicit.
+- **Tests:** `test_calculate_here_expands_references_exactly_like_a_normal_calculate`,
+  `test_calculate_here_discards_each_other_column`,
+  `test_calculate_here_source_label_does_not_override_the_name_label`,
+  `test_calculate_here_relevance_is_retained_and_rewritten`.
+
+## 19. Row-2 settings versus ignoring empty rows
+
+- **Question:** If settings row 2 is completely blank and row 3 contains values,
+  does ignoring empty rows promote row 3 into the settings record?
+- **Assumption:** The explicit requirement to read settings from row 2 takes
+  precedence. The converter falls back to the filename/default values rather
+  than selecting a later physical row.
+- **Tests:** `test_blank_settings_row_two_does_not_promote_row_three`.
+
+## 20. Translated secondary choice labels
+
+- **Question:** What XML tag contains a secondary item's translation reference?
+- **Assumption:** Amendment 1 requires retaining the label or its itext reference
+  but does not name the reference child. Tests locate the corresponding
+  translation ID in the item's text/attributes without imposing a child tag.
+  The fixture declares both languages on the survey as well as the choices
+  sheet, so it does not decide the earlier open question about languages found
+  exclusively on the choices sheet. Missing translations and duplicate values
+  combined with translations remain unspecified.
+- **Tests:** `test_translated_choices_keep_separate_secondary_items_and_label_references`.

@@ -32,7 +32,9 @@ def test_surveycto_metadata_types_become_empty_calculates(workbook_factory, fiel
 def test_calculate_here_preserves_its_calculation(workbook_factory):
     result = convert_xlsform(workbook_factory(survey=[["type", "name", "label", "calculation"],
         ["integer", "q", "Q"], ["calculate_here", "twice", None, "/data/q * 2"]]))
-    assert bind_for(result, "twice").get("calculate").strip() == "/data/q * 2"
+    binding = bind_for(result, "twice")
+    assert "calculate" not in binding.attrib
+    assert binding.get("{urn:ctosim:xforms}calculate-here").strip() == "/data/q * 2"
     assert result.fields[1].type == "calculate_here"
     assert len(result.warnings) == 1
     assert_row_mentioned(result.warnings[0], 3)
@@ -298,7 +300,7 @@ def test_selected_rewriting_preserves_surroundings_literals_and_nonliteral_argum
 def test_selected_rewrite_handles_xlsform_reference_syntax(workbook_factory):
     result = convert_xlsform(workbook_factory(survey=[["type", "name", "label", "calculation"],
         ["text", "q", "Q"], ["calculate_here", "target", None, "selected(${q}, -99)"]]))
-    calculation = bind_for(result, "target").get("calculate")
+    calculation = bind_for(result, "target").get("{urn:ctosim:xforms}calculate-here")
     assert "'-99'" in calculation
     assert "/data/q" in calculation
     assert "${q}" not in calculation
