@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms">
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms" xmlns:ctosim="urn:ctosim:xforms">
   <h:head>
     <h:title>ctosim coverage test</h:title>
     <model odk:xforms-version="1.0.0">
@@ -251,7 +251,7 @@
       <bind nodeset="/data/main/gps" type="geopoint"/>
       <bind nodeset="/data/main/house_photo" type="binary"/>
       <bind nodeset="/data/main/is_adult" type="string" calculate="if( /data/main/resp_age  &gt;= 18, 1, 0)"/>
-      <bind nodeset="/data/main/time_main" type="string" calculate="once(duration())"/>
+      <bind nodeset="/data/main/time_main" type="string" readonly="true()" ctosim:calculate-here="once(duration())"/>
       <bind nodeset="/data/main/hh_size" type="int" constraint=". &gt;= 1 and . &lt;= 3" required="true()"/>
       <bind nodeset="/data/main/member/member_index" type="string" calculate="index()"/>
       <bind nodeset="/data/main/member/member_name" type="string" required="true()"/>
@@ -342,6 +342,9 @@
       <upload ref="/data/main/house_photo" mediatype="image/*">
         <label>Photo of the house (any image)</label>
       </upload>
+      <input ref="/data/main/time_main">
+        <label>time_main</label>
+      </input>
       <input ref="/data/main/hh_size">
         <label>Number of household members (1 to 3 for this test)</label>
       </input>
