@@ -141,8 +141,9 @@ time zone or the working directory.
 ## Packaging (not covered by unit tests)
 
 - `mvnw package` builds `target/ctosim.jar`, runnable with
-  `java -jar target/ctosim.jar FORM [options]`, containing its
-  dependencies, with `ctosim.Cli` as its main class.
+  `java -jar target/ctosim.jar FORM [options]`, with `ctosim.Cli` as its
+  main class; its dependencies are copied to `target/lib/`, which the
+  jar's manifest puts on its class path.
 - `ctosim.cmd` at the repository root runs that jar with the Java of
   `JAVA_HOME` (or `java` on the `PATH`), passing its arguments through
   and returning the jar's exit status.
