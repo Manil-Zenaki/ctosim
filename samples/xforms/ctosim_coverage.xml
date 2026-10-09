@@ -1,0 +1,404 @@
+<?xml version="1.0"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms">
+  <h:head>
+    <h:title>ctosim coverage test</h:title>
+    <model odk:xforms-version="1.0.0">
+      <instance>
+        <data id="ctosim_coverage" version="2610090001">
+          <starttime/>
+          <endtime/>
+          <deviceid/>
+          <subscriberid/>
+          <simid/>
+          <devicephonenum/>
+          <username/>
+          <duration/>
+          <caseid/>
+          <text_audit/>
+          <field_comments/>
+          <id_grp>
+            <hhid/>
+            <pl_head/>
+            <pl_size/>
+            <pl_note/>
+            <consent/>
+          </id_grp>
+          <main>
+            <resp_name/>
+            <resp_age/>
+            <phone/>
+            <income/>
+            <dob/>
+            <wake_time/>
+            <next_visit/>
+            <region/>
+            <district/>
+            <assets/>
+            <assets_other/>
+            <gps/>
+            <house_photo/>
+            <is_adult/>
+            <time_main/>
+            <hh_size/>
+            <member jr:template="">
+              <member_index/>
+              <member_name/>
+              <member_sex/>
+              <member_age/>
+              <member_activities/>
+              <job jr:template="">
+                <job_title/>
+                <job_hours/>
+              </job>
+            </member>
+            <member>
+              <member_index/>
+              <member_name/>
+              <member_sex/>
+              <member_age/>
+              <member_activities/>
+              <job>
+                <job_title/>
+                <job_hours/>
+              </job>
+            </member>
+            <member_names/>
+            <n_members/>
+            <plot jr:template="">
+              <plot_crop/>
+              <plot_area/>
+            </plot>
+            <plot>
+              <plot_crop/>
+              <plot_area/>
+            </plot>
+            <thanks/>
+          </main>
+          <meta>
+            <instanceID/>
+          </meta>
+        </data>
+      </instance>
+      <instance id="hh_preload" src="jr://file-csv/hh_preload.csv"/>
+      <instance id="yesno">
+        <root>
+          <item>
+            <name>1</name>
+            <label>Yes</label>
+          </item>
+          <item>
+            <name>0</name>
+            <label>No</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="region">
+        <root>
+          <item>
+            <name>1</name>
+            <label>North</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>South</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="district">
+        <root>
+          <item>
+            <name>11</name>
+            <label>North-A</label>
+            <filter>1</filter>
+          </item>
+          <item>
+            <name>12</name>
+            <label>North-B</label>
+            <filter>1</filter>
+          </item>
+          <item>
+            <name>21</name>
+            <label>South-A</label>
+            <filter>2</filter>
+          </item>
+          <item>
+            <name>22</name>
+            <label>South-B</label>
+            <filter>2</filter>
+          </item>
+        </root>
+      </instance>
+      <instance id="assets">
+        <root>
+          <item>
+            <name>1</name>
+            <label>Radio</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>Bicycle</label>
+          </item>
+          <item>
+            <name>3</name>
+            <label>Phone</label>
+          </item>
+          <item>
+            <name>96</name>
+            <label>Other</label>
+          </item>
+          <item>
+            <name>-99</name>
+            <label>Don't know</label>
+          </item>
+          <item>
+            <name>-98</name>
+            <label>Refused</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="sex">
+        <root>
+          <item>
+            <name>1</name>
+            <label>Male</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>Female</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="activities">
+        <root>
+          <item>
+            <name>1</name>
+            <label>Farming</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>Trade</label>
+          </item>
+          <item>
+            <name>3</name>
+            <label>School</label>
+          </item>
+          <item>
+            <name>-97</name>
+            <label>None</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="crop">
+        <root>
+          <item>
+            <name>1</name>
+            <label>Maize</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>Teff</label>
+          </item>
+          <item>
+            <name>3</name>
+            <label>Sorghum</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="hhid">
+        <root>
+          <item>
+            <name>H001</name>
+            <label>H001</label>
+          </item>
+          <item>
+            <name>H002</name>
+            <label>H002</label>
+          </item>
+          <item>
+            <name>H003</name>
+            <label>H003</label>
+          </item>
+        </root>
+      </instance>
+      <bind nodeset="/data/starttime" jr:preload="timestamp" type="dateTime" jr:preloadParams="start"/>
+      <bind nodeset="/data/endtime" jr:preload="timestamp" type="dateTime" jr:preloadParams="end"/>
+      <bind nodeset="/data/deviceid" jr:preload="property" type="string" jr:preloadParams="deviceid"/>
+      <bind nodeset="/data/subscriberid" jr:preload="property" type="string" jr:preloadParams="subscriberid"/>
+      <bind nodeset="/data/simid" jr:preload="property" type="string" jr:preloadParams="simserial"/>
+      <bind nodeset="/data/devicephonenum" jr:preload="property" type="string" jr:preloadParams="phonenumber"/>
+      <bind nodeset="/data/username" jr:preload="property" type="string" jr:preloadParams="username"/>
+      <bind nodeset="/data/duration" type="string" calculate="duration()"/>
+      <bind nodeset="/data/caseid" type="string" calculate="''"/>
+      <bind nodeset="/data/text_audit" type="string" calculate="''"/>
+      <bind nodeset="/data/field_comments" type="string" calculate="''"/>
+      <bind nodeset="/data/id_grp/hhid" type="string" required="true()"/>
+      <bind nodeset="/data/id_grp/pl_head" type="string" calculate="pulldata('hh_preload', 'head_name', 'hhid',  /data/id_grp/hhid )"/>
+      <bind nodeset="/data/id_grp/pl_size" type="string" calculate="pulldata('hh_preload', 'hh_size', 'hhid',  /data/id_grp/hhid )"/>
+      <bind nodeset="/data/id_grp/pl_note" readonly="true()" type="string"/>
+      <bind nodeset="/data/id_grp/consent" type="string" required="true()"/>
+      <bind nodeset="/data/main" relevant=" /data/id_grp/consent  = 1"/>
+      <bind nodeset="/data/main/resp_name" type="string" required="true()"/>
+      <bind nodeset="/data/main/resp_age" type="int" constraint=". &gt;= 15 and . &lt;= 99" jr:constraintMsg="15 to 99" required="true()"/>
+      <bind nodeset="/data/main/phone" type="string" constraint="regex(., '^09[0-9]{8}$')"/>
+      <bind nodeset="/data/main/income" type="decimal" constraint=". &gt;= 0"/>
+      <bind nodeset="/data/main/dob" type="date" constraint=". &lt;= today()"/>
+      <bind nodeset="/data/main/wake_time" type="time"/>
+      <bind nodeset="/data/main/next_visit" type="dateTime"/>
+      <bind nodeset="/data/main/region" type="string" required="true()"/>
+      <bind nodeset="/data/main/district" type="string"/>
+      <bind nodeset="/data/main/assets" type="string" constraint="not(selected(., '-99') and count-selected(.) &gt; 1)" jr:constraintMsg="'Don't know' cannot be combined"/>
+      <bind nodeset="/data/main/assets_other" type="string" relevant="selected( /data/main/assets , '96')"/>
+      <bind nodeset="/data/main/gps" type="geopoint"/>
+      <bind nodeset="/data/main/house_photo" type="binary"/>
+      <bind nodeset="/data/main/is_adult" type="string" calculate="if( /data/main/resp_age  &gt;= 18, 1, 0)"/>
+      <bind nodeset="/data/main/time_main" type="string" calculate="once(duration())"/>
+      <bind nodeset="/data/main/hh_size" type="int" constraint=". &gt;= 1 and . &lt;= 3" required="true()"/>
+      <bind nodeset="/data/main/member/member_index" type="string" calculate="index()"/>
+      <bind nodeset="/data/main/member/member_name" type="string" required="true()"/>
+      <bind nodeset="/data/main/member/member_sex" type="string"/>
+      <bind nodeset="/data/main/member/member_age" type="int" constraint=". &gt;= 0 and . &lt;= 110"/>
+      <bind nodeset="/data/main/member/member_activities" type="string"/>
+      <bind nodeset="/data/main/member/job/job_title" type="string"/>
+      <bind nodeset="/data/main/member/job/job_hours" type="decimal" constraint=". &gt;= 0 and . &lt;= 100"/>
+      <bind nodeset="/data/main/member_names" type="string" calculate="join(' ',  /data/main/member/member_name )"/>
+      <bind nodeset="/data/main/n_members" type="string" calculate="count( /data/main/member )"/>
+      <bind nodeset="/data/main/plot/plot_crop" type="string"/>
+      <bind nodeset="/data/main/plot/plot_area" type="decimal" constraint=". &gt; 0 and . &lt;= 50"/>
+      <bind nodeset="/data/main/thanks" readonly="true()" type="string"/>
+      <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+    </model>
+  </h:head>
+  <h:body>
+    <group ref="/data/id_grp">
+      <label>Identification</label>
+      <select1 ref="/data/id_grp/hhid">
+        <label>Household ID</label>
+        <itemset nodeset="instance('hhid')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <input ref="/data/id_grp/pl_note">
+        <label> Preloaded head of household: <output value=" /data/id_grp/pl_head "/> (<output value=" /data/id_grp/pl_size "/> members) </label>
+      </input>
+      <select1 ref="/data/id_grp/consent">
+        <label>Does the respondent agree to the interview?</label>
+        <itemset nodeset="instance('yesno')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+    </group>
+    <group ref="/data/main">
+      <label>Household</label>
+      <input ref="/data/main/resp_name">
+        <label>Respondent's first name (fictitious)</label>
+      </input>
+      <input ref="/data/main/resp_age">
+        <label>Age</label>
+      </input>
+      <input ref="/data/main/phone" appearance="numbers_phone">
+        <label>Phone number (10 digits starting 09)</label>
+      </input>
+      <input ref="/data/main/income">
+        <label>Monthly income</label>
+      </input>
+      <input ref="/data/main/dob">
+        <label>Date of birth</label>
+      </input>
+      <input ref="/data/main/wake_time">
+        <label>Usual wake-up time</label>
+      </input>
+      <input ref="/data/main/next_visit">
+        <label>Next visit</label>
+      </input>
+      <select1 ref="/data/main/region">
+        <label>Region</label>
+        <itemset nodeset="instance('region')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/main/district">
+        <label>District</label>
+        <itemset nodeset="instance('district')/root/item[region= /data/main/region ]">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select ref="/data/main/assets">
+        <label>Assets owned</label>
+        <itemset nodeset="instance('assets')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select>
+      <input ref="/data/main/assets_other">
+        <label>Other asset</label>
+      </input>
+      <input ref="/data/main/gps">
+        <label>Household location</label>
+      </input>
+      <upload ref="/data/main/house_photo" mediatype="image/*">
+        <label>Photo of the house (any image)</label>
+      </upload>
+      <input ref="/data/main/hh_size">
+        <label>Number of household members (1 to 3 for this test)</label>
+      </input>
+      <group ref="/data/main/member">
+        <label>Member</label>
+        <repeat nodeset="/data/main/member" jr:count=" /data/main/hh_size ">
+          <input ref="/data/main/member/member_name">
+            <label>Member's first name (fictitious)</label>
+          </input>
+          <select1 ref="/data/main/member/member_sex">
+            <label>Sex</label>
+            <itemset nodeset="instance('sex')/root/item">
+              <value ref="name"/>
+              <label ref="label"/>
+            </itemset>
+          </select1>
+          <input ref="/data/main/member/member_age">
+            <label>Age</label>
+          </input>
+          <select ref="/data/main/member/member_activities">
+            <label>Activities</label>
+            <itemset nodeset="instance('activities')/root/item">
+              <value ref="name"/>
+              <label ref="label"/>
+            </itemset>
+          </select>
+          <group ref="/data/main/member/job">
+            <label>Job (add 0 to 2)</label>
+            <repeat nodeset="/data/main/member/job">
+              <input ref="/data/main/member/job/job_title">
+                <label>Job title</label>
+              </input>
+              <input ref="/data/main/member/job/job_hours">
+                <label>Hours per week</label>
+              </input>
+            </repeat>
+          </group>
+        </repeat>
+      </group>
+      <group ref="/data/main/plot">
+        <label>Plot (add 1 or 2)</label>
+        <repeat nodeset="/data/main/plot">
+          <select1 ref="/data/main/plot/plot_crop">
+            <label>Main crop</label>
+            <itemset nodeset="instance('crop')/root/item">
+              <value ref="name"/>
+              <label ref="label"/>
+            </itemset>
+          </select1>
+          <input ref="/data/main/plot/plot_area">
+            <label>Area (ha)</label>
+          </input>
+        </repeat>
+      </group>
+      <input ref="/data/main/thanks">
+        <label>Thank you.</label>
+      </input>
+    </group>
+  </h:body>
+</h:html>

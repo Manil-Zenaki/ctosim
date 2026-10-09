@@ -1,0 +1,301 @@
+{
+  "form_id": "ctosim_coverage",
+  "title": "ctosim coverage test",
+  "version": "2610090001",
+  "fields": [
+    {
+      "name": "starttime",
+      "type": "start",
+      "xpath": "/data/starttime",
+      "row": 2
+    },
+    {
+      "name": "endtime",
+      "type": "end",
+      "xpath": "/data/endtime",
+      "row": 3
+    },
+    {
+      "name": "deviceid",
+      "type": "deviceid",
+      "xpath": "/data/deviceid",
+      "row": 4
+    },
+    {
+      "name": "subscriberid",
+      "type": "subscriberid",
+      "xpath": "/data/subscriberid",
+      "row": 5
+    },
+    {
+      "name": "simid",
+      "type": "simserial",
+      "xpath": "/data/simid",
+      "row": 6
+    },
+    {
+      "name": "devicephonenum",
+      "type": "phonenumber",
+      "xpath": "/data/devicephonenum",
+      "row": 7
+    },
+    {
+      "name": "username",
+      "type": "username",
+      "xpath": "/data/username",
+      "row": 8
+    },
+    {
+      "name": "duration",
+      "type": "calculate",
+      "xpath": "/data/duration",
+      "row": 9
+    },
+    {
+      "name": "caseid",
+      "type": "caseid",
+      "xpath": "/data/caseid",
+      "row": 10
+    },
+    {
+      "name": "text_audit",
+      "type": "text audit",
+      "xpath": "/data/text_audit",
+      "row": 11
+    },
+    {
+      "name": "field_comments",
+      "type": "comments",
+      "xpath": "/data/field_comments",
+      "row": 12
+    },
+    {
+      "name": "id_grp",
+      "type": "begin group",
+      "xpath": "/data/id_grp",
+      "row": 13
+    },
+    {
+      "name": "hhid",
+      "type": "select_one hhid",
+      "xpath": "/data/id_grp/hhid",
+      "row": 14
+    },
+    {
+      "name": "pl_head",
+      "type": "calculate",
+      "xpath": "/data/id_grp/pl_head",
+      "row": 15
+    },
+    {
+      "name": "pl_size",
+      "type": "calculate",
+      "xpath": "/data/id_grp/pl_size",
+      "row": 16
+    },
+    {
+      "name": "pl_note",
+      "type": "note",
+      "xpath": "/data/id_grp/pl_note",
+      "row": 17
+    },
+    {
+      "name": "consent",
+      "type": "select_one yesno",
+      "xpath": "/data/id_grp/consent",
+      "row": 18
+    },
+    {
+      "name": "main",
+      "type": "begin group",
+      "xpath": "/data/main",
+      "row": 20
+    },
+    {
+      "name": "resp_name",
+      "type": "text",
+      "xpath": "/data/main/resp_name",
+      "row": 21
+    },
+    {
+      "name": "resp_age",
+      "type": "integer",
+      "xpath": "/data/main/resp_age",
+      "row": 22
+    },
+    {
+      "name": "phone",
+      "type": "text",
+      "xpath": "/data/main/phone",
+      "row": 23
+    },
+    {
+      "name": "income",
+      "type": "decimal",
+      "xpath": "/data/main/income",
+      "row": 24
+    },
+    {
+      "name": "dob",
+      "type": "date",
+      "xpath": "/data/main/dob",
+      "row": 25
+    },
+    {
+      "name": "wake_time",
+      "type": "time",
+      "xpath": "/data/main/wake_time",
+      "row": 26
+    },
+    {
+      "name": "next_visit",
+      "type": "datetime",
+      "xpath": "/data/main/next_visit",
+      "row": 27
+    },
+    {
+      "name": "region",
+      "type": "select_one region",
+      "xpath": "/data/main/region",
+      "row": 28
+    },
+    {
+      "name": "district",
+      "type": "select_one district",
+      "xpath": "/data/main/district",
+      "row": 29
+    },
+    {
+      "name": "assets",
+      "type": "select_multiple assets",
+      "xpath": "/data/main/assets",
+      "row": 30
+    },
+    {
+      "name": "assets_other",
+      "type": "text",
+      "xpath": "/data/main/assets_other",
+      "row": 31
+    },
+    {
+      "name": "gps",
+      "type": "geopoint",
+      "xpath": "/data/main/gps",
+      "row": 32
+    },
+    {
+      "name": "house_photo",
+      "type": "image",
+      "xpath": "/data/main/house_photo",
+      "row": 33
+    },
+    {
+      "name": "is_adult",
+      "type": "calculate",
+      "xpath": "/data/main/is_adult",
+      "row": 34
+    },
+    {
+      "name": "time_main",
+      "type": "calculate_here",
+      "xpath": "/data/main/time_main",
+      "row": 35
+    },
+    {
+      "name": "hh_size",
+      "type": "integer",
+      "xpath": "/data/main/hh_size",
+      "row": 36
+    },
+    {
+      "name": "member",
+      "type": "begin repeat",
+      "xpath": "/data/main/member",
+      "row": 37
+    },
+    {
+      "name": "member_index",
+      "type": "calculate",
+      "xpath": "/data/main/member/member_index",
+      "row": 38
+    },
+    {
+      "name": "member_name",
+      "type": "text",
+      "xpath": "/data/main/member/member_name",
+      "row": 39
+    },
+    {
+      "name": "member_sex",
+      "type": "select_one sex",
+      "xpath": "/data/main/member/member_sex",
+      "row": 40
+    },
+    {
+      "name": "member_age",
+      "type": "integer",
+      "xpath": "/data/main/member/member_age",
+      "row": 41
+    },
+    {
+      "name": "member_activities",
+      "type": "select_multiple activities",
+      "xpath": "/data/main/member/member_activities",
+      "row": 42
+    },
+    {
+      "name": "job",
+      "type": "begin repeat",
+      "xpath": "/data/main/member/job",
+      "row": 43
+    },
+    {
+      "name": "job_title",
+      "type": "text",
+      "xpath": "/data/main/member/job/job_title",
+      "row": 44
+    },
+    {
+      "name": "job_hours",
+      "type": "decimal",
+      "xpath": "/data/main/member/job/job_hours",
+      "row": 45
+    },
+    {
+      "name": "member_names",
+      "type": "calculate",
+      "xpath": "/data/main/member_names",
+      "row": 48
+    },
+    {
+      "name": "n_members",
+      "type": "calculate",
+      "xpath": "/data/main/n_members",
+      "row": 49
+    },
+    {
+      "name": "plot",
+      "type": "begin repeat",
+      "xpath": "/data/main/plot",
+      "row": 50
+    },
+    {
+      "name": "plot_crop",
+      "type": "select_one crop",
+      "xpath": "/data/main/plot/plot_crop",
+      "row": 51
+    },
+    {
+      "name": "plot_area",
+      "type": "decimal",
+      "xpath": "/data/main/plot/plot_area",
+      "row": 52
+    },
+    {
+      "name": "thanks",
+      "type": "note",
+      "xpath": "/data/main/thanks",
+      "row": 55
+    }
+  ]
+}
