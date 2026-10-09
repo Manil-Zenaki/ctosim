@@ -1,0 +1,5 @@
+member_index,member_name,member_sex,member_age,member_activities,member_activities_1,member_activities_2,member_activities_3,member_activities__97,SET-OF-job,PARENT_KEY,KEY,SET-OF-member
+1,papo Bab,1,50,2,0,1,0,0,uuid:77ee38de-9453-4fb0-a2db-24216c17f61c/main-member[1]/job,uuid:77ee38de-9453-4fb0-a2db-24216c17f61c,uuid:77ee38de-9453-4fb0-a2db-24216c17f61c/main-member[1],uuid:77ee38de-9453-4fb0-a2db-24216c17f61c/main-member
+2,Kaka,2,21,3,0,0,1,0,,uuid:77ee38de-9453-4fb0-a2db-24216c17f61c,uuid:77ee38de-9453-4fb0-a2db-24216c17f61c/main-member[2],uuid:77ee38de-9453-4fb0-a2db-24216c17f61c/main-member
+1,paola,2,13,3,0,0,1,0,,uuid:886c1b58-0a2a-43e0-bcdd-ce473b5018b9,uuid:886c1b58-0a2a-43e0-bcdd-ce473b5018b9/main-member[1],uuid:886c1b58-0a2a-43e0-bcdd-ce473b5018b9/main-member
+1,mbaoe,1,85,-97,0,0,0,1,,uuid:0ea253c4-da14-490d-9163-cee1a5e02027,uuid:0ea253c4-da14-490d-9163-cee1a5e02027/main-member[1],uuid:0ea253c4-da14-490d-9163-cee1a5e02027/main-member

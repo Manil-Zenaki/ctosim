@@ -26,3 +26,6 @@ samples/raw/
 samples/_probe/
 *.egg-info/
 .pytest_cache/
+
+# SurveyCTO sample form and exports, reference only (terms of reuse unknown)
+samples/surveycto_example/

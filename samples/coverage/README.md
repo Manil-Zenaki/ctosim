@@ -38,3 +38,14 @@ the workbook.
 
 These exports contain no personal data, so they can be committed as
 reference fixtures for the exporter's tests.
+
+## Exports received (2026-10-09)
+
+`wide/` and `long/` hold the raw SurveyCTO exports of three fictitious
+submissions, with the Stata import templates SurveyCTO generated. Only two
+edits were made to the downloaded files: the submitting user's e-mail is
+replaced by `enumerator@example.org` and the server name in attachment URLs
+by `example`. All three submissions have consent = Yes and no plot, so the
+`plot` repeat is empty. `district` is always empty because the form's
+choice filter (`region=${region}`) names a column that the choices sheet
+calls `filter`.
