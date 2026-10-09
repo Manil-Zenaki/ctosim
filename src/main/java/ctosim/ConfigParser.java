@@ -8,7 +8,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -37,7 +39,7 @@ final class ConfigParser {
             .withResolverStyle(ResolverStyle.STRICT);
 
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
-            "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields");
+            "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone", "enumerators");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate");
 
@@ -92,11 +94,24 @@ final class ConfigParser {
         NumericRange decimalRange = root.has("decimalRange") ? numericRange(root.get("decimalRange"), "decimalRange") : d.decimalRange();
         Map<String, FieldOverride> fields = root.has("fields") ? fields(root.get("fields")) : Map.of();
 
+        ZoneId timeZone = root.has("timeZone") ? zone(root.get("timeZone")) : d.timeZone();
+        int enumerators = root.has("enumerators")
+                ? boundedInt(root.get("enumerators"), "enumerators", 1, SimulationConfig.MAX_ENUMERATORS) : d.enumerators();
+
         return new SimulationConfig(seed, submissions, start, days, missing, special, specialValues,
-                repeatMin, repeatMax, integerRange, decimalRange, fields);
+                repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators);
     }
 
     // --- Sections -------------------------------------------------------------------
+
+    private ZoneId zone(JsonNode node) throws ConfigException {
+        String id = string(node, "timeZone");
+        try {
+            return ZoneId.of(id);
+        } catch (DateTimeException e) {
+            throw error("timeZone", "\"" + id + "\" is not a time-zone ID (" + e.getMessage() + ")");
+        }
+    }
 
     private List<String> specialValues(JsonNode node) throws ConfigException {
         if (!node.isArray()) {
@@ -250,6 +265,10 @@ final class ConfigParser {
     private BigDecimal integer(JsonNode node, String path) throws ConfigException {
         if (node == null || !node.isNumber()) {
             throw error(path, "must be an integer" + found(node));
+        }
+        // Jackson reads a number too large for a BigDecimal-free parse (1e400) as an infinite double.
+        if (node.isDouble() && !Double.isFinite(node.doubleValue())) {
+            throw error(path, "is out of range (" + node.asText() + ")");
         }
         BigDecimal exact = node.decimalValue();
         if (!isWhole(exact)) {

@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import java.util.TreeSet;
 public final class SimulationConfig {
 
     static final int MAX_SUBMISSIONS = 1_000_000;
+    static final int MAX_ENUMERATORS = 10_000;
 
     static final List<String> DEFAULT_SPECIAL_VALUES = List.of(
             "-99", "-98", "-97", "-96", "-88", "-77", "-999", "-888", "-777", "97", "98", "99", "999");
@@ -38,10 +40,13 @@ public final class SimulationConfig {
     private final NumericRange decimalRange;
     private final SortedSet<String> overriddenFields;
     private final Map<String, FieldOverride> fields;
+    private final ZoneId timeZone;
+    private final int enumerators;
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
-                     NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields) {
+                     NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
+                     ZoneId timeZone, int enumerators) {
         this.seed = seed;
         this.submissions = submissions;
         this.start = start;
@@ -55,11 +60,14 @@ public final class SimulationConfig {
         this.decimalRange = decimalRange;
         this.fields = Collections.unmodifiableMap(new TreeMap<>(fields));
         this.overriddenFields = Collections.unmodifiableSortedSet(new TreeSet<>(fields.keySet()));
+        this.timeZone = timeZone;
+        this.enumerators = enumerators;
     }
 
     public static SimulationConfig defaults() {
         return new SimulationConfig(1, 100, LocalDateTime.of(2026, 1, 5, 8, 0, 0), 30, 0.05, 0.02,
-                DEFAULT_SPECIAL_VALUES, 1, 3, new NumericRange(0, 100), new NumericRange(0, 1000), Map.of());
+                DEFAULT_SPECIAL_VALUES, 1, 3, new NumericRange(0, 100), new NumericRange(0, 1000), Map.of(),
+                ZoneId.of("UTC"), 5);
     }
 
     public static SimulationConfig parse(String json, String sourceName) throws ConfigException {
@@ -142,18 +150,19 @@ public final class SimulationConfig {
     }
 
     /** The simulated devices' time zone. See specs/04-simulation-config.md, Amendment 1. */
-    public java.time.ZoneId timeZone() {
-        throw new UnsupportedOperationException("not implemented");
+    public ZoneId timeZone() {
+        return timeZone;
     }
 
     /** The number of simulated enumerators. See specs/04-simulation-config.md, Amendment 1. */
     public int enumerators() {
-        throw new UnsupportedOperationException("not implemented");
+        return enumerators;
     }
 
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
-                specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields);
+                specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
+                timeZone, enumerators);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
@@ -161,6 +170,7 @@ public final class SimulationConfig {
             throw new IllegalArgumentException("submissions must be between 1 and " + MAX_SUBMISSIONS + ": " + submissions);
         }
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
-                specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields);
+                specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
+                timeZone, enumerators);
     }
 }
