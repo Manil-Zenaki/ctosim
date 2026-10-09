@@ -122,3 +122,33 @@ in an ordinary one with the real clock. This is the engine's native
 semantics and this module keeps it. To compare times of day, forms use
 `decimal-date-time(now())` or `format-date-time(now(), ...)`, which keep
 the time.
+
+## Amendment 2: device properties
+
+A simulated session can be given the values of the device properties that
+metadata fields read, so that each simulated submission can come from a
+given enumerator and device.
+
+```java
+// added to LoadedForm:
+public org.javarosa.form.api.FormEntryController newSimulatedSession(
+        SimulatedClock clock, long seed, java.util.Map<String, String> properties);
+```
+
+- A field preloaded with `jr:preload="property"` and parameter `p` gets
+  the value `properties.get(p)` when the instance is created; when the map
+  has no key `p`, the field has no value. This holds for every parameter,
+  including `deviceid`, `subscriberid`, `simserial`, `phonenumber` and
+  `username`.
+- `username()` returns `properties.get("username")`, or `""` when the
+  map has no such key.
+- The map is copied when the session is opened: changing it afterwards
+  does not affect the session.
+- `newSimulatedSession(clock, seed)` behaves as
+  `newSimulatedSession(clock, seed, Map.of("username", "simulated"))`.
+- Properties of one session never affect another session, simulated or
+  ordinary; ordinary sessions keep the values of spec 01.
+- A null `properties`, or a map with a null key or value, throws
+  `NullPointerException`. Everything else in this spec (clock,
+  randomness, reproducibility) applies unchanged to sessions opened with
+  properties.

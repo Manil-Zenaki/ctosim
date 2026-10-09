@@ -60,6 +60,15 @@ public final class LoadedForm {
     }
 
     /**
+     * Opens a simulated session whose metadata properties (deviceid, username, ...) come from
+     * {@code properties}. See specs/06-simulated-sessions.md, Amendment 2.
+     */
+    public FormEntryController newSimulatedSession(SimulatedClock clock, long seed,
+                                                   java.util.Map<String, String> properties) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    /**
      * Opens a session over a fresh, initialised instance of the form. The definition is
      * reparsed from the loaded bytes so that no state is shared between sessions.
      */
