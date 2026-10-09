@@ -309,3 +309,13 @@ repeat (`gps-Latitude_1`); dummy columns of a select_multiple in a nested
 repeat; `instanceName` and `review_*` columns (not produced); what the
 `comments`, `audio audit` and `speed violations ...` fields hold in a
 real export (here written unchanged).
+
+## Clarifications (answers to `08-surveycto-exporter.questions.md`)
+
+All ten assumptions were reviewed one by one and are confirmed. In
+particular: an unknown selected item stays in the field's own column and
+adds no dummy column, and a fifth geopoint item is ignored (4); a present
+but empty repeat element is an instance, and counts come from the
+submitted elements, not from the count expression (6); `writeAll` does not
+delete files left by earlier exports (8); the acceptance fixtures are
+instances transcribed from the real exports (10).
