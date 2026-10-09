@@ -201,3 +201,78 @@ secondary instances do not (1); any override for a field disables the
 "existing value" rule, and a blank or failed answer then clears the old
 value (4); read-only comes first, then existing value, then unsupported
 control (4); `walk` has no upper bound tied to `config.submissions()` (2).
+
+## Amendment 1: time zone, enumerators, `calculate_here`, final `duration()`
+
+These rules come from comparing simulated submissions with real SurveyCTO
+exports. Everything not mentioned here is unchanged.
+
+### Time zone
+
+During `walk`, the JVM's default time zone is `config.timeZone()` (spec
+04, Amendment 1), so the date-times stored in the instance (`start`,
+`end`, `datetime` and `time` answers, `now()`) carry that zone's offset
+(`2026-01-05T08:00:00.000+03:00` with `"+03:00"`). The previous default
+time zone is restored when `walk` returns or throws. `Submission.start()`
+and `end()` are unchanged: the clock's local date-times. The output of a
+walk therefore no longer depends on the machine's time zone. (Walks must
+not run concurrently with other code that depends on the default time
+zone.)
+
+### Enumerators
+
+Each submission is made by one of `config.enumerators()` simulated
+enumerators, numbered from 1:
+
+- The enumerator of submission `number` is drawn uniformly among 1 to
+  `config.enumerators()`, from `config.seed()` and `number` alone.
+- The session is opened with these device properties (spec 06,
+  Amendment 2): `username` is `enumerator` followed by the enumerator's
+  number, zero-padded to the number of digits of `config.enumerators()`
+  and to at least two digits (`enumerator03`; `enumerator007` when there
+  are 120 enumerators); `deviceid` is a string of 15 decimal digits that
+  depends only on `config.seed()` and the enumerator's number. Two
+  different enumerators of the same configuration have different device
+  ids. No other property is set (`subscriberid`, `simserial`,
+  `phonenumber` stay empty).
+
+### `calculate_here` fields
+
+A question whose bind has the attribute `calculate-here` in the namespace
+`urn:ctosim:xforms` (written by the converter, spec 02 Amendment 2) is
+handled before the rules of "Questions" when the walker reaches it (it is
+therefore only handled when relevant):
+
+- its expression is evaluated in the context of that question's node,
+  as the engine evaluates a `calculate` there (same functions, same
+  simulated clock and randomness, `once()` with its usual meaning), and
+  the result becomes the question's value; fields that depend on it are
+  updated as after any answer;
+- it is not counted in `answered()`, and the clock does not move;
+- when the expression cannot be evaluated, the question keeps its value
+  and a warning names it.
+
+### `duration()` at the end of the interview
+
+At the end of the form, before the instance is post-processed, every field
+whose `calculate` expression calls `duration()` is recalculated, at each
+of its instances, in document order; fields that depend on it are updated
+as after any answer. A field computed by `once(duration())` therefore
+keeps its value, while a field computed by `duration()` holds the whole
+number of seconds between `Submission.start()` and `Submission.end()`.
+`calculate-here` expressions are not re-evaluated at that point.
+
+### Acceptance on the coverage form
+
+With `samples/xforms/ctosim_coverage.xml` (converted with spec 02
+Amendment 2) loaded with media directory `samples/coverage/` and
+`SimulationConfig.defaults()`, for submissions 1 to 3:
+
+- `duration` equals the whole seconds from `start()` to `end()`;
+- in submissions where `time_main` is present, it is a whole number
+  between 1 and `duration`;
+- `pl_head` and `pl_size` hold the `head_name` and `hh_size` of the row of
+  `samples/coverage/hh_preload.csv` whose `hhid` is the submission's
+  `hhid`;
+- `username` matches `enumerator0[1-5]`, `deviceid` is 15 digits, and
+  `starttime` ends with `+00:00` or `Z`.
