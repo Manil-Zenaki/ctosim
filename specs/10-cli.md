@@ -106,7 +106,9 @@ Warnings: <count>
   1. the converter's warnings, in its order;
   2. one per name in `LoadedForm.missingAttachments()`, in its order:
      `attached file <name>.csv not found`;
-  3. one per name in `LoadedForm.stubbedFunctions()`, in its order:
+  3. one per name in `LoadedForm.stubbedFunctions()`, in its order,
+     except `duration` and `username`, which simulated sessions implement
+     (spec 06):
      `function <name>() is not implemented by the simulator; it returns a fixed value`;
   4. `FormWalker.configWarnings()`, in its order;
   5. each submission's warnings, by submission number then in order.
