@@ -1,0 +1,21 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Constraint extraction</h:title><model>
+    <instance><data id="constraint-hints"><source>17</source><empty/><date>2040-02-29</date>
+      <stamp>2040-03-01T00:30:00+02:00</stamp><group><x>31</x><answer/></group><plain/></data></instance>
+    <bind nodeset="/data/source" type="int"/>
+    <bind nodeset="/data/empty" type="string"/>
+    <bind nodeset="/data/date" type="date"/>
+    <bind nodeset="/data/stamp" type="dateTime"/>
+    <bind nodeset="/data/group/x" type="int"/>
+    <bind nodeset="/data/group/answer" type="__TYPE__" constraint="__CONSTRAINT__"/>
+    <bind nodeset="/data/plain" type="string"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/source"><label>Source</label></input>
+    <group ref="/data/group"><label>Group</label>
+      <input ref="/data/group/answer"><label>Answer</label></input>
+    </group>
+    <input ref="/data/plain"><label>Unconstrained</label></input>
+  </h:body>
+</h:html>
