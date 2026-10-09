@@ -321,7 +321,7 @@
       </select1>
       <select1 ref="/data/main/district">
         <label>District</label>
-        <itemset nodeset="instance('district')/root/item[region= /data/main/region ]">
+        <itemset nodeset="instance('district')/root/item[filter= /data/main/region ]">
           <value ref="name"/>
           <label ref="label"/>
         </itemset>

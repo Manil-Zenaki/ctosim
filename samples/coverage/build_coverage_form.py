@@ -56,7 +56,7 @@ SURVEY = [
     {"type": "time", "name": "wake_time", "label": "Usual wake-up time"},
     {"type": "datetime", "name": "next_visit", "label": "Next visit"},
     {"type": "select_one region", "name": "region", "label": "Region", "required": "yes"},
-    {"type": "select_one district", "name": "district", "label": "District", "choice_filter": "region=${region}"},
+    {"type": "select_one district", "name": "district", "label": "District", "choice_filter": "filter=${region}"},
     {"type": "select_multiple assets", "name": "assets", "label": "Assets owned",
      "constraint": "not(selected(., '-99') and count-selected(.) > 1)",
      "constraint message": "'Don't know' cannot be combined"},

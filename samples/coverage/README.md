@@ -48,4 +48,4 @@ replaced by `enumerator@example.org` and the server name in attachment URLs
 by `example`. All three submissions have consent = Yes and no plot, so the
 `plot` repeat is empty. `district` is always empty because the form's
 choice filter (`region=${region}`) names a column that the choices sheet
-calls `filter`.
+calls `filter` (fixed in `build_coverage_form.py` after the export).
