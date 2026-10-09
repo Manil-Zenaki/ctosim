@@ -9,35 +9,50 @@ what was learnt along the way.
 | # | Module | State |
 |---|---|---|
 | 01 | FormLoader | done |
-| 02 | XLSForm converter (Python, `converter/`) | done, 223 pytest tests |
-| 03 | SurveyCTO functions | done |
-| 04 | SimulationConfig | done |
+| 02 | XLSForm converter (Python, `converter/`) | done; Amendment 2 (`calculate_here` as a question computed when reached) |
+| 03 | SurveyCTO functions | done; Amendment 3 (`pulldata()` reads attached CSVs from a media directory) |
+| 04 | SimulationConfig | done; Amendment 1 (`timeZone`, `enumerators`) |
 | 05 | AnswerGenerator | done |
-| 06 | Simulated sessions | done |
-| 07 | FormWalker | done |
+| 06 | Simulated sessions | done; Amendment 2 (per-session device properties) |
+| 07 | FormWalker | done; Amendment 1 (time zone, enumerators, `calculate_here`, final `duration()`) |
 | 08 | SurveyCtoExporter | done: wide and long CSV, checked byte for byte against real exports of the coverage form |
 | 09 | Constraint hints | done |
-| 10 | CLI | not started; spec to write (convert XLSForm, load config, simulate N submissions, write the wide and long exports + run report) |
+| 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 
-Suite: 2561 Java tests and 223 Python tests, all green at commit `5be30aa`.
+Suite at commit `ca5395b`: 3335 Java tests and 269 Python tests; all green
+except the disputed tests below.
 
-## Next step
+## Next step: three disputes to adjudicate
 
-Write spec 10 (CLI). Real exports are in `samples/coverage/wide/` and
-`long/` (e-mail and server name anonymised); `samples/surveycto_example/`
-is a SurveyCTO sample kept locally only (ignored, terms unknown).
+Codex hit its usage limit (reset 2026-10-09 21:11) before adjudicating.
+Run, with a clean tree, one after the other:
 
-Simulator issues seen while walking the coverage form, to fix:
+```
+scripts/codex-tests.ps1 specs/03-surveycto-functions.md -Dispute
+scripts/codex-tests.ps1 specs/02-xlsform-converter.md -Dispute
+scripts/codex-tests.ps1 specs/10-cli.md -Dispute
+```
 
-- `duration()` evaluates to 0 (and `once(duration())` too); real exports
-  give seconds since the start.
-- `pulldata()` returns empty: attached CSVs such as `hh_preload.csv` are
-  not read.
-- Stored times carry the machine's UTC offset (`-05:00`, `-04:00` with
-  DST); the exporter drops offsets, but the instance should not depend on
-  the host time zone.
-- `deviceid` is empty and `username` is `simulated` (a real web
-  submission gives `(web)` and the user's login).
+- spec 03, Dispute 2: seven older tests still treat `pulldata` as a stub
+  (`FormLoaderFunctionTest` x5, `SimulatedSessionContractTest`,
+  `SurveyCtoFunctionContractTest`);
+- spec 02, Disputes 3 and 4: an element-identity comparison across two
+  parses; a count node expected for a plain `${size}` repeat count;
+- spec 10, Dispute 1: the runaway fixture takes ~50 s to hit the
+  100 000-step limit (JavaRosa navigation slows down in huge repeats),
+  over the test's 45 s timeout.
+
+Then check the whole suite is green and close the work.
+
+End-to-end check done: `ctosim.cmd samples/coverage/ctosim_coverage.xlsx
+--python .venv/Scripts/python.exe` gives `duration` = end − start,
+`time_main` between 1 and `duration`, `pl_head`/`pl_size` from
+`hh_preload.csv`, enumerator usernames and 15-digit device ids, UTC
+offsets.
+
+Known gaps: SLF4J prints a three-line notice on stderr (add `slf4j-nop`);
+the Windows console shows accents garbled unless its code page is UTF-8
+(`main` writes UTF-8).
 
 Unconfirmed export conventions (spec 08, "Not observed"): geopoint
 columns in a repeat, dummies in a nested repeat, `instanceName`, and what
@@ -71,7 +86,8 @@ rewrites (`EngineExpressions`), submission, walker.
   for an amendment. The tree must be clean; do not edit the repository
   while it runs (the script reverts out-of-scope changes).
 - Codex runs on the owner's ChatGPT plan and hits usage limits (reset after
-  a few hours). If a session stops on the limit after writing its work,
+  a few hours). The machine may sleep during long waits: a sleeping
+  `Start-Sleep` does not fire on time. If a session stops on the limit after writing its work,
   review it and commit it by hand with the `Test-Author: codex` and
   `Codex-Session` trailers, saying so in the message.
 - Codex sandbox build: `mvnw.cmd` now finds Maven under
