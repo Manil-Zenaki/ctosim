@@ -167,7 +167,8 @@ public final class FormWalker {
             }
             String appearance = prompt.getQuestion().getAppearanceAttr();
             boolean required = prompt.isRequired();
-            Question question = new Question(name, kind, choices, appearance == null ? "" : appearance, required);
+            Question question = new Question(name, kind, choices, appearance == null ? "" : appearance, required,
+                    ConstraintHints.forCurrentQuestion(session));
 
             for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
                 String text = generator.generate(question, clock.now().toLocalDate(), answers);

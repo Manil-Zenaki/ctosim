@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.random.RandomGenerator;
+import java.util.regex.Pattern;
+import com.github.curiousoddman.rgxgen.RgxGen;
 
 /** Proposes an answer to one question. See specs/05-answer-generator.md. */
 public final class AnswerGenerator {
@@ -55,12 +57,14 @@ public final class AnswerGenerator {
         return switch (question.kind()) {
             case SELECT_ONE -> selectOne(question.choices(), weights, random);
             case SELECT_MULTIPLE -> selectMultiple(question.choices(), weights, random);
-            case INTEGER -> integer(range instanceof NumericRange r ? r : config.integerRange(), random);
-            case DECIMAL -> decimal(range instanceof NumericRange r ? r : config.decimalRange(), random);
+            case INTEGER -> integer(hinted(range instanceof NumericRange r ? r : config.integerRange(),
+                    question.hints(), true), random);
+            case DECIMAL -> decimal(hinted(range instanceof NumericRange r ? r : config.decimalRange(),
+                    question.hints(), false), random);
             case TEXT -> text(question, texts, random);
-            case DATE -> date(dateRange(range, today), random).toString();
+            case DATE -> date(hinted(dateRange(range, today), question.hints()), random).toString();
             case TIME -> time(random);
-            case DATETIME -> date(dateRange(range, today), random) + "T" + time(random);
+            case DATETIME -> date(hinted(dateRange(range, today), question.hints()), random) + "T" + time(random);
             case GEOPOINT -> point(random.nextDouble() * 2 - 1, random.nextDouble() * 2 - 1);
             case GEOTRACE -> String.join("; ", trace(random));
             case GEOSHAPE -> shape(random);
@@ -169,10 +173,107 @@ public final class AnswerGenerator {
             return texts.get(random.nextInt(texts.size()));
         }
         List<String> words = Arrays.asList(question.appearance().split(" "));
-        if (words.contains("numbers") || words.contains("numbers_phone")) {
+        boolean numeric = words.contains("numbers") || words.contains("numbers_phone");
+        ConstraintHints hints = question.hints();
+        if (hints.pattern() != null) {
+            String matching = matching(hints.pattern(), random);
+            if (matching != null) {
+                return matching;
+            }
+        }
+        if (hints.minLength() != null || hints.maxLength() != null) {
+            int min = hints.minLength() != null ? hints.minLength() : 1;
+            int max = hints.maxLength() != null ? hints.maxLength() : Math.max(min, 10);
+            if (max >= min) {
+                int length = min + random.nextInt(max - min + 1);
+                StringBuilder s = new StringBuilder(length);
+                for (int i = 0; i < length; i++) {
+                    s.append(numeric ? (char) ('0' + random.nextInt(10)) : (char) ('a' + random.nextInt(26)));
+                }
+                return s.toString();
+            }
+        }
+        if (numeric) {
             return digits(8, random);
         }
         return question.name() + " " + (1 + random.nextInt(9999));
+    }
+
+    /** A random string matching the whole pattern, or null when none can be produced. */
+    private static String matching(String pattern, RandomGenerator random) {
+        try {
+            String s = RgxGen.parse(pattern).generate(random);
+            return s != null && Pattern.compile(pattern).matcher(s).matches() ? s : null;
+        } catch (RuntimeException | StackOverflowError e) {
+            return null; // unsupported or unsatisfiable pattern
+        }
+    }
+
+    // --- Constraint hints (spec 09) -------------------------------------------------
+
+    /** The numeric range to draw from once the constraint's bounds are taken into account. */
+    private static NumericRange hinted(NumericRange range, ConstraintHints hints, boolean integer) {
+        Bound lower = hints.lower();
+        Bound upper = hints.upper();
+        if (lower == null && upper == null) {
+            return range;
+        }
+        Double lo = lower == null ? null : closedLower(lower, integer);
+        Double hi = upper == null ? null : closedUpper(upper, integer);
+        if (lo != null && hi != null && lo > hi) {
+            return range; // contradictory hints are ignored
+        }
+        double a = Math.max(range.min(), lo == null ? Double.NEGATIVE_INFINITY : lo);
+        double b = Math.min(range.max(), hi == null ? Double.POSITIVE_INFINITY : hi);
+        if (a <= b) {
+            return new NumericRange(a, b);
+        }
+        if (lo != null && hi != null) {
+            return new NumericRange(lo, hi);
+        }
+        double width = range.max() - range.min();
+        return lo != null ? new NumericRange(lo, lo + width) : new NumericRange(hi - width, hi);
+    }
+
+    private static double closedLower(Bound bound, boolean integer) {
+        double v = bound.value();
+        if (integer) {
+            return bound.inclusive() ? Math.ceil(v) : Math.floor(v) + 1;
+        }
+        return bound.inclusive() ? v : v + 0.01;
+    }
+
+    private static double closedUpper(Bound bound, boolean integer) {
+        double v = bound.value();
+        if (integer) {
+            return bound.inclusive() ? Math.floor(v) : Math.ceil(v) - 1;
+        }
+        return bound.inclusive() ? v : v - 0.01;
+    }
+
+    /** The date range to draw from once the constraint's date bounds are taken into account. */
+    private static DateRange hinted(DateRange range, ConstraintHints hints) {
+        DateBound earliest = hints.earliest();
+        DateBound latest = hints.latest();
+        if (earliest == null && latest == null) {
+            return range;
+        }
+        LocalDate lo = earliest == null ? null
+                : earliest.inclusive() ? earliest.value() : earliest.value().plusDays(1);
+        LocalDate hi = latest == null ? null
+                : latest.inclusive() ? latest.value() : latest.value().minusDays(1);
+        if (lo != null && hi != null && lo.isAfter(hi)) {
+            return range;
+        }
+        LocalDate a = lo == null || lo.isBefore(range.min()) ? range.min() : lo;
+        LocalDate b = hi == null || hi.isAfter(range.max()) ? range.max() : hi;
+        if (!a.isAfter(b)) {
+            return new DateRange(a, b);
+        }
+        if (lo != null && hi != null) {
+            return new DateRange(lo, hi);
+        }
+        return lo != null ? new DateRange(lo, lo.plusDays(364)) : new DateRange(hi.minusDays(364), hi);
     }
 
     private static String digits(int count, RandomGenerator random) {
