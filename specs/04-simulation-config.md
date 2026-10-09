@@ -202,3 +202,10 @@ public int enumerators();
   or not an integer, is an error located at `enumerators`. The rules of
   "Strictness" and "Errors" apply to both keys.
 - `withSeed` and `withSubmissions` keep both settings.
+
+Clarification (Amendment 1): assumptions 13–17 of the questions file are
+reviewed one by one and confirmed. In particular, `timeZone` is compared
+as `ZoneId.of` gives it (`UTC` and `Z` are different IDs) (13); the
+configuration does not resolve `start` in the zone (14); `enumerators`
+may exceed `submissions` (15). A rejected zone's exception may keep the
+`DateTimeException` as its cause, but need not (16).
