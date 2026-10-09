@@ -1,0 +1,17 @@
+id,name,other, spaced header 
+a,Alice,alternate-a, spaced value 
+b,Bob,alternate-b,second
+a,Later duplicate,duplicate,last
+5,whole number,numeric,x
+5.5,fraction,numeric,x
+0,zero,numeric,x
+-5,negative,numeric,x
+true,boolean true,boolean,x
+false,boolean false,boolean,x
+,empty key,empty,x
+ a ,spaced key,space,x
+A,uppercase key,case,x
+unicode,Élodie 東京 😀,unicode,x
+leading,005,number-looking,x
+empty,,blank,x
+empty,later nonempty,duplicate,x

@@ -1,0 +1,23 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Attached data</h:title><model>
+    <instance><data id="attached-data" version="3"><source>people</source><column>name</column><keyColumn>id</keyColumn><key>a</key><number>5</number><blank/><target/><result/></data></instance>
+    <bind nodeset="/data/source" type="string"/>
+    <bind nodeset="/data/column" type="string"/>
+    <bind nodeset="/data/keyColumn" type="string"/>
+    <bind nodeset="/data/key" type="string"/>
+    <bind nodeset="/data/number" type="int"/>
+    <bind nodeset="/data/blank" type="string"/>
+    <bind nodeset="/data/target" type="string" __TARGET__/>
+    <bind nodeset="/data/result" type="string" __RESULT__/>
+    __MODEL__
+  </model></h:head>
+  <h:body>
+    <input ref="/data/key"><label>Key</label></input>
+    <input ref="/data/source"><label>Source</label></input>
+    <input ref="/data/column"><label>Column</label></input>
+    <input ref="/data/keyColumn"><label>Key column</label></input>
+    <input ref="/data/number"><label>Number</label></input>
+    <input ref="/data/target"><label>Target</label></input>
+    __BODY__
+  </h:body>
+</h:html>

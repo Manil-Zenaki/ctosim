@@ -1,0 +1,9 @@
+"key,column","value,column",unused
+"a,b","contains, comma",x
+"say ""yes""","He said ""hello"".",x
+"two
+lines","first
+second",x
+spaces,"  keep me  ",x
+empty,"",x
+unicode,"café 東京 😀",x

@@ -1,0 +1,14 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Preloads in repeats</h:title><model>
+    <instance><data id="pulldata-repeats">
+      <row jr:template=""><key>a</key><result/></row>
+      <row><key>a</key><result/></row>
+      <row><key>b</key><result/></row>
+    </data></instance>
+    <bind nodeset="/data/row/key" type="string"/>
+    <bind nodeset="/data/row/result" type="string" calculate="concat('[', pulldata('people', 'name', 'id', __KEY__), ']')"/>
+  </model></h:head>
+  <h:body><repeat nodeset="/data/row">
+    <input ref="/data/row/key"><label>Key</label></input>
+  </repeat></h:body>
+</h:html>
