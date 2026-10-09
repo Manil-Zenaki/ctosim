@@ -51,6 +51,20 @@ public final class FormLoader {
 
     public static LoadedForm load(Path xform) throws FormLoadException {
         Objects.requireNonNull(xform, "xform");
+        return load(xform, new Attachments(xform.toAbsolutePath().getParent()));
+    }
+
+    /** Loads a form whose attached files are in {@code mediaDirectory}. See specs/03, Amendment 3. */
+    public static LoadedForm load(Path xform, Path mediaDirectory) throws FormLoadException {
+        Objects.requireNonNull(xform, "xform");
+        Objects.requireNonNull(mediaDirectory, "mediaDirectory");
+        if (!Files.isDirectory(mediaDirectory)) {
+            throw new FormLoadException(mediaDirectory + ": the media directory does not exist or is not a directory");
+        }
+        return load(xform, new Attachments(mediaDirectory));
+    }
+
+    private static LoadedForm load(Path xform, Attachments attachments) throws FormLoadException {
         byte[] bytes;
         try {
             bytes = Files.readAllBytes(xform);
@@ -60,12 +74,7 @@ public final class FormLoader {
             throw new FormLoadException(xform + ": the file cannot be read (" + e + ")", e);
         }
         Path fileName = xform.getFileName();
-        return parse(bytes, fileName == null ? xform.toString() : fileName.toString());
-    }
-
-    /** Loads a form whose attached files are in {@code mediaDirectory}. See specs/03, Amendment 3. */
-    public static LoadedForm load(Path xform, Path mediaDirectory) throws FormLoadException {
-        throw new UnsupportedOperationException("not implemented");
+        return parse(bytes, fileName == null ? xform.toString() : fileName.toString(), attachments);
     }
 
     public static LoadedForm load(InputStream in, String sourceName) throws FormLoadException {
@@ -77,10 +86,10 @@ public final class FormLoader {
         } catch (IOException e) {
             throw new FormLoadException(sourceName + ": the input cannot be read (" + e.getMessage() + ")", e);
         }
-        return parse(bytes, sourceName);
+        return parse(bytes, sourceName, Attachments.NONE);
     }
 
-    private static LoadedForm parse(byte[] raw, String source) throws FormLoadException {
+    private static LoadedForm parse(byte[] raw, String source, Attachments attachments) throws FormLoadException {
         byte[] xml = stripBom(raw);
         if (new String(xml, StandardCharsets.UTF_8).isBlank()) {
             throw new FormLoadException(source + ": the input is empty");
@@ -117,13 +126,15 @@ public final class FormLoader {
         } catch (TransformerException e) {
             throw new FormLoadException(source + ": the form could not be prepared for the engine (" + e.getMessage() + ")", e);
         }
-        FormDef probe = parseWithEngine(engineXml, source);
-        SortedSet<String> stubbed = stubbedFunctions(doc, probe, source);
+        FormDef probe = parseWithEngine(engineXml, source, attachments);
+        FunctionReferences refs = functionReferences(doc, source);
+        SortedSet<String> stubbed = stubbedFunctions(refs, probe);
 
         LoadedForm form = new LoadedForm(engineXml, source, formId, version, title,
-                Collections.unmodifiableSortedSet(stubbed));
+                Collections.unmodifiableSortedSet(stubbed), attachments,
+                attachments.missing(refs.pulldataSources()));
         try {
-            form.newEntryController();
+            form.checkInitialises();
         } catch (RuntimeException e) {
             throw new FormLoadException(source + ": the form engine could not initialise the form ("
                     + e.getMessage() + ")", e);
@@ -132,13 +143,13 @@ public final class FormLoader {
     }
 
     /** Parses the form with JavaRosa and registers the SurveyCTO stubs on its evaluation context. */
-    static FormDef parseWithEngine(byte[] xml, String source) throws FormLoadException {
+    static FormDef parseWithEngine(byte[] xml, String source, Attachments attachments) throws FormLoadException {
         try {
             FormDef def = XFormUtils.getFormFromInputStream(new ByteArrayInputStream(xml));
             if (def == null) {
                 throw new FormLoadException(source + ": the form engine could not parse the form");
             }
-            SurveyCtoFunctions.register(def);
+            SurveyCtoFunctions.register(def, attachments);
             return def;
         } catch (FormLoadException e) {
             throw e;
@@ -147,8 +158,8 @@ public final class FormLoader {
         }
     }
 
-    private static SortedSet<String> stubbedFunctions(Document doc, FormDef parsed, String source)
-            throws FormLoadException {
+    /** Every function call in the form's expressions: binds, actions and body references. */
+    private static FunctionReferences functionReferences(Document doc, String source) throws FormLoadException {
         FunctionReferences refs = new FunctionReferences();
         try {
             for (Element bind : descendants(doc.getDocumentElement(), XFORMS_NS, "bind")) {
@@ -167,7 +178,10 @@ public final class FormLoader {
         } catch (XPathSyntaxException e) {
             throw new FormLoadException(source + ": an XPath expression does not parse (" + e.getMessage() + ")", e);
         }
+        return refs;
+    }
 
+    private static SortedSet<String> stubbedFunctions(FunctionReferences refs, FormDef parsed) {
         TreeSet<String> stubbed = new TreeSet<>(refs.names());
         stubbed.removeAll(SurveyCtoFunctions.ENGINE_BUILT_INS);
         for (String handler : parsed.getEvaluationContext().getFunctionHandlers().keySet()) {

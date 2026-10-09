@@ -9,6 +9,7 @@ import org.javarosa.xpath.expr.XPathFilterExpr;
 import org.javarosa.xpath.expr.XPathFuncExpr;
 import org.javarosa.xpath.expr.XPathPathExpr;
 import org.javarosa.xpath.expr.XPathStep;
+import org.javarosa.xpath.expr.XPathStringLiteral;
 import org.javarosa.xpath.expr.XPathUnaryOpExpr;
 import org.javarosa.xpath.parser.XPathSyntaxException;
 
@@ -16,6 +17,7 @@ import org.javarosa.xpath.parser.XPathSyntaxException;
 final class FunctionReferences {
 
     private final Set<String> names = new TreeSet<>();
+    private final Set<String> pulldataSources = new TreeSet<>();
 
     /** Parses an expression and records every function it calls, including nested and unreached calls. */
     void add(String expression) throws XPathSyntaxException {
@@ -26,9 +28,18 @@ final class FunctionReferences {
         return names;
     }
 
+    /** The sources of the pulldata() calls whose first argument is a string literal. */
+    Set<String> pulldataSources() {
+        return pulldataSources;
+    }
+
     private void visit(XPathExpression expr) {
         if (expr instanceof XPathFuncExpr func) {
             names.add(func.id.toString());
+            if ("pulldata".equals(func.id.toString()) && func.args.length > 0
+                    && func.args[0] instanceof XPathStringLiteral literal) {
+                pulldataSources.add(literal.s);
+            }
             visitAll(func.args);
         } else if (expr instanceof XPathBinaryOpExpr binary) {
             visit(binary.a);

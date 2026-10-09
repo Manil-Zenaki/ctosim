@@ -17,15 +17,19 @@ public final class LoadedForm {
     private final String version;
     private final String title;
     private final SortedSet<String> stubbedFunctions;
+    private final Attachments attachments;
+    private final SortedSet<String> missingAttachments;
 
     LoadedForm(byte[] xml, String sourceName, String formId, String version, String title,
-               SortedSet<String> stubbedFunctions) {
+               SortedSet<String> stubbedFunctions, Attachments attachments, SortedSet<String> missingAttachments) {
         this.xml = xml.clone();
         this.sourceName = sourceName;
         this.formId = formId;
         this.version = version;
         this.title = title;
         this.stubbedFunctions = stubbedFunctions;
+        this.attachments = attachments;
+        this.missingAttachments = missingAttachments;
     }
 
     public String sourceName() {
@@ -54,7 +58,7 @@ public final class LoadedForm {
      * specs/03-surveycto-functions.md, Amendment 3.
      */
     public SortedSet<String> missingAttachments() {
-        throw new UnsupportedOperationException("not implemented");
+        return missingAttachments;
     }
 
     /**
@@ -87,9 +91,21 @@ public final class LoadedForm {
         return start(parse());
     }
 
+    /**
+     * Opens and discards a session, to check at load time that the form initialises. Attached
+     * files are not read: pulldata() reads them on the first call of a real session.
+     */
+    void checkInitialises() {
+        try {
+            start(FormLoader.parseWithEngine(xml, sourceName, Attachments.NONE));
+        } catch (FormLoadException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
     private FormDef parse() {
         try {
-            return FormLoader.parseWithEngine(xml, sourceName);
+            return FormLoader.parseWithEngine(xml, sourceName, attachments);
         } catch (FormLoadException e) {
             // The same bytes parsed successfully when the form was loaded.
             throw new IllegalStateException(e.getMessage(), e);

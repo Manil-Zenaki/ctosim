@@ -18,7 +18,6 @@ final class SurveyCtoFunctions {
     static final String FALLBACK_VALUE = "";
 
     private static final Map<String, Object> NAMED_STUBS = Map.of(
-            "pulldata", "",
             "plug-in-metadata", "",
             "username", SimulatedProperties.USERNAME,
             "duration", 0.0,
@@ -54,9 +53,10 @@ final class SurveyCtoFunctions {
      * Makes SurveyCTO functions evaluable in the form's sessions: real implementations
      * (spec 03), fixed-value stubs, and the catch-all fallback for any other unknown function.
      */
-    static void register(FormDef form) {
+    static void register(FormDef form, Attachments attachments) {
         EvaluationContext context = form.getEvaluationContext();
         SurveyCtoFunctionLibrary.handlers(form).forEach(context::addFunctionHandler);
+        context.addFunctionHandler(attachments.pulldataHandler());
         SessionEnvironment.registerNative(form);
         NAMED_STUBS.forEach((name, value) -> context.addFunctionHandler(new ConstantFunction(name, value)));
         context.addFallbackFunctionHandler((name, args, ec) -> FALLBACK_VALUE);
