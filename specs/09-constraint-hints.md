@@ -165,3 +165,13 @@ Everything else in spec 07 is unchanged, including the 50 attempts.
 - In the XForm converted from `samples/coverage/ctosim_coverage.xlsx`,
   every `phone` answer in submissions 1 to 50 (with `consent` set to
   `"1"`) matches `^09[0-9]{8}$`.
+
+## Clarifications (answers to `09-constraint-hints.questions.md`)
+
+All twelve assumptions were reviewed one by one and are confirmed. In
+particular: an equality to a fractional length gives an empty length
+interval, which generation ignores, while explicit bounds 0–0 give the
+empty string (4); a one-sided date interval holds 365 dates (5); the
+translation width uses the configured range's unrounded endpoints (6);
+when hints do not apply, generation draws exactly as spec 05 does, from
+the same random stream (10).
