@@ -131,3 +131,92 @@ they do not extend the production specification.
     - **Dependent tests:** I/O tests and
       `repeatedParsingProducesTheSameObservableConfiguration`; no tests assert
       undocumented size limits or generation behavior.
+
+## Amendment 1: time zone and enumerators
+
+The original questions and tests above are preserved. Amendment coverage is in
+new `SimulationConfigTimeZoneTest`, `SimulationConfigEnumeratorsTest`,
+`SimulationConfigAmendmentIoTest`, and `SimulationConfigAmendmentCopiesTest`
+classes. Only the spec and existing tests/fixtures were read; no production code
+was inspected.
+
+13. **Does a zone ID have to retain its input spelling, or can it normalize?**
+    - **Assumption:** The specified `ZoneId.of(text)` is the exact oracle. Tests
+      compare `ZoneId` equality with that result, not the original spelling or
+      merely the current offset. For example, `UTC`, `Z`, and `Etc/UTC` must not
+      be collapsed just because they can have the same offset; compact offsets
+      may normalize exactly as `ZoneId.of` does. Region rules, prefix IDs,
+      fractional-hour offsets, offset seconds, and the +/-18-hour bounds are
+      covered. No alias map, trimming, or case folding is implied. Named region
+      tests use long-established IDs; no particular time-zone database version
+      or historical offset is asserted.
+    - **Dependent tests:** `acceptsRegionPrefixAndOffsetFormsWithExactlyZoneIdOfSemantics`,
+      `rejectsInvalidIdsWrongTypesAndNullAtTimeZone`,
+      `loadAcceptsTheSameZoneIdFormsAsParse`, and the amendment copy tests.
+
+14. **Should `timeZone` change or impose DST validity constraints on `start`?**
+    - **Assumption:** No. Amendment 1 says everything else is unchanged;
+      `start()` remains a local date-time and the config module only reads and
+      validates settings. A valid local time within a DST gap or overlap remains
+      unchanged. Resolving that time to an instant/offset belongs to the consumer
+      module and is not tested here.
+    - **Dependent test:**
+      `zoneDoesNotConvertOrRejectTheLocalStartDuringDstTransitions`.
+
+15. **May the enumerator count exceed the number of submissions?**
+    - **Assumption:** Yes. The only enumerator constraint is the independent
+      inclusive interval 1..10000. Neither parsing nor `withSubmissions` may
+      silently clamp or reject an otherwise valid count because there are fewer
+      submissions. Usernames, device IDs, allocation, and random distributions
+      belong to spec 07 and are intentionally not tested here.
+    - **Dependent tests:** `enumeratorsMayOutnumberSubmissions`,
+      `withSubmissionsPreservesBothNewSettingsEvenWhenEnumeratorsOutnumberTheNewCount`,
+      and `copyChainsPreserveBothSettingsAtEveryStep`.
+
+16. **Do exact-integer validation and existing diagnostic conventions extend to
+    the new keys? Must invalid zone IDs retain a particular exception cause?**
+    - **Assumption:** The confirmed exact-JSON-number rule applies to
+      `enumerators`: integral decimals/exponents are accepted, fractional values
+      that would round to integers are rejected, and overflow cannot wrap into
+      the accepted interval. `1e400` is unambiguously out of range for this key,
+      unlike the unspecified double-valued settings in question 7. Wrong types
+      and JSON null report the new key's path. Duplicate-key diagnostics retain
+      the confirmed flexibility from question 2. Syntax failures must retain a
+      cause and report the failing line, without prescribing parser wording.
+    - **Unresolved:** Whether a rejected zone must have the original
+      `DateTimeException` as its cause is not explicitly addressed. Zone-value
+      rejection tests require `ConfigException`, source, location, and an
+      explanation, but do not prescribe a cause type or presence.
+    - **Dependent tests:** `acceptsInclusiveLimitsAndExactIntegralDecimalAndExponentForms`,
+      `rejectsOutOfRangeFractionalUnrepresentableWrongTypeAndNullCounts`,
+      `rejectsInvalidIdsWrongTypesAndNullAtTimeZone`, and the invalid-value,
+      duplicate-key, and syntax-diagnostic tests in `SimulationConfigAmendmentIoTest`.
+
+17. **Do the new names become reserved outside the top-level config object?**
+    - **Assumption:** No. The amendment adds top-level keys only. These names
+      remain unknown as members of range/repeat/field-override schema objects;
+      they remain legal arbitrary field names under `fields`, whose documented
+      naming constraints are unchanged.
+    - **Dependent tests:** `newKeysAreCaseSensitiveAndOnlyExtendTheTopLevelSchema`,
+      `loadRejectsMisspelledAndMisplacedNewKeys`, and
+      `newTopLevelKeyNamesRemainValidAsUnrelatedFieldNames`.
+
+### Amendment build verification (2026-10-09)
+
+- Ran the requested `mvnw.cmd -o -q test-compile`. Maven reached
+  `maven-compiler-plugin:3.15.0:testCompile` but failed with
+  `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac was
+  closing its archive file manager. The detailed retry is saved in
+  `.codex-runs/04-amendment-test-compile.log`.
+- A diagnostic retry with `-Dmaven.compiler.fork=true` also failed. It reported
+  unresolved production types in existing tests (including `QuestionKind`,
+  `SimulationConfig`, and `ConfigException`), then the same archive access
+  exception. Its output is in
+  `.codex-runs/04-amendment-forked-test-compile.log`.
+- Successful compilation could not be verified in this environment. No Maven
+  repositories were copied, no drives were mapped, and no production code,
+  existing tests, build configuration, or dependency permissions were changed.
+  The build needs to be rerun in the calling environment with accessible cached
+  dependencies and the public API classes available. Runtime tests were not run
+  because test compilation did not complete.
