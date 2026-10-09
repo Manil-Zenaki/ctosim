@@ -9,6 +9,8 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -35,6 +37,10 @@ public final class FormLoader {
 
     static final String XHTML_NS = "http://www.w3.org/1999/xhtml";
     static final String XFORMS_NS = "http://www.w3.org/2002/xforms";
+    /** Namespace of the converter's own bind attributes (spec 02, Amendment 2). */
+    static final String CTOSIM_NS = "urn:ctosim:xforms";
+    /** Bind attribute holding a calculate_here expression, evaluated when the walker reaches it. */
+    static final String CALCULATE_HERE = "calculate-here";
 
     private static final String[] BIND_EXPRESSIONS = {"calculate", "relevant", "constraint", "required", "readonly"};
     private static final String[] BODY_EXPRESSIONS = {"ref", "nodeset"};
@@ -132,7 +138,7 @@ public final class FormLoader {
 
         LoadedForm form = new LoadedForm(engineXml, source, formId, version, title,
                 Collections.unmodifiableSortedSet(stubbed), attachments,
-                attachments.missing(refs.pulldataSources()));
+                attachments.missing(refs.pulldataSources()), durationCalculations(engineXml, source));
         try {
             form.checkInitialises();
         } catch (RuntimeException e) {
@@ -158,12 +164,39 @@ public final class FormLoader {
         }
     }
 
+    /**
+     * The calculations that call duration(), by bind nodeset, as the engine sees them. The
+     * walker recomputes them at the end of an interview (spec 07, Amendment 1).
+     */
+    private static Map<String, String> durationCalculations(byte[] engineXml, String source) throws FormLoadException {
+        Map<String, String> result = new LinkedHashMap<>();
+        Document engineDoc = readXml(engineXml, source);
+        for (Element bind : descendants(engineDoc.getDocumentElement(), XFORMS_NS, "bind")) {
+            if (!bind.hasAttribute("calculate") || !bind.hasAttribute("nodeset")) {
+                continue;
+            }
+            FunctionReferences calls = new FunctionReferences();
+            try {
+                calls.add(bind.getAttribute("calculate"));
+            } catch (XPathSyntaxException e) {
+                continue; // reported by the engine when it parses the form
+            }
+            if (calls.names().contains("duration")) {
+                result.put(bind.getAttribute("nodeset").strip(), bind.getAttribute("calculate"));
+            }
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
     /** Every function call in the form's expressions: binds, actions and body references. */
     private static FunctionReferences functionReferences(Document doc, String source) throws FormLoadException {
         FunctionReferences refs = new FunctionReferences();
         try {
             for (Element bind : descendants(doc.getDocumentElement(), XFORMS_NS, "bind")) {
                 addAttributes(refs, bind, BIND_EXPRESSIONS);
+                if (bind.hasAttributeNS(CTOSIM_NS, CALCULATE_HERE)) {
+                    refs.add(bind.getAttributeNS(CTOSIM_NS, CALCULATE_HERE));
+                }
             }
             for (Element setvalue : descendants(doc.getDocumentElement(), XFORMS_NS, "setvalue")) {
                 addAttributes(refs, setvalue, "value");

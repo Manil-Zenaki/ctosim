@@ -19,9 +19,11 @@ public final class LoadedForm {
     private final SortedSet<String> stubbedFunctions;
     private final Attachments attachments;
     private final SortedSet<String> missingAttachments;
+    private final Map<String, String> durationCalculations;
 
     LoadedForm(byte[] xml, String sourceName, String formId, String version, String title,
-               SortedSet<String> stubbedFunctions, Attachments attachments, SortedSet<String> missingAttachments) {
+               SortedSet<String> stubbedFunctions, Attachments attachments, SortedSet<String> missingAttachments,
+               Map<String, String> durationCalculations) {
         this.xml = xml.clone();
         this.sourceName = sourceName;
         this.formId = formId;
@@ -30,6 +32,12 @@ public final class LoadedForm {
         this.stubbedFunctions = stubbedFunctions;
         this.attachments = attachments;
         this.missingAttachments = missingAttachments;
+        this.durationCalculations = durationCalculations;
+    }
+
+    /** The calculate expressions that call duration(), by bind nodeset (engine form). */
+    Map<String, String> durationCalculations() {
+        return durationCalculations;
     }
 
     public String sourceName() {

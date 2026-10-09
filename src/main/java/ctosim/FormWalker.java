@@ -9,13 +9,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SplittableRandom;
+import java.util.TimeZone;
 import org.javarosa.core.model.Constants;
 import org.javarosa.core.model.FormDef;
 import org.javarosa.core.model.SelectChoice;
+import org.javarosa.core.model.condition.EvaluationContext;
 import org.javarosa.core.model.data.AnswerDataFactory;
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.SelectMultiData;
@@ -28,6 +31,9 @@ import org.javarosa.core.model.instance.TreeReference;
 import org.javarosa.form.api.FormEntryController;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.javarosa.model.xform.XFormSerializingVisitor;
+import org.javarosa.xpath.XPathParseTool;
+import org.javarosa.xpath.expr.XPathExpression;
+import org.javarosa.xpath.parser.XPathSyntaxException;
 
 /** Fills one form from beginning to end. See specs/07-form-walker.md. */
 public final class FormWalker {
@@ -42,11 +48,13 @@ public final class FormWalker {
     private final SimulationConfig config;
     private final AnswerGenerator generator;
     private final List<String> configWarnings;
+    private final String[] deviceIds;
 
     public FormWalker(LoadedForm form, SimulationConfig config) {
         this.form = Objects.requireNonNull(form, "form");
         this.config = Objects.requireNonNull(config, "config");
         this.generator = new AnswerGenerator(config);
+        this.deviceIds = deviceIds(config);
 
         Set<String> names = new HashSet<>();
         collectNames(form.newEntryController().getModel().getForm().getMainInstance().getRoot(), names);
@@ -68,7 +76,41 @@ public final class FormWalker {
         if (number < 1) {
             throw new IllegalArgumentException("submission numbers start at 1: " + number);
         }
-        return new Walk(number).run();
+        // Stored date-times carry the offset of the JVM's default zone (spec 07, Amendment 1).
+        TimeZone previous = TimeZone.getDefault();
+        TimeZone.setDefault(TimeZone.getTimeZone(config.timeZone()));
+        try {
+            return new Walk(number).run();
+        } finally {
+            TimeZone.setDefault(previous);
+        }
+    }
+
+    /**
+     * One 15-digit device id per enumerator, drawn in enumerator order from the seed alone, so
+     * an enumerator keeps its device whatever the number of enumerators.
+     */
+    private static String[] deviceIds(SimulationConfig config) {
+        SplittableRandom random = new SplittableRandom(seed(config.seed(), 0, 6));
+        String[] ids = new String[config.enumerators()];
+        Set<String> seen = new HashSet<>();
+        for (int e = 0; e < ids.length; e++) {
+            String id;
+            do {
+                StringBuilder digits = new StringBuilder(15);
+                for (int k = 0; k < 15; k++) {
+                    digits.append(random.nextInt(10));
+                }
+                id = digits.toString();
+            } while (!seen.add(id));
+            ids[e] = id;
+        }
+        return ids;
+    }
+
+    private static String username(int enumerator, int enumerators) {
+        int width = Math.max(2, String.valueOf(enumerators).length());
+        return "enumerator" + String.format(Locale.ROOT, "%0" + width + "d", enumerator);
     }
 
     private static void collectNames(TreeElement element, Set<String> names) {
@@ -109,7 +151,10 @@ public final class FormWalker {
                     .plusDays(timing.nextInt(config.fieldworkDays()))
                     .plusMinutes(timing.nextInt(START_MINUTES + 1));
             this.clock = new SimulatedClock(start);
-            this.session = form.newSimulatedSession(clock, seed(base, number, 1));
+            int enumerator = 1 + new SplittableRandom(seed(base, number, 5)).nextInt(config.enumerators());
+            this.session = form.newSimulatedSession(clock, seed(base, number, 1), Map.of(
+                    "username", username(enumerator, config.enumerators()),
+                    "deviceid", deviceIds[enumerator - 1]));
         }
 
         Submission run() {
@@ -122,6 +167,7 @@ public final class FormWalker {
                 }
             }
             FormDef def = session.getModel().getForm();
+            refreshDurations(def, def.getMainInstance().getRoot());
             def.postProcessInstance();
             String xml;
             try {
@@ -147,6 +193,18 @@ public final class FormWalker {
             TreeReference ref = session.getModel().getFormIndex().getReference();
             String name = ref.getNameLast();
             String path = ref.toString(true);
+            FormDef def = session.getModel().getForm();
+            TreeElement node = def.getMainInstance().resolveReference(ref);
+            String here = node == null ? null : node.getBindAttributeValue(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE);
+            if (here != null) {
+                try {
+                    calculate(def, node, ref, here);
+                } catch (RuntimeException e) {
+                    warn("field '" + name + "' (" + path + "): its calculate_here expression could not be evaluated ("
+                            + e.getMessage() + "); value kept");
+                }
+                return;
+            }
             if (prompt.isReadOnly()) {
                 return;
             }
@@ -198,6 +256,21 @@ public final class FormWalker {
             advanceClock();
         }
 
+        /** Recomputes, in document order, every relevant field whose calculation calls duration(). */
+        private void refreshDurations(FormDef def, TreeElement element) {
+            Map<String, String> calculations = form.durationCalculations();
+            if (calculations.isEmpty() || element.getMult() == TreeReference.INDEX_TEMPLATE) {
+                return;
+            }
+            String expression = calculations.get(genericPath(element.getRef()));
+            if (expression != null && element.isRelevant()) {
+                calculate(def, element, element.getRef(), expression);
+            }
+            for (int i = 0; i < element.getNumChildren(); i++) {
+                refreshDurations(def, element.getChildAt(i));
+            }
+        }
+
         private void warnIfRequired(boolean required, String name, String path) {
             if (required) {
                 warn("field '" + name + "' (" + path + ") is required but has no value");
@@ -242,6 +315,24 @@ public final class FormWalker {
     }
 
     // --- Engine types -----------------------------------------------------------------
+
+    /** Evaluates {@code expression} at {@code ref} as the engine evaluates a calculate, and stores the result. */
+    static void calculate(FormDef def, TreeElement node, TreeReference ref, String expression) {
+        XPathExpression parsed;
+        try {
+            parsed = XPathParseTool.parseXPath(expression);
+        } catch (XPathSyntaxException e) {
+            throw new IllegalStateException("the expression does not parse: " + e.getMessage(), e);
+        }
+        EvaluationContext context = new EvaluationContext(def.getEvaluationContext(), ref);
+        Object result = parsed.eval(def.getMainInstance(), context);
+        def.setValue(IAnswerData.wrapData(result, node.getDataType()), ref, true);
+    }
+
+    /** A reference as a path without positions: /data/member/age. */
+    static String genericPath(TreeReference ref) {
+        return ref.toString(false).replaceAll("\\[[^\\]]*\\]", "");
+    }
 
     /** The generator's kind for a question, or null when its control cannot be simulated. */
     static QuestionKind kind(FormEntryPrompt prompt) {

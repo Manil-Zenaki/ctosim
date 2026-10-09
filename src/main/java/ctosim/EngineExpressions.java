@@ -65,6 +65,19 @@ final class EngineExpressions {
                 BIND_EXPRESSIONS, indexCounter);
         changed |= rewriteAttributes(doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "setvalue"),
                 new String[] {"value"}, indexCounter);
+        NodeList binds = doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "bind");
+        for (int i = 0; i < binds.getLength(); i++) {
+            Element bind = (Element) binds.item(i);
+            if (bind.hasAttributeNS(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE)) {
+                String before = bind.getAttributeNS(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE);
+                String after = rewriteExpression(before, indexCounter);
+                if (!after.equals(before)) {
+                    bind.setAttributeNS(FormLoader.CTOSIM_NS,
+                            bind.getAttributeNodeNS(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE).getName(), after);
+                    changed = true;
+                }
+            }
+        }
         if (!changed) {
             return original;
         }
