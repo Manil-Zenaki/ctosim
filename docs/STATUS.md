@@ -50,10 +50,6 @@ End-to-end check done: `ctosim.cmd samples/coverage/ctosim_coverage.xlsx
 `hh_preload.csv`, enumerator usernames and 15-digit device ids, UTC
 offsets.
 
-Known gaps: SLF4J prints a three-line notice on stderr (add `slf4j-nop`);
-the Windows console shows accents garbled unless its code page is UTF-8
-(`main` writes UTF-8).
-
 Unconfirmed export conventions (spec 08, "Not observed"): geopoint
 columns in a repeat, dummies in a nested repeat, `instanceName`, and what
 `comments` / `audio audit` hold. A re-export with a geopoint inside the
