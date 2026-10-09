@@ -193,12 +193,14 @@ public final class FormWalker {
             TreeReference ref = session.getModel().getFormIndex().getReference();
             String name = ref.getNameLast();
             String path = ref.toString(true);
-            FormDef def = session.getModel().getForm();
-            TreeElement node = def.getMainInstance().resolveReference(ref);
-            String here = node == null ? null : node.getBindAttributeValue(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE);
+            // The prompt's own copy of the node's bind attributes: resolving the node again would
+            // scan its siblings, which is slow in large repeats.
+            TreeElement here = TreeElement.getAttribute(prompt.getBindAttributes(),
+                    FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE);
             if (here != null) {
+                FormDef def = session.getModel().getForm();
                 try {
-                    calculate(def, node, ref, here);
+                    calculate(def, def.getMainInstance().resolveReference(ref), ref, here.getAttributeValue());
                 } catch (RuntimeException e) {
                     warn("field '" + name + "' (" + path + "): its calculate_here expression could not be evaluated ("
                             + e.getMessage() + "); value kept");
