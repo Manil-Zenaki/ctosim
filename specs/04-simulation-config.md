@@ -178,3 +178,27 @@ floating-point rounding, so every `long` seed is exact (6); `parse` accepts
 a leading U+FEFF like `load` accepts a UTF-8 byte-order mark (3);
 `withSeed` and `withSubmissions` return a distinct object even when the
 value does not change (11).
+
+## Amendment 1: time zone and enumerators
+
+Two top-level keys are added; everything else is unchanged.
+
+| Key | Type | Default | Constraint | Meaning (used by spec 07) |
+|---|---|---|---|---|
+| `timeZone` | string | `"UTC"` | a time-zone ID that `java.time.ZoneId.of` accepts: a region (`"Africa/Addis_Ababa"`), `"UTC"`, `"Z"`, or an offset (`"+03:00"`) | Time zone of the simulated devices: stored date-times carry its offset. |
+| `enumerators` | integer | `5` | 1 to 10 000 | Number of simulated enumerators; each has its own username and device id. |
+
+Accessors added to `SimulationConfig`:
+
+```java
+public java.time.ZoneId timeZone();   // ZoneId.of(text of the file), ZoneId.of("UTC") by default
+public int enumerators();
+```
+
+- `defaults()` has `timeZone()` equal to `ZoneId.of("UTC")` and
+  `enumerators()` 5.
+- A `timeZone` that `ZoneId.of` rejects, or that is not a string, is an
+  error located at `timeZone`. An `enumerators` value outside 1 to 10 000,
+  or not an integer, is an error located at `enumerators`. The rules of
+  "Strictness" and "Errors" apply to both keys.
+- `withSeed` and `withSubmissions` keep both settings.

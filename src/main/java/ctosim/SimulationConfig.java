@@ -141,6 +141,16 @@ public final class SimulationConfig {
         return overriddenFields;
     }
 
+    /** The simulated devices' time zone. See specs/04-simulation-config.md, Amendment 1. */
+    public java.time.ZoneId timeZone() {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    /** The number of simulated enumerators. See specs/04-simulation-config.md, Amendment 1. */
+    public int enumerators() {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields);
