@@ -146,7 +146,8 @@ time zone or the working directory.
   jar's manifest puts on its class path.
 - `ctosim.cmd` at the repository root runs that jar with the Java of
   `JAVA_HOME` (or `java` on the `PATH`), passing its arguments through
-  and returning the jar's exit status.
+  and returning the jar's exit status. It switches the console to the
+  UTF-8 code page for the run and restores the previous one afterwards.
 
 ## Clarifications (answers to `10-cli.questions.md`)
 
