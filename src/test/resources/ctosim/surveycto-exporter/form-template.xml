@@ -1,0 +1,9 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Definition title</h:title><model>
+    <instance><data id="export_test" version="definition-version">__INSTANCE__<meta><instanceID/></meta></data></instance>
+    __SECONDARY__
+    __BINDS__
+  </model></h:head>
+  <h:body>__BODY__</h:body>
+</h:html>

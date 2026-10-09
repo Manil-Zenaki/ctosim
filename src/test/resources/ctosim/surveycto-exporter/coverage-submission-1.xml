@@ -1,0 +1,64 @@
+<data id="ctosim_coverage" version="2610090001">
+  <starttime>2026-10-09T08:28:14</starttime>
+  <endtime>2026-10-09T08:32:49</endtime>
+  <deviceid>(web)</deviceid>
+  <subscriberid />
+  <simid />
+  <devicephonenum />
+  <username>enumerator@example.org</username>
+  <duration>275</duration>
+  <caseid />
+  <text_audit />
+  <field_comments />
+  <id_grp>
+    <hhid>H001</hhid>
+    <pl_head>Abebe (fictitious)</pl_head>
+    <pl_size>2</pl_size>
+    <consent>1</consent>
+  </id_grp>
+  <main>
+    <resp_name>Abdel Zika</resp_name>
+    <resp_age>25</resp_age>
+    <phone>0950101274</phone>
+    <income>500000</income>
+    <dob>2026-10-07</dob>
+    <wake_time>08:30:20</wake_time>
+    <next_visit>2026-10-15T08:30:27</next_visit>
+    <region>2</region>
+    <district />
+    <assets>2</assets>
+    <assets_other />
+    <gps>38.88073512778187 -77.01672870602954 0.0 74.0</gps>
+    <house_photo>133856380587281702-1791549056825.jpg</house_photo>
+    <is_adult>1</is_adult>
+    <time_main>170</time_main>
+    <hh_size>2</hh_size>
+    <member_names>papo Bab Kaka</member_names>
+    <n_members>2</n_members>
+    <member>
+      <member_index>1</member_index>
+      <member_name>papo Bab</member_name>
+      <member_sex>1</member_sex>
+      <member_age>50</member_age>
+      <member_activities>2</member_activities>
+      <job>
+        <job_title>Trader</job_title>
+        <job_hours>25</job_hours>
+      </job>
+      <job>
+        <job_title>Content creator</job_title>
+        <job_hours>10</job_hours>
+      </job>
+    </member>
+    <member>
+      <member_index>2</member_index>
+      <member_name>Kaka</member_name>
+      <member_sex>2</member_sex>
+      <member_age>21</member_age>
+      <member_activities>3</member_activities>
+    </member>
+  </main>
+  <meta>
+    <instanceID>uuid:77ee38de-9453-4fb0-a2db-24216c17f61c</instanceID>
+  </meta>
+</data>

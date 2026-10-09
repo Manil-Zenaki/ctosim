@@ -1,0 +1,49 @@
+<data id="ctosim_coverage" version="2610090001">
+  <starttime>2026-10-09T08:35:40</starttime>
+  <endtime>2026-10-09T08:37:25</endtime>
+  <deviceid>(web)</deviceid>
+  <subscriberid />
+  <simid />
+  <devicephonenum />
+  <username>enumerator@example.org</username>
+  <duration>105</duration>
+  <caseid />
+  <text_audit />
+  <field_comments />
+  <id_grp>
+    <hhid>H002</hhid>
+    <pl_head>Chaltu (fictitious)</pl_head>
+    <pl_size>3</pl_size>
+    <consent>1</consent>
+  </id_grp>
+  <main>
+    <resp_name>uta</resp_name>
+    <resp_age>16</resp_age>
+    <phone>0950603045</phone>
+    <income>2000</income>
+    <dob>2026-07-16</dob>
+    <wake_time>08:37:29</wake_time>
+    <next_visit>2026-10-13T08:36:33</next_visit>
+    <region>1</region>
+    <district />
+    <assets>2</assets>
+    <assets_other />
+    <gps>38.88073883035768 -77.01677538986853 0.0 76.0</gps>
+    <house_photo>133890389454874774-1791549414952.jpg</house_photo>
+    <is_adult>0</is_adult>
+    <time_main>77</time_main>
+    <hh_size>1</hh_size>
+    <member_names>mbaoe</member_names>
+    <n_members>1</n_members>
+    <member>
+      <member_index>1</member_index>
+      <member_name>mbaoe</member_name>
+      <member_sex>1</member_sex>
+      <member_age>85</member_age>
+      <member_activities>-97</member_activities>
+    </member>
+  </main>
+  <meta>
+    <instanceID>uuid:0ea253c4-da14-490d-9163-cee1a5e02027</instanceID>
+  </meta>
+</data>

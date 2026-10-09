@@ -1,0 +1,49 @@
+<data id="ctosim_coverage" version="2610090001">
+  <starttime>2026-10-09T08:33:07</starttime>
+  <endtime>2026-10-09T08:35:21</endtime>
+  <deviceid>(web)</deviceid>
+  <subscriberid />
+  <simid />
+  <devicephonenum />
+  <username>enumerator@example.org</username>
+  <duration>134</duration>
+  <caseid />
+  <text_audit />
+  <field_comments />
+  <id_grp>
+    <hhid>H003</hhid>
+    <pl_head>Dawit (fictitious)</pl_head>
+    <pl_size>1</pl_size>
+    <consent>1</consent>
+  </id_grp>
+  <main>
+    <resp_name>Nina</resp_name>
+    <resp_age>45</resp_age>
+    <phone>0920305060</phone>
+    <income>80000</income>
+    <dob>2026-09-14</dob>
+    <wake_time>08:34:05</wake_time>
+    <next_visit>2026-10-19T08:34:07</next_visit>
+    <region>1</region>
+    <district />
+    <assets>1 3</assets>
+    <assets_other />
+    <gps>38.880704334618216 -77.01679924926881 0.0 78.0</gps>
+    <house_photo>133878969030030049-1791549275687.jpg</house_photo>
+    <is_adult>1</is_adult>
+    <time_main>91</time_main>
+    <hh_size>1</hh_size>
+    <member_names>paola</member_names>
+    <n_members>1</n_members>
+    <member>
+      <member_index>1</member_index>
+      <member_name>paola</member_name>
+      <member_sex>2</member_sex>
+      <member_age>13</member_age>
+      <member_activities>3</member_activities>
+    </member>
+  </main>
+  <meta>
+    <instanceID>uuid:886c1b58-0a2a-43e0-bcdd-ce473b5018b9</instanceID>
+  </meta>
+</data>
