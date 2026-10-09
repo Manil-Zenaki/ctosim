@@ -175,3 +175,13 @@ empty string (4); a one-sided date interval holds 365 dates (5); the
 translation width uses the configured range's unrounded endpoints (6);
 when hints do not apply, generation draws exactly as spec 05 does, from
 the same random stream (10).
+
+## Amendment 1: effect on spec 07's retry behaviour
+
+Because the walker now passes hints, a constraint whose terms all give
+hints (such as `. = 1`, or `. >= 1 and . <= 20`) is usually satisfied by
+the first proposal, so it no longer exercises the walker's retries.
+Spec 07's rules are unchanged; observing its 50-attempt retry budget
+statistically now requires a constraint that gives no hints, for example
+`. = 1 or . = 1` or `not(. != 1)` (disjunctions and negations give no
+hint, see "Deriving hints").
