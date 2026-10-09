@@ -224,3 +224,158 @@ in specs 01, 04, 05, and 06. No production source was opened or searched.
   `.codex-runs/form-walker-dispute-junit.log`. PowerShell reported a native
   stderr error for the SLF4J missing-binding warning and command exit 1;
   the JUnit summary itself reports 128 successes and zero failures.
+
+## Amendment 1 questions and assumptions (2026-10-09)
+
+The new `FormWalkerAmendment*Test` classes cover only Amendment 1. Existing
+tests and fixtures are retained unchanged. No production source was opened,
+searched, or modified. The public APIs in the specs and the existing test
+helpers provide all required signatures.
+
+14. **Question:** Must timestamp strings have the exact fractional-second
+    spelling in the example, and how should daylight-saving gaps, overlaps,
+    or the artificial date underlying a time-only value be interpreted?
+    **Assumption:** Assert parsed local date-times and offsets, not the
+    example's millisecond spelling. Test fixed offsets (including negative,
+    fractional-hour, and extreme civil offsets), and regional timestamp
+    offsets in both winter and summer. Time-only answers are tested with
+    fixed-offset zones; no reference date for a region's time-only offset
+    is imposed. Gap/overlap resolution is not specified here and is not
+    tested. The explicit coverage-form UTC suffix requirement is tested
+    literally. A custom `SimpleTimeZone` tests restoration of the prior
+    zone's full value, rather than restoration by ID alone. All five new
+    test classes use JUnit `@Isolated`, and manual default-zone changes use
+    `finally`, so they cannot overlap other JUnit tests even if parallel
+    execution is enabled.
+    **Tests:** `FormWalkerAmendmentTimeZoneTest`,
+    `coverageUsesDefaultEnumeratorIdentityAndUtcTimestamp`.
+
+15. **Question:** Which exception can demonstrate zone restoration after a
+    session has actually begun without relying on undocumented failure modes?
+    **Assumption:** Use the existing specified 100,000-navigation-step guard
+    with a large repeat target and a read-only child. Invalid submission
+    numbers separately test restoration at input rejection. The 120-second
+    timeout is a harness safeguard, not a performance contract.
+    **Tests:** `failureAfterSessionOpeningAlsoRestoresThePreviousZone`,
+    `rejectedSubmissionNumberRestoresThePreviousZone`.
+
+16. **Question:** Is any particular enumerator RNG, seed-mixing algorithm,
+    device-ID encoding, or independence from other settings required?
+    **Assumption:** Do not prescribe numeric assignments or device IDs.
+    The enumerator depends on seed and submission number for a given range;
+    changing form, start, time zone, missing rate, or batch size must not
+    change that identity. A device depends only on seed and enumerator number,
+    so enumerator 1 keeps its device when the configured enumerator count
+    changes. Leading zeros are valid in a 15-digit device ID. For meaningful
+    seed sensitivity, compare whole assignment sequences, not individual
+    submissions that can legitimately choose the same enumerator. Uniformity
+    uses 2,500 fixed-seed draws over the default five enumerators and the
+    existing seven-standard-deviations-plus-two binomial tolerance. Padding
+    tests include the one-enumerator boundary, decimal-width transitions,
+    the example 120, and the maximum 10,000.
+    **Tests:** `FormWalkerAmendmentEnumeratorTest`.
+
+17. **Question:** How should `calculate-here` interact with other question
+    rules, namespaces, missing body controls, or a simultaneous ordinary
+    `calculate` attribute?
+    **Assumption:** The amendment explicitly puts it before all ordinary
+    question rules, so read-only, existing defaults, configured overrides,
+    and unsupported controls do not bypass it. Attribute recognition uses
+    the specified namespace URI, independent of prefix. An attribute in
+    another namespace or no namespace does not opt in. A field without a
+    body question is never reached; it is not processed as `calculate_here`.
+    No test combines `calculate` and `calculate-here` on the same bind,
+    because precedence there is unspecified and the converter does not
+    produce that combination. Repeat count fixtures use count-node paths,
+    as the engine requires, rather than literal `jr:count="2"` expressions.
+    **Tests:** Precedence, namespace, no-body-question, and nested-context
+    tests in `FormWalkerAmendmentCalculateHereTest`.
+
+18. **Question:** What qualifies as a calculation evaluation failure, and
+    what warning text or result-conversion policy should be required?
+    **Assumption:** Use syntactically valid `pulldata('wrong-arity')`, whose
+    evaluation failure is explicitly specified in spec 03. This avoids
+    conflating form-load errors with failures encountered during navigation.
+    Test both empty and populated prior values, continuation, no clock
+    advance, field-name warning fragments, submission prefix, and warning
+    order. Do not prescribe full warning prose or impose an unspecified
+    policy for an expression that evaluates successfully but yields a value
+    incompatible with its bind type.
+    **Tests:** `evaluationFailureKeepsTheValueWarnsAndContinuesWithoutAClockAdvance`,
+    `failedCalculationsWarnInTheOrderQuestionsAreReached`,
+    `conditionalCalculationIsHandledOnlyWhenRelevantAtNavigation`.
+
+19. **Question:** How can the final `duration()` refresh's ordering and
+    dependent updates be observed without an internal evaluation hook?
+    **Assumption:** A single last question ensures that the only earlier
+    answer occurred at elapsed time zero. Expressions gated on positive
+    duration and using `once()` can then record whether an earlier document
+    node was refreshed first, and whether the end preload was still blank.
+    Reverse bind order deliberately separates instance document order from
+    declaration order. A call may be nested or separated from its parentheses
+    by whitespace; literal text `duration()` is not a call. Other unrelated
+    calculates are not proactively refreshed merely because their text
+    contains that literal. Normal calculate chains and dependent relevance
+    are updated as required after a value change. Repeated instances include
+    counted parents and zero, one, or multiple enumerator-controlled children.
+    Numeric values are checked as whole numbers without requiring a particular
+    decimal spelling. No policy is imposed for final-refresh evaluation
+    failures or calculations that change repeat structure during the pass.
+    **Tests:** `FormWalkerAmendmentDurationTest`.
+
+20. **Question:** Must `calculate_here` randomness match an independently
+    guessed random sequence or change when a constant field is inserted?
+    **Assumption:** No random draw ordering across different forms is
+    specified. Check value domains, UUID format, same-seed replay across
+    intervening walks and independent walkers, and different seeds/numbers
+    over meaningful samples. Clock tests compare observed timestamps and
+    elapsed seconds rather than an invented RNG sequence. `once()` retains
+    existing values, including the zero captured by an ordinary
+    `once(duration())` at session opening.
+    **Tests:** Randomness, `once()`, and clock tests in
+    `FormWalkerAmendmentCalculateHereTest`; `onceDurationRetainsItsInitialZeroWhilePlainDurationReachesTheEnd`.
+
+21. **Question:** What should acceptance tests do when the published coverage
+    XForm has not yet been regenerated with converter Amendment 2?
+    **Assumption:** Keep the requested acceptance assertions active and load
+    the actual sample with `samples/coverage` as its media directory. At
+    authoring time, the checked-in `time_main` bind still has ordinary
+    `calculate="once(duration())"`, with no `calculate-here` attribute, so
+    its positive elapsed-time assertion cannot validate the intended
+    converted form until that artifact is regenerated. Do not alter the
+    sample, weaken the assertion, or silently skip the test. This is a
+    prerequisite of the amended acceptance clause, not proof of a walker
+    defect. The household lookup oracle reads the checked-in three-row CSV,
+    which has no quoted commas or multiline fields; it does not implement
+    or test a general CSV parser.
+    **Tests:** `FormWalkerAmendmentCoverageTest` (submissions 1, 2, and 3,
+    with duration, conditional time_main, household lookup, and device/zone
+    acceptance in separate parameterized methods).
+
+### Amendment 1 build and validation
+
+- **Question:** Can the requested `mvnw.cmd -o -q test-compile` complete in
+  this environment?
+- **Assumption:** A cached-dependency filesystem failure is not a Java
+  compilation error. The command reaches `testCompile` but fails while
+  canonicalizing `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+  An `-e` diagnostic run confirms `java.nio.file.AccessDeniedException`
+  in `WindowsLinkSupport.getRealPath`. No repository copies, installations,
+  drive mappings, dependency changes, or build-configuration edits were made.
+- **Tests:** The existing `.codex-runs/WalkerCompileProbe.java` successfully
+  compiles all 13 `FormWalker*.java` test/support files (the seven existing
+  files and six additions), with Java release 17 against actual existing
+  project classes and cached JUnit 5.11.4 APIs. This verifies source/API
+  compilation independently; it is not a successful Maven build. Logs and
+  the temporary amendment-only JUnit runner are under `.codex-runs/`.
+- **Execution:** The amendment-only JUnit run discovered 81 cases: 13 passed,
+  68 failed, none skipped or aborted. No `FormLoadException` remained after
+  correcting the count-node fixtures. The current implementation yields
+  missing or old-behavior values for amendment calculations and metadata;
+  all 12 real-coverage cases stop at the media-loading API's
+  `UnsupportedOperationException`. These are retained as contract tests;
+  passing the unimplemented amendment is not the purpose of this run.
+  Details are in `.codex-runs/walker-amendment-junit.log`. The separate
+  compilation probe passed after the final Java edits. Existing tests,
+  production source, the POM, and sample forms remain unchanged. No commit
+  was made.
