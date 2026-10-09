@@ -51,7 +51,7 @@ and the dispute repository reached test compilation but failed with
 `java.nio.file.AccessDeniedException` on `junit-platform-engine-1.11.4.jar`.
 Test compilation and execution could not be confirmed in this environment.
 
-## Dispute 3: tests that still treat `pulldata` as a fixed stub (Amendment 3)
+## Dispute 2: tests that still treat `pulldata` as a fixed stub (Amendment 3)
 
 Amendment 3 makes `pulldata` a real function: it takes exactly four
 arguments ("A call with a number of arguments other than four fails to

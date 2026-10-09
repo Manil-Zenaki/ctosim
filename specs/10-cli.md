@@ -144,3 +144,13 @@ time zone or the working directory.
 - `ctosim.cmd` at the repository root runs that jar with the Java of
   `JAVA_HOME` (or `java` on the `PATH`), passing its arguments through
   and returning the jar's exit status.
+
+## Clarifications (answers to `10-cli.questions.md`)
+
+All twelve assumptions were reviewed one by one and are confirmed. In
+particular, the usage text and messages are free apart from what the spec
+states (1); the converter may be replaced by a test double reached
+through `--python` and `PYTHONPATH` (10); the CLI is checked against the
+public pipeline it composes (11). In addition, `main` writes `out` and
+`err` in UTF-8, so that file names with accents reach a calling program
+intact.
