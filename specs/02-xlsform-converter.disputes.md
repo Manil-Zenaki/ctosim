@@ -115,3 +115,28 @@ implementation state described in the dispute's opening paragraph, and a
 passing behavioral run cannot be confirmed here. Traceback source display
 was suppressed; implementation code was not read or changed.
 `git diff --check` passed.
+
+## Dispute 3: body position compared across two parses of the XForm
+
+`test_converter_calculate_here.py::test_calculate_here_keeps_its_body_position_and_catalog_path`
+(both `group` and `repeat` cases) asserts
+`input_for(result, path) in elements(parent, "input")`. `input_for`
+parses `result.xform` again, while `parent` comes from an earlier parse,
+and `xml.etree` elements compare by identity: an element of one parse is
+never `in` a list of elements of another parse, whatever the XForm. The
+converted XForm does place the read-only `checkpoint` input inside the
+group or repeat body element. Requested change: look the control up in
+the same parse as `parent` (for example, check that `parent` has an
+`input` whose `ref` is the path).
+
+## Dispute 4: generated count node for a plain `${size}` repeat count
+
+`test_converter_boundaries.py::test_nested_repeat_count_is_a_sibling_node_excluded_from_catalog`
+expects a `members_count` node for `repeat_count` = `${size}`. pyxform
+4.5.0 adds such a node only when the count is an expression; for a single
+field reference, `jr:count` refers to the field itself. The spec's
+Amendment 1 said otherwise and has been corrected (see its "Correction"
+paragraph). Requested change: either use an expression such as
+`${size} + 1` to test the generated node, or, for `${size}`, expect
+`jr:count` to be `/data/household/size` and no `members_count` node; in
+both cases the catalog must not list a count node.

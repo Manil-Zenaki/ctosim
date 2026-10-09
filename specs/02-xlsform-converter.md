@@ -235,8 +235,10 @@ take into account:
   they reference their list with `<itemset nodeset="instance('LIST_NAME')/root/item...">`
   (followed by the choice filter predicate, when there is one). Duplicate
   values appear as separate `<item>` elements.
-- **Repeat counts.** A `repeat_count` expression is not written on the
-  `<repeat>` element itself. pyxform adds a hidden calculated node named
+- **Repeat counts.** When `repeat_count` is a single field reference
+  (`${size}`), the `<repeat>` element's `jr:count` refers to that field
+  directly and no node is added. Otherwise the expression is not written
+  on the `<repeat>` element itself: pyxform adds a hidden calculated node named
   `<repeat name>_count` next to the repeat (for a repeat at
   `/data/target`, the node `/data/target_count`), whose `bind` carries the
   expression in its `calculate` attribute; the `<repeat>` element's
@@ -278,3 +280,8 @@ is kept.
 Only `calculate_here` rows produce the `ctosim:calculate-here` attribute
 or the `ctosim` namespace declaration; a form without such rows gives the
 same XForm as before this amendment.
+
+Correction (Amendment 1, repeat counts): the generated `<repeat>_count`
+node exists only when `repeat_count` is an expression other than a single
+field reference, as pyxform 4.5.0 does (checked on `${size}` and
+`${size} + 1`).
