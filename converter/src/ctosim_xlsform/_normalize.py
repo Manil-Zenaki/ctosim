@@ -18,7 +18,15 @@ COLUMN_RENAMES = {
 IGNORED_COLUMNS = {"note", "response_note", "publishable", "minimum_seconds", "disabled",
                    "accuracy_threshold", "mediatype"}
 
-EXPRESSION_COLUMNS = ("relevant", "constraint", "calculation", "required", "choice_filter", "repeat_count")
+CALCULATE_HERE_COLUMN = "bind::ctosim:calculate-here"
+CTOSIM_NAMESPACE = 'ctosim="urn:ctosim:xforms"'
+
+EXPRESSION_COLUMNS = ("relevant", "constraint", "calculation", "required", "choice_filter", "repeat_count",
+                      CALCULATE_HERE_COLUMN)
+
+# Columns of a calculate_here row that its read-only question does not carry over (spec 02, Amendment 2).
+_CALCULATE_HERE_DROPPED = ("required", "constraint", "default", "appearance", "choice_filter",
+                           "constraint_message", "required_message")
 
 EMPTY_CALCULATE_TYPES = {"caseid", "comments", "text audit", "audio audit", "speed violations count",
                          "speed violations list", "speed violations audit"}
@@ -52,6 +60,7 @@ class Normalized:
     settings: dict[str, Any]
     fields: list[tuple[str, str, str, int]] = field(default_factory=list)  # name, type, xpath, row
     warnings: list[str] = field(default_factory=list)
+    has_calculate_here: bool = False
 
 
 def read_sheet(worksheet) -> Sheet:
@@ -143,6 +152,14 @@ def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> N
             raise NormalizationError(f"row {number}: choice list '{select.group(2)}' used by '{name}' "
                                      f"does not exist on the choices sheet")
 
+        if type_text == "calculate_here":
+            _calculate_here(s, row, name)
+            out.has_calculate_here = True
+            out.warnings.append(f"row {number}: field '{name}' of SurveyCTO type 'calculate_here' becomes "
+                                f"a read-only question computed when the form reaches it")
+            out.fields.append((name, type_text, _xpath(stack, name), number))
+            continue
+
         converted = _convert_type(type_text)
         if converted is not None:
             new_type, empty_value = converted
@@ -196,13 +213,32 @@ def _choice_list_names(choices: Sheet | None) -> set[str]:
 
 def _convert_type(type_text: str) -> tuple[str, bool] | None:
     """(new type, whether its value is the empty string) for SurveyCTO-only types."""
-    if type_text == "calculate_here":
-        return "calculate", False
     if type_text in EMPTY_CALCULATE_TYPES or type_text.split(" ")[0] in SENSOR_TYPE_WORDS:
         return "calculate", True
     if type_text == "enumerator":
         return "text", False
     return None
+
+
+def _calculate_here(s: Sheet, row: list[Any], name: str) -> None:
+    """A read-only text question labelled with its name, whose calculation moves to a bind attribute."""
+    has_label = any(h.partition(":")[0] == "label" for h in s.headers if not h.startswith("bind::"))
+    for column in ("read_only", CALCULATE_HERE_COLUMN) + (() if has_label else ("label",)):
+        if s.column(column) is None:
+            s.headers.append(column)
+            for r in s.rows:
+                r.append(None)
+    calculation = row[s.column("calculation")]
+    row[s.column("type")] = "text"
+    row[s.column("read_only")] = "yes"
+    row[s.column(CALCULATE_HERE_COLUMN)] = calculation if text(calculation).strip() != "" else None
+    row[s.column("calculation")] = None
+    for i, header in enumerate(s.headers):
+        base = header.partition(":")[0] if not header.startswith("bind::") else header
+        if base == "label":
+            row[i] = name
+        elif base == "hint" or base in _CALCULATE_HERE_DROPPED:
+            row[i] = None
 
 
 def _xpath(stack: list[tuple[str, int, str]], name: str) -> str:

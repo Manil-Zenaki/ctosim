@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
 
-from ._normalize import PASSED_SETTINGS, NormalizationError, Sheet, normalize, read_sheet, text
+from ._normalize import CTOSIM_NAMESPACE, PASSED_SETTINGS, NormalizationError, Sheet, normalize, read_sheet, text
 
 
 class ConversionError(Exception):
@@ -174,6 +174,10 @@ def _write_odk_workbook(norm, form_id: str, title: str, version: str | None, out
         if value is not None and text(value).strip() != "":
             headers.append(name)
             values.append(value)
+    if norm.has_calculate_here:
+        own = text(norm.settings.get("namespaces")).strip()
+        headers.append("namespaces")
+        values.append(f"{own} {CTOSIM_NAMESPACE}".strip())
     _append(settings, headers)
     _append(settings, values)
     wb.save(out)
