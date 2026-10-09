@@ -243,3 +243,37 @@ take into account:
   `jr:count` refers to that node. The `selected()` rewriting therefore
   shows in that bind's `calculate`. This generated node is not a survey
   row and is not listed in `fields`.
+
+## Amendment 2: `calculate_here` is computed where it stands
+
+SurveyCTO computes a `calculate_here` field when the enumerator reaches
+its position in the form, not when the form opens (so
+`once(duration())` there records the time spent up to that point). A
+plain `calculate` cannot express that, so the conversion of
+`calculate_here` changes; the row of the "Field types" table for
+`calculate_here` is replaced by this section. Other types are unchanged.
+
+A `calculate_here` row becomes, in the XForm:
+
+- a **read-only text question** at the row's position in the body, with
+  the row's `name`, the row's `relevance` (rewritten as any relevance), and
+  a label equal to its `name`;
+- **no `calculate` attribute**: its bind carries instead the attribute
+  `ctosim:calculate-here`, whose value is the row's `calculation`,
+  rewritten by the rules of "Expressions" and with `${field}` references
+  replaced by paths exactly as pyxform replaces them in a `calculate`
+  (an empty calculation gives an empty attribute);
+- the root element declares the prefix `ctosim` for the namespace
+  `urn:ctosim:xforms`, in addition to the namespaces the form's own
+  settings declare.
+
+The row's other columns (`required`, `constraint`, `default`,
+`appearance`, `hint`, `read only`, `choice_filter`, `label`) are not
+carried over. The field catalog still lists the row with type
+`calculate_here`, its own `xpath` and `row`. The conversion warning for
+the row (one per converted row, naming its row, `name` and original type)
+is kept.
+
+Only `calculate_here` rows produce the `ctosim:calculate-here` attribute
+or the `ctosim` namespace declaration; a form without such rows gives the
+same XForm as before this amendment.
