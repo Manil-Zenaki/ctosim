@@ -50,3 +50,28 @@ the preload repository failed during compilation on `hamcrest-all-1.3.jar`,
 and the dispute repository reached test compilation but failed with
 `java.nio.file.AccessDeniedException` on `junit-platform-engine-1.11.4.jar`.
 Test compilation and execution could not be confirmed in this environment.
+
+## Dispute 3: tests that still treat `pulldata` as a fixed stub (Amendment 3)
+
+Amendment 3 makes `pulldata` a real function: it takes exactly four
+arguments ("A call with a number of arguments other than four fails to
+evaluate"), reads `<source>.csv` from the media directory, and "is no
+longer listed by `stubbedFunctions()`". Spec 01's table now marks its stub
+row as superseded. These tests, written before the amendment, still
+expect the stub behaviour; each fails because a form calling `pulldata`
+with another arity no longer initialises, or because `pulldata` is
+expected in `stubbedFunctions()`:
+
+- `FormLoaderFunctionTest`: `stubsAcceptZeroOneManyAndMixedTypeArguments`
+  (the `pulldata` cases), `nestedStubsAreDiscoveredAndEvaluated`,
+  `onlyReferencedStubsAreReportedOnceInNaturalOrder`,
+  `stubbedFunctionSetAndItsViewsCannotBeModified`,
+  `nativeAndStubbedFunctionsWorkTogetherInACalculate`;
+- `SimulatedSessionContractTest.surveyCtoStubsComposeWithSimulatedFunctionsWithoutCallerConfiguration`;
+- `SurveyCtoFunctionContractTest.originalFixedStubsAndUnimplementedConditionalFunctionsKeepTheirValuesAndInventory`.
+
+Requested change: remove `pulldata` from the stub expectations of these
+tests (the other stubs and their checks stay as they are). Where a test
+needs a SurveyCTO stub, use another one of the fixed stubs; where it
+calls `pulldata`, call it with four arguments and expect `""` (a form
+loaded from a stream has no media directory).

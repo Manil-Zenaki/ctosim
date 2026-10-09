@@ -254,3 +254,13 @@ media directory (all of them when there is no media directory). Calls
 whose source is not a literal are not listed. The set is unmodifiable;
 it is empty when nothing is missing or the form never calls `pulldata`
 with a literal source. It reflects the media directory at load time.
+
+Clarification (Amendment 3): assumptions 22–28 of the questions file are
+reviewed one by one and confirmed. In particular, literal sources are
+found in every expression site of spec 01, including itemset references
+and actions (22); an existing path `<source>.csv` that cannot be read as a
+file makes the call fail (26); loading the form never reads an attached
+file, even to check that the form initialises (27). Amendment 3 supersedes
+the earlier rule that `pulldata` accepts any arguments and is listed by
+`stubbedFunctions()` (28): tests written before it that expect this are
+out of date.

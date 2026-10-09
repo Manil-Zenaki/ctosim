@@ -72,7 +72,7 @@ of arguments of any type, and return a fixed value:
 
 | Function | Returns |
 |---|---|
-| `pulldata(...)` | empty string `""` |
+| `pulldata(...)` | empty string `""` (superseded: see spec 03, Amendment 3) |
 | `plug-in-metadata(...)` | empty string `""` |
 | `username(...)` | string `"simulated"` |
 | `duration(...)` | number `0` |
