@@ -22,6 +22,24 @@ what was learnt along the way.
 Suite: 2305 Java tests and 223 Python tests, all green at commit `806567e`
 plus this file.
 
+## Next step: real exports have arrived (not yet examined or committed)
+
+On 2026-10-09 the owner added, untracked:
+
+- `samples/coverage/wide/`: `ctosim coverage test_WIDE.csv`,
+  `import_ctosim_coverage_wide.do`;
+- `samples/coverage/long/`: `ctosim coverage test.csv` (main),
+  `...-main-member.csv`, `...-main-plot.csv`, `...-job.csv`, and the Stata
+  long templates in `ctosim_coverage_stata_template_long/`;
+- `samples/surveycto_example/`: a SurveyCTO sample form
+  (`Sample+household+listing+form.xlsx`, `SurveyCTO_form1.xml`) with its
+  WIDE and long CSVs, `.do` templates and an image attachment.
+
+To do next: read them, settle every "to confirm" point of spec 08 from
+them, ask the owner whether to commit them as fixtures (the coverage data
+is fictitious; check the SurveyCTO example's terms), finalise spec 08, run
+Codex on it.
+
 ## Waiting on the project owner
 
 - **Real SurveyCTO exports.** The owner cannot share data with personal
