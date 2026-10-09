@@ -23,6 +23,11 @@ public final class Submission {
         this.warnings = List.copyOf(warnings);
     }
 
+    /** A submission built from an instance written elsewhere. See specs/08-surveycto-exporter.md. */
+    public static Submission of(int number, String instanceXml, LocalDateTime start, LocalDateTime end) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
     public int number() {
         return number;
     }
