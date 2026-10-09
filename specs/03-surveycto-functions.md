@@ -187,3 +187,70 @@ Clarification: assumptions 15–21 of the questions file were reviewed one
 by one and are confirmed (in particular 19: a call parsed outside the form
 keeps the engine's native outcome, since the change applies to the form's
 own expressions).
+
+## Amendment 3: `pulldata()` and attached files
+
+SurveyCTO forms preload data with `pulldata()` from CSV files attached to
+the form. `pulldata` is no longer a fixed stub: it reads those files from
+a **media directory**.
+
+### API additions
+
+```java
+// added to FormLoader (spec 01):
+public static LoadedForm load(java.nio.file.Path xform, java.nio.file.Path mediaDirectory)
+        throws FormLoadException;
+
+// added to LoadedForm (spec 01):
+public java.util.SortedSet<String> missingAttachments();
+```
+
+- `load(xform, mediaDirectory)` loads the form as `load(xform)` does and
+  takes attached files from `mediaDirectory`. A `mediaDirectory` that does
+  not exist or is not a directory throws `FormLoadException` naming it; a
+  null argument throws `NullPointerException`.
+- `load(xform)` uses the directory that contains `xform` as its media
+  directory.
+- `load(in, sourceName)` has no media directory: every attached file is
+  missing.
+
+### `pulldata(source, column, keyColumn, key)`
+
+- The four arguments are converted to strings as XPath `string()` does
+  (a whole number gives no decimal part: `5` gives `"5"`).
+- The attached file is `<source>.csv` in the media directory (exact file
+  name).
+- The result is a string: the value in column `column` of the **first**
+  data row whose value in column `keyColumn` equals `key` exactly (no
+  trimming, case-sensitive).
+- The result is `""` when there is no media directory, no such file, no
+  column named `column` or `keyColumn` in the header, or no matching row.
+- A call with a number of arguments other than four fails to evaluate, as
+  a call to any function with the wrong number of arguments does.
+- `pulldata` works in every session, ordinary or simulated, and is no
+  longer listed by `stubbedFunctions()`.
+
+### CSV files
+
+- UTF-8, with or without a byte-order mark. The first row is the header
+  (column names); the following rows are data rows.
+- Fields are separated by commas and rows by LF or CRLF. A field may be
+  enclosed in double quotes, inside which commas, line breaks and doubled
+  double quotes (`""` for `"`) are literal. Values are not trimmed.
+- A data row with fewer fields than the header has empty values for the
+  missing columns; extra fields are ignored. An empty line at the end of
+  the file is not a data row.
+- A file is read the first time a call needs it and kept for the life of
+  the `LoadedForm`; later changes to the file are not seen.
+- A file that cannot be read, or whose quoting is not closed, makes the
+  `pulldata` call fail to evaluate, with an error naming the file.
+
+### `missingAttachments()`
+
+Lists, in natural string order and without duplicates, the `source`
+arguments written as string literals (`pulldata('hh_preload', ...)`) in
+the form's expressions whose file `<source>.csv` does not exist in the
+media directory (all of them when there is no media directory). Calls
+whose source is not a literal are not listed. The set is unmodifiable;
+it is empty when nothing is missing or the form never calls `pulldata`
+with a literal source. It reflects the media directory at load time.

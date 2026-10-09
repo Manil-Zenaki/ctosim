@@ -49,6 +49,14 @@ public final class LoadedForm {
     }
 
     /**
+     * The literal pulldata() sources whose CSV file is not in the media directory. See
+     * specs/03-surveycto-functions.md, Amendment 3.
+     */
+    public SortedSet<String> missingAttachments() {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    /**
      * Opens a session whose clock-dependent values come from {@code clock} and whose random
      * values come from {@code seed}. See specs/06-simulated-sessions.md.
      */

@@ -63,6 +63,11 @@ public final class FormLoader {
         return parse(bytes, fileName == null ? xform.toString() : fileName.toString());
     }
 
+    /** Loads a form whose attached files are in {@code mediaDirectory}. See specs/03, Amendment 3. */
+    public static LoadedForm load(Path xform, Path mediaDirectory) throws FormLoadException {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
     public static LoadedForm load(InputStream in, String sourceName) throws FormLoadException {
         Objects.requireNonNull(in, "in");
         Objects.requireNonNull(sourceName, "sourceName");
