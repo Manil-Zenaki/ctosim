@@ -285,3 +285,8 @@ Correction (Amendment 1, repeat counts): the generated `<repeat>_count`
 node exists only when `repeat_count` is an expression other than a single
 field reference, as pyxform 4.5.0 does (checked on `${size}` and
 `${size} + 1`).
+
+Clarification (Amendment 2): assumptions 16–20 of the questions file are
+reviewed one by one and confirmed. In particular, an enabled
+`calculate_here` row with no calculation still declares the `ctosim`
+namespace, while a disabled one does not (17).

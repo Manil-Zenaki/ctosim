@@ -276,3 +276,10 @@ Amendment 2) loaded with media directory `samples/coverage/` and
   `hhid`;
 - `username` matches `enumerator0[1-5]`, `deviceid` is 15 digits, and
   `starttime` ends with `+00:00` or `Z`.
+
+Clarification (Amendment 1): assumptions 14–20 of the questions file are
+reviewed one by one and confirmed. In particular, the `calculate-here`
+rule comes before every other question rule, including configured
+overrides (17); the attribute is recognised by its namespace URI, not its
+prefix (17); `duration()` is recognised as a call in the parsed
+expression, not as text (19).
