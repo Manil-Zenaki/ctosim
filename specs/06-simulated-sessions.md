@@ -152,3 +152,9 @@ public org.javarosa.form.api.FormEntryController newSimulatedSession(
   `NullPointerException`. Everything else in this spec (clock,
   randomness, reproducibility) applies unchanged to sessions opened with
   properties.
+
+Clarification (Amendment 2): assumptions 14–21 of the questions file are
+reviewed one by one and confirmed. In particular, property names and
+values are used exactly as given (14); an explicitly empty value may be
+stored as no value or as an empty string, and `username()` then returns
+`""` (15); an explicit empty map gives no username (20).
