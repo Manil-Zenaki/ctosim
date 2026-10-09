@@ -1,0 +1,38 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head>
+    <h:title>Session device properties</h:title>
+    <model>
+      <instance>
+        <data id="session-device-properties">
+          <tick>0</tick><answer>initial</answer>
+          <operator/><device/><subscriber/><sim/><phone/><custom/><uppercase/><unicode/>
+          <username_result/><first_username/><changed_username/><preloaded_username/>
+        </data>
+      </instance>
+      <bind nodeset="/data/tick" type="int"/>
+      <bind nodeset="/data/answer" type="string"/>
+      <bind nodeset="/data/operator" type="string" jr:preload="property" jr:preloadParams="username"/>
+      <bind nodeset="/data/device" type="string" jr:preload="property" jr:preloadParams="deviceid"/>
+      <bind nodeset="/data/subscriber" type="string" jr:preload="property" jr:preloadParams="subscriberid"/>
+      <bind nodeset="/data/sim" type="string" jr:preload="property" jr:preloadParams="simserial"/>
+      <bind nodeset="/data/phone" type="string" jr:preload="property" jr:preloadParams="phonenumber"/>
+      <bind nodeset="/data/custom" type="string" jr:preload="property" jr:preloadParams="vendor.custom-id"/>
+      <bind nodeset="/data/uppercase" type="string" jr:preload="property" jr:preloadParams="USERNAME"/>
+      <bind nodeset="/data/unicode" type="string" jr:preload="property" jr:preloadParams="appareil-&#xE9;quipe"/>
+      <bind nodeset="/data/username_result" type="string"
+            calculate="concat('[', if(/data/tick &gt;= 0, username(), 'unreachable'), ']')"/>
+      <bind nodeset="/data/preloaded_username" type="string" calculate="concat('[', /data/operator, ']')"/>
+      <bind nodeset="/data/first_username" type="string"/>
+      <bind nodeset="/data/changed_username" type="string"/>
+      <setvalue event="odk-instance-first-load" ref="/data/first_username" value="concat('[', username(), ']')"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/tick">
+      <label>Recalculate username</label>
+      <setvalue event="xforms-value-changed" ref="/data/changed_username" value="concat('[', username(), ']')"/>
+    </input>
+    <input ref="/data/answer"><label>Answer</label></input>
+  </h:body>
+</h:html>

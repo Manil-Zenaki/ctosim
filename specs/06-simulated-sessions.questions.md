@@ -196,3 +196,125 @@ function handlers, preload handlers, or manually initialize returned sessions.
 - **Tests:** The four corrected `now()` cases of
   `simulatedFunctionsAreAvailableInEveryBooleanBindAttribute`; the full
   test suite could not run, and test compilation remains unverified.
+
+## Amendment 2: device properties (2026-10-09)
+
+The new `SimulatedSessionDevice*Test` classes cover Amendment 2 only. Existing
+tests and fixtures are retained unchanged. Expectations come from Amendment 2,
+the unchanged clock/random/session rules it explicitly incorporates, and spec
+01's ordinary-session property values. No production source was read or changed.
+
+14. **Question:** Does "every parameter" include application-specific, Unicode,
+    and differently cased property names? Are values normalized?
+    **Assumption:** The specified `properties.get(p)` lookup uses exact keys
+    and values. Tests include the five named properties, an application-specific
+    key, a Unicode key, and `USERNAME` distinct from `username`. Nonempty values
+    retain leading zeros, spaces, punctuation, Unicode, and function-like text.
+    Unused keys (including an empty key) are accepted, but the tests do not
+    prescribe how an empty or omitted XML preload parameter is parsed.
+    **Tests:** `SimulatedSessionDevicePropertyTest`, particularly
+    `eachPropertyWorksWithoutAnyUsernameFunctionReference`,
+    `propertyStringsArePreservedWithoutTrimmingParsingOrExpressionEvaluation`,
+    `uppercaseUsernameIsADistinctPropertyAndDoesNotSupplyUsernameFunction`, and
+    `unusedPropertiesAreAcceptedAndCannotSupplyMissingPreloads`.
+
+15. **Question:** Must an explicitly supplied empty property string be stored
+    as a non-null empty answer object, or can JavaRosa normalize it to null?
+    **Assumption:** The answer-object representation of explicit empty strings
+    is not specified. Empty property preloads accept null or an empty string,
+    while missing keys strictly require a null answer object. For `username()`
+    the tests observe `concat('[', username(), ']')`, which must yield `[]`
+    for missing or explicitly empty usernames. This checks the XPath result
+    without imposing storage details or allowing a default username fallback.
+    **Tests:** `explicitEmptyPropertyValuesAreAcceptedWithoutInventingAFallback`,
+    `explicitlyEmptyUsernameReturnsTheEmptyStringInCalculationsAndActions`,
+    `eachMissingPropertyHasNoAnswerEvenWhenOtherPropertiesArePresent`, and
+    `emptyMapDoesNotAcquireTheTwoArgumentOverloadsDefaultUsername`.
+
+16. **Question:** Is the new username value required in all form expression
+    contexts, including a form with no property preload at all?
+    **Assumption:** The existing scope for bind attributes and setvalue actions
+    applies to the new `username()` behavior. Tests cover calculation, relevant,
+    required, readonly, constraint, first-load actions, and value-changed actions,
+    including forms referencing `username()` only in one such location.
+    Direct XPath evaluation outside the form and unsupported arities are not
+    prescribed. Recalculation uses an explicitly referenced `tick` input.
+    **Tests:** `SimulatedSessionDeviceExpressionTest` and the username assertions
+    in `SimulatedSessionDeviceIsolationTest`.
+
+17. **Question:** How broadly does copying the map at session opening protect
+    against subsequent caller mutations?
+    **Assumption:** Replacing, removing, clearing, or adding entries after opening
+    cannot affect stored preloads or later username evaluations. A null inserted
+    into the original map after opening must likewise not affect that session:
+    null rejection applies to the map being supplied at opening. Reusing a mutable
+    map for a later session takes a new snapshot. Concurrent mutation during
+    opening, custom maps with nonstandard lookup semantics, and thread safety
+    remain unspecified and are not tested.
+    **Tests:** `callerMapChangesCannotAlterPreloadsOrSubsequentUsernameEvaluations`,
+    `addingUsernameToAnOriginallyEmptyMapDoesNotChangeTheOpenedSession`,
+    `eachSessionCopiesTheSameMutableMapAtItsOwnOpeningTime`, and
+    `openingASessionDoesNotModifyTheCallersMap`.
+
+18. **Question:** Must null entries be rejected even if the form never uses
+    their keys? What is the precedence when both clock and properties are null?
+    **Assumption:** The explicit rejection of a map containing any null key or
+    value includes unused entries. Each invalid input is tested separately;
+    exception precedence, messages, and atomicity after a failed opening are
+    not specified and are not asserted.
+    **Tests:** `nullPropertiesAreRejected`, `nullKeyIsRejectedEvenAlongsideAValidUsername`,
+    `nullValueIsRejectedEvenForAnUnusedProperty`, and
+    `threeArgumentOverloadStillRejectsANullClock`.
+
+19. **Question:** Can a property map's contents or iteration order change the
+    seeded random sequence?
+    **Assumption:** The unchanged seed-alone rule still applies when form
+    evaluations are driven identically. Equal maps with different insertion
+    orders must replay identically. Changing property values cannot alter random
+    draws in the existing `session.xml` fixture, whose random expressions have
+    no property-dependent branches. No cross-form draw order or PRNG algorithm
+    is imposed. Different-seed assertions retain the spec's overwhelmingly
+    probable distinction, without imposing statistical distributions.
+    **Tests:** `equalPropertyMapsProduceIdenticalInstancesAcrossLoadsAndMapIterationOrders`,
+    `changingOnlyPropertiesCannotChangeTheSeededRandomSequence`,
+    `differentSeedsStillChangeRandomSourcesWhenPropertiesAreEqual`, and
+    `interleavedPropertySessionsCannotChangeAnotherSessionsAnswersClockOrRandomness`.
+
+20. **Question:** Does default-overload equivalence cover just properties or
+    the entire simulated session?
+    **Assumption:** "Behaves as" requires equality of every instance node under
+    identical driving, including timestamp and random fields. Both the new
+    device fixture and the existing time/random fixture are checked from
+    initialization through answers, clock advances, and post-processing.
+    Explicit empty maps intentionally do not receive the default username.
+    **Tests:** `defaultOverloadEqualsExplicitDefaultPropertiesForTheWholeSession`,
+    `explicitPropertiesDoNotLeakToEarlierOrLaterTwoArgumentSessions`, and
+    `emptyMapDoesNotAcquireTheTwoArgumentOverloadsDefaultUsername`.
+
+21. **Question:** What should ordinary sessions do with arbitrary property
+    parameters beyond the five listed in spec 01?
+    **Assumption:** Spec 01 leaves those situations unspecified. The ordinary
+    isolation test removes only the three extra property binds from the new
+    fixture before loading it; it asserts `simulated` for username and null for
+    the four named device properties. It tests sessions opened before and after
+    explicit-property sessions, on shared and separate form loads. Custom-property
+    expectations are asserted only for simulated sessions.
+    **Tests:** `ordinarySessionsBeforeAndAfterCustomSessionsKeepSpec01Properties`.
+
+### Amendment 2 validation
+
+- `mvnw.cmd -o -q test-compile` was attempted before additions and failed during
+  test compilation on the existing cached `commons-io-2.5.jar`.
+- After adding the tests, `mvnw.cmd -o -q -e test-compile` confirmed
+  `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, in the JDK ZIP filesystem's
+  `toRealPath` call. The log is `.codex-runs/device-properties-test-compile.log`.
+- A diagnostic retry with `-Dmaven.compiler.fork=true` also failed on the same
+  dependency-access exception and reported unresolved production class symbols
+  in existing tests. Its log is `.codex-runs/device-properties-fork-compile.log`.
+  Compilation of the new tests therefore remains unverified, and no test-run
+  result is claimed. This environment blocker must be resolved before the
+  requested compile check can pass.
+- No repository copies, drive mappings, dependency installations, production
+  edits, POM edits, or changes to existing tests were made. Temporary logs are
+  confined to `.codex-runs/`.
