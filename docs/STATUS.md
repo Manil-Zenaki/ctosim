@@ -15,40 +15,37 @@ what was learnt along the way.
 | 05 | AnswerGenerator | done |
 | 06 | Simulated sessions | done |
 | 07 | FormWalker | done |
-| 08 | SurveyCtoExporter | **draft spec only** (`specs/08-surveycto-exporter.md`): waits for real SurveyCTO exports of the coverage form (see below) |
+| 08 | SurveyCtoExporter | done: wide and long CSV, checked byte for byte against real exports of the coverage form |
 | 09 | Constraint hints | done |
-| 10 | CLI | not started; spec to write (convert XLSForm, load config, simulate N submissions, write submissions + run report; plug in the CSV export once 08 is done) |
+| 10 | CLI | not started; spec to write (convert XLSForm, load config, simulate N submissions, write the wide and long exports + run report) |
 
-Suite: 2305 Java tests and 223 Python tests, all green at commit `806567e`
-plus this file.
+Suite: 2561 Java tests and 223 Python tests, all green at commit `5be30aa`.
 
-## Next step: real exports have arrived (not yet examined or committed)
+## Next step
 
-On 2026-10-09 the owner added, untracked:
+Write spec 10 (CLI). Real exports are in `samples/coverage/wide/` and
+`long/` (e-mail and server name anonymised); `samples/surveycto_example/`
+is a SurveyCTO sample kept locally only (ignored, terms unknown).
 
-- `samples/coverage/wide/`: `ctosim coverage test_WIDE.csv`,
-  `import_ctosim_coverage_wide.do`;
-- `samples/coverage/long/`: `ctosim coverage test.csv` (main),
-  `...-main-member.csv`, `...-main-plot.csv`, `...-job.csv`, and the Stata
-  long templates in `ctosim_coverage_stata_template_long/`;
-- `samples/surveycto_example/`: a SurveyCTO sample form
-  (`Sample+household+listing+form.xlsx`, `SurveyCTO_form1.xml`) with its
-  WIDE and long CSVs, `.do` templates and an image attachment.
+Simulator issues seen while walking the coverage form, to fix:
 
-To do next: read them, settle every "to confirm" point of spec 08 from
-them, ask the owner whether to commit them as fixtures (the coverage data
-is fictitious; check the SurveyCTO example's terms), finalise spec 08, run
-Codex on it.
+- `duration()` evaluates to 0 (and `once(duration())` too); real exports
+  give seconds since the start.
+- `pulldata()` returns empty: attached CSVs such as `hh_preload.csv` are
+  not read.
+- Stored times carry the machine's UTC offset (`-05:00`, `-04:00` with
+  DST); the exporter drops offsets, but the instance should not depend on
+  the host time zone.
+- `deviceid` is empty and `username` is `simulated` (a real web
+  submission gives `(web)` and the user's login).
+
+Unconfirmed export conventions (spec 08, "Not observed"): geopoint
+columns in a repeat, dummies in a nested repeat, `instanceName`, and what
+`comments` / `audio audit` hold. A re-export with a geopoint inside the
+`member` repeat would settle the first.
 
 ## Waiting on the project owner
 
-- **Real SurveyCTO exports.** The owner cannot share data with personal
-  information. Agreed plan: deploy the fictitious coverage form
-  `samples/coverage/ctosim_coverage.xlsx` (+ `hh_preload.csv`) on a test
-  server, fill 3 fictitious submissions, export wide CSV, long CSVs, the
-  Stata `.do` template if used, and one submission's attachments, into
-  `samples/coverage/exports/`. Instructions: `samples/coverage/README.md`.
-  Spec 08 lists the format points to settle from those files.
 - Later: more XLSForms in `samples/forms/` to cover more cases.
 
 ## Final deliverable still to do
@@ -110,6 +107,9 @@ rewrites (`EngineExpressions`), submission, walker.
   false on the same day).
 - `XFormSerializingVisitor` **omits non-relevant elements**: the exporter
   must take its columns from the field catalog.
+- An itemset's `valueRef` keeps the choice filter's predicate: to list a
+  filtered select's choices, expand the nodeset without predicates and read
+  the value child below each item.
 - Counted repeats (`jr:count`) are created by the engine; only
   enumerator-controlled repeats raise "new repeat" prompts.
 - Two published sample forms are invalid as published (missing choice

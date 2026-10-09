@@ -29,7 +29,7 @@ submission is produced by **driving the official ODK form engine
                 │                  │ SimulationConfig │ per-field overrides,
                 │                  └──────────────────┘ repeat counts, rates
         ┌───────▼────────┐
-        │ SurveyCtoExport│  wide CSV in SurveyCTO export layout
+        │ SurveyCtoExport│  wide and long CSVs, SurveyCTO layout
         └───────┬────────┘
                 │
         ┌───────▼────────┐
@@ -56,7 +56,7 @@ tests. Modules are built in this order:
 | 05 | `AnswerGenerator` | Java | Given one question (type, choices, bounds) and a random source, propose a candidate answer. Pure and deterministic for a given seed. |
 | 06 | Simulated sessions | Java | Sessions whose `today()`, `now()`, `duration()`, timestamps, `random()`, `uuid()` and `instanceID` come from a simulated clock and a seed, so runs are reproducible. |
 | 07 | `FormWalker` | Java | Walk one submission through a simulated session: answer relevant questions, retry on constraint violations, size enumerator-controlled repeats, advance the clock, serialise the instance. |
-| 08 | `SurveyCtoExporter` | Java | Write submissions in SurveyCTO's export layout (wide CSV first). Draft: waits for a real SurveyCTO export of the coverage form in `samples/coverage/`. |
+| 08 | `SurveyCtoExporter` | Java | Write submissions in SurveyCTO's export layouts (wide CSV and long CSVs), as checked against real exports of the coverage form in `samples/coverage/`. |
 | 09 | Constraint hints | Java | Read bounds, lengths and regex patterns from a question's constraint so the generator draws valid answers directly. |
 | 10 | CLI | Java | Convert, configure, simulate N submissions and write outputs plus a run report. |
 
