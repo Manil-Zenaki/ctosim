@@ -112,9 +112,10 @@ class FormWalkerDistributionTest {
     }
 
     @Test void retriesUseFreshDrawsAndApproximateTheFiftyAttemptBudget() throws Exception {
+        // Spec 09 gives no hints for disjunctions, so the constraint does not narrow proposals.
         // Each proposal succeeds with p=1/20. Exhaustion after 50 proposals has probability (19/20)^50.
         // This checks retry behavior without assuming a particular RNG implementation or seed mixer.
-        FormWalker walker = new FormWalker(single("int", "constraint=\". = 1\""), config("""
+        FormWalker walker = new FormWalker(single("int", "constraint=\". = 1 or . = 1\""), config("""
             "seed":395173,"missingRate":0,"integerRange":{"min":1,"max":20}
             """));
         int draws = 2500, failures = 0;

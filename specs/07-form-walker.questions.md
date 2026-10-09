@@ -204,3 +204,23 @@ in specs 01, 04, 05, and 06. No production source was opened or searched.
 - Final repository status contains only the new tests, two resource fixtures,
   and this questions file. Production files, the POM, specs other than this
   questions file, and existing tests were not modified; no commit was made.
+
+## Dispute validation (2026-10-09)
+
+- **Question:** Can the prescribed offline test command run for this dispute?
+- **Assumption:** Build-environment failures do not adjudicate test correctness.
+  `mvnw.cmd -o -q test` failed before Maven started because the wrapper
+  attempted a download and could not connect. The cached distribution's
+  `.tools/apache-maven-3.9.16/bin/mvn.cmd -o -q test` reached `testCompile`
+  but failed on cached `commons-io-2.5.jar`.
+- **Tests:** The existing `.codex-runs/WalkerCompileProbe.java` successfully
+  compiled all seven FormWalker test source files, including the amended
+  distribution test, against existing project classes and cached JUnit APIs.
+  No production source was inspected or changed, and no dependencies were
+  installed or copied.
+- **Execution:** `.codex-runs/WalkerJUnitProbe.java` ran all 128 FormWalker
+  tests successfully (none skipped, aborted, or failed), including the
+  amended retry test. Results are recorded in
+  `.codex-runs/form-walker-dispute-junit.log`. PowerShell reported a native
+  stderr error for the SLF4J missing-binding warning and command exit 1;
+  the JUnit summary itself reports 128 successes and zero failures.
