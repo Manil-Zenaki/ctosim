@@ -54,9 +54,11 @@ tests. Modules are built in this order:
 | 03 | `SurveyCtoFunctions` | Java | Real implementations of the SurveyCTO functions that change form logic (`index()`, `choice-label()`, `rank-value()`, list functions, ...), replacing their stubs. |
 | 04 | `SimulationConfig` | Java | Read and validate an optional JSON config: seed, missing/refusal rates, repeat-count ranges, per-field overrides (fixed value, range, choice weights). |
 | 05 | `AnswerGenerator` | Java | Given one question (type, choices, bounds) and a random source, propose a candidate answer. Pure and deterministic for a given seed. |
-| 06 | `FormWalker` | Java | Walk one submission through the engine: answer relevant questions, retry on constraint violations, decide repeat counts, fix clock-dependent values, return the filled instance. |
-| 07 | `SurveyCtoExporter` | Java | Flatten submissions into SurveyCTO's wide CSV layout (repeat suffixes, split select_multiple columns, metadata columns). |
-| 08 | `Simulator` + CLI | Java | Orchestrate n submissions with a seed and write outputs plus a run report. |
+| 06 | Simulated sessions | Java | Sessions whose `today()`, `now()`, `duration()`, timestamps, `random()`, `uuid()` and `instanceID` come from a simulated clock and a seed, so runs are reproducible. |
+| 07 | `FormWalker` | Java | Walk one submission through a simulated session: answer relevant questions, retry on constraint violations, size enumerator-controlled repeats, advance the clock, serialise the instance. |
+| 08 | `SurveyCtoExporter` | Java | Write submissions in SurveyCTO's export layout (wide CSV first). Draft: waits for a real SurveyCTO export of the coverage form in `samples/coverage/`. |
+| 09 | Constraint hints | Java | Read bounds, lengths and regex patterns from a question's constraint so the generator draws valid answers directly. |
+| 10 | CLI | Java | Convert, configure, simulate N submissions and write outputs plus a run report. |
 
 ## Input formats
 
