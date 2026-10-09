@@ -33,6 +33,7 @@ public final class Cli {
             "  -h, --help              show this help");
 
     static final String REPORT = "run-report.txt";
+    private static final Set<String> SIMULATED_FUNCTIONS = Set.of("duration", "username");
     private static final Set<String> OPTIONS = Set.of("-c", "--config", "-n", "--submissions", "-s", "--seed",
             "-o", "--output", "-m", "--media", "--server", "--python");
     private static final DateTimeFormatter ISO = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss", Locale.ROOT);
@@ -234,6 +235,9 @@ public final class Cli {
             warnings.add("attached file " + name + ".csv not found");
         }
         for (String name : form.stubbedFunctions()) {
+            if (SIMULATED_FUNCTIONS.contains(name)) {
+                continue; // stubs in ordinary sessions only; simulated sessions implement them (spec 06)
+            }
             warnings.add("function " + name + "() is not implemented by the simulator; it returns a fixed value");
         }
         FormWalker walker = new FormWalker(form, config);
