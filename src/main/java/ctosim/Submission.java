@@ -2,6 +2,7 @@ package ctosim;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 /** One simulated submission. See specs/07-form-walker.md. */
 public final class Submission {
@@ -25,7 +26,13 @@ public final class Submission {
 
     /** A submission built from an instance written elsewhere. See specs/08-surveycto-exporter.md. */
     public static Submission of(int number, String instanceXml, LocalDateTime start, LocalDateTime end) {
-        throw new UnsupportedOperationException("not implemented");
+        Objects.requireNonNull(instanceXml, "instanceXml");
+        Objects.requireNonNull(start, "start");
+        Objects.requireNonNull(end, "end");
+        if (number < 1) {
+            throw new IllegalArgumentException("submission number must be at least 1: " + number);
+        }
+        return new Submission(number, instanceXml, start, end, 0, List.of());
     }
 
     public int number() {
