@@ -1,0 +1,9 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Runaway CLI</h:title><model>
+    <instance><data id="runaway_cli"><count>100005</count><row jr:template=""><note>kept</note></row><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/count" type="int"/>
+    <bind nodeset="/data/row/note" type="string" readonly="true()"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body><repeat nodeset="/data/row" jr:count="/data/count"><input ref="/data/row/note"><label>Note</label></input></repeat></h:body>
+</h:html>

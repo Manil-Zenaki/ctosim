@@ -1,0 +1,12 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Repeat CLI</h:title><model>
+    <instance><data id="repeat_cli"><zeta jr:template=""><item/></zeta><alpha jr:template=""><value/></alpha><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/zeta/item" type="string" required="true()"/>
+    <bind nodeset="/data/alpha/value" type="int" required="true()"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <repeat nodeset="/data/zeta"><input ref="/data/zeta/item"><label>Item</label></input></repeat>
+    <repeat nodeset="/data/alpha"><input ref="/data/alpha/value"><label>Value</label></input></repeat>
+  </h:body>
+</h:html>

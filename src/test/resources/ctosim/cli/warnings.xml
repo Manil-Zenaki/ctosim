@@ -1,0 +1,12 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Warnings CLI</h:title><model>
+    <instance><data id="warnings_cli"><zlookup/><alookup/><zstub/><astub/><bad/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/zlookup" type="string" calculate="pulldata('z_people', 'name', 'id', '1')"/>
+    <bind nodeset="/data/alookup" type="string" calculate="pulldata('a_people', 'name', 'id', '1')"/>
+    <bind nodeset="/data/zstub" type="string" calculate="z_cli_unknown()"/>
+    <bind nodeset="/data/astub" type="string" calculate="a_cli_unknown()"/>
+    <bind nodeset="/data/bad" type="int" required="true()"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body><input ref="/data/bad"><label>Bad</label></input></h:body>
+</h:html>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>CLI enquête</h:title><model>
+    <instance><data id="cli_fixture" version="007"><answer/><quantity/><photo>portrait.jpg</photo><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/answer" type="string" required="true()"/>
+    <bind nodeset="/data/quantity" type="int" required="true()"/>
+    <bind nodeset="/data/photo" type="binary"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/answer"><label>Answer</label></input>
+    <input ref="/data/quantity"><label>Quantity</label></input>
+    <upload ref="/data/photo" mediatype="image/*"><label>Photo</label></upload>
+  </h:body>
+</h:html>

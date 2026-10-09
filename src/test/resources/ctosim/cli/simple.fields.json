@@ -1,0 +1,5 @@
+{"form_id":"cli_fixture","title":"CLI enquête","version":"007","fields":[
+  {"name":"answer","type":"text","xpath":"/data/answer","row":2},
+  {"name":"quantity","type":"integer","xpath":"/data/quantity","row":3},
+  {"name":"photo","type":"image","xpath":"/data/photo","row":4}
+]}

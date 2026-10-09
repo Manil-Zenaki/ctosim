@@ -1,0 +1,6 @@
+{"form_id":"repeat_cli","title":"Repeat CLI","version":null,"fields":[
+  {"name":"zeta","type":"begin repeat","xpath":"/data/zeta","row":2},
+  {"name":"item","type":"text","xpath":"/data/zeta/item","row":3},
+  {"name":"alpha","type":"begin repeat","xpath":"/data/alpha","row":5},
+  {"name":"value","type":"integer","xpath":"/data/alpha/value","row":6}
+]}

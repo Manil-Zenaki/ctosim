@@ -1,0 +1,7 @@
+{"form_id":"warnings_cli","title":"Warnings CLI","version":null,"fields":[
+  {"name":"zlookup","type":"calculate","xpath":"/data/zlookup","row":2},
+  {"name":"alookup","type":"calculate","xpath":"/data/alookup","row":3},
+  {"name":"zstub","type":"calculate","xpath":"/data/zstub","row":4},
+  {"name":"astub","type":"calculate","xpath":"/data/astub","row":5},
+  {"name":"bad","type":"integer","xpath":"/data/bad","row":6}
+]}
