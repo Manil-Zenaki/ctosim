@@ -19,30 +19,13 @@ what was learnt along the way.
 | 09 | Constraint hints | done |
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 
-Suite at commit `ca5395b`: 3335 Java tests and 269 Python tests; all green
-except the disputed tests below.
+Suite: 3325 Java tests and 270 Python tests, all green (after the
+2026-10-09 dispute adjudications on specs 02, 03 and 10).
 
-## Next step: three disputes to adjudicate
+## Next step
 
-Codex hit its usage limit (reset 2026-10-09 21:11) before adjudicating.
-Run, with a clean tree, one after the other:
-
-```
-scripts/codex-tests.ps1 specs/03-surveycto-functions.md -Dispute
-scripts/codex-tests.ps1 specs/02-xlsform-converter.md -Dispute
-scripts/codex-tests.ps1 specs/10-cli.md -Dispute
-```
-
-- spec 03, Dispute 2: seven older tests still treat `pulldata` as a stub
-  (`FormLoaderFunctionTest` x5, `SimulatedSessionContractTest`,
-  `SurveyCtoFunctionContractTest`);
-- spec 02, Disputes 3 and 4: an element-identity comparison across two
-  parses; a count node expected for a plain `${size}` repeat count;
-- spec 10, Dispute 1: the runaway fixture takes ~50 s to hit the
-  100 000-step limit (JavaRosa navigation slows down in huge repeats),
-  over the test's 45 s timeout.
-
-Then check the whole suite is green and close the work.
+All planned modules are done. Remaining work: the developer guide below;
+settling the unconfirmed export conventions when a new export arrives.
 
 End-to-end check done: `ctosim.cmd samples/coverage/ctosim_coverage.xlsx
 --python .venv/Scripts/python.exe` gives `duration` = end − start,
