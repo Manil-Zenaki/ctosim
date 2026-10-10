@@ -40,6 +40,12 @@ columns in a repeat, dummies in a nested repeat, `instanceName`, and what
 
 ## Waiting on the project owner
 
+- **Exports of the second coverage form** (`samples/coverage2/`, see its
+  README): deploy `ctosim_coverage2.xlsx` with `hh_preload.csv`, fill the
+  three scenarios (B on SurveyCTO Collect if possible), export wide and
+  long CSVs into `samples/coverage2/wide/` and `long/`. They settle spec
+  08's "Not observed" conventions; anonymise e-mail and server name before
+  committing, then amend spec 08 where the export differs.
 - Later: more XLSForms in `samples/forms/` to cover more cases.
 
 ## Final deliverable still to do
