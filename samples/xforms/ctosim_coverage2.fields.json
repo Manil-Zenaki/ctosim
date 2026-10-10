@@ -1,0 +1,193 @@
+{
+  "form_id": "ctosim_coverage2",
+  "title": "ctosim coverage test 2",
+  "version": "2610100001",
+  "fields": [
+    {
+      "name": "starttime",
+      "type": "start",
+      "xpath": "/data/starttime",
+      "row": 2
+    },
+    {
+      "name": "endtime",
+      "type": "end",
+      "xpath": "/data/endtime",
+      "row": 3
+    },
+    {
+      "name": "deviceid",
+      "type": "deviceid",
+      "xpath": "/data/deviceid",
+      "row": 4
+    },
+    {
+      "name": "username",
+      "type": "username",
+      "xpath": "/data/username",
+      "row": 5
+    },
+    {
+      "name": "duration",
+      "type": "calculate",
+      "xpath": "/data/duration",
+      "row": 6
+    },
+    {
+      "name": "text_audit",
+      "type": "text audit",
+      "xpath": "/data/text_audit",
+      "row": 7
+    },
+    {
+      "name": "audio_audit",
+      "type": "audio audit",
+      "xpath": "/data/audio_audit",
+      "row": 8
+    },
+    {
+      "name": "sv_count",
+      "type": "speed violations count",
+      "xpath": "/data/sv_count",
+      "row": 9
+    },
+    {
+      "name": "sv_list",
+      "type": "speed violations list",
+      "xpath": "/data/sv_list",
+      "row": 10
+    },
+    {
+      "name": "field_comments",
+      "type": "comments",
+      "xpath": "/data/field_comments",
+      "row": 11
+    },
+    {
+      "name": "hhid",
+      "type": "select_one hhid",
+      "xpath": "/data/hhid",
+      "row": 12
+    },
+    {
+      "name": "pl_head",
+      "type": "calculate",
+      "xpath": "/data/pl_head",
+      "row": 13
+    },
+    {
+      "name": "consent",
+      "type": "select_one yesno",
+      "xpath": "/data/consent",
+      "row": 14
+    },
+    {
+      "name": "main",
+      "type": "begin group",
+      "xpath": "/data/main",
+      "row": 15
+    },
+    {
+      "name": "resp_name",
+      "type": "text",
+      "xpath": "/data/main/resp_name",
+      "row": 16
+    },
+    {
+      "name": "assets",
+      "type": "select_multiple assets",
+      "xpath": "/data/main/assets",
+      "row": 17
+    },
+    {
+      "name": "transport",
+      "type": "select_multiple transport",
+      "xpath": "/data/main/transport",
+      "row": 18
+    },
+    {
+      "name": "hh_size",
+      "type": "integer",
+      "xpath": "/data/main/hh_size",
+      "row": 19
+    },
+    {
+      "name": "member",
+      "type": "begin repeat",
+      "xpath": "/data/main/member",
+      "row": 20
+    },
+    {
+      "name": "member_name",
+      "type": "text",
+      "xpath": "/data/main/member/member_name",
+      "row": 21
+    },
+    {
+      "name": "member_gps",
+      "type": "geopoint",
+      "xpath": "/data/main/member/member_gps",
+      "row": 22
+    },
+    {
+      "name": "member_activities",
+      "type": "select_multiple activities",
+      "xpath": "/data/main/member/member_activities",
+      "row": 23
+    },
+    {
+      "name": "n_children",
+      "type": "integer",
+      "xpath": "/data/main/member/n_children",
+      "row": 24
+    },
+    {
+      "name": "child",
+      "type": "begin repeat",
+      "xpath": "/data/main/member/child",
+      "row": 25
+    },
+    {
+      "name": "child_name",
+      "type": "text",
+      "xpath": "/data/main/member/child/child_name",
+      "row": 26
+    },
+    {
+      "name": "job",
+      "type": "begin repeat",
+      "xpath": "/data/main/member/job",
+      "row": 28
+    },
+    {
+      "name": "job_title",
+      "type": "text",
+      "xpath": "/data/main/member/job/job_title",
+      "row": 29
+    },
+    {
+      "name": "job_days",
+      "type": "select_multiple days",
+      "xpath": "/data/main/member/job/job_days",
+      "row": 30
+    },
+    {
+      "name": "plot",
+      "type": "begin repeat",
+      "xpath": "/data/main/plot",
+      "row": 33
+    },
+    {
+      "name": "plot_crop",
+      "type": "select_one crop",
+      "xpath": "/data/main/plot/plot_crop",
+      "row": 34
+    },
+    {
+      "name": "plot_gps",
+      "type": "geopoint",
+      "xpath": "/data/main/plot/plot_gps",
+      "row": 35
+    }
+  ]
+}
