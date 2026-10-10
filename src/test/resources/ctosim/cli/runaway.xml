@@ -1,9 +1,33 @@
 <h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
   <h:head><h:title>Runaway CLI</h:title><model>
-    <instance><data id="runaway_cli"><count>100005</count><row jr:template=""><note>kept</note></row><meta><instanceID/></meta></data></instance>
+    <!-- 10001 rows of ten notes exceed 100000 navigation steps with fewer repeat instances. -->
+    <instance><data id="runaway_cli"><count>10001</count><row jr:template="">
+      <note1>kept</note1><note2>kept</note2><note3>kept</note3><note4>kept</note4><note5>kept</note5>
+      <note6>kept</note6><note7>kept</note7><note8>kept</note8><note9>kept</note9><note10>kept</note10>
+    </row><meta><instanceID/></meta></data></instance>
     <bind nodeset="/data/count" type="int"/>
-    <bind nodeset="/data/row/note" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note1" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note2" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note3" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note4" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note5" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note6" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note7" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note8" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note9" type="string" readonly="true()"/>
+    <bind nodeset="/data/row/note10" type="string" readonly="true()"/>
     <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
   </model></h:head>
-  <h:body><repeat nodeset="/data/row" jr:count="/data/count"><input ref="/data/row/note"><label>Note</label></input></repeat></h:body>
+  <h:body><repeat nodeset="/data/row" jr:count="/data/count">
+    <input ref="/data/row/note1"><label>Note 1</label></input>
+    <input ref="/data/row/note2"><label>Note 2</label></input>
+    <input ref="/data/row/note3"><label>Note 3</label></input>
+    <input ref="/data/row/note4"><label>Note 4</label></input>
+    <input ref="/data/row/note5"><label>Note 5</label></input>
+    <input ref="/data/row/note6"><label>Note 6</label></input>
+    <input ref="/data/row/note7"><label>Note 7</label></input>
+    <input ref="/data/row/note8"><label>Note 8</label></input>
+    <input ref="/data/row/note9"><label>Note 9</label></input>
+    <input ref="/data/row/note10"><label>Note 10</label></input>
+  </repeat></h:body>
 </h:html>

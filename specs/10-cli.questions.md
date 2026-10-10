@@ -118,8 +118,9 @@ No production source was opened, searched, or changed.
 
 12. **Question:** How can a walk failure and filesystem write failures be
     triggered reliably without altering production or depending on permissions?
-    **Assumption:** A counted repeat of 100005 read-only questions exceeds the
-    100000-step limit from spec 07. It runs in a child JVM, as do main/working
+    **Assumption:** A counted repeat of 10001 instances with ten read-only
+    questions per instance exceeds the 100000-step limit from spec 07 while
+    requiring fewer repeat instances. It runs in a child JVM, as do main/working
     directory/environment tests. Child processes have a 45-second harness
     timeout and are forcibly stopped if stuck; this is a test safeguard, not
     a proposed product performance requirement. Nonempty directories at output
@@ -157,3 +158,19 @@ No production source was opened, searched, or changed.
   zero skipped/aborted cases and 138 expected failures at the unimplemented
   Cli APIs. There are no container/discovery failures. See
   `.codex-runs/cli-junit.log`. Downstream CLI behavior cannot yet be validated.
+
+## Dispute adjudication validation (2026-10-09)
+
+- `mvnw.cmd -o -q test` still stops during test compilation. An `-e` retry
+  confirms `java.nio.file.AccessDeniedException` for the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`; see
+  `.codex-runs/cli-dispute-maven.log`. Maven cannot execute the tests in
+  this environment.
+- Reused the existing in-memory diagnostic compiler with `--release 17`:
+  all seven CLI test/support sources compile successfully against cached
+  binary dependencies. See `.codex-runs/cli-dispute-compile.log`. This is
+  supplementary compilation evidence, not a successful Maven build.
+- The existing diagnostic JUnit launcher ran all 138 CLI tests against
+  cached binaries and the current fixtures: all passed, with no skipped
+  or aborted tests. This includes the revised runaway fixture within the
+  unchanged child-process timeout. See `.codex-runs/cli-dispute-junit.log`.

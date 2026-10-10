@@ -1,5 +1,14 @@
 {"form_id":"runaway_cli","title":"Runaway CLI","fields":[
   {"name":"count","type":"integer","xpath":"/data/count","row":2},
   {"name":"row","type":"begin repeat","xpath":"/data/row","row":3},
-  {"name":"note","type":"note","xpath":"/data/row/note","row":4}
+  {"name":"note1","type":"note","xpath":"/data/row/note1","row":4},
+  {"name":"note2","type":"note","xpath":"/data/row/note2","row":5},
+  {"name":"note3","type":"note","xpath":"/data/row/note3","row":6},
+  {"name":"note4","type":"note","xpath":"/data/row/note4","row":7},
+  {"name":"note5","type":"note","xpath":"/data/row/note5","row":8},
+  {"name":"note6","type":"note","xpath":"/data/row/note6","row":9},
+  {"name":"note7","type":"note","xpath":"/data/row/note7","row":10},
+  {"name":"note8","type":"note","xpath":"/data/row/note8","row":11},
+  {"name":"note9","type":"note","xpath":"/data/row/note9","row":12},
+  {"name":"note10","type":"note","xpath":"/data/row/note10","row":13}
 ]}
