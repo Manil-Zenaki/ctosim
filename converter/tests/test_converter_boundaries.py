@@ -55,17 +55,36 @@ def test_nested_repeat_count_is_a_sibling_node_excluded_from_catalog(workbook_fa
         ["type", "name", "label", "repeat_count"],
         ["begin group", "household", "Household"],
         ["integer", "size", "Size"],
-        ["begin repeat", "members", "Members", "${size}"],
+        ["begin repeat", "members", "Members", "${size} + 1"],
         ["text", "person", "Person"], ["end repeat"], ["end group"],
     ]))
     path = "/data/household/members_count"
     assert path in instance_paths(result)
     assert path not in [field.xpath for field in result.fields]
-    assert bind_for(result, "household/members_count").get("calculate", "").strip() == "/data/household/size"
+    calculation = bind_for(result, "household/members_count").get("calculate", "")
+    assert " ".join(calculation.split()) == "/data/household/size + 1"
     repeat = next(node for node in elements(result.xform, "repeat")
                   if node.get("nodeset") == "/data/household/members")
     assert repeat.get("{http://openrosa.org/javarosa}count", "").strip() == path
     assert "calculate" not in repeat.attrib
+    assert [field.name for field in result.fields] == ["household", "size", "members", "person"]
+
+
+def test_nested_repeat_count_field_reference_adds_no_generated_node(workbook_factory):
+    result = convert_xlsform(workbook_factory(survey=[
+        ["type", "name", "label", "repeat_count"],
+        ["begin group", "household", "Household"],
+        ["integer", "size", "Size"],
+        ["begin repeat", "members", "Members", "${size}"],
+        ["text", "person", "Person"], ["end repeat"], ["end group"],
+    ]))
+    path = "/data/household/members_count"
+    assert path not in instance_paths(result)
+    assert not [node for node in elements(result.xform, "bind")
+                if node.get("nodeset", node.get("ref")) == path]
+    repeat = next(node for node in elements(result.xform, "repeat")
+                  if node.get("nodeset") == "/data/household/members")
+    assert repeat.get("{http://openrosa.org/javarosa}count", "").strip() == "/data/household/size"
     assert [field.name for field in result.fields] == ["household", "size", "members", "person"]
 
 

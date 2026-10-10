@@ -140,3 +140,62 @@ paragraph). Requested change: either use an expression such as
 `${size} + 1` to test the generated node, or, for `${size}`, expect
 `jr:count` to be `/data/household/size` and no `members_count` node; in
 both cases the catalog must not list a count node.
+
+## Follow-up adjudication (2026-10-09)
+
+The current spec, including both amendments and the repeat-count correction,
+is the sole authority. No implementation source or public stub bodies were
+read, and no production files were changed.
+
+### Dispute 1: retain the already-corrected choice tests
+
+The seven cases now use `assert_choice_list` to check the ordered secondary
+instance items, their names and labels, and the select control's itemset
+reference, including the absence of inline items. These expectations match
+Amendment 1. The prior decision stands; no further test changes are needed.
+
+### Dispute 2: retain the already-corrected expression tests
+
+The five `repeat_count-count` cases use `selected(...)` expressions, not
+single field references. Their checks of the generated `target_count` node,
+its rewritten calculation, the repeat's count reference, and exclusion from
+the catalog remain required by the corrected Amendment 1. Keep these tests.
+
+### Dispute 3: upheld; fix the containment assertion
+
+Amendment 2 requires the read-only text question at the row's body position.
+It does not require identity between elements from separately parsed XML
+trees. The old membership assertion could never succeed for the group and
+repeat cases because `input_for(result, ...)` parsed a new tree.
+
+The corrected assertion finds the checkpoint by its `ref` among inputs in
+the already-parsed parent and requires exactly one match. The existing
+before/checkpoint/after order, catalog path and row, primary-instance path,
+and warning assertions are retained, as is the uncontained case. This fixes
+the test error while continuing to reject a control outside its container.
+
+### Dispute 4: upheld; distinguish references from expressions
+
+The corrected Amendment 1 explicitly says `${size}` uses the size field
+directly and creates no count node. The original fixture therefore did not
+justify its expectation of `/data/household/members_count`.
+
+The existing sibling-node test now uses `${size} + 1`. It checks the generated
+node's sibling path, calculation with the expanded size reference, the
+repeat's count reference, and exclusion from the catalog. Whitespace between
+expression tokens is normalized for the comparison; expression content is
+still checked.
+
+A separate `test_nested_repeat_count_field_reference_adds_no_generated_node`
+keeps the original `${size}` input and checks that `jr:count` references
+`/data/household/size`, that no `members_count` instance node or bind exists,
+and that the catalog contains only the survey rows that produce nodes.
+
+### Follow-up validation
+
+Ran `.venv\Scripts\python -m pytest converter/tests -q --tb=no
+-o cache_dir=.codex-runs/pytest-cache
+--basetemp=.codex-runs/pytest-dispute-02` with bytecode writing disabled:
+**270 passed in 22.15s**, with no import or collection errors. Traceback
+source display was suppressed to avoid reading implementation code.
+Temporary test artifacts were directed under `.codex-runs/`.

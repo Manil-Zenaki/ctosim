@@ -81,7 +81,8 @@ def test_calculate_here_keeps_its_body_position_and_catalog_path(workbook_factor
         attribute = "nodeset" if container == "repeat" else "ref"
         parent = next(node for node in elements(body, container)
                       if node.get(attribute) == prefix)
-        assert input_for(result, f"{prefix}/checkpoint") in elements(parent, "input")
+        assert [node.get("ref") for node in elements(parent, "input")
+                if node.get("ref") == f"{prefix}/checkpoint"] == [f"{prefix}/checkpoint"]
     field = next(field for field in result.fields if field.name == "checkpoint")
     assert field == FieldInfo("checkpoint", "calculate_here", f"{prefix}/checkpoint",
                               4 if container else 3)
