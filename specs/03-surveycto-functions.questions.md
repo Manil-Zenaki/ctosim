@@ -126,3 +126,21 @@ Tests are derived from spec 03 and its explicit relationship to spec 01. No repo
 - A targeted JUnit run confirms discovery/execution; the new overload and inventory API currently throw `UnsupportedOperationException: not implemented`, as expected for this task. No production source was opened, searched, or modified. Runtime failures at these stubs cannot validate all downstream fixture behavior.
 - Final targeted JUnit result: 152 cases discovered and executed, with expected failures at unimplemented APIs; see `.codex-runs/pulldata-junit.log`. Thirteen separate fixture parsing/initialization checks (binds, actions, itemsets, lexical decoys, and repeats) pass through the pre-existing one-argument loader; see `.codex-runs/pulldata-fixture-check.log`.
 - A final retry of the exact requested Maven command still fails on the same cached JAR access error; see `.codex-runs/pulldata-final-test-compile.log`. The diagnostic Java compilation succeeds after all test additions. Existing committed tests and fixtures remain unchanged.
+
+### Dispute adjudication build verification
+
+- **Question:** Can the prescribed offline Maven test build finish in this
+  sandbox? `.\mvnw.cmd -o -q test` reached `testCompile` but failed on
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`; a diagnostic
+  retry with `-e` confirmed `java.nio.file.AccessDeniedException`.
+- **Assumption:** This dependency-access failure does not justify changing
+  a test expectation. Build configuration and dependencies remain unchanged.
+- **Tests affected:** Maven could not complete test compilation or run the
+  suite. Separately, the four disputed classes and their support classes
+  compile through the existing in-memory dependency compiler approach with
+  `--release 17`. A direct JUnit run against existing compiled production
+  classes passes all 230 tests in `FormLoaderFunctionTest`,
+  `SimulatedSessionContractTest`, `SurveyCtoFunctionContractTest` and
+  `SurveyCtoRealFormsTest`. Logs are under `.codex-runs/`:
+  `03-dispute-adjudication-test.log`, `03-dispute-adjudication-test-detail.log`,
+  `03-disputed-memory-compile.log` and `03-disputed-junit.log`.

@@ -62,7 +62,7 @@ class SimulatedSessionContractTest {
     }
 
     @Test void surveyCtoStubsComposeWithSimulatedFunctionsWithoutCallerConfiguration() throws Exception {
-        var form = calculation("string", "concat(username(), ':', pulldata('file', 'column'), ':', "
+        var form = calculation("string", "concat(username(), ':', pulldata('file', 'column', 'id', 'key'), ':', "
                 + "phone-call-duration(), ':', plug-in-metadata(), ':', phone-call-log(), ':', unknown-probe())");
         assertEquals("simulated::0:::", value(form.newSimulatedSession(new SimulatedClock(START), SEED), "result"));
     }

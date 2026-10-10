@@ -20,7 +20,7 @@ import static org.javarosa.form.api.FormEntryController.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class FormLoaderFunctionTest {
-    private static final List<String> STUBS = List.of("pulldata", "plug-in-metadata", "username", "duration",
+    private static final List<String> STUBS = List.of("plug-in-metadata", "username", "duration",
             "phone-call-log", "phone-call-duration", "unimplemented-survey-function", "another-unknown-function");
 
     static Stream<Arguments> stubCalls() {
@@ -58,17 +58,17 @@ class FormLoaderFunctionTest {
     }
 
     @Test void nestedStubsAreDiscoveredAndEvaluated() throws Exception {
-        LoadedForm form = expressionForm("concat(username(pulldata('file', 'column')), ':', "
+        LoadedForm form = expressionForm("concat(username(pulldata('file', 'column', 'id', 'key')), ':', "
                 + "duration(phone-call-log()), ':', unknown-outer(plug-in-metadata(), phone-call-duration()))");
         assertEquals("simulated:0:", value(form.newEntryController(), "result"));
-        assertEquals(Set.of("username", "pulldata", "duration", "phone-call-log", "unknown-outer",
+        assertEquals(Set.of("username", "duration", "phone-call-log", "unknown-outer",
                 "plug-in-metadata", "phone-call-duration"), form.stubbedFunctions());
     }
 
     @Test void onlyReferencedStubsAreReportedOnceInNaturalOrder() throws Exception {
-        LoadedForm form = expressionForm("concat(zebra-probe(), username(), alpha-probe(), pulldata(), "
+        LoadedForm form = expressionForm("concat(zebra-probe(), username(), alpha-probe(), plug-in-metadata(), "
                 + "username(), A-probe(), alpha-probe())");
-        assertEquals(List.of("A-probe", "alpha-probe", "pulldata", "username", "zebra-probe"),
+        assertEquals(List.of("A-probe", "alpha-probe", "plug-in-metadata", "username", "zebra-probe"),
                 new ArrayList<>(form.stubbedFunctions()));
     }
 
@@ -117,15 +117,15 @@ class FormLoaderFunctionTest {
                 }),
                 Arguments.of("headSet.clear", (Consumer<SortedSet<String>>) set -> set.headSet("username").clear()),
                 Arguments.of("tailSet.clear", (Consumer<SortedSet<String>>) set -> set.tailSet("username").clear()),
-                Arguments.of("subSet.clear", (Consumer<SortedSet<String>>) set -> set.subSet("pulldata", "z").clear()),
+                Arguments.of("subSet.clear", (Consumer<SortedSet<String>>) set -> set.subSet("plug-in-metadata", "z").clear()),
                 Arguments.of("removeIf", (Consumer<SortedSet<String>>) set -> set.removeIf(s -> true)));
     }
 
     @ParameterizedTest(name = "stubbedFunctions rejects {0}") @MethodSource("mutations")
     void stubbedFunctionSetAndItsViewsCannotBeModified(String operation, Consumer<SortedSet<String>> mutation) throws Exception {
-        LoadedForm form = expressionForm("concat(username(), pulldata())");
+        LoadedForm form = expressionForm("concat(username(), plug-in-metadata())");
         assertThrows(UnsupportedOperationException.class, () -> mutation.accept(form.stubbedFunctions()));
-        assertEquals(Set.of("pulldata", "username"), form.stubbedFunctions());
+        assertEquals(Set.of("plug-in-metadata", "username"), form.stubbedFunctions());
     }
 
     @Test void anEmptyStubbedFunctionSetCannotBePopulated() throws Exception {
@@ -239,8 +239,8 @@ class FormLoaderFunctionTest {
 
     @Test void nativeAndStubbedFunctionsWorkTogetherInACalculate() throws Exception {
         LoadedForm form = expressionForm("concat(if(selected('red blue', 'blue'), username(), 'wrong'), ':', "
-                + "count-selected('red blue'), ':', duration() + 3, ':', pulldata('x'))");
+                + "count-selected('red blue'), ':', duration() + 3, ':', pulldata('x', 'column', 'id', 'key'))");
         assertEquals("simulated:2:3:", value(form.newEntryController(), "result"));
-        assertEquals(Set.of("username", "duration", "pulldata"), form.stubbedFunctions());
+        assertEquals(Set.of("username", "duration"), form.stubbedFunctions());
     }
 }

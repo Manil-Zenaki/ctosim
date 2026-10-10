@@ -71,7 +71,7 @@ class SurveyCtoFunctionContractTest {
     }
 
     static Stream<Arguments> unchangedStubs() {
-        return Stream.of(Arguments.of("pulldata", ""), Arguments.of("plug-in-metadata", ""),
+        return Stream.of(Arguments.of("plug-in-metadata", ""),
                 Arguments.of("username", "simulated"), Arguments.of("duration", 0.0),
                 Arguments.of("phone-call-log", ""), Arguments.of("phone-call-duration", 0.0),
                 Arguments.of("count-if", ""), Arguments.of("sum-if", ""), Arguments.of("join-if", ""),
