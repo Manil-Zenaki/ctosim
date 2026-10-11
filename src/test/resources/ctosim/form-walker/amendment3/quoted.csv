@@ -1,0 +1,9 @@
+code,name,region
+É03,"Alpha, Beta",1
+V02,"say ""Hello""",2
+V03,"first
+second",1
+V04, padded ,1
+V05,short
+V06,extra,2,ignored
+

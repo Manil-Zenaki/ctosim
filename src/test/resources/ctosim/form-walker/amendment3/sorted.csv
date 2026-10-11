@@ -1,0 +1,9 @@
+code,sortby,region
+LATE,10,1
+BAD_FIRST,no,1
+DUP,8,1
+EARLY,-2.5,1
+MIDDLE,2,1
+DUP,-1,1
+BAD_LAST,,1
+FILTERED,-100,2

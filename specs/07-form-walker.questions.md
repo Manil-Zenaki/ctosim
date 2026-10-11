@@ -522,3 +522,149 @@ helpers provide all required signatures.
   compilation probe succeeds after all Java edits. Production code was not
   read or modified; existing tests and fixtures remain unchanged. No commit
   was made.
+
+## Amendment 3 questions and assumptions (2026-10-11)
+
+Only new `FormWalkerAmendment3*` classes and Amendment 3 CSV fixtures are
+added. Existing tests and fixtures are unchanged. Expectations come from
+spec 07, with the referenced CSV, configuration, and generator contracts
+in specs 03, 04, and 05. Production source was not opened or searched.
+
+29. **Question:** Which spellings count as numeric static choices? What if
+    there is more than one nonnumeric choice, or a loaded value duplicates
+    a static choice?
+    **Assumption:** Ordinary signed integers and decimals are numbers, so
+    `-2`, `0`, and `2.5` are static. Tests do not prescribe handling for NaN,
+    infinity, exponent notation, whitespace around numeric values, additional
+    nonnumeric choices (which violate the stated static-choice requirement),
+    or collisions between static and loaded values. Deduplication is asserted
+    within loaded choices, as specified. Labels never identify the value
+    column; the placeholder's value does.
+    **Tests:** `noPlaceholderKeepsOrdinaryNumericChoicesAndDoesNotTryMissingFile`,
+    `negativeAndDecimalStaticValuesAreNotMistakenForPlaceholder`,
+    `loadedDuplicatesDoNotBiasSelectOneDraws`, and the loaded-value tests.
+
+30. **Question:** How should equal numeric sort keys, whitespace-separated
+    column lists, multiple search calls, malformed XPath arguments, and
+    unreadable or malformed CSV files be handled by the walker?
+    **Assumption:** These cases lack a complete walker error/ordering contract
+    and are not asserted. Sort tests use distinct finite numeric keys and
+    verify that nonnumeric keys, including empty keys, come last in file
+    order. They distinguish numeric from lexical ordering and deduplication
+    before versus after sorting. Column lists use commas without surrounding
+    spaces. Valid nested XPath expressions and quoted commas/parentheses are
+    tested. Error cases cover the explicitly specified unsupported arities,
+    unsupported types, missing named columns, and missing files.
+    **Tests:** `sortbyIsNumericWithInvalidRowsLastAndDeduplicationAfterSorting`,
+    `parserHandlesNestedXPathCallsCommasAndParenthesesInsideLiterals`, and
+    `invalidCallOrMissingColumnWarnsAndKeepsOnlyStaticChoices`.
+
+31. **Question:** Does "read as pulldata() reads attached files" include CSV
+    syntax, media-directory resolution, lazy loading, and per-loaded-form
+    caching, or only opening a file?
+    **Assumption:** It includes the explicit spec 03 Amendment 3 rules:
+    UTF-8/BOM, LF/CRLF, quoted commas/newlines/escaped quotes, untrimmed
+    values, ragged rows, first-use reading, and caching for the LoadedForm's
+    lifetime. Search's explicit `.csv` extension rule supersedes pulldata's
+    suffix behavior. A stream-loaded form has no media directory. Separate
+    loaded forms with different media directories must not share file data.
+    Tests mutate only their own scratch copies under `.codex-runs/`.
+    **Tests:** CSV parameter cases, `utf8BomAndCrLfAreAccepted`,
+    `fileIsFirstReadWhenTheQuestionNeedsIt`,
+    `attachedFileIsCachedForLoadedFormButFreshLoadsSeeChanges`,
+    `attachmentCacheIsNotSharedBetweenFormsWithDifferentMediaDirectories`,
+    and path/stream-loading tests in `FormWalkerAmendment3SearchFailureTest`.
+
+32. **Question:** How can the tests observe Question.choices order and
+    deduplication without inspecting internals or injecting a generator?
+    **Assumption:** Spec 05 exposes order through generated select-multiple
+    answers. Across 120 fixed-seed submissions, verify every token belongs
+    to the expected list, tokens are distinct and in list order, all choices
+    are reachable, and the allowed maximum selection size is reached. The
+    largest fixture has eight choices; this sample makes accidental lack
+    of coverage very unlikely. A separate 2,500-draw select-one test checks
+    deduplicated uniform probabilities using seven binomial standard
+    deviations plus two observations. No RNG implementation or exact draws
+    are prescribed. Seed sensitivity compares entire answer sequences.
+    **Tests:** `assertGeneratedChoices` callers,
+    `loadedDuplicatesDoNotBiasSelectOneDraws`, replay and seed tests.
+
+33. **Question:** How should warning wording/counts and successful empty
+    search results be distinguished?
+    **Assumption:** No particular English sentence is required. Warnings
+    identify the question, identify a missing file by its filename, and use
+    the usual `submission N:` prefix. Each of two questions with one missing
+    file yields one search warning in navigation order; tests do not require
+    a single warning for combined search, conversion, and required failures.
+    A header-only file or a successful search with no matches is not an
+    error and produces no search warning. Empty-choice tests use optional
+    questions, avoiding unspecified missing-required warnings for empty lists.
+    **Tests:** `FormWalkerAmendment3SearchFailureTest`,
+    `headerOnlyFileProducesAnEmptyLoadedListWithoutWarning`, and empty-match
+    parameter cases in `FormWalkerAmendment3SearchTest`.
+
+34. **Question:** Does a zero-count repeat require deleting arbitrary
+    pre-existing rows, or recalculating a count that changes after traversal?
+    **Assumption:** The amendment explicitly specifies the final absence of
+    repeat elements and never meeting their questions when the count is zero.
+    Tests use template-based repeats with counts defaulted, calculated per
+    parent, or answered before traversal. They do not prescribe behavior for
+    late count changes or manually pre-populated rows. A child that cannot
+    satisfy a required constraint proves the zero repeat is not traversed:
+    no answers, warnings, or clock advancement are allowed. A `count()`
+    dependent must report zero rather than a phantom initial instance.
+    **Tests:** `FormWalkerAmendment3EmptyRepeatTest`; per-parent fixture uses
+    counts 0, 1, 0, and repeated walks exercise both zero and one independently.
+
+35. **Question:** Which configuration and submission numbers does Amendment
+    3's coverage acceptance require? Optional fields may otherwise be blank.
+    **Assumption:** Amendment 3 does not specify a configuration or number
+    range. Use submissions 1..3, matching earlier acceptance checks, with
+    only `missingRate` set to zero to exercise region and village every time.
+    Other defaults remain unchanged. Read the allowed village IDs from the
+    published CSV, without hard-coding its rows. The zero-person acceptance
+    sets only `n_people` to zero. These integration tests may be blocked by
+    unimplemented prerequisite functions elsewhere in the real form.
+    **Tests:** `FormWalkerAmendment3CoverageTest`.
+
+36. **Question:** Does search supersede ordinary relevance, constraints,
+    requiredness, special-choice selection, and choice-filter behavior?
+    **Assumption:** Only the offered choices and their conversion change;
+    the amendment says everything else is unchanged. Tests retain ordinary
+    handling of constraints, required conversion failures, weights, special
+    choices, and irrelevant questions. The explicit exemption from choice
+    filters applies to the original placeholder and static choices, so an
+    itemset predicate that excludes them must not hide them from search.
+    All six argument expressions are evaluated when reached, in the current
+    question instance; repeated parents may produce different loaded sets.
+    **Tests:** Search constraint/required/special/weight cases,
+    `searchBypassesChoiceFiltersForBothPlaceholderAndStaticChoices`,
+    `fieldArgumentsAreEvaluatedAfterEarlierQuestionsAreAnswered`, and
+    `fieldReferencesAreResolvedSeparatelyForEachRepeatParent`.
+
+### Amendment 3 build and validation
+
+- **Question:** Can the prescribed `mvnw.cmd -o -q test-compile` complete?
+- **Assumption:** Cached-dependency access errors are environmental and do
+  not establish a source error. The exact command reaches `testCompile` but
+  fails accessing `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+  An offline `-e` rerun confirms `java.nio.file.AccessDeniedException` in
+  `WindowsLinkSupport.getRealPath`. No dependencies were installed or copied,
+  drives mapped, or build configurations modified.
+- **Tests:** The existing `.codex-runs/WalkerCompileProbe.java` successfully
+  compiles all 23 FormWalker test/support sources, including the five new
+  files, with Java release 17 against actual project class files and cached
+  JUnit APIs. This verifies Java/API compilation independently; it is not a
+  successful Maven invocation. All logs and temporary harness files remain
+  under `.codex-runs/`.
+- **Execution:** The final Amendment 3-only JUnit run discovers 89 cases:
+  18 pass and 71 fail, with none skipped or aborted. Failures comprise 67
+  assertion failures and four runtime failures in the published coverage
+  form's `/data/oracle/agg_count_if` calculation (a repeated-node XPath type
+  mismatch). There are no `FormLoadException` or container failures. Most
+  search failures expose placeholder values remaining offered, attached
+  values being rejected, or missing expected warnings. The failures are
+  retained as contracts for the pending implementation; passing prerequisite
+  cases do not imply the amendment is implemented. The final Java edits
+  were compiled before this run. Existing tests, production source, build
+  configuration, and published sample files are unchanged; no commit was made.

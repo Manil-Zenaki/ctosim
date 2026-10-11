@@ -1,0 +1,8 @@
+code,name,alias,region
+V03,Alpha,end,1
+V01,Alphabet,other,1
+V02,beta,Alpha,2
+V04,alpha,last,1
+V05,omegaAlpha,none,2
+V03,Alpha,duplicate,1
+,Alpha,empty,1
