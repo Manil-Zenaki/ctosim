@@ -185,7 +185,7 @@ workbook's OOXML. No persistent workbook fixtures or published forms are needed.
 
 The spec's Clarifications confirm points 1-13 and 15 above and place the
 Java-loader check in a later integration suite. Those decisions are retained.
-The current suite also incorporates both amendments. In particular, the two
+The current suite also incorporates Amendments 1-3. In particular, the two
 older assertions that expected a `calculate` attribute on `calculate_here`
 now expect `{urn:ctosim:xforms}calculate-here` instead. No production code or
 public stub bodies were read while updating the tests.
@@ -253,3 +253,82 @@ public stub bodies were read while updating the tests.
   exclusively on the choices sheet. Missing translations and duplicate values
   combined with translations remain unspecified.
 - **Tests:** `test_translated_choices_keep_separate_secondary_items_and_label_references`.
+
+## 21. Amendment 3 supersedes the ignored minimum_seconds column
+
+- **Question:** Does the earlier rule ignoring `minimum_seconds` still apply,
+  and is the timing information limited to visible questions?
+- **Assumption:** Amendment 3 takes precedence. Every enabled survey row that
+  produces a node can carry its own minimum-seconds bind attribute, including
+  metadata, calculates, notes, and group/repeat openers. No inherited timing is
+  inferred for children or siblings. The obsolete `minimum_seconds` case was
+  removed from `test_nonruntime_columns_have_no_effect`. Timing cells on end
+  rows or otherwise node-less rows are not tested: no bind target is specified.
+- **Tests:** `test_minimum_seconds_is_a_namespaced_bind_attribute`,
+  `test_minimum_seconds_applies_to_each_node_producing_row`,
+  `test_minimum_seconds_on_container_and_child_uses_their_own_paths`.
+
+## 22. Timing numeric grammar and formatting
+
+- **Question:** Does numeric text retain leading/trailing zeros as version text
+  does? Are exponent notation, signed zero, nonfinite values, booleans, and
+  locale-specific numbers accepted? Is numeric text with surrounding whitespace
+  serialized trimmed or as originally written?
+- **Assumption:** Only ordinary nonnegative Excel numbers and unambiguous numeric
+  strings (`0`, `10`, `2.5`) are asserted. Whole numeric cells have no decimal
+  part; fractional values retain their fraction. Blank/whitespace-only cells
+  produce no attribute. Negative values and clearly nonnumeric text/expressions
+  are rejected. No precision limit or additional numeric grammar is invented;
+  the other spellings above are intentionally not assigned expectations.
+- **Tests:** `test_minimum_seconds_is_a_namespaced_bind_attribute`,
+  `test_empty_or_uncached_minimum_seconds_changes_nothing`,
+  `test_invalid_minimum_seconds_raises_conversion_error_with_file_and_physical_row`,
+  `test_minimum_seconds_uses_cached_formula_value`,
+  `test_invalid_cached_minimum_seconds_is_rejected`.
+
+## 23. Invalid timing in disabled rows
+
+- **Question:** Is an invalid minimum_seconds cell in a disabled row validated
+  before that row or its enclosing block is removed?
+- **Assumption:** The spec explicitly removes disabled timing attributes but
+  does not explicitly settle invalid-value validation precedence. Disabled
+  fixtures therefore use valid numeric minima, including nested speed fields;
+  tests do not require either accepting or rejecting invalid disabled minima.
+- **Tests:** `test_disabled_timing_and_speed_fields_leave_no_custom_attributes`.
+
+## 24. Namespace rule versus an empty calculate_here
+
+- **Question:** Amendment 3 says the namespace is declared only when a custom
+  attribute exists, but the confirmed Amendment 2 clarification requires it for
+  an enabled calculate_here with no calculation. Which takes precedence there?
+- **Assumption:** Retain the explicitly confirmed empty-calculate_here behavior
+  (point 17), since Amendment 3 also says everything else is unchanged. For
+  forms without calculate_here, any enabled minimum or speed attribute requires
+  the root `ctosim` declaration, and empty/disabled timing or ordinary audit
+  fields alone do not. An empty calculate_here with a minimum has the namespace
+  under either reading. Existing tests for empty calculate_here are retained;
+  the apparent textual conflict remains recorded for clarification.
+- **Tests:** `test_empty_or_uncached_calculation_is_an_empty_read_only_question`,
+  `test_minimum_seconds_is_a_namespaced_bind_attribute`,
+  `test_speed_violation_fields_are_tagged_empty_hidden_calculates`,
+  `test_other_empty_calculate_types_do_not_acquire_speed_attributes`,
+  `test_timed_empty_calculate_here_keeps_minimum_and_readonly_attributes`,
+  `test_namespace_does_not_leak_between_conversions`.
+
+## 25. Warnings, serialization, and cross-amendment behavior
+
+- **Question:** Does a timing attribute add warnings or new catalog keys, and
+  can the new attributes coexist with calculate_here on the same row?
+- **Assumption:** Amendment 3 changes only the specified XML attributes and
+  numeric validation. Minima create no new warnings or catalog entries. Speed
+  types retain their original type and one conversion warning per row. A minimum
+  can coexist with either calculate_here or a speed tag. Speed audit remains
+  an ordinary empty calculate without a speed tag. The existing JSON schema,
+  CLI behavior, deterministic output, and input immutability still apply.
+- **Tests:** `test_minimum_seconds_adds_no_warning_or_catalog_entry`,
+  `test_all_custom_attributes_coexist_without_changing_catalog_or_warning_order`,
+  `test_custom_attributes_are_deterministic_and_do_not_modify_input`,
+  `test_cli_writes_timing_attributes_and_original_speed_types`,
+  `test_cli_invalid_minimum_seconds_preserves_existing_outputs`, and the
+  `invalid_minimum` case of
+  `test_cli_conversion_error_prints_message_exits_one_and_writes_no_file`.

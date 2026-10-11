@@ -142,7 +142,7 @@ def test_converted_and_disabled_warnings_follow_sheet_order(workbook_factory):
             assert field_type in warning
 
 
-@pytest.mark.parametrize("column", ["note", "response_note", "publishable", "minimum_seconds",
+@pytest.mark.parametrize("column", ["note", "response_note", "publishable",
                                     "accuracy_threshold", "mediatype"])
 def test_nonruntime_columns_have_no_effect(workbook_factory, column):
     baseline = convert_xlsform(workbook_factory())

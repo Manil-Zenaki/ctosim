@@ -118,7 +118,7 @@ def test_cli_prints_each_warning_on_its_own_stderr_line_in_order(workbook_factor
     assert stderr.splitlines() == list(expected.warnings)
 
 
-@pytest.mark.parametrize("failure", ["missing", "invalid", "missing_survey", "missing_list"])
+@pytest.mark.parametrize("failure", ["missing", "invalid", "missing_survey", "missing_list", "invalid_minimum"])
 def test_cli_conversion_error_prints_message_exits_one_and_writes_no_file(workbook_factory, tmp_path, failure):
     if failure == "missing":
         source = tmp_path / "missing.xlsx"
@@ -127,6 +127,9 @@ def test_cli_conversion_error_prints_message_exits_one_and_writes_no_file(workbo
         source.write_bytes(b"not a workbook")
     elif failure == "missing_survey":
         source = workbook_factory(omit_survey=True)
+    elif failure == "invalid_minimum":
+        source = workbook_factory(survey=[["type", "name", "label", "minimum_seconds"],
+                                          ["text", "q", "Q", -1]])
     else:
         source = workbook_factory(survey=[["type", "name", "label"], ["select_one missing", "q", "Q"]])
     with pytest.raises(ConversionError) as caught:
@@ -147,6 +150,37 @@ def test_cli_conversion_failure_preserves_existing_output_files(tmp_path):
     catalog.write_bytes(b"existing catalog")
     status, _, _ = run_cli(tmp_path / "missing.xlsx", "-o", xml)
     assert status == 1
+    assert xml.read_bytes() == b"existing XML"
+    assert catalog.read_bytes() == b"existing catalog"
+
+
+def test_cli_writes_timing_attributes_and_original_speed_types(workbook_factory, tmp_path):
+    source = workbook_factory(survey=[
+        ["type", "name", "label", "minimum_seconds"],
+        ["text", "q", "Question", 2.5],
+        ["speed violations count", "count"],
+        ["speed violations list", "list"],
+    ])
+    expected = convert_xlsform(source)
+    xml = tmp_path / "timed.xml"
+    status, _, stderr = run_cli(source, "-o", xml)
+    assert status == 0, stderr
+    assert stderr.splitlines() == list(expected.warnings)
+    assert_xml_written(xml, expected)
+    assert_catalog(xml.with_suffix(".fields.json"), expected)
+
+
+def test_cli_invalid_minimum_seconds_preserves_existing_outputs(workbook_factory, tmp_path):
+    source = workbook_factory(survey=[
+        ["type", "name", "label", "minimum_seconds"], ["text", "q", "Question", -1],
+    ])
+    xml = tmp_path / "timed.xml"
+    catalog = xml.with_suffix(".fields.json")
+    xml.write_bytes(b"existing XML")
+    catalog.write_bytes(b"existing catalog")
+    status, _, stderr = run_cli(source, "-o", xml)
+    assert status == 1
+    assert source.name in stderr
     assert xml.read_bytes() == b"existing XML"
     assert catalog.read_bytes() == b"existing catalog"
 
