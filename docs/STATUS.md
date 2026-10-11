@@ -42,6 +42,18 @@ Small open points:
 
 ## Waiting on the project owner
 
+- **Exports of the third coverage form** (`samples/coverage3/`, see its
+  README for the inventory of SurveyCTO features and the filling
+  scenarios A, B, C and optional D with `ctosim_coverage3_v2.xlsx`).
+
+Simulator gaps already found by running that form (fix with spec
+amendments; details in `samples/coverage3/README.md`, section 2):
+`count-if` / `sum-if` / `join-if` / `min-if` / `max-if` /
+`rank-index-if` make the walk fail; `format-date-time` follows the
+machine's language; a counted repeat with count 0 gets one instance;
+`search()` offers its placeholder row; `decimal-time()` of a text value
+fails. The form is not in `samples/xforms/` yet, because the walk fails.
+
 - Later: more XLSForms in `samples/forms/` to cover more cases.
 
 ## Developer guide
