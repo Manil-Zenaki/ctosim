@@ -136,3 +136,38 @@ Tests are do-files under `src/test/stata/`, run in batch mode by
 `CTOSIM_JAR` / `CTOSIM_CONVERTER` pointing to the files built by
 `scripts/build-stata-package.ps1`. A test passes when its do-file runs to
 the end without error.
+
+## Clarifications (answers to `11-stata-command.questions.md`)
+
+The eleven points were reviewed one by one. Assumptions 1–8, 10 and 11 are
+confirmed; in particular a simulator test double reached through
+`CTOSIM_JAR` is a valid way to test the command (4), and relative
+`dofile()` paths are resolved from the caller's directory (6). Point 9 is
+superseded by Amendment 1 for Java.
+
+## Amendment 1: which Java, and batch mode
+
+The simulator needs **Java 17 or newer**. Stata 18 and later ship one;
+Stata 16 and the first releases of Stata 17 ship Java 11. The "Java" rule
+of "Finding the programs" is replaced by:
+
+- **Java.** The first of these that exists and is a Java 17 or newer:
+  1. the executable named by the environment variable `CTOSIM_JAVA`, when
+     it is set and not empty (it is then used only if it is Java 17 or
+     newer);
+  2. the Java that Stata uses (`java query`);
+  3. `bin/java` (`bin\java.exe` on Windows) under the environment
+     variable `JAVA_HOME`, when it is set and not empty;
+  4. `java` found on the system path.
+
+  When none is found, the command stops with error 601 before running
+  anything, with a message saying that ctosim needs Java 17 or newer, the
+  version of Stata's own Java, and how to provide one (install a free Java
+  17 such as Eclipse Temurin, or set `CTOSIM_JAVA` to its `java`
+  executable).
+
+In addition:
+
+- **Batch mode.** The command works the same in an interactive session
+  and in a do-file run in batch mode (`stata /e do file.do`), on Windows
+  included (where Stata ignores `shell` in batch mode).
