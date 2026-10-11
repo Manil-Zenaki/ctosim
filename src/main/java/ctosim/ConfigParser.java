@@ -39,7 +39,7 @@ final class ConfigParser {
             .withResolverStyle(ResolverStyle.STRICT);
 
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
-            "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone", "enumerators");
+            "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone", "enumerators", "speedViolationRate");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate");
 
@@ -98,8 +98,11 @@ final class ConfigParser {
         int enumerators = root.has("enumerators")
                 ? boundedInt(root.get("enumerators"), "enumerators", 1, SimulationConfig.MAX_ENUMERATORS) : d.enumerators();
 
+        double speedViolations = root.has("speedViolationRate")
+                ? rate(root.get("speedViolationRate"), "speedViolationRate") : d.speedViolationRate();
+
         return new SimulationConfig(seed, submissions, start, days, missing, special, specialValues,
-                repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators);
+                repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations);
     }
 
     // --- Sections -------------------------------------------------------------------

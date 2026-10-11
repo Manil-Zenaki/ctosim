@@ -42,11 +42,12 @@ public final class SimulationConfig {
     private final Map<String, FieldOverride> fields;
     private final ZoneId timeZone;
     private final int enumerators;
+    private final double speedViolationRate;
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
                      NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
-                     ZoneId timeZone, int enumerators) {
+                     ZoneId timeZone, int enumerators, double speedViolationRate) {
         this.seed = seed;
         this.submissions = submissions;
         this.start = start;
@@ -62,12 +63,13 @@ public final class SimulationConfig {
         this.overriddenFields = Collections.unmodifiableSortedSet(new TreeSet<>(fields.keySet()));
         this.timeZone = timeZone;
         this.enumerators = enumerators;
+        this.speedViolationRate = speedViolationRate;
     }
 
     public static SimulationConfig defaults() {
         return new SimulationConfig(1, 100, LocalDateTime.of(2026, 1, 5, 8, 0, 0), 30, 0.05, 0.02,
                 DEFAULT_SPECIAL_VALUES, 1, 3, new NumericRange(0, 100), new NumericRange(0, 1000), Map.of(),
-                ZoneId.of("UTC"), 5);
+                ZoneId.of("UTC"), 5, 0.1);
     }
 
     public static SimulationConfig parse(String json, String sourceName) throws ConfigException {
@@ -161,13 +163,13 @@ public final class SimulationConfig {
 
     /** Probability of a speed violation on a field with a minimum time. See specs/04, Amendment 2. */
     public double speedViolationRate() {
-        throw new UnsupportedOperationException("not implemented");
+        return speedViolationRate;
     }
 
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators);
+                timeZone, enumerators, speedViolationRate);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
@@ -176,6 +178,6 @@ public final class SimulationConfig {
         }
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators);
+                timeZone, enumerators, speedViolationRate);
     }
 }
