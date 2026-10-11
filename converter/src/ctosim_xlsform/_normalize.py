@@ -15,10 +15,13 @@ COLUMN_RENAMES = {
     "required message": "required_message",
 }
 
-IGNORED_COLUMNS = {"note", "response_note", "publishable", "minimum_seconds", "disabled",
+IGNORED_COLUMNS = {"note", "response_note", "publishable", "disabled",
                    "accuracy_threshold", "mediatype"}
 
 CALCULATE_HERE_COLUMN = "bind::ctosim:calculate-here"
+MINIMUM_SECONDS_COLUMN = "bind::ctosim:minimum-seconds"
+SPEED_VIOLATIONS_COLUMN = "bind::ctosim:speed-violations"
+SPEED_VIOLATION_FIELDS = {"speed violations count": "count", "speed violations list": "list"}
 CTOSIM_NAMESPACE = 'ctosim="urn:ctosim:xforms"'
 
 EXPRESSION_COLUMNS = ("relevant", "constraint", "calculation", "required", "choice_filter", "repeat_count",
@@ -60,7 +63,7 @@ class Normalized:
     settings: dict[str, Any]
     fields: list[tuple[str, str, str, int]] = field(default_factory=list)  # name, type, xpath, row
     warnings: list[str] = field(default_factory=list)
-    has_calculate_here: bool = False
+    uses_ctosim_namespace: bool = False
 
 
 def read_sheet(worksheet) -> Sheet:
@@ -154,11 +157,15 @@ def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> N
 
         if type_text == "calculate_here":
             _calculate_here(s, row, name)
-            out.has_calculate_here = True
+            out.uses_ctosim_namespace = True
             out.warnings.append(f"row {number}: field '{name}' of SurveyCTO type 'calculate_here' becomes "
                                 f"a read-only question computed when the form reaches it")
             out.fields.append((name, type_text, _xpath(stack, name), number))
             continue
+
+        if type_text in SPEED_VIOLATION_FIELDS:
+            _set(s, row, SPEED_VIOLATIONS_COLUMN, SPEED_VIOLATION_FIELDS[type_text])
+            out.uses_ctosim_namespace = True
 
         converted = _convert_type(type_text)
         if converted is not None:
@@ -175,6 +182,9 @@ def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> N
         kind, number, name = stack[-1]
         raise NormalizationError(f"row {number}: 'begin {kind}' '{name}' is never closed by an 'end {kind}' "
                                  f"(groups and repeats are not balanced)")
+
+    if _minimum_seconds(s):
+        out.uses_ctosim_namespace = True
 
     for col_name in EXPRESSION_COLUMNS:
         col = s.column(col_name)
@@ -218,6 +228,39 @@ def _convert_type(type_text: str) -> tuple[str, bool] | None:
     if type_text == "enumerator":
         return "text", False
     return None
+
+
+def _set(s: Sheet, row: list[Any], column: str, value: Any) -> None:
+    if s.column(column) is None:
+        s.headers.append(column)
+        for r in s.rows:
+            r.append(None)
+    row[s.column(column)] = value
+
+
+def _minimum_seconds(s: Sheet) -> bool:
+    """Moves minimum_seconds into a ctosim bind attribute; True when any row has one."""
+    col = s.column("minimum_seconds")
+    if col is None:
+        return False
+    found = False
+    for k, row in enumerate(s.rows):
+        raw = row[col]
+        if raw is None or (isinstance(raw, str) and raw.strip() == ""):
+            continue
+        value = text(raw).strip()
+        try:
+            number = float(value)
+        except ValueError:
+            number = -1.0
+        if not number >= 0 or number == float("inf"):
+            raise NormalizationError(f"row {k + 2}: minimum_seconds must be a number of at least 0, not '{value}'")
+        _set(s, row, MINIMUM_SECONDS_COLUMN, str(int(number)) if number.is_integer() else repr(number))
+        found = True
+    del s.headers[col]
+    for row in s.rows:
+        del row[col]
+    return found
 
 
 def _calculate_here(s: Sheet, row: list[Any], name: str) -> None:

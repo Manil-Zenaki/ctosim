@@ -174,7 +174,7 @@ def _write_odk_workbook(norm, form_id: str, title: str, version: str | None, out
         if value is not None and text(value).strip() != "":
             headers.append(name)
             values.append(value)
-    if norm.has_calculate_here:
+    if norm.uses_ctosim_namespace:
         own = text(norm.settings.get("namespaces")).strip()
         headers.append("namespaces")
         values.append(f"{own} {CTOSIM_NAMESPACE}".strip())
