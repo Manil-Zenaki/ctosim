@@ -209,3 +209,20 @@ as `ZoneId.of` gives it (`UTC` and `Z` are different IDs) (13); the
 configuration does not resolve `start` in the zone (14); `enumerators`
 may exceed `submissions` (15). A rejected zone's exception may keep the
 `DateTimeException` as its cause, but need not (16).
+
+## Amendment 2: speed violations
+
+One top-level key is added; everything else is unchanged.
+
+| Key | Type | Default | Constraint | Meaning (used by spec 07) |
+|---|---|---|---|---|
+| `speedViolationRate` | number | `0.1` | 0 to 1 | Probability that the enumerator tries to leave a field that has a minimum time too early, recording a speed violation. |
+
+Accessor added to `SimulationConfig`:
+
+```java
+public double speedViolationRate();   // 0.1 by default
+```
+
+The rules of "Strictness" and "Errors" apply (an error is located at
+`speedViolationRate`); `withSeed` and `withSubmissions` keep the setting.

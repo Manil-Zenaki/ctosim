@@ -159,6 +159,11 @@ public final class SimulationConfig {
         return enumerators;
     }
 
+    /** Probability of a speed violation on a field with a minimum time. See specs/04, Amendment 2. */
+    public double speedViolationRate() {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
