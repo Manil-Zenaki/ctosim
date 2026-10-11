@@ -158,3 +158,49 @@ longer describe checked-in support jars: the required runner now builds
 both from source into `.codex-runs/stata-support/` before launching Stata.
 The distinct default-output basenames in `test_options_paths.do` now also
 honor question 6's exclusion of filesystem case-sensitivity assumptions.
+
+## Amendment 2: converter installed-name tests
+
+### B1. Observing which converter was selected
+
+**Question:** How can tests distinguish two discoverable, importable archives without prescribing the command's Python-path plumbing?
+
+**Assumption:** Use small converter doubles at the public spec-10 boundary, `python -m ctosim_xlsform FORM -o OUTPUT`. Each archive records its distinct identity and copies the existing valid XML/catalog fixtures to OUTPUT. The real simulator must successfully import and invoke the chosen archive; tests do not inspect production code or assert the contents of PYTHONPATH. This follows the approved process-double approach and spec 10's converter-double clarification. One separate scenario uses the actual built converter archive, copied unchanged from `.zip` to `.jar`, with the real XLSForm fixture. Building/distributing the package and inspecting its manifest remain outside unit-test scope, as specified.
+
+**Tests:** `test_converter_name_jar_fallback.do`, `test_converter_name_zip_precedence.do`, `test_converter_name_override.do`; fixture `build_converter_name_archives.py`.
+
+### B2. Search priority across different ado-path entries
+
+**Question:** Does an earlier ado-path jar outrank a zip in a later directory?
+
+**Assumption:** No. The amended rule searches for `ctosim_converter.zip` along the ado-path first, and considers `ctosim_converter.jar` only otherwise. Tests cover zip alone, both names in one directory, and a jar in an earlier directory than the zip. Within-extension duplicate-file priority is left to normal Stata lookup and is not assigned new semantics.
+
+**Tests:** `test_converter_name_zip_precedence.do`.
+
+### B3. Override names and invalid overrides
+
+**Question:** Are override files restricted to either standard basename or suffix, and may a missing override fall through to valid ado-path archives?
+
+**Assumption:** The file explicitly named by a nonempty `CTOSIM_CONVERTER` wins, regardless of name, following "Whatever its name." Tests use custom `.jar`, `.zip`, and `.archive` names, including spaces. Relative overrides are resolved from the caller's working directory, interpreting the spec's relative-path allowance to include the named converter file. A missing nonempty override yields 601 even when both fallback archives exist, consistent with the confirmed original discovery assumption. Corrupt archives, whitespace-only overrides, and directory-valued overrides are unspecified and are not assigned new error behavior.
+
+**Tests:** `test_converter_name_override.do`, `test_converter_name_missing.do`.
+
+### B4. Isolating discovery without changing user settings
+
+**Question:** How can tests guarantee no user-installed converter supplies an unintended fallback?
+
+**Assumption:** Each profile runs in a fresh child Stata batch process, sets SITE/PLUS/PERSONAL/OLDPLACE to private empty directories for that process only, and adds controlled ado directories plus the command and test-support directories. No persistent settings or installed files are changed. Empty and unset environment profiles are separate even though Windows may normalize them. The configured Python and eligible Java are supplied to isolate Amendment 2 from other runtime-selection branches. The negative XLSForm scenarios use the existing simulator double to assert that preflight stops before simulator invocation; XML scenarios use the real simulator and assert successful import with no converter invocation.
+
+New generated archives, compiled fixtures, subprocess temporary files, and logs are under `.codex-runs/stata-support/` and `.codex-runs/stata-converter-name/`. The mandated unmodified runner also writes its own logs under `target/stata-tests/`. A child timeout is a harness safeguard, not a performance requirement. All existing tests and helpers are retained unchanged.
+
+**Tests:** All five `test_converter_name_*.do` files; new `converter-name-launch.do` / `.ps1`, `converter-name-helpers.do`, and `ConverterNameTestSupport.java`.
+
+### Amendment 2 validation
+
+The requested unmodified runner starts Stata successfully. The five new do-files execute all **15 child scenarios: 12 pass and 3 fail**, giving **4 passing do-files and 1 failing do-file**. All three failures belong to `test_converter_name_jar_fallback.do`: unset override, empty override, and the real renamed archive. Each reaches `ctosim` and receives error 601 with `the converter ctosim_converter.zip was not found; reinstall the package with net install ctosim`, even though `ctosim_converter.jar` is on the controlled ado-path. These are command discovery failures, not fixture or startup failures. Subsequent conversion assertions in these three scenarios remain unreachable.
+
+Zip-only discovery, zip-before-jar precedence (including across directories), all four override variants, all three missing-converter cases, and both XML-independence cases pass through their final assertions. The Java bridge and simulator double compile successfully. A separate Python subprocess check also imports and executes each of the three tagged archives and the actual converter renamed to `.jar`, verifies the output catalog's form ID, and verifies each test archive's identity marker. No production source was opened or changed.
+
+Logs: `target/stata-tests/test_converter_name_*/runner.log` and `.codex-runs/stata-converter-name/<test>-<profile>/child.log`. Independent archive-check outputs are under `.codex-runs/stata-converter-name/fixture-check/`.
+
+The full requested command, `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`, completed with **35 do-files, 8 failed** (exit status 1). Besides the new jar-fallback failure, the seven existing `test_amendment_*.do` files fail because their unchanged launcher cannot remove pre-existing `.codex-runs/stata-amendment/.../temp/hsperfdata_manil` directories (access denied). Those existing cleanup failures prevent their command assertions from running in this invocation and are not attributed to Amendment 2. The remaining 27 do-files pass. Existing tests, production files, specs, and build configuration were not modified; only new test/support/fixture files and this questions file were written. No commit was made.
