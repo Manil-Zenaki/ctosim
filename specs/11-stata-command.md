@@ -175,3 +175,22 @@ In addition:
 - **Batch mode.** The command works the same in an interactive session
   and in a do-file run in batch mode (`stata /e do file.do`), on Windows
   included (where Stata ignores `shell` in batch mode).
+
+Clarification (Amendment 1): the questions recorded for Amendment 1
+(A1–A4) are reviewed one by one and confirmed.
+
+## Amendment 2: the converter's installed name
+
+`net install` copies only the file types Stata knows (ado-files, help
+files, jars, Python files, ...) and silently skips a `.zip` file. The
+converter archive is therefore installed as `ctosim_converter.jar` (a jar
+is a zip archive, and Python imports from it the same way). The
+"Converter" rule of "Finding the programs" becomes:
+
+- **Converter** (`.xlsx` FORM only). The file named by the environment
+  variable `CTOSIM_CONVERTER` when it is set and not empty; otherwise
+  `ctosim_converter.zip` found along the ado-path; otherwise
+  `ctosim_converter.jar` found along the ado-path. Whatever its name, it
+  is made importable by the simulator's Python.
+
+The package lists `ctosim_converter.jar` (the same archive).
