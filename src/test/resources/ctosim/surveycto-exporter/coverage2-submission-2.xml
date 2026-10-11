@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='utf-8'?>
+<data id="ctosim_coverage2" version="2610100005">
+  <starttime>2026-10-10T23:25:39</starttime>
+  <endtime>2026-10-10T23:31:29</endtime>
+  <deviceid>a1b2c3d4e5f60718</deviceid>
+  <username>enumerator@example.org</username>
+  <duration>338</duration>
+  <text_audit />
+  <audio_audit />
+  <sv_count>2</sv_count>
+  <sv_list>main[1]/resp_name,main[1]/hh_size</sv_list>
+  <field_comments />
+  <hhid>H002</hhid>
+  <pl_head>Chaltu (fictitious)</pl_head>
+  <consent>1</consent>
+  <main>
+    <resp_name>Paul</resp_name>
+    <assets>1 2</assets>
+    <transport>bus x2</transport>
+    <hh_size>2</hh_size>
+    <member>
+      <member_name>Kil</member_name>
+      <member_gps>38.8804889 -77.0171259 1.8 17.8</member_gps>
+      <member_activities>1</member_activities>
+      <n_children>2</n_children>
+      <child>
+        <child_name>Pup</child_name>
+      </child>
+      <child>
+        <child_name>Pap</child_name>
+      </child>
+      <job>
+        <job_title>Prof</job_title>
+        <job_days>1 6</job_days>
+      </job>
+      <job>
+        <job_title>Thinker</job_title>
+        <job_days>6</job_days>
+      </job>
+    </member>
+    <member>
+      <member_name>Pap</member_name>
+      <member_gps>38.8804824 -77.0170363 -13.0 16.6</member_gps>
+      <member_activities>-97</member_activities>
+      <n_children>1</n_children>
+      <child>
+        <child_name>Halo</child_name>
+      </child>
+      <job>
+        <job_title>Plumber</job_title>
+        <job_days>1 6</job_days>
+      </job>
+    </member>
+    <plot>
+      <plot_crop>1</plot_crop>
+      <plot_gps>38.880519 -77.0170947 -13.3 12.1</plot_gps>
+    </plot>
+    <plot>
+      <plot_crop>2</plot_crop>
+      <plot_gps>38.8804938 -77.0170461 -10.1 16.9</plot_gps>
+    </plot>
+  </main>
+  <meta>
+    <instanceID>uuid:595d7ef3-487a-4f99-9091-231fe7c630b7</instanceID>
+    <instanceName>H002 - Paul</instanceName>
+  </meta>
+</data>

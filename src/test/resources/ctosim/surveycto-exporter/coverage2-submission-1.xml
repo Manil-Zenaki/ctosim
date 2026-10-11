@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='utf-8'?>
+<data id="ctosim_coverage2" version="2610100005">
+  <starttime>2026-10-10T23:25:09</starttime>
+  <endtime>2026-10-10T23:25:31</endtime>
+  <deviceid>a1b2c3d4e5f60718</deviceid>
+  <username>enumerator@example.org</username>
+  <duration>22</duration>
+  <text_audit />
+  <audio_audit />
+  <sv_count />
+  <sv_list />
+  <field_comments />
+  <hhid>H001</hhid>
+  <pl_head>Abebe (fictitious)</pl_head>
+  <consent>0</consent>
+  <meta>
+    <instanceID>uuid:e3fe73bb-cee6-4a57-ac81-c6c2e1013091</instanceID>
+    <instanceName>H001 -</instanceName>
+  </meta>
+</data>

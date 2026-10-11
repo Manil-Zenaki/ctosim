@@ -182,3 +182,133 @@ The suite uses six JUnit 5 test classes and one test support class.
 Temporary compiler probes and logs are confined to `.codex-runs/`;
 production source, pom.xml, the original spec, and published samples are
 unchanged. No commit was made.
+
+## Amendment 1: second real export
+
+This run adds five new test classes and three static coverage2 submission
+fixtures. All previously committed tests and fixtures are preserved. No
+production source was opened, searched, or changed; expectations come from
+spec 08 Amendment 1 and the unchanged rules it incorporates.
+
+11. **Question:** What should happen to the original assertions that audio
+    audits are stored verbatim, now that Amendment 1 explicitly changes them?
+    **Assumption:** The amendment is the current contract. The user explicitly
+    requires keeping existing tests and adding only new classes, so the old
+    cases are not edited or disabled. The `audio audit` and `AuDiO audit`
+    invocations of `SurveyCtoExporterValueTest.otherTypesAreStoredVerbatimIncludingSpecialMultiwordTypes`
+    contradict the amended contract and cannot pass together with the new
+    audit URL assertions once the amendment is implemented. Original
+    assumption 5 above describes that superseded behavior; the new tests
+    retain its confirmed case-insensitive type comparison.
+    **Tests:** `SurveyCtoExporterAudioAuditAmendmentTest`, especially
+    `presentAudioAuditGeneratesAnAaFilenameRegardlessOfStoredValue` and
+    `audioAuditRecognitionRetainsCaseInsensitiveTypeComparison`.
+
+12. **Question:** How are the second export's original instance XML and audit
+    stored values obtained when only the published CSVs are available?
+    **Assumption:** As in confirmed assumption 10, static XML fixtures are
+    transcribed from the committed long exports, preserving their actual
+    values rather than the planned scenarios in the coverage2 README. ISO
+    timestamps restore the displayed wall-clock times; geopoint components
+    retain their textual precision and are joined with single spaces.
+    Empty scalar cells use empty elements, both audit elements are present
+    and empty, and the refused-consent instance omits `main` so its count is
+    empty. Meta contains the exported instanceID and instanceName. The
+    factory's start/end/submitted arguments are explicit transcriptions of
+    starttime/endtime/SubmissionDate, respectively. XML serialization and
+    invisible original audit contents are not asserted. Golden CSVs are read
+    directly as bytes without trimming, newline normalization, or regeneration.
+    **Tests:** All `SurveyCtoExporterSecondRealExportTest` methods; fixtures
+    `src/test/resources/ctosim/surveycto-exporter/coverage2-submission-*.xml`.
+
+13. **Question:** Does audio-audit generation depend on its stored text,
+    grouping, repeat keys, or unobserved audit start parameters?
+    **Assumption:** The amendment explicitly makes element presence the
+    trigger and uses the submission instance ID for the URL and filename.
+    The unchanged XPath/repeat rules apply inside groups and repeats;
+    absent fields and padded instances remain empty. Only a leading `uuid:`
+    is stripped, and both URL parameters use the existing UTF-8 form encoding
+    rule. No behavior is inferred for nonzero start parameters, multiple
+    audio segments, attachment availability, or real comments filenames.
+    Synthetic forms test export mapping of catalog type `audio audit`, without
+    requiring device recording or a particular stored marker. The real form
+    supplies the observed audit setting. Ordinary `audio` and `text audit`
+    retain their existing filename rules.
+    **Tests:** `SurveyCtoExporterAudioAuditAmendmentTest`.
+
+14. **Question:** Is instanceName detection based on form structure, a setting
+    expression, a default value, the catalog, or the submitted XML?
+    **Assumption:** The amendment explicitly uses a direct instanceName child
+    of the primary instance's direct meta child. Its presence enables the
+    column even when empty and even with no submissions. No catalog field or
+    expression is needed. The cell uses the submitted direct meta child,
+    never a definition default, root/nested decoy, or secondary instance.
+    Missing and present-empty names both give empty cells; stored whitespace,
+    Unicode and CSV-special characters are preserved. Duplicate meta/name
+    elements and catalog fields colliding with this metadata column remain
+    unspecified and are not tested.
+    **Tests:** instanceName cases in `SurveyCtoExporterAmendmentMetadataTest`,
+    and `SurveyCtoExporterSecondRepeatRulesTest.instanceNameMetadataNeverAppearsInRepeatFiles`.
+
+15. **Question:** Does the new factory impose chronology or XML validation,
+    and does changing submitted also change stored end fields or row order?
+    **Assumption:** The five-argument factory inherits the four-argument
+    argument-preservation, null, number, unvalidated-XML, answered and warnings
+    contracts, plus the explicit submitted null check. No new chronology,
+    upload-delay distribution, or four-argument factory validation is inferred.
+    Dates used in distinct-time tests are after end. SubmissionDate alone
+    uses submitted; ordinary end fields still use XML and rows remain in list
+    order. Nanoseconds are preserved by the accessor and dropped only during
+    formatting. Metadata and repeat tests that do not need a distinct upload
+    time use the four-argument factory to isolate them from the new overload.
+    **Tests:** `SubmissionSubmittedFactoryTest` and the submitted-date cases
+    in `SurveyCtoExporterAmendmentMetadataTest`. Upload-time randomness belongs
+    to spec 07, not these exporter tests.
+
+16. **Question:** Do the newly confirmed repeat naming rules replace any
+    empty-value, maximum-width, or count semantics?
+    **Assumption:** No: the amendment leaves those rules unchanged. Focused
+    tests use the second form with synthetic submitted instances to cover
+    partial/empty/absent geopoints, empty and absent nested selections, missing
+    inner and outer repeat blocks, unequal child counts, zero global child
+    maximum, and present-empty child instances. Counts come from actual
+    elements, even when n_children contains 9. Every hyphen is replaced in
+    dummy names, including repeated and leading/trailing hyphens, while
+    stored choices are unchanged. Non-numeric or multi-hyphen choice values
+    do not introduce any new validation policy.
+    **Tests:** `SurveyCtoExporterSecondRepeatRulesTest`. No new expectations
+    are imposed for the amendment's remaining unobserved review columns or
+    speed-violation/comment formats.
+
+### Amendment 1 validation
+
+- `mvnw.cmd -o -q test-compile` reached `testCompile` but failed resolving the
+  cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` path. The
+  diagnostic `-e` rerun identifies `java.nio.file.AccessDeniedException` in
+  Windows `toRealPath` during javac ZIP filesystem cleanup, the same build
+  environment issue documented for the original tests above. Logs are
+  `.codex-runs/exporter-amendment-test-compile.log` and
+  `.codex-runs/exporter-amendment-test-compile-detail.log`.
+- The independent in-memory compiler probe compiles all five new classes
+  and the seven existing exporter test/support classes with `--release 17`.
+  It reads cached classes/JARs without changing production, the Maven
+  repository, or build configuration. This verifies source compilation, not
+  a successful execution of the prescribed Maven command. Log:
+  `.codex-runs/exporter-amendment-probe-compile.log`.
+- Independent JUnit discovery/execution ran **80 new cases** in five classes:
+  18 passed and 62 failed, with no skipped/aborted tests, failed containers,
+  or form-loading errors. The failures consist of 26 direct
+  `UnsupportedOperationException`s from unimplemented additions and 36
+  assertion failures (including grouped assertions and expected-exception
+  mismatches), reflecting missing factory/instanceName/audio-audit behavior.
+  This is a diagnostic test run, not a passing suite. Log:
+  `.codex-runs/exporter-amendment-junit.log`.
+- The final exact-command Maven retry still failed with the cached-JAR
+  access error. Git verification shows that the only modified tracked file
+  is this questions file; the five Java classes and three XML fixtures are
+  new files. Existing tests, production, published samples, and build files
+  remain unchanged.
+
+All temporary transcription/diagnostic scripts and logs are under
+`.codex-runs/`. No dependency was installed, Maven repository copied, drive
+mapped, or commit made.
