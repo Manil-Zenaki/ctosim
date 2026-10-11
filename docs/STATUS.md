@@ -45,7 +45,7 @@ Small open points:
 
 - **Publishing on GitHub** (repository to be public, decided 2026-10-11):
   create the repository, add it as `origin`, push `main` and
-  `stata-package`; then replace `<owner>/<repo>` in the help-free
+  `stata-package`; then replace `<owner>/<repo>` in the
   instructions (developer guide, `net install` line). Before that, decide:
   commits carry the author e-mail `mzenaki@alum.mit.edu`; the published
   IOM form in `samples/forms/` (CC BY 4.0) contains three IOM staff
