@@ -146,3 +146,63 @@ unchanged. No production source was read or changed.
   `.codex-runs/03-disputed-junit.log`. This validates the disputed classes
   against the existing compiled implementation; it is not a successful
   full Maven build or full-suite run.
+
+## Dispute 3: Amendment 4 calls evaluated outside the form's expressions
+
+Thirteen tests evaluate a conditional function whose condition depends on
+the repeat instance, or `decimal-time()`, by parsing an XPath expression
+that is not part of the form (`SurveyCtoTestSupport.evaluate` /
+`evaluateAt`, i.e. `XPathParseTool.parseXPath(...).eval(...)`). No
+implementation can satisfy them with JavaRosa 6.0.0:
+
+- `XPathFuncExpr.eval` evaluates **every argument before** it dispatches
+  to a custom `IFunctionHandler` (only `if`, `coalesce` and
+  `indexed-repeat` are evaluated lazily, inside the engine). The
+  condition `/data/row/kind = 'odd'`, evaluated once in the call's
+  context, designates three nodes and fails with "This field is
+  repeated" before any handler runs; a condition such as
+  `boolean(/data/row[kind = 'odd'])` evaluates once to `true`. The
+  parse tree is built by `XPathParseTool` with no extension point, so a
+  call parsed by the test cannot be given per-instance semantics.
+- The engine's **built-in functions are matched before custom
+  handlers**: a directly parsed `decimal-time(...)` or
+  `format-date-time(...)` always runs the engine's own code
+  (`decimal-time('06:00:00')` throws "can't be converted to a date").
+
+Per-instance conditions, and the new `decimal-time` / `format-date-time`
+behaviour, can only be given to the form's **own** expressions, which
+the loader rewrites before the engine parses them (as spec 03 already
+does for select functions in Amendment 2, whose last paragraph excludes
+"calls typed directly into an XPath expression that is not part of the
+form"). The spec now says the same for Amendment 4 (Clarification
+(Amendment 4)).
+
+Disputed tests (each assertion that evaluates such a call directly):
+
+1. `SurveyCtoAmendment4ConditionalTest.filtersEachInstanceInsteadOfEvaluatingTheConditionOnce`
+2. `SurveyCtoAmendment4ConditionalTest.excludedNonnumericNodesDoNotContaminateAggregation`
+3. `SurveyCtoAmendment4ConditionalTest.predicateCanCombineInstanceFieldsAndAnExternalThreshold`
+4. `SurveyCtoAmendment4ConditionalTest.predicateCanReferToTheRepeatNodeItself`
+5. `SurveyCtoAmendment4ConditionalTest.numericPredicateValuesAreConvertedSeparatelyForEachInstance`
+6. `SurveyCtoAmendment4ConditionalTest.stringPredicateValuesAreConvertedSeparatelyForEachInstance`
+7. `SurveyCtoAmendment4ConditionalTest.relativeReferencesResolveFromTheCallContextAndThenSelectEachInstance`
+8. `SurveyCtoAmendment4ConditionalTest.joinUsesTheSuppliedSeparatorAndDocumentOrderWithDuplicateUnicodeValues`
+9. `SurveyCtoAmendment4ConditionalTest.separatorCanBeAnExpression`
+10. `SurveyCtoAmendment4ContextTest.nestedRepeatFilteringRetainsTheCallingParentAndGlobalReferences`
+    (the `evaluateAt` assertion; the stored `total` assertion is fine)
+11. `SurveyCtoAmendment4ContextTest.engineCreatedRepeatCanBecomeIncludedAfterItsAnswersAreEntered`
+    (the final direct `count-if` assertion)
+12. `SurveyCtoAmendment4RankTest.ranksOnlyIncludedNumericScoresButPositionsCountEveryInstance`
+13. `SurveyCtoAmendment4DateTimeTest.decimalTimeReturnsNaNForValuesThatAreNeitherTimesNorDateTimes`
+    (the direct `evaluate`; the form is built from the same call)
+
+Requested change: keep every expectation, but observe it through a form
+calculation, as the other tests in these classes already do (the
+`repeats(expression, rows)`, `calculation(expression)` and
+`expressionForm(expression)` helpers put the call in a bind's
+`calculate`, and the result is read from the field). For test 7, the
+call can be the calculation of `/data/result`, whose relative references
+then start from that node. Tests that evaluate directly a call whose
+condition is the same for every instance (`true()`, `false()`, numbers,
+strings) are not disputed: in that case the condition evaluated once
+gives the same inclusion for every instance.
