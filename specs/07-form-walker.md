@@ -412,3 +412,13 @@ Acceptance: walking `samples/xforms/ctosim_coverage3.xml`, loaded with
 media directory `samples/coverage3`, stores in `/data/selects/village`
 one of the `village_id` values of `samples/coverage3/villages.csv` whose
 `region` equals the stored `/data/selects/region`, never `village_id`.
+
+Clarification (Amendment 3): assumptions 29–36 of the questions file are
+reviewed one by one and confirmed. In particular, the CSV file is read
+exactly as `pulldata()` reads it, including first-use reading and
+caching for the life of the `LoadedForm`, and a source ending with
+`.csv` names that file (31); a header-only file, or a search with no
+match, is not an error and gives no warning (33); a count of 0 concerns
+repeats created from their template (34); only the offered choices and
+the conversion of answers change, and a choice filter hides neither the
+placeholder nor the static choices (36).
