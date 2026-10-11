@@ -49,7 +49,7 @@ class FormWalkerAmendmentCoverageTest {
     void coverageUsesDefaultEnumeratorIdentityAndUtcTimestamp(int number) throws Exception {
         Submission result = coverage(number);
         assertTrue(value(result, "username").matches("enumerator0[1-5]"));
-        assertTrue(value(result, "deviceid").matches("[0-9]{15}"));
+        assertTrue(value(result, "deviceid").matches("[0-9a-f]{16}"));
         String start = value(result, "starttime");
         assertTrue(start.endsWith("+00:00") || start.endsWith("Z"), start);
     }

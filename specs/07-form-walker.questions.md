@@ -380,6 +380,22 @@ helpers provide all required signatures.
   production source, the POM, and sample forms remain unchanged. No commit
   was made.
 
+### Device-id dispute adjudication validation
+
+- **Question:** Can the prescribed `mvnw.cmd -o -q test` validate this
+  adjudication in the current environment?
+- **Assumption:** No: it reaches `testCompile` but fails on the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. This build
+  limitation does not justify changing expectations derived from the spec.
+- **Tests:** The existing compilation probe compiled all 18 FormWalker
+  test/support sources successfully. A JUnit harness ran all 36 cases in
+  `FormWalkerAmendmentCoverageTest`, `FormWalkerAmendmentEnumeratorTest`,
+  and `FormWalkerDistributionTest`; all passed. Logs are
+  `.codex-runs/walker-dispute2-compile.log` and
+  `.codex-runs/walker-dispute2-junit.log`. The full Maven suite remains
+  unverified. Question 28's pending reconciliation is now resolved by the
+  adjudication in `07-form-walker.disputes.md`.
+
 ### Amendment 2 questions and assumptions
 
 22. **Question:** Which numeric lexical forms, non-finite values, or overflow

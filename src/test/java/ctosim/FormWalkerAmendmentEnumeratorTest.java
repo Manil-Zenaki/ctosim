@@ -31,10 +31,10 @@ class FormWalkerAmendmentEnumeratorTest {
         for (int number = 1; number <= 40; number++) enumerator(walker.walk(number), total);
     }
 
-    @Test void aSingleEnumeratorHasTheSameFifteenDigitDeviceForEverySubmission() throws Exception {
+    @Test void aSingleEnumeratorHasTheSameSixteenCharacterLowercaseHexDeviceForEverySubmission() throws Exception {
         var walker = new FormWalker(devices(false), config("\"enumerators\":1"));
         String device = value(walker.walk(1), "deviceid");
-        assertTrue(device.matches("[0-9]{15}"), device);
+        assertTrue(device.matches("[0-9a-f]{16}"), device);
         for (int number : new int[]{2, 19, 1, Integer.MAX_VALUE}) {
             Submission result = walker.walk(number);
             assertEquals("enumerator01", value(result, "username"));
@@ -52,7 +52,7 @@ class FormWalkerAmendmentEnumeratorTest {
             int who = enumerator(result, 5);
             counts[who - 1]++;
             String device = value(result, "deviceid");
-            assertTrue(device.matches("[0-9]{15}"), device);
+            assertTrue(device.matches("[0-9a-f]{16}"), device);
             String previous = devices.putIfAbsent(who, device);
             if (previous != null) assertEquals(previous, device, "Device is a property of the enumerator");
         }

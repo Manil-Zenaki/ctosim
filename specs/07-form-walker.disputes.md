@@ -68,3 +68,44 @@ require `[0-9]{15}`:
 
 Requested change: expect `[0-9a-f]{16}` in these assertions (and rename
 the "FifteenDigit" test); keep everything else they check.
+
+## Adjudication of the current disputes
+
+### Dispute 1: retain the previously corrected retry-budget test
+
+The current test already uses `. = 1 or . = 1`. Spec 09's "Using hints
+in the walker" amends spec 07, and its Amendment 1 explicitly identifies
+this disjunction as a constraint that gives no hints. It accepts only 1
+while preserving proposals from the configured integer range 1..20.
+Spec 07's 50-attempt rule therefore still supports the test's exhaustion
+probability `(19/20)^50`. Keep the current test unchanged; the earlier
+adjudication remains valid.
+
+### Dispute 2: accepted; update all three device-id assertions
+
+Spec 07, Amendment 2, "Device ids", explicitly requires 16 lowercase
+hexadecimal characters instead of 15 decimal digits. This supersedes
+the earlier format in Amendment 1, including its coverage-form acceptance
+check. The three disputed `[0-9]{15}` assertions are therefore wrong.
+
+Changed them to `[0-9a-f]{16}` in
+`coverageUsesDefaultEnumeratorIdentityAndUtcTimestamp`,
+`defaultEnumeratorsAreUniformAndHaveStableDistinctDeviceIds`, and the
+single-enumerator test. Renamed the latter to
+`aSingleEnumeratorHasTheSameSixteenCharacterLowercaseHexDeviceForEverySubmission`.
+Java's `String.matches` checks the entire value, so these assertions
+enforce the required length, character set, and lowercase spelling.
+All remaining checks are retained: stable per-enumerator identity,
+distinct ids within a configuration, uniform enumerator assignment,
+username formatting, and the UTC timestamp are unchanged by Amendment 2.
+No implementation source was read or modified.
+
+Validation for this adjudication: `mvnw.cmd -o -q test` reached
+`testCompile` but failed on the cached `commons-io-2.5.jar`. The existing
+compilation probe successfully compiled all 18 FormWalker test/support
+sources against the project class files. A JUnit harness then ran
+`FormWalkerAmendmentCoverageTest`, `FormWalkerAmendmentEnumeratorTest`,
+and `FormWalkerDistributionTest`: all 36 cases passed, with none skipped
+or aborted. Logs are `.codex-runs/walker-dispute2-compile.log` and
+`.codex-runs/walker-dispute2-junit.log`. This verifies compilation and the
+disputed test classes, but does not constitute a successful Maven suite run.
