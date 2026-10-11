@@ -342,3 +342,9 @@ Amendment 1, every relevant field whose bind has the attribute
   brackets: `main[1]/resp_name`, `main[1]/member[2]/member_name`.
 
 Fields that depend on them are updated as after any answer.
+
+Clarification (Amendment 2): assumptions 22–28 of the questions file are
+reviewed one by one and confirmed. In particular, every outcome of rules
+5 and 6 is one handling, so blank and failed questions can also record a
+violation (23); a report field with no violations is cleared (24); paths
+give every step but the last its position, including ordinary groups (25).

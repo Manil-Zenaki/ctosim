@@ -51,3 +51,20 @@ none skipped, none failed, including the amended retry test. The run log
 is `.codex-runs/form-walker-dispute-junit.log`. These probe results do not
 constitute a successful Maven build; the build limitation is also recorded
 in `07-form-walker.questions.md`.
+
+## Dispute 2: device ids are now 16 hexadecimal characters (Amendment 2)
+
+Amendment 2 replaces the device id format of Amendment 1: a `deviceid` is
+now "a string of 16 lowercase hexadecimal characters (`0-9a-f`) ...
+instead of 15 decimal digits". Three tests written for Amendment 1 still
+require `[0-9]{15}`:
+
+- `FormWalkerAmendmentCoverageTest.coverageUsesDefaultEnumeratorIdentityAndUtcTimestamp`
+  (line 52);
+- `FormWalkerAmendmentEnumeratorTest.aSingleEnumeratorHasTheSameFifteenDigitDeviceForEverySubmission`
+  (line 37);
+- `FormWalkerAmendmentEnumeratorTest.defaultEnumeratorsAreUniformAndHaveStableDistinctDeviceIds`
+  (line 55).
+
+Requested change: expect `[0-9a-f]{16}` in these assertions (and rename
+the "FifteenDigit" test); keep everything else they check.

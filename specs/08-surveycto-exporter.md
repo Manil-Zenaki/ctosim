@@ -383,3 +383,8 @@ above); what a `comments` field holds (per SurveyCTO's documentation, the
 URL of a per-submission CSV of comments, whose file name has not been
 observed; written unchanged until then); `speed violations` fields when
 no violation occurred; `review_*` columns.
+
+Clarification (Amendment 1): assumptions 11–15 of the questions file are
+reviewed one by one and confirmed. In particular, the `instanceName`
+column follows the form's structure (a direct `meta/instanceName`), even
+with no submissions (14).

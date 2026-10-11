@@ -226,3 +226,7 @@ public double speedViolationRate();   // 0.1 by default
 
 The rules of "Strictness" and "Errors" apply (an error is located at
 `speedViolationRate`); `withSeed` and `withSubmissions` keep the setting.
+
+Clarification (Amendment 2): assumptions 18–21 of the questions file are
+reviewed one by one and confirmed (the rates are independent; only the
+top level gains the key; the usual diagnostics apply).
