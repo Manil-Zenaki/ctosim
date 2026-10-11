@@ -1,0 +1,25 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Conditional repeat functions</h:title><model>
+    <instance><data id="conditional-repeat">
+      <wanted>odd</wanted><threshold>15</threshold><position>1</position><result/>
+      <row jr:template=""><score/><kind/><label/></row>__ROWS__
+    </data></instance>
+    <bind nodeset="/data/wanted" type="string"/>
+    <bind nodeset="/data/threshold" type="decimal"/>
+    <bind nodeset="/data/position" type="int"/>
+    <bind nodeset="/data/row/score" type="string"/>
+    <bind nodeset="/data/row/kind" type="string"/>
+    <bind nodeset="/data/row/label" type="string"/>
+    <bind nodeset="/data/result" type="string" calculate="concat('[', __EXPRESSION__, ']')"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/wanted"><label>Kind to include</label></input>
+    <input ref="/data/threshold"><label>Threshold</label></input>
+    <input ref="/data/position"><label>Position</label></input>
+    <repeat nodeset="/data/row">
+      <input ref="/data/row/score"><label>Score</label></input>
+      <input ref="/data/row/kind"><label>Kind</label></input>
+      <input ref="/data/row/label"><label>Label</label></input>
+    </repeat>
+  </h:body>
+</h:html>
