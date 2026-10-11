@@ -348,3 +348,67 @@ reviewed one by one and confirmed. In particular, every outcome of rules
 5 and 6 is one handling, so blank and failed questions can also record a
 violation (23); a report field with no violations is cleared (24); paths
 give every step but the last its position, including ordinary groups (25).
+
+## Amendment 3: empty counted repeats and `search()` choices
+
+From the export of the third coverage form (`samples/coverage3/`).
+Everything not mentioned here is unchanged.
+
+### Counted repeat with a count of 0
+
+When the count of a counted repeat is 0 in a parent instance, that
+repeat has **no instance** there: the submission's instance XML has no
+element of that repeat in that parent, and none of its questions is met.
+(Submission C of the export: `n_people` = 0, `person_count` = 0, no row
+in the `person` long file.)
+
+### Choices loaded with `search()`
+
+A select question whose appearance contains a `search(...)` call
+(SurveyCTO's "dynamically load choices from pre-loaded data") takes its
+choices from a CSV file attached to the form, not from the choice list
+alone. In the form's choice list, the **placeholder** is the first
+choice whose value is not a number: its value is the name of the CSV
+column holding the choice values. The form's other choices are
+**static** choices (SurveyCTO requires their values to be numbers). A
+question with no placeholder is treated as an ordinary select.
+
+The call has 1, 4 or 6 arguments:
+`search(source)`, `search(source, type, columns, text)`,
+`search(source, type, columns, text, filterColumn, filterText)`. Each
+argument is an XPath expression (a string literal or a field reference),
+evaluated in the question's context and converted to a string.
+
+- The file is `<source>.csv` in the form's media directory (spec 03,
+  Amendment 3), with `.csv` not added when `source` already ends with
+  it; it is read as `pulldata()` reads attached files.
+- With one argument every data row is a match. Otherwise `columns` is one
+  column name or several separated by commas, and a row matches when the
+  value in at least one of those columns, compared with `text` as
+  follows, passes: `contains` (holds `text`), `startswith`, `endswith`,
+  `matches` (equals `text`). Comparisons are exact and case-sensitive.
+- With six arguments, a matching row is kept only when its value in
+  `filterColumn` equals `filterText` exactly.
+- The **loaded choices** are the values, in the placeholder's column, of
+  the kept rows, in file order, without repeats (the first occurrence
+  stays) and without empty values. When the file has a column named
+  `sortby`, the rows are first ordered by its numeric value (rows whose
+  `sortby` is not a number come last, in file order).
+- The choices given to the generator (`Question.choices`, spec 05) are
+  the form's choices in order, with the placeholder replaced by the
+  loaded choices; a choice filter does not apply. Answers are converted
+  against these choices; the stored value is the chosen value
+  (`V03`), even though the engine's own choice list does not contain
+  it.
+
+When the file is missing, has no column named after the placeholder or
+after a column the call names, or the call cannot be read (another
+number of arguments, or a `type` other than the four above), the loaded
+choices are empty and the walk adds a warning naming the question (and
+the file, when it is missing); the question then has only its static
+choices.
+
+Acceptance: walking `samples/xforms/ctosim_coverage3.xml`, loaded with
+media directory `samples/coverage3`, stores in `/data/selects/village`
+one of the `village_id` values of `samples/coverage3/villages.csv` whose
+`region` equals the stored `/data/selects/region`, never `village_id`.
