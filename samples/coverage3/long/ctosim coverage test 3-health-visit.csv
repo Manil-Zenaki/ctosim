@@ -1,0 +1,5 @@
+visit_date,PARENT_KEY,KEY,SET-OF-visit
+"Oct 11, 2026",uuid:655c3cef-d3ce-4b4d-be7f-0a56943af7c6/person[1],uuid:655c3cef-d3ce-4b4d-be7f-0a56943af7c6/person[1]/health-visit[1],uuid:655c3cef-d3ce-4b4d-be7f-0a56943af7c6/person[1]/health-visit
+"Oct 11, 2026",uuid:655c3cef-d3ce-4b4d-be7f-0a56943af7c6/person[1],uuid:655c3cef-d3ce-4b4d-be7f-0a56943af7c6/person[1]/health-visit[2],uuid:655c3cef-d3ce-4b4d-be7f-0a56943af7c6/person[1]/health-visit
+"Oct 11, 2026",uuid:8ff7d354-2e94-4892-8097-ab182e12fbce/person[1],uuid:8ff7d354-2e94-4892-8097-ab182e12fbce/person[1]/health-visit[1],uuid:8ff7d354-2e94-4892-8097-ab182e12fbce/person[1]/health-visit
+"Oct 11, 2026",uuid:8ff7d354-2e94-4892-8097-ab182e12fbce/person[1],uuid:8ff7d354-2e94-4892-8097-ab182e12fbce/person[1]/health-visit[2],uuid:8ff7d354-2e94-4892-8097-ab182e12fbce/person[1]/health-visit

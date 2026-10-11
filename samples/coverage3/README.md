@@ -157,3 +157,30 @@ or in the form that this form cannot carry alone:
 
 As before, the e-mail, the server name and device ids will be anonymised
 before the exports are committed.
+
+## Exports received (2026-10-11)
+
+`wide/` and `long/` hold the exports of the four submissions, with the
+Stata templates SurveyCTO generated: A and C filled with SurveyCTO
+Collect on Android, B and D on the web; A, B and C under version
+2610120001, D under version 2610120003 (`ctosim_coverage3_v2.xlsx`).
+`media/` holds the CSV attachments (text audits of all four submissions,
+comments of A and B); the recordings, video and images of A are kept
+locally and not committed.
+
+Edits to the downloaded files: the submitter's e-mail is replaced by
+`enumerator@example.org`, the server name in URLs by `example`, the
+device's Android ID by `a1b2c3d4e5f60718`, the phone number by
+`15555550100`, and the coordinates of
+`g_trace` are moved to a fictitious place (the digits after the third
+decimal, the altitude and the accuracy are kept). The export report PDF
+is not committed.
+
+Departures from the scenarios:
+
+- the first version only accepted A, B or C as the submission code;
+  version 2 was corrected to accept D before submission D was filled;
+- Collect needed a separate barcode app (SurveyCTO names QR & Barcode
+  Reader) before `m_barcode` could be scanned;
+- `g_shape` is empty (no shape could be walked indoors);
+- submission C still has a speed violation on `resp_code`.

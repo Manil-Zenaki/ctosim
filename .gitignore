@@ -35,3 +35,8 @@ samples/surveycto_example/
 
 # Built by scripts/build-stata-package.ps1 (the Stata helper, for stata/ on the ado-path)
 stata/ctosim_bridge.jar
+
+# Media attached to coverage submissions (recordings, photos): kept locally, not published;
+# the CSV attachments (text audits, comments) are versioned
+samples/coverage*/media/*
+!samples/coverage*/media/*.csv
