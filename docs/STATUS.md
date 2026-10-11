@@ -19,37 +19,30 @@ what was learnt along the way.
 | 09 | Constraint hints | done |
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 
-Suite: 3325 Java tests and 270 Python tests, all green (after the
-2026-10-09 dispute adjudications on specs 02, 03 and 10).
+Suite: 3667 Java tests and 331 Python tests, all green (2026-10-11).
 
 ## Next step
 
-All planned modules are done. Remaining work: the developer guide below;
-settling the unconfirmed export conventions when a new export arrives.
+All planned modules are done, and the second real export
+(`samples/coverage2/`) is reproduced byte for byte: geopoints and
+select_multiple dummies in nested repeats, nested count columns,
+`instanceName`, audio audit URLs, upload times (`SubmissionDate`),
+speed violations (minimum times kept by the converter, `speedViolationRate`
+in the config), Android-style 16-hex device ids.
 
-End-to-end check done: `ctosim.cmd samples/coverage/ctosim_coverage.xlsx
---python .venv/Scripts/python.exe` gives `duration` = end − start,
-`time_main` between 1 and `duration`, `pl_head`/`pl_size` from
-`hh_preload.csv`, enumerator usernames and 15-digit device ids, UTC
-offsets.
+Small open points:
 
-Unconfirmed export conventions (spec 08, "Not observed"): geopoint
-columns in a repeat, dummies in a nested repeat, `instanceName`, and what
-`comments` / `audio audit` hold. A re-export with a geopoint inside the
-`member` repeat would settle the first.
+- SurveyCTO seems to trim `instanceName` (`concat(${hhid}, ' - ', '')`
+  is exported as `H001 -`); the simulator keeps the trailing space. One
+  observation only.
+- Still not observed (spec 08, Amendment 1): blank relevant
+  select_multiple dummies, the comments file name, speed-violation fields
+  when no violation occurred, `review_*` columns.
+
+Remaining work: the developer guide below, once the code is final.
 
 ## Waiting on the project owner
 
-- **Exports of the second coverage form** (`samples/coverage2/`, see its
-  README): deploy `ctosim_coverage2.xlsx` with `hh_preload.csv`, fill the
-  three scenarios (B on SurveyCTO Collect if possible), export wide and
-  long CSVs into `samples/coverage2/wide/` and `long/`. They settle spec
-  08's "Not observed" conventions; anonymise e-mail and server name before
-  committing, then amend spec 08 where the export differs. Already known
-  from SurveyCTO's documentation: a `comments` field holds the URL of a
-  per-submission CSV of comments (the exporter currently writes the
-  stored value, empty); `speed violations count` is a number and `list` a
-  comma-separated list of fields; audio audits are SurveyCTO Collect only.
 - Later: more XLSForms in `samples/forms/` to cover more cases.
 
 ## Final deliverable still to do
