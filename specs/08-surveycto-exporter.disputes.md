@@ -54,3 +54,27 @@ tests. No implementation source was read or modified.
 This verifies compilation and execution of the affected tests; it does
 not establish a successful full Maven suite run. No dependencies, build
 configuration, production sources, or published fixtures were changed.
+
+## Dispute 2: tests superseded by Amendment 2
+
+1. Blank select_multiple dummies. Amendment 2 (from the third export,
+   where the relevant select_multiple `m_blank` left blank has `0` in
+   all twelve dummies) says a present but empty element gives `0` dummy
+   cells; only an absent element gives empty cells. These tests expect
+   empty dummies for a present empty element:
+   `SurveyCtoExporterValueTest.dummySelectionUsesWholeItemsAndEmptySelectionsHaveEmptyDummies`,
+   `SurveyCtoExporterRepeatTest.jobLongRowsFollowSubmissionThenParentThenInstanceAndRetainExpandedValues`
+   (`J2`'s empty `<tags/>`),
+   `SurveyCtoExporterRepeatTest.nestedSelectAndGeopointCellsUseTheRightInstanceAndPreserveEmptyVersusZero`,
+   `SurveyCtoExporterSecondRepeatRulesTest.blankAbsentAndPaddedNestedSelectsHaveEmptyDummyCells`
+   ("Present empty selection"). Requested: expect `0` for present empty
+   elements; keep empty cells for absent elements and padded instances.
+2. `SurveyCtoExporterAmendmentMetadataTest.instanceNameCellPreservesStoredTextAndCsvEscaping`
+   expects `  leading and trailing  ` unchanged; Amendment 2 removes
+   trailing spaces (`  leading and trailing`). Requested: expect the
+   trailing spaces removed; the rest of the test is unchanged.
+3. `SurveyCtoExporterValueTest.otherTypesAreStoredVerbatimIncludingSpecialMultiwordTypes`
+   lists `comments` among types written unchanged; Amendment 2 writes
+   `comments` fields like media fields (an attachment URL). Requested:
+   drop `comments` from that list (`SurveyCtoExporterCommentsAmendment2Test`
+   covers it).

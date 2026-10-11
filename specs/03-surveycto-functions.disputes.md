@@ -309,3 +309,47 @@ dependencies remain unchanged; compiled classes were used for validation.
   `.codex-runs/03-dispute3-junit.log`.
 - Compilation and test discovery/execution are confirmed independently;
   a successful full Maven build and passing runtime suite are not.
+
+## Dispute 4: tests superseded by Amendment 4, and its two engine limits
+
+After the implementation of Amendment 4, these tests fail; each
+contradicts the amended spec.
+
+1. `SurveyCtoScalarFunctionsTest.hashIsLowercaseSha256OfUtf8ValuesSeparatedByUnitSeparator`
+   and `SurveyCtoScalarFunctionsTest.hashAcceptsManyArgumentsAndIncludesEveryArgument`
+   expect SHA-256 over values joined with U+001F. Amendment 4 replaces
+   that rule: `hash` is MD5 of the values concatenated with no
+   separator (`hash('abc')` = `900150983cd24fb0d6963f7d28e17f72`, the
+   value SurveyCTO exported). `SurveyCtoAmendment4HashTest` covers the
+   new rule. Requested: remove them, or change their expectations to the
+   MD5 rule.
+2. `SurveyCtoFunctionContractTest.originalFixedStubsAndUnimplementedConditionalFunctionsKeepTheirValuesAndInventory`
+   expects `count-if`, `sum-if`, `join-if`, `min-if`, `max-if` and
+   `rank-index-if` to stay catch-all stubs returning `""` and listed by
+   `stubbedFunctions()`. Amendment 4 implements them and removes them
+   from `stubbedFunctions()` (`implementedConditionalFunctionsAreNotReportedAsStubs`
+   checks this). Their call there, `name('data', 1, true(), /data/text)`,
+   now has a wrong number of arguments and fails to evaluate, as
+   Amendment 4 requires. Requested: drop the six conditional functions
+   from that parameter list; the other stubs keep their cases.
+3. `SurveyCtoAmendment4ConditionalTest.predicateCanReferToTheRepeatNodeItself`
+   uses the condition `boolean(/data/row[kind = 'odd'])`. The engine
+   binds a step of a path to the instance being checked only when that
+   step has no predicate of its own, so `/data/row[kind = 'odd']`
+   designates rows 1 and 3 whatever the instance, and `boolean()` of two
+   nodes fails in the engine ("This field is repeated:
+   /data/row[1];/data/row[3]"). The spec now states this limit
+   (Amendment 4, "Two further limits"). Requested: express the same
+   intent with a predicate below the repeat's step, which the engine
+   binds per instance, e.g. `count(/data/row/kind[. = 'odd']) > 0`
+   (expected count 2), or remove the test.
+4. `SurveyCtoAmendment4DateTimeTest.decimalTimeReturnsNaNForValuesThatAreNeitherTimesNorDateTimes`
+   (as adjudicated in Dispute 3) asserts that the field calculated as
+   `decimal-time('garbage')` stores `Double.NaN`. The engine stores no
+   value for a `NaN` result, and so does SurveyCTO: in
+   `samples/coverage3/wide/ctosim coverage test 3_WIDE.csv`,
+   `f_not_a_number` (`number('abc')`) is empty in all four rows. The
+   spec now says so (Amendment 4, "Two further limits"). Requested:
+   assert that the field has no value, and observe `NaN` through the
+   expression itself (for example a second calculation
+   `string(decimal-time('garbage'))`, which stores `NaN`).

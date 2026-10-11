@@ -109,3 +109,22 @@ and `FormWalkerDistributionTest`: all 36 cases passed, with none skipped
 or aborted. Logs are `.codex-runs/walker-dispute2-compile.log` and
 `.codex-runs/walker-dispute2-junit.log`. This verifies compilation and the
 disputed test classes, but does not constitute a successful Maven suite run.
+
+## Dispute 3: a `calculate_here` of `now()` stores the date only (Amendment 4)
+
+Amendment 4 (from spec 03 Amendment 4) makes a `calculate_here` whose
+result is a date-time store the date only. Two tests read a timestamp
+from such a field:
+
+1. `FormWalkerAmendmentCalculateHereTest.calculationRunsAtItsBodyPositionUsingTheCurrentClock`
+   parses `at_here` (`now()`) as an offset date-time equal to the start
+   plus the elapsed seconds.
+2. `FormWalkerAmendmentTimeZoneTest.storedTimestampsAndGeneratedAnswersUseConfiguredOffset`
+   parses `last_now` (`now()`) as an offset date-time equal to `end()`.
+
+Requested: calculate those fields as
+`format-date-time(now(), '%Y-%m-%dT%H:%M:%S')` (the time SurveyCTO's
+documentation records this way) and compare the local date-time, or
+assert the date-only value; keep the other fields of these tests
+(`start`, `end`, `datetime` and `time` answers, `duration()`), which are
+unchanged.

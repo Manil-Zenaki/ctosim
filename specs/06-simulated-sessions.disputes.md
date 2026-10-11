@@ -58,3 +58,27 @@ existing assertions are retained; only the invalid condition is replaced.
 - Test compilation and execution therefore remain unverified in this
   environment. No dependencies were installed or copied, no drives were
   mapped, and no production source was read or modified.
+
+## Dispute 2: `now()` calculations store the date only (Amendment 3)
+
+Spec 06 Amendment 3 (from spec 03 Amendment 4) makes a calculation
+`now()` store the date only, `YYYY-MM-DD`, in every session. These tests
+read a timestamp (epoch milliseconds or a time of day) from the field
+`now_value`, calculated as `now()`, and now see midnight of that day:
+
+1. `SimulatedSessionDeviceReplayTest.customPropertiesPreserveClockFunctionsAndMetadataLifecycle`
+2. `SimulatedSessionIsolationTest.advancingOneClockDoesNotChangeAnotherSessionsTimeOrDuration`
+3. `SimulatedSessionIsolationTest.manyRetainedSessionsKeepTheirOwnInstancesAndClockOrigins`
+4. `SimulatedSessionIsolationTest.ordinarySessionsOpenedBeforeAndAfterSimulationKeepNativeTimeAndDuration`
+5. `SimulatedSessionTimeTest.calculationsReadTheClockBeforeAnyNavigation`
+6. `SimulatedSessionTimeTest.durationUsesClockArithmeticAcrossDaylightSavingTransitions`
+7. `SimulatedSessionTimeTest.functionsActionsAndPreloadsUseTheJvmDefaultZone`
+8. `SimulatedSessionTimeTest.recalculationAfterMidnightReadsTheNewDateAndTime`
+9. `SimulatedSessionTimeTest.repeatedRecalculationWithoutAnAdvanceDoesNotUseRealTime`
+
+Requested: keep what each test checks about the clock, but observe the
+time through an expression that keeps it, as Amendment 3 says: calculate
+`now_value` as `format-date-time(now(), '%Y-%m-%d %H:%M:%S')` or
+`decimal-date-time(now())`, or assert the date-only value where the test
+only needs the date. Assertions on `start`/`end` preloads, `setvalue`
+actions and `duration()` are not concerned.
