@@ -18,7 +18,7 @@ what was learnt along the way.
 | 08 | SurveyCtoExporter | done: wide and long CSV, checked byte for byte against real exports of the coverage form |
 | 09 | Constraint hints | done |
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
-| 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; package built by `scripts/build-stata-package.ps1`, branch `stata-package` committed locally, not pushed (no GitHub remote yet) |
+| 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 
 Suite: 3667 Java tests and 331 Python tests, all green (2026-10-11).
 
@@ -43,10 +43,12 @@ Small open points:
 
 ## Waiting on the project owner
 
-- **Publishing on GitHub**: repository https://github.com/Manil-Zenaki/ctosim
-  (public, empty), set as `origin` on 2026-10-11; push `main` and
-  `stata-package`. Stata users install from
-  `https://raw.githubusercontent.com/Manil-Zenaki/ctosim/stata-package/`.
+- **Published** on 2026-10-11: https://github.com/Manil-Zenaki/ctosim
+  (public; history cleaned of the IOM addresses before the first push).
+  `net install` from GitHub checked in Stata 19. To update the package:
+  `scripts/publish-stata-package.ps1`, then
+  `git push origin main stata-package` (from a terminal where you are
+  signed in to GitHub).
 
 - **Exports of the third coverage form** (`samples/coverage3/`, see its
   README for the inventory of SurveyCTO features and the filling
