@@ -1,6 +1,6 @@
 version 16.0
 args test profile
-adopath ++ "$CTOSIM_TESTDIR/fixtures"
+adopath ++ "$CTOSIM_REPO/.codex-runs/stata-support"
 capture noisily javacall AmendmentTestSupport launch, jars(amendment-test-support.jar) ///
     args("$CTOSIM_REPO" "`test'" "`profile'")
 local rc = _rc

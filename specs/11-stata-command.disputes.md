@@ -42,3 +42,67 @@ Requested change: build the two support jars at test time as well (for
 example in `launch.ps1` / `amendment-launch.ps1`, or from `launch.do`
 before the first `javacall`, into a directory under `.codex-runs/` that is
 then put on the ado-path), and remove the committed `.jar` files.
+
+## Adjudication (2026-10-11)
+
+### Dispute 1 — accepted; fix the test
+
+The spec derives the default output directory from the form's filename and
+requires error 602 when that directory already contains `run-report.txt`
+without `replace`. It does not require case-sensitive filesystem behavior.
+The original loop therefore cannot expect both case-only variants to succeed
+on Windows. `test_options_paths.do` now gives each form basename a distinct
+numeric suffix and checks its corresponding default directory. This retains
+coverage of uppercase/mixed-case extensions, Unicode, spaces, absolute input
+paths, and default directory naming without colliding with a preceding run.
+The existing overwrite assertions in `test_overwrite.do` remain unchanged.
+
+### Dispute 2 — accepted; remove only the obsolete Java assertion
+
+Amendment 1 explicitly replaces the original Java discovery rule. Even an
+eligible Stata Java need not win when an eligible `CTOSIM_JAVA` is present;
+Stata Java older than 17 must be skipped. The unconditional comparison with
+`c(java_home)` is therefore wrong and has been removed from
+`test_runtime_selection.do`. Its configured-Python precedence and successful
+XLSX-run assertions remain valid and are retained. The existing
+`test_amendment_java_*.do` tests retain their conditional Stata-Java oracle
+and checks of override, Stata, JAVA_HOME, and PATH precedence. No amendment
+expectations were relaxed.
+
+### Dispute 3 — accepted as a test-infrastructure change
+
+Spec 11 requires batch-executable do-file tests, but does not require compiled
+test-support jars to be versioned. It explicitly excludes production packaging
+from unit tests. Thus this point identifies no incorrect command assertion;
+building the support jars from their existing sources preserves all test
+expectations and implements the requested repository hygiene change.
+
+Both checked-in support jars have been removed. Their build scripts now put
+classes and jars under `.codex-runs/stata-support/`. The prescribed
+`scripts/stata-tests.ps1` runner builds both jars before starting any Stata
+test; parent launchers and child helpers use that directory on the ado-path.
+Building in the runner avoids a circular bootstrap dependency: the launchers
+need a support jar for their first `javacall`, and Windows Stata ignores
+`shell` in batch mode. The Java fixture sources and behavioral assertions are
+unchanged. No production code was read or changed.
+
+### Validation
+
+Ran `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`.
+Both support jars compiled from source; all 23 non-amendment tests passed,
+including `test_options_paths.do` and `test_runtime_selection.do`. The seven
+amendment tests initially failed in harness cleanup because preexisting Java
+temporary directories denied access, before their assertions ran.
+
+Preserved that old scratch tree by moving it to a uniquely named sibling
+under `.codex-runs/`, then ran the same runner with
+`-Filter 'test_amendment_*.do'`. Result: **7 tests, 0 failed**, including all
+42 child scenarios across Stata 16 and Stata 19. Combined latest results:
+**30 tests passed**. No test expectations were changed to address the scratch
+permissions issue.
+
+Separately, Stata 16 parsed all 30 test do-files as program definitions and
+successfully loaded and called both rebuilt support jars. The test PowerShell
+scripts parsed successfully, and `git diff --check` passed. Runner logs are
+under `target/stata-tests/`; the syntax/jar-loading check is
+`.codex-runs/stata-dispute-check/check.log`. No commit was made.

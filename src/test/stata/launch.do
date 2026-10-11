@@ -9,7 +9,7 @@ capture erase "`result'"
 // Windows shell/winexec are disabled in batch mode. Use a tiny Java bridge.
 local failure "`root'/.codex-runs/stata-command/`test'.failure.txt"
 capture erase "`failure'"
-adopath ++ "$CTOSIM_TESTDIR/fixtures"
+adopath ++ "$CTOSIM_REPO/.codex-runs/stata-support"
 javacall StataTestSupport launch, jars(stata-test-support.jar) args("$CTOSIM_REPO" "`test'" "`profile'")
 capture confirm file "`result'"
 if _rc {

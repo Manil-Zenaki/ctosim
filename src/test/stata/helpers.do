@@ -2,7 +2,7 @@ version 16.0
 set more off
 set linesize 255
 clear all
-adopath ++ "$CTOSIM_TESTDIR/fixtures"
+adopath ++ "$CTOSIM_REPO/.codex-runs/stata-support"
 
 program define ct_fixture
     capture mkdir "input files"

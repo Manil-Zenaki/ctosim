@@ -25,12 +25,14 @@ ct_form_argument "input files/survey.xml"
 
 // Absolute paths, uppercase/mixed case suffixes, and filename-based default output.
 ct_scenario 0
+local case = 0
 foreach extension in XML xMl XLSX xLsX {
+    local ++case
     if lower("`extension'") == "xml" local source "xml"
     else local source "xlsx"
-    copy "input files/survey.`source'" "input files/café `extension'.`extension'", replace
-    copy "input files/survey.fields.json" "input files/café `extension'.fields.json", replace
-    ctosim using "$CT_TEST_WORK/input files/café `extension'.`extension'", clear
-    ct_report_results 3 -713 0 "ctosim-out/café `extension'"
+    copy "input files/survey.`source'" "input files/café `extension' `case'.`extension'", replace
+    copy "input files/survey.fields.json" "input files/café `extension' `case'.fields.json", replace
+    ctosim using "$CT_TEST_WORK/input files/café `extension' `case'.`extension'", clear
+    ct_report_results 3 -713 0 "ctosim-out/café `extension' `case'"
     assert _N == 3
 }

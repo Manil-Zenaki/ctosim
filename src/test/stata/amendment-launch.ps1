@@ -101,7 +101,7 @@ version 16.0
 set more off
 set linesize 255
 adopath ++ "$($repoPath.Replace('\', '/'))/stata"
-adopath ++ "$normalTests/fixtures"
+adopath ++ "$($repoPath.Replace('\', '/'))/.codex-runs/stata-support"
 global CTOSIM_REPO "$($repoPath.Replace('\', '/'))"
 global CTOSIM_TESTDIR "$normalTests"
 global CT_TEST_WORK "$normalWork"

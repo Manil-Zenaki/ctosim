@@ -147,3 +147,14 @@ Ran the requested `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.
 The new Java bridge compiled with `--release 8`; the native C# launcher compiled for each scenario. A separate fixture check passed for Java version reporting, quoted argument forwarding, stdout/stderr forwarding, statuses 1/2/17/255, embedded-JVM version reading, launcher-selection assertions, and positive/negative diagnostic assertions. All seven new test do-files were successfully parsed as Stata program definitions. This checks test infrastructure independently of the command stub; it does not claim that the unimplemented command passes any assertions.
 
 Logs: `target/stata-tests/test_amendment_*/runner.log`, `.codex-runs/stata-amendment/<test>-<profile>-<edition>/child.log`, and `.codex-runs/stata-amendment/helper-check/check.log`. No sandbox startup blocker occurred. Existing test files, production files, specifications, and build configuration were kept unchanged; only new test/support/fixture files and this questions file were written. No commit was made.
+
+## Dispute adjudication update (2026-10-11)
+
+The decisions in `11-stata-command.disputes.md` supersede the historical
+descriptions above where applicable. Question 9 and A2 no longer describe
+an unconditional Stata-Java assertion: it has been removed, and the
+amendment tests cover the current selection rule. Question 11 and A4 no
+longer describe checked-in support jars: the required runner now builds
+both from source into `.codex-runs/stata-support/` before launching Stata.
+The distinct default-output basenames in `test_options_paths.do` now also
+honor question 6's exclusion of filesystem case-sensitivity assumptions.
