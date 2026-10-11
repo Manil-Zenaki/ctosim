@@ -106,9 +106,12 @@ program define ctosim, rclass
     local python ""
     if `xlsx' {
         local converter : env CTOSIM_CONVERTER
-        if `"`converter'"' == "" {
-            capture findfile ctosim_converter.zip
-            if !_rc local converter `"`r(fn)'"'
+        * net install copies the archive as ctosim_converter.jar (it skips .zip files)
+        foreach name in ctosim_converter.zip ctosim_converter.jar {
+            if `"`converter'"' == "" {
+                capture findfile `name'
+                if !_rc local converter `"`r(fn)'"'
+            }
         }
         capture confirm file `"`converter'"'
         if `"`converter'"' == "" | _rc {

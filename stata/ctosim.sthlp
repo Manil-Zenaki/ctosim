@@ -76,7 +76,7 @@ the one named by {cmd:CTOSIM_PYTHON}. Nothing needs to be installed in it.
 
 {pstd}
 The environment variables {cmd:CTOSIM_JAR} and {cmd:CTOSIM_CONVERTER} can point
-to another simulator ({cmd:ctosim.jar}) or converter ({cmd:ctosim_converter.zip}).
+to another simulator ({cmd:ctosim.jar}) or converter ({cmd:ctosim_converter.jar}).
 
 
 {title:Configuration}
