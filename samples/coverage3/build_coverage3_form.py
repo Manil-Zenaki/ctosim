@@ -288,8 +288,10 @@ VILLAGES = [
 ]
 
 
-# Version 2 adds one question after resp_code; nothing else changes.
+# Version 2 adds one question after resp_code and lets resp_code take D (its own submission).
 V2_FIELD = {"type": "text", "name": "added_in_v2", "label": "New in version 2: type v2"}
+V2_RESP_CODE = {"label": "Submission code: type D (version 2)",
+                "constraint": "regex(., '^[ABCD]$')", "constraint message": "A, B, C or D"}
 
 
 def write_form(path: Path, version: str, rows: list[dict]) -> None:
@@ -315,7 +317,8 @@ def write_form(path: Path, version: str, rows: list[dict]) -> None:
 def main() -> None:
     write_form(HERE / "ctosim_coverage3.xlsx", "2610120001", SURVEY)
     position = next(i for i, row in enumerate(SURVEY) if row.get("name") == "resp_code") + 1
-    write_form(HERE / "ctosim_coverage3_v2.xlsx", "2610120002", SURVEY[:position] + [V2_FIELD] + SURVEY[position:])
+    v2 = [dict(row, **V2_RESP_CODE) if row.get("name") == "resp_code" else row for row in SURVEY]
+    write_form(HERE / "ctosim_coverage3_v2.xlsx", "2610120003", v2[:position] + [V2_FIELD] + v2[position:])
 
     with open(HERE / "villages.csv", "w", encoding="utf-8", newline="\n") as f:
         for row in VILLAGES:
