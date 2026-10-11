@@ -2,17 +2,25 @@
 
 Generates simulated submissions for a SurveyCTO form that respect the
 form's logic (skips, constraints, required fields, calculations, repeats)
-and writes them in SurveyCTO's export layout.
+and writes them in SurveyCTO's export layout (wide and long CSV), so that
+cleaning and analysis code can be written before fieldwork.
 
-Status: in development. See `docs/ARCHITECTURE.md` for the design and
-`docs/WORKFLOW.md` for how the code and tests are written.
+```
+ctosim.cmd form.xlsx -n 300 -s 42 -c config.json
+```
+
+Start with `docs/DEVELOPER_GUIDE.md` (installing, running, configuration,
+how it works, glossary). Design: `docs/ARCHITECTURE.md`. How code and
+tests are written: `docs/WORKFLOW.md`. Current state: `docs/STATUS.md`.
 
 ## Build and test
 
-Requires a JDK 17 or newer (the one bundled with Stata works).
+Requires a JDK 17 or newer (the one bundled with Stata works) and, for
+XLSForm conversion, Python 3.10+ with the converter installed
+(`pip install -e "converter[test]"`).
 
 ```
-mvnw.cmd test
+mvnw.cmd package
 ```
 
 After cloning, enable the repository's git hooks once:

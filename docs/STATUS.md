@@ -39,20 +39,15 @@ Small open points:
   select_multiple dummies, the comments file name, speed-violation fields
   when no violation occurred, `review_*` columns.
 
-Remaining work: the developer guide below, once the code is final.
 
 ## Waiting on the project owner
 
 - Later: more XLSForms in `samples/forms/` to cover more cases.
 
-## Final deliverable still to do
+## Developer guide
 
-A developer guide for a coder new to the project (install, build, test,
-run, path from XLSForm to simulated data) with a **glossary**. Terms that
-need it: constraint hints (bounds derived from the `constraint` column —
-not the XLSForm `hint` column, which is never read), field catalog,
-simulated session, stubbed function, special values, engine expression
-rewrites (`EngineExpressions`), submission, walker.
+`docs/DEVELOPER_GUIDE.md` (install, run, configuration, path from XLSForm
+to simulated data, workflow, glossary). Keep it in step with the specs.
 
 ## How to work here
 
