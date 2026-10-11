@@ -35,6 +35,12 @@ public final class Submission {
         return new Submission(number, instanceXml, start, end, 0, List.of());
     }
 
+    /** A submission received at {@code submitted}. See specs/08-surveycto-exporter.md, Amendment 1. */
+    public static Submission of(int number, String instanceXml, LocalDateTime start, LocalDateTime end,
+                                LocalDateTime submitted) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
     public int number() {
         return number;
     }

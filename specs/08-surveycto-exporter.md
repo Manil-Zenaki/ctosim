@@ -319,3 +319,67 @@ but empty repeat element is an instance, and counts come from the
 submitted elements, not from the count expression (6); `writeAll` does not
 delete files left by earlier exports (8); the acceptance fixtures are
 instances transcribed from the real exports (10).
+
+## Amendment 1: second real export
+
+From the exports of the second coverage form (`samples/coverage2/`,
+filled with SurveyCTO Collect). Everything not mentioned here is
+unchanged.
+
+### Confirmed
+
+These rules, listed as "not observed" above, are confirmed by that
+export: geopoint columns in a repeat (`member_gps-Latitude_1`); dummy
+columns of a select_multiple in a nested repeat (`job_days_6_1_2`: choice,
+then instance numbers from the outermost repeat); the count column of a
+counted repeat inside a repeat (`child_count_1`, at the repeat's
+position); every `-` of a choice value replaced by `_` in dummy names
+(`transport_moto_taxi`).
+
+### API addition
+
+```java
+// added to Submission:
+public static Submission of(int number, String instanceXml, java.time.LocalDateTime start,
+                            java.time.LocalDateTime end, java.time.LocalDateTime submitted);
+```
+
+It behaves as the four-argument `of`, with `submitted()` (spec 07,
+Amendment 2) equal to `submitted`; the four-argument `of` gives
+`submitted()` equal to `end`. A null `submitted` throws
+`NullPointerException`.
+
+### Changes
+
+- **`SubmissionDate`** is `submitted()` formatted as a date-time (it was
+  `end()`).
+- **`instanceName`.** When the form's primary instance has an element
+  `instanceName` child of its `meta` element (a form with an
+  `instance_name` setting), the wide file and the long main file have a
+  column `instanceName` between `instanceID` and `formdef_version`; its
+  cell is the stored value of that element (empty when absent from the
+  XML). Forms without that element have no such column.
+- **`audio audit` fields** are written like `text audit` fields: when
+  the field's element is present in the XML, the attachment URL of
+  `AA_<u>_AFTER_0S.m4a` (`u` as for text audits), otherwise an empty
+  cell. (The `AFTER_0S` part was observed with the start parameter
+  `s=0`; other start values have not been observed.)
+
+### Acceptance against the second export
+
+With the catalog `samples/xforms/ctosim_coverage2.fields.json`, the form
+`samples/xforms/ctosim_coverage2.xml` and server name `example`, three
+submissions whose instance XML holds the values of the three exported
+submissions, built with the five-argument `Submission.of` (`end()` equal
+to their `endtime`, `submitted()` to their `SubmissionDate`), give a wide
+text equal to `samples/coverage2/wide/ctosim coverage test 2_WIDE.csv`
+and long files equal to the five CSV files of `samples/coverage2/long/`,
+with the same names.
+
+### Still not observed
+
+A relevant select_multiple left blank (its dummy cells, empty by the rule
+above); what a `comments` field holds (per SurveyCTO's documentation, the
+URL of a per-submission CSV of comments, whose file name has not been
+observed; written unchanged until then); `speed violations` fields when
+no violation occurred; `review_*` columns.
