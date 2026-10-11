@@ -48,6 +48,10 @@ import org.w3c.dom.NodeList;
  *   <li><b>Built-ins with SurveyCTO behaviour.</b> The engine matches its own functions before
  *   custom ones, so {@code format-date-time} and {@code decimal-time} are renamed to internal
  *   functions (English names; times written as text).</li>
+ *   <li><b>Counted repeats.</b> The engine creates the instances of a repeat with a count
+ *   ({@code jr:count}) as it needs them, but keeps the instance written in the form's primary
+ *   instance, so a count of 0 still left one instance. That initial instance is removed when the
+ *   repeat has a template ({@code jr:template}) to create instances from.</li>
  *   <li><b>Dates stored by calculations.</b> Every {@code calculate} (except on time fields) is
  *   wrapped in {@code ctosim-store(...)}, which stores a date or date-time result as its date
  *   only, as SurveyCTO does.</li>
@@ -56,6 +60,7 @@ import org.w3c.dom.NodeList;
 final class EngineExpressions {
 
     static final String INTERNAL_INDEX = "ctosim-index";
+    static final String JAVAROSA_NS = "http://openrosa.org/javarosa";
     static final String STORE = "ctosim-store";
     static final String RANK_INDEX_IF = "ctosim-rank-index-if";
     static final String FORMAT_DATE_TIME = "ctosim-format-date-time";
@@ -110,6 +115,7 @@ final class EngineExpressions {
                 }
             }
         }
+        changed |= dropCountedRepeatInstances(doc);
         if (!changed) {
             return original;
         }
@@ -158,6 +164,71 @@ final class EngineExpressions {
             }
         }
         return changed;
+    }
+
+    /** Removes the initial instances of counted repeats that have a template; true when any was removed. */
+    private static boolean dropCountedRepeatInstances(Document doc) {
+        Element primary = primaryInstance(doc);
+        if (primary == null) {
+            return false;
+        }
+        boolean changed = false;
+        NodeList repeats = doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "repeat");
+        for (int i = 0; i < repeats.getLength(); i++) {
+            Element repeat = (Element) repeats.item(i);
+            String path = repeat.getAttribute("nodeset").strip();
+            if (repeat.getAttributeNS(JAVAROSA_NS, "count").isBlank() || !path.startsWith("/")) {
+                continue;
+            }
+            String[] steps = path.substring(1).split("/");
+            if (!steps[0].equals(primary.getLocalName())) {
+                continue;
+            }
+            List<Element> parents = List.of(primary);
+            for (int k = 1; k < steps.length - 1; k++) {
+                parents = children(parents, steps[k]);
+            }
+            for (Element parent : parents) {
+                List<Element> instances = children(List.of(parent), steps[steps.length - 1]);
+                if (instances.stream().anyMatch(e -> e.hasAttributeNS(JAVAROSA_NS, "template"))) {
+                    for (Element instance : instances) {
+                        if (!instance.hasAttributeNS(JAVAROSA_NS, "template")) {
+                            parent.removeChild(instance);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+        return changed;
+    }
+
+    private static Element primaryInstance(Document doc) {
+        NodeList instances = doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "instance");
+        for (int i = 0; i < instances.getLength(); i++) {
+            Element instance = (Element) instances.item(i);
+            if (!instance.hasAttribute("id")) {
+                for (org.w3c.dom.Node n = instance.getFirstChild(); n != null; n = n.getNextSibling()) {
+                    if (n instanceof Element e) {
+                        return e;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /** The child elements named {@code name} of every element of {@code parents}, in order. */
+    private static List<Element> children(List<Element> parents, String name) {
+        List<Element> result = new ArrayList<>();
+        for (Element parent : parents) {
+            for (org.w3c.dom.Node n = parent.getFirstChild(); n != null; n = n.getNextSibling()) {
+                if (n instanceof Element e && name.equals(e.getLocalName())) {
+                    result.add(e);
+                }
+            }
+        }
+        return result;
     }
 
     /** The absolute path an element's expressions are evaluated for, or null when it has none. */
@@ -350,7 +421,7 @@ final class EngineExpressions {
     }
 
     /** Index of the ')' matching the '(' at {@code open}, or -1 when unbalanced. */
-    private static int closingParen(String expr, int open) {
+    static int closingParen(String expr, int open) {
         int depth = 0;
         for (int i = open; i < expr.length(); i++) {
             char c = expr.charAt(i);

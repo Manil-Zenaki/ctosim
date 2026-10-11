@@ -33,6 +33,7 @@ import org.javarosa.form.api.FormEntryPrompt;
 import org.javarosa.model.xform.XFormSerializingVisitor;
 import org.javarosa.xpath.XPathParseTool;
 import org.javarosa.xpath.expr.XPathExpression;
+import org.javarosa.xpath.expr.XPathFuncExpr;
 import org.javarosa.xpath.parser.XPathSyntaxException;
 
 /** Fills one form from beginning to end. See specs/07-form-walker.md. */
@@ -235,6 +236,21 @@ public final class FormWalker {
                 }
             }
             String appearance = prompt.getQuestion().getAppearanceAttr();
+            // Choices loaded from an attached file by search() (spec 07, Amendment 3).
+            List<String> loaded = null;
+            if (appearance != null && (kind == QuestionKind.SELECT_ONE || kind == QuestionKind.SELECT_MULTIPLE)) {
+                // A choice filter does not apply: the placeholder and static choices come from the whole list.
+                List<String> formChoices = SurveyCtoExporter.choiceValues(session.getModel().getForm(), prompt.getQuestion());
+                SearchChoices.Result search = SearchChoices.load(appearance, formChoices,
+                        expression -> evaluate(expression, ref), form.attachments());
+                if (search != null) {
+                    if (search.warning() != null) {
+                        warn("field '" + name + "' (" + path + "): " + search.warning() + "; only its static choices are offered");
+                    }
+                    choices = search.choices();
+                    loaded = choices;
+                }
+            }
             boolean required = prompt.isRequired();
             Question question = new Question(name, kind, choices, appearance == null ? "" : appearance, required,
                     ConstraintHints.forCurrentQuestion(session));
@@ -247,7 +263,7 @@ public final class FormWalker {
                     handled(ref, minimum);
                     return;
                 }
-                IAnswerData data = convert(prompt, text);
+                IAnswerData data = loaded == null ? convert(prompt, text) : convertLoaded(kind, text, loaded);
                 if (data == null) {
                     clear(ref);
                     warn("field '" + name + "' (" + path + "): the value '" + text + "' cannot be given to this question; left blank");
@@ -266,6 +282,19 @@ public final class FormWalker {
                     + MAX_ATTEMPTS + " attempts; left blank");
             warnIfRequired(required, name, path);
             handled(ref, minimum);
+        }
+
+        /** The string value of {@code expression} evaluated for the node at {@code ref}. */
+        private String evaluate(String expression, TreeReference ref) {
+            FormDef def = session.getModel().getForm();
+            XPathExpression parsed;
+            try {
+                parsed = XPathParseTool.parseXPath(expression);
+            } catch (XPathSyntaxException e) {
+                throw new IllegalArgumentException("'" + expression + "' does not parse", e);
+            }
+            Object value = parsed.eval(def.getMainInstance(), new EvaluationContext(def.getEvaluationContext(), ref));
+            return XPathFuncExpr.toString(XPathFuncExpr.unpack(value));
         }
 
         /** Recomputes, in document order, every relevant field whose calculation calls duration(). */
@@ -483,6 +512,27 @@ public final class FormWalker {
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    /**
+     * The answer to a question whose choices were loaded by search(): the engine's own choice list
+     * holds only the placeholder, so the chosen values are stored as they are.
+     */
+    static IAnswerData convertLoaded(QuestionKind kind, String text, List<String> choices) {
+        List<Selection> selections = new ArrayList<>();
+        for (String value : text.split(" ")) {
+            if (value.isEmpty()) {
+                continue;
+            }
+            if (!choices.contains(value)) {
+                return null;
+            }
+            selections.add(new Selection(value));
+        }
+        if (selections.isEmpty() || kind == QuestionKind.SELECT_ONE && selections.size() > 1) {
+            return null;
+        }
+        return kind == QuestionKind.SELECT_ONE ? new SelectOneData(selections.get(0)) : new SelectMultiData(selections);
     }
 
     private static SelectChoice offered(FormEntryPrompt prompt, String value) {

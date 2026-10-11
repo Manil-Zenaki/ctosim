@@ -65,6 +65,11 @@ public final class LoadedForm {
      * The literal pulldata() sources whose CSV file is not in the media directory. See
      * specs/03-surveycto-functions.md, Amendment 3.
      */
+    /** The form's attached files. */
+    Attachments attachments() {
+        return attachments;
+    }
+
     public SortedSet<String> missingAttachments() {
         return missingAttachments;
     }

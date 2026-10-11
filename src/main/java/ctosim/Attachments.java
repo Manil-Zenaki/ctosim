@@ -44,22 +44,30 @@ final class Attachments {
     }
 
     String pulldata(String source, String column, String keyColumn, String key) {
+        Table table = table(source);
+        return table == null ? "" : table.lookup(column, keyColumn, key);
+    }
+
+    /**
+     * The file {@code <source>.csv}, read on first use, or null when it is missing (or there is
+     * no media directory). A file that cannot be read throws {@link XPathException}.
+     */
+    Table table(String source) {
         if (directory == null) {
-            return "";
+            return null;
         }
         Path file = directory.resolve(source + ".csv");
-        Table table;
         synchronized (tables) {
-            table = tables.get(source);
+            Table table = tables.get(source);
             if (table == null) {
                 if (!Files.exists(file)) {
-                    return "";
+                    return null;
                 }
                 table = Table.read(file);
                 tables.put(source, table);
             }
+            return table;
         }
-        return table.lookup(column, keyColumn, key);
     }
 
     IFunctionHandler pulldataHandler() {
@@ -87,7 +95,7 @@ final class Attachments {
     }
 
     /** One CSV file: its header and data rows. */
-    private record Table(List<String> header, List<List<String>> rows) {
+    record Table(List<String> header, List<List<String>> rows) {
 
         String lookup(String column, String keyColumn, String key) {
             int value = header.indexOf(column);

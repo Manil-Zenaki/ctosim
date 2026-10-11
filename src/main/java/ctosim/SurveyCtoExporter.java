@@ -218,7 +218,7 @@ public final class SurveyCtoExporter {
     }
 
     /** All choice values of a select, in form order, without choice filters, duplicates removed. */
-    private static List<String> choiceValues(FormDef def, QuestionDef question) {
+    static List<String> choiceValues(FormDef def, QuestionDef question) {
         Set<String> values = new LinkedHashSet<>();
         ItemsetBinding itemset = question.getDynamicChoices();
         if (itemset == null) {
