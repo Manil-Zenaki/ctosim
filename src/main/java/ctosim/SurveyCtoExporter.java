@@ -332,7 +332,7 @@ public final class SurveyCtoExporter {
             case "datetime", "start", "end" -> Kind.DATETIME;
             case "select_multiple" -> Kind.SELECT_MULTIPLE;
             case "geopoint" -> Kind.GEOPOINT;
-            case "image", "audio", "video", "file" -> Kind.MEDIA;
+            case "image", "audio", "video", "file", "comments" -> Kind.MEDIA;
             default -> Kind.OTHER;
         };
     }
@@ -373,7 +373,9 @@ public final class SurveyCtoExporter {
             throw invalid(submission, "the instance has no meta/instanceID element");
         }
         Element instanceName = child(meta, "instanceName");
-        return new Parsed(root, instanceId.getTextContent(), instanceName == null ? "" : instanceName.getTextContent());
+        // SurveyCTO drops the trailing spaces of instance names.
+        return new Parsed(root, instanceId.getTextContent(),
+                instanceName == null ? "" : instanceName.getTextContent().replaceAll(" +$", ""));
     }
 
     private static IllegalArgumentException invalid(Submission submission, String reason) {
@@ -549,8 +551,9 @@ public final class SurveyCtoExporter {
                 List<String> cells = new ArrayList<>();
                 cells.add(stored);
                 Set<String> selected = new HashSet<>(items(stored));
+                // A relevant question left blank keeps its element: its dummies are 0, not empty.
                 for (String value : c.choices()) {
-                    cells.add(stored.isEmpty() ? "" : selected.contains(value) ? "1" : "0");
+                    cells.add(element == null ? "" : selected.contains(value) ? "1" : "0");
                 }
                 return cells;
             }
