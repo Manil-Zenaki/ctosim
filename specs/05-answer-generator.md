@@ -185,3 +185,22 @@ particular: decimal half-up rounding applies to the number's ordinary
 decimal value (`2.345` → `2.35`) (6); integers are not limited to the
 32-bit range (5); a select question with no choices is blank even when
 required or fixed, since the blank rule comes first (12).
+
+## Amendment 1: appearances seen in the third real export
+
+From the export of the third coverage form (`samples/coverage3/`). Each
+rule applies when `appearance` contains the word (appearance words are
+separated by spaces). Everything not mentioned here is unchanged; the
+blank rule still applies first, and a fixed `value` still takes
+precedence over the first two rules.
+
+- **`numbers_decimal` (`TEXT`).** Without `texts` in the override, the
+  answer is a decimal number drawn and written as for `DECIMAL` (range:
+  the override's `NumericRange` when set, otherwise `decimalRange`).
+- **`month-year` (`DATE`).** The answer is the first day of the month of
+  the date drawn as for `DATE` (`2025-03-01`). SurveyCTO Collect stores
+  the first of the month for such a question.
+- **`label` (`SELECT_ONE`, `SELECT_MULTIPLE`).** The question is the
+  header row of a table: it only shows the choice labels and cannot be
+  answered. The answer is always blank (`null`), even when the question
+  is required or the override has a `value`.
