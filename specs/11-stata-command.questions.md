@@ -101,3 +101,49 @@ The supplied runner successfully starts Stata 16.1. The requested command was ru
 All 23 do-files were also successfully parsed as Stata program definitions. Separate Stata helper checks completed successfully and exercised memory assertions, process argument checks, absolute report paths, report parsing, Unicode/multiline CSV comparison, warning-log checks, and both template fixtures. The Java fixture sources compiled successfully. The built real simulator accepted the XML/config and media fixtures, producing one submission and zero warnings for each. The missing-Python fixture setup also completed successfully before reaching the command stub.
 
 Runner logs: `target/stata-tests/<test>/runner.log`; isolated command logs: `.codex-runs/stata-command/<test>/child.log`. Helper and syntax checks: `.codex-runs/stata-command/helper-check/check.log` and `.codex-runs/stata-command/syntax-check.log`. No production files or build configuration were changed, and no commit was made.
+
+## Amendment 1: additional questions and assumptions
+
+### A1. Controlling Java versions without changing installed runtimes
+
+**Question:** May executable test launchers advertise controlled Java versions, analogous to the approved simulator jar double?
+
+**Assumption:** Yes. The new native Windows launcher fixture reports a standard OpenJDK version on `-version`/`--version`, records simulator invocations, and delegates actual jar execution to the installed build JDK. It supplies Java 8, 11, 16, exactly 17, and newer 21/25 cases without modifying any real runtime. Tests distinguish the selected executable by its invocation record, not by the delegate's actual Java version. These doubles assume discovery uses a launcher version query; a different method, such as executing a compiled version-inspection class, would need an equivalent fixture adaptation. Tests do not prescribe a probe count or order of version probes. Both conventional stderr output and stdout version output are accepted test inputs. Early-access versions, malformed version output, permission-denied executables, and executables failing during a version probe are unspecified and are not assigned invented behavior.
+
+**Tests:** `test_amendment_java_override.do`, `test_amendment_java_stata_fallback.do`, `test_amendment_java_home_path.do`, `test_amendment_java_unavailable.do`; fixture `AmendmentJavaLauncher.cs`.
+
+### A2. Stata's own Java cannot be replaced hermetically
+
+**Question:** How should both eligible and too-old Stata-Java branches be tested without changing user preferences or installed files?
+
+**Assumption:** Use actual installed Stata editions. Unless `STATA_EXE` explicitly selects one executable, the new launcher runs each scenario against every installed executable matching the runner's Stata discovery pattern. This machine has Stata 16 with Java 11 and Stata 19 with Java 21. The embedded JVM's public `java.specification.version` property determines the conditional oracle. A valid override always wins; otherwise Stata's Java wins when eligible, and only an older Stata Java permits HOME/PATH fallback. On an installation with only eligible Stata Java, the no-eligible-Java negative branch is explicitly marked inapplicable and that scenario checks successful Stata fallback instead. It does not pretend to test missing Java there. A machine with an older Stata Java is required for complete negative and lower-priority fallback coverage.
+
+The original question 9's Java assumption is superseded by Amendment 1. The committed `test_runtime_selection.do` still contains the original unconditional Stata-Java expectation; it is retained unchanged as explicitly requested. New tests use the amended order.
+
+**Tests:** All four `test_amendment_java_*.do` files; `amendment-launch.ps1`, `amendment-helpers.do`.
+
+### A3. Empty variables, unavailable candidates, and diagnostic wording
+
+**Question:** Are empty and unset environment variables observably different on Windows, and what exact Java diagnostic is required?
+
+**Assumption:** Both must permit fallback. Separate profiles assign an empty value and remove the variable, although Windows/PowerShell can normalize these to the same process environment. A nonempty missing executable or an old version is skipped, following "first ... that exists and is a Java 17 or newer." If no candidate qualifies, 601 must precede simulator/template execution; existing data and cwd remain intact. Version probes are necessarily allowed by this preflight rule. Wording remains free: the diagnostic checks for Java 17 plus minimum/newer language, Stata plus its Java major version, and either `CTOSIM_JAVA` or Temurin installation guidance. It does not require the full patch version, exact capitalization, or punctuation. As with the previously confirmed message assumption, these checks assume English. Only one eligible simulator invocation is expected; unsuccessful version probes are not simulator invocations.
+
+**Tests:** `test_amendment_java_stata_fallback.do`, `test_amendment_java_home_path.do`, `test_amendment_java_unavailable.do`; `AmendmentTestSupport.diagnostic`.
+
+### A4. Batch parity and test harness boundaries
+
+**Question:** Does verifying batch parity require driving an interactive GUI session as well?
+
+**Assumption:** No. New tests explicitly launch `/e do child.do` and apply the same spec-defined data, report, output, error, and template oracles in that batch process. The harness's Java bridge launches only the test process; it does not execute ctosim's simulator on behalf of production code. Tests require real simulator-double invocation and generated output, catching Windows `shell` being silently ignored. They cover plain import, quoted program/input/output paths, stored results, stdout/stderr, warning count/lines, template loading and suppression, simulator statuses 2/1/17/255, memory preservation, and template error propagation/cwd restoration. Interactive GUI automation is not added. XML fixtures isolate this amendment from Python/converter discovery; the existing XLSX batch tests remain unchanged.
+
+New tests and helpers are separate files. The small new bridge has source, a checked-in Java-8-compatible jar, and `build-amendment-fixtures.ps1` for reproduction. Generated executables, classes, process logs, and outputs live under `.codex-runs/stata-amendment/`. The unmodified required runner continues to write its own files under `target/stata-tests/`. Child timeouts are harness safeguards, not specified performance requirements.
+
+**Tests:** `test_amendment_batch_import.do`, `test_amendment_batch_template.do`, `test_amendment_batch_failures.do`.
+
+### Amendment 1 validation
+
+Ran the requested `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`: **30 tests, 30 failed**, including the seven new do-files. All **42 new child scenarios** (21 profiles across Stata 16/Java 11 and Stata 19/Java 21) successfully started and reached `ctosim: not implemented`. These are expected command failures, not launcher or fixture compilation failures. Later assertions remain unreachable until production implements the command. The existing help test still fails with 601 for the absent help file. After the final harness changes, `test_amendment_batch_failures.do` was also rerun with the same runner's `-Filter` option and reached the stub on both editions with failures correctly propagated.
+
+The new Java bridge compiled with `--release 8`; the native C# launcher compiled for each scenario. A separate fixture check passed for Java version reporting, quoted argument forwarding, stdout/stderr forwarding, statuses 1/2/17/255, embedded-JVM version reading, launcher-selection assertions, and positive/negative diagnostic assertions. All seven new test do-files were successfully parsed as Stata program definitions. This checks test infrastructure independently of the command stub; it does not claim that the unimplemented command passes any assertions.
+
+Logs: `target/stata-tests/test_amendment_*/runner.log`, `.codex-runs/stata-amendment/<test>-<profile>-<edition>/child.log`, and `.codex-runs/stata-amendment/helper-check/check.log`. No sandbox startup blocker occurred. Existing test files, production files, specifications, and build configuration were kept unchanged; only new test/support/fixture files and this questions file were written. No commit was made.
