@@ -28,3 +28,12 @@ After cloning, enable the repository's git hooks once:
 ```
 git config core.hooksPath .githooks
 ```
+
+## Licence
+
+MIT (see `LICENSE`). The published forms in `samples/forms/` keep their own
+licences (CC BY 4.0 or MIT), listed with their sources in `samples/SOURCES.md`.
+
+## Reporting a problem
+
+E-mail mzenaki@alum.mit.edu with a subject starting with `[ctosim]`.
