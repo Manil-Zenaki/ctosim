@@ -6,4 +6,5 @@ d Requires Stata 16 or newer.
 f ctosim.ado
 f ctosim.sthlp
 f ctosim.jar
+f ctosim_bridge.jar
 f ctosim_converter.zip
