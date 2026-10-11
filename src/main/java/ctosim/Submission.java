@@ -52,6 +52,11 @@ public final class Submission {
         return end;
     }
 
+    /** When the server received the submission. See specs/07-form-walker.md, Amendment 2. */
+    public LocalDateTime submitted() {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
     /** Questions for which the engine accepted an answer from the walker. */
     public int answered() {
         return answered;

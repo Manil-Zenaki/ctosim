@@ -283,3 +283,62 @@ rule comes before every other question rule, including configured
 overrides (17); the attribute is recognised by its namespace URI, not its
 prefix (17); `duration()` is recognised as a call in the parsed
 expression, not as text (19).
+
+## Amendment 2: minimum times, speed violations, device ids, upload time
+
+From the second real export (`samples/coverage2/`, filled with SurveyCTO
+Collect). Everything not mentioned here is unchanged.
+
+### API addition
+
+```java
+// added to Submission:
+public java.time.LocalDateTime submitted();
+```
+
+### Upload time
+
+`submitted()` is the time the server received the submission: `end()`
+plus a whole number of minutes drawn uniformly between 1 and 240, from
+`config.seed()` and the submission number alone. A submission built with
+`Submission.of` (spec 08) has `submitted()` equal to `end()`.
+
+### Device ids
+
+The `deviceid` property of an enumerator (Amendment 1) is now a string
+of **16 lowercase hexadecimal characters** (`0-9a-f`), like the Android
+id SurveyCTO Collect reports, instead of 15 decimal digits. It still
+depends only on `config.seed()` and the enumerator's number, and two
+enumerators of the same configuration still have different ids.
+
+### Minimum times
+
+A question whose bind has the attribute `minimum-seconds` in the
+namespace `urn:ctosim:xforms` (spec 02, Amendment 3) has a minimum time
+`m`, its value read as a number (a value that cannot be read is ignored,
+and the question then has no minimum time).
+
+- When the clock advances after such a question (rule 7 of "Questions"),
+  it advances by the drawn number of seconds or by `m` rounded up to a
+  whole second, whichever is larger.
+- **Speed violation.** When `m` > 0, each time the walker handles such a
+  question under rule 5 or 6, a speed violation is recorded with
+  probability `config.speedViolationRate()` (at most one per handling),
+  drawn from `config.seed()` and the submission number. A violation does
+  not change the answer or the clock.
+
+### Speed-violation fields
+
+At the end of the form, before the `duration()` recalculation of
+Amendment 1, every relevant field whose bind has the attribute
+`speed-violations` in the namespace `urn:ctosim:xforms` gets its value:
+
+- `"count"`: the number of violations recorded in the submission, or no
+  value when there were none;
+- `"list"`: the violated questions, in the order the violations occurred,
+  separated by commas (no spaces), or no value when there were none. A
+  question is written as its path below the instance root, each step
+  except the last followed by its position among same-name siblings in
+  brackets: `main[1]/resp_name`, `main[1]/member[2]/member_name`.
+
+Fields that depend on them are updated as after any answer.
