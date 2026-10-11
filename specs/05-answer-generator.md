@@ -204,3 +204,12 @@ precedence over the first two rules.
   header row of a table: it only shows the choice labels and cannot be
   answered. The answer is always blank (`null`), even when the question
   is required or the override has a `value`.
+
+Clarification (Amendment 1): assumptions 16–21 of the questions file are
+reviewed one by one and confirmed. In particular, appearance words are
+whole space-separated words, so `list-nolabel` is not `label` (17); a
+`month-year` answer is the first day of the drawn date's month even when
+that day is before the range's minimum, and months are drawn in
+proportion to their days in the range (18); no particular sequence of
+random draws is required (19); a `label` select is blank even when it is
+required or has a fixed value (20).
