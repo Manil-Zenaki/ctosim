@@ -348,6 +348,32 @@ field read that stored value. A date or date-time wrapped in another
 function (`format-date-time(now(), ...)`, `decimal-date-time(...)`) is
 not affected.
 
+### Where these rules apply
+
+The conditional functions' per-instance conditions, and the new
+behaviour of `format-date-time`, `decimal-time` and of dates stored by
+calculations, apply to the form's own expressions: the `bind`
+attributes and `setvalue` values listed in spec 01, and `calculate_here`
+expressions (spec 02, Amendment 2). In those expressions, a relative
+reference in a condition starts from the node the expression is
+evaluated for, as any reference in that expression does. A call typed
+directly into an XPath expression that is not part of the form (for
+example parsed and evaluated by a test through the session's evaluation
+context) is evaluated as the engine evaluates any function call: every
+argument once, in the call's context, before the function runs. For a
+conditional function, the condition then has one value, which includes
+every instance or none (and a condition that designates several nodes
+fails to evaluate); `format-date-time` and `decimal-time` keep the
+engine's own behaviour. `hash` behaves as above everywhere.
+
+Clarification (Amendment 4): assumptions 29–37 of the questions file are
+reviewed one by one and confirmed, within the scope just stated. In
+particular, results for empty and non-numeric values are the native
+functions' (29); relative references are those of the expression's own
+node (30); recalculation is unchanged (31); the multi-argument `hash`
+rule is normative (32); the time grammar and NaN cases of 33 are right;
+date storage applies whatever the field's declared type (34).
+
 ### Acceptance against the third export
 
 `samples/xforms/ctosim_coverage3.xml` loads with media directory
