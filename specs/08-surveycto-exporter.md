@@ -388,3 +388,27 @@ Clarification (Amendment 1): assumptions 11–15 of the questions file are
 reviewed one by one and confirmed. In particular, the `instanceName`
 column follows the form's structure (a direct `meta/instanceName`), even
 with no submissions (14).
+
+## Amendment 2: third real export
+
+From the export of the third coverage form (`samples/coverage3/`).
+Everything not mentioned here is unchanged.
+
+### Changes
+
+- **Relevant select_multiple left blank.** When a select_multiple
+  field's element is present in the XML but empty (the question was
+  relevant and left blank), each of its dummy cells is `0`. When the
+  element is absent (not relevant, or no such repeat instance), the
+  dummy cells stay empty. The field's own column is empty in both cases.
+- **`instanceName`** cells have trailing spaces removed: a stored value
+  `C3-A ` gives `C3-A`. (Observed in the second and third exports.)
+- **`comments` fields** are written like media fields: the attachment
+  URL of the stored value, or an empty cell when it is empty. (SurveyCTO
+  stores a per-submission file `Comments-<u>.csv`, `u` as for text
+  audits.)
+
+### Still not observed
+
+`speed violations` fields when no violation occurred; `review_*`
+columns.
