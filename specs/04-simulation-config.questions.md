@@ -220,3 +220,74 @@ was inspected.
   The build needs to be rerun in the calling environment with accessible cached
   dependencies and the public API classes available. Runtime tests were not run
   because test compilation did not complete.
+
+## Amendment 2: speed violations
+
+Existing questions, tests, and fixtures are preserved. New coverage is in
+`SimulationConfigSpeedViolationRateTest`, `SimulationConfigSpeedViolationIoTest`,
+and `SimulationConfigSpeedViolationCopiesTest`. Expectations come only from
+spec 04; no production source was read.
+
+18. **Must the three probability settings sum to at most one or depend on a
+    form containing minimum-time fields?**
+    - **Assumption:** No. Each rate has its own inclusive 0..1 constraint; this
+      module has no form knowledge. A config with rates summing above one is
+      valid. No random draws, speed-violation events, or statistical frequency
+      assertions belong here; those are behavior of spec 07.
+    - **Dependent tests:** `allThreeRatesAreIndependentAndNeedNotSumToOne`;
+      the acceptance tests parse/load the rate without a form.
+
+19. **What numeric precision and extreme-number behavior should rate tests
+    require?**
+    - **Assumption:** Ordinary fractional and exponent JSON numbers are valid
+      and exposed as the corresponding Java double, including representable
+      values immediately below/above one. Negative zero is accepted as zero,
+      without requiring a particular sign bit. No rounding to a fixed number
+      of decimal places or replacement of zero with the default is implied.
+    - **Unresolved:** Exact-decimal validation for values which round onto an
+      endpoint, underflow, and exponents overflowing a double remain untested,
+      consistent with question 7. Tests do not extrapolate the confirmed
+      exact-integer rule to this number-valued key. Unquoted NaN/Infinity are
+      invalid JSON and are tested separately as syntax failures.
+    - **Dependent tests:** `acceptedRates` and `invalidRates` in
+      `SimulationConfigSpeedViolationRateTest`, reused by the load/copy tests;
+      syntax-diagnostic tests in `SimulationConfigSpeedViolationIoTest`.
+
+20. **Does the new name become valid in nested schema objects or reserved as
+    an arbitrary field name/choice code?**
+    - **Assumption:** No. Only the top-level schema is extended. It is unknown
+      in repeat, numeric-range, and field-override objects, but remains a legal
+      name in the arbitrary `fields` and choice-weight mappings. JSON escape
+      decoding occurs before recognizing or comparing keys.
+    - **Dependent tests:** `theNewKeyRemainsLegalAsAnArbitraryFieldNameAndChoiceCode`,
+      `anEscapedJsonKeyIsRecognizedAsTheNewSetting`, and the unknown/duplicate
+      key tests in `SimulationConfigSpeedViolationIoTest`.
+
+21. **Do established diagnostic and copy conventions apply to the new key?**
+    - **Assumption:** Yes. Invalid values require source, `speedViolationRate`,
+      and a reason, without prescribed wording or cause type. Syntax errors
+      require the failing line and a retained cause. Duplicate-key diagnostics
+      keep question 2's confirmed flexibility. Copies, including unchanged
+      seed/count copies, retain the rate and return distinct objects. This is
+      the unchanged base contract, not additional behavior for the amendment.
+    - **Dependent tests:** Diagnostic tests in `SimulationConfigSpeedViolationIoTest`
+      and `SimulationConfigSpeedViolationRateTest`; all tests in
+      `SimulationConfigSpeedViolationCopiesTest` and
+      `copiesOfALoadedConfigurationRetainItsRate`.
+
+### Amendment 2 build verification (2026-10-10)
+
+- Ran `.\mvnw.cmd -o -q test-compile` with the supplied `JAVA_HOME` and
+  `MAVEN_USER_HOME`. It reached `maven-compiler-plugin:3.15.0:testCompile`
+  and failed on `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+- Retried with `-e` to identify the failure. The cause is
+  `java.nio.file.AccessDeniedException` while javac closes its archive file
+  manager (`WindowsPath.toRealPath` / `ZipFileSystemProvider.removeFileSystem`).
+  Logs are `.codex-runs/04-speed-test-compile.log` and
+  `.codex-runs/04-speed-test-compile-detail.log`.
+- **Question:** Can the calling environment rerun the requested compilation
+  with accessible cached dependencies? **Assumption:** This is an environment
+  blocker; no production source, dependency permissions, Maven configuration,
+  or existing tests should be changed to work around it. **Dependent tests:**
+  Compilation of all three new Amendment 2 test classes remains unverified.
+  Runtime tests were not run because compilation did not complete.
