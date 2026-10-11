@@ -6,6 +6,7 @@
   Builds the simulator (mvnw package), then gathers:
     ctosim.ado, ctosim.sthlp, ctosim.pkg, stata.toc   from stata/
     ctosim.jar                                         target/ctosim-standalone.jar
+    ctosim_bridge.jar                                  src/stata-bridge (compiled for Java 8)
     ctosim_converter.zip                               the converter and its pure-Python libraries
   The converter's libraries are taken from the project's .venv.
 
@@ -38,6 +39,20 @@ foreach ($f in 'ctosim.ado', 'ctosim.sthlp', 'ctosim.pkg', 'stata.toc') {
     if (Test-Path $src) { Copy-Item $src $out } else { Write-Warning "missing stata\$f" }
 }
 Copy-Item (Join-Path $repo 'target\ctosim-standalone.jar') (Join-Path $out 'ctosim.jar')
+
+# The helper that javacall loads into Stata's own JVM (Java 8 or newer): compiled for Java 8.
+# It is also copied next to ctosim.ado, so that stata/ on the ado-path works in development
+# (stata/ctosim_bridge.jar is ignored by git).
+$bridgeClasses = Join-Path $repo 'target\stata-bridge-classes'
+if (Test-Path $bridgeClasses) { Remove-Item -Recurse -Force $bridgeClasses }
+New-Item -ItemType Directory -Force $bridgeClasses | Out-Null
+$javaBin = Join-Path $env:JAVA_HOME 'bin'
+& (Join-Path $javaBin 'javac.exe') --release 8 -nowarn -encoding UTF-8 -d $bridgeClasses `
+    (Join-Path $repo 'src\stata-bridge\java\ctosim\stata\StataBridge.java')
+if ($LASTEXITCODE -ne 0) { throw 'could not compile the Stata bridge' }
+& (Join-Path $javaBin 'jar.exe') cf (Join-Path $out 'ctosim_bridge.jar') -C $bridgeClasses .
+if ($LASTEXITCODE -ne 0) { throw 'could not package the Stata bridge' }
+Copy-Item (Join-Path $out 'ctosim_bridge.jar') (Join-Path $repo 'stata\ctosim_bridge.jar') -Force
 
 # The converter and its libraries (all pure Python), importable from one zip archive.
 $stage = Join-Path $repo 'target\converter-stage'

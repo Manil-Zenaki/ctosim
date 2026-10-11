@@ -21,6 +21,10 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
 
+if (-not $env:JAVA_HOME) {
+    $env:JAVA_HOME = 'C:\Program Files\StataNow19\utilities\java\windows-x64\zulu-jdk21.0.11'
+}
+
 if ($Build) {
     & (Join-Path $PSScriptRoot 'build-stata-package.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'package build failed' }

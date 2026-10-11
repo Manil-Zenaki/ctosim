@@ -32,3 +32,6 @@ samples/surveycto_example/
 
 # SurveyCTO export reports (binary, name the account and server)
 *_export_report.pdf
+
+# Built by scripts/build-stata-package.ps1 (the Stata helper, for stata/ on the ado-path)
+stata/ctosim_bridge.jar
