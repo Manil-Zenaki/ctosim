@@ -1,6 +1,6 @@
 # Project status and hand-over notes
 
-Last updated: 2026-10-09. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
+Last updated: 2026-10-11. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
 `docs/ARCHITECTURE.md` first; this file records where the work stands and
 what was learnt along the way.
 
@@ -20,7 +20,7 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 
-Suite: 3667 Java tests and 331 Python tests, all green (2026-10-11).
+Suite: 4300 Java tests (57 failing, all disputed, see below) and 331 Python tests (2026-10-11). Once the disputes are settled and the suite is green, republish the Stata package (`scripts/publish-stata-package.ps1`): its jar predates these fixes.
 
 ## Next step
 
@@ -31,14 +31,35 @@ select_multiple dummies in nested repeats, nested count columns,
 speed violations (minimum times kept by the converter, `speedViolationRate`
 in the config), Android-style 16-hex device ids.
 
-Small open points:
+The third real export (`samples/coverage3/`, four submissions: Collect
+on Android and the web, two form versions) was compared with the
+simulator on 2026-10-11 and led to amendments of specs 03 (Amendment 4),
+05 (Amendment 1), 06 (Amendment 3), 07 (Amendments 3 and 4) and 08
+(Amendment 2), all implemented: conditional repeat functions (`count-if`
+...), MD5 `hash()`, English `format-date-time`, `decimal-time()` of
+text, calculations storing dates only (`now()` stores the date, as
+SurveyCTO documents), counted repeats with count 0, `search()` choices
+from attached CSV files, `numbers_decimal`, `month-year` and table
+header (`label`) appearances, zeros for blank relevant select_multiples,
+trimmed `instanceName`, comments file URLs. 65 of the 73 `oracle`
+functions now give SurveyCTO's exact result; the other 8 depend on the
+date, chance, the form version or the phone's language.
 
-- SurveyCTO seems to trim `instanceName` (`concat(${hhid}, ' - ', '')`
-  is exported as `H001 -`); the simulator keeps the trailing space. One
-  observation only.
-- Still not observed (spec 08, Amendment 1): blank relevant
-  select_multiple dummies, the comments file name, speed-violation fields
-  when no violation occurred, `review_*` columns.
+**Open: four disputes** (specs 03, 06, 07, 08) on tests superseded by
+these amendments, or that hit two engine limits (a predicate on the
+repeat's own step inside a condition; `NaN` results stored as no value).
+Codex hit its usage limit on 2026-10-11; run when it is back:
+`scripts/codex-tests.ps1 specs/NN-x.md -Dispute` for 03, 06, 07 and 08.
+Until then 57 tests fail, all of them disputed. Codex also stopped
+before writing the spec 08 questions file (its tests were committed by
+hand).
+
+Still not observed: speed-violation fields when no violation occurred,
+`review_*` columns. Known differences left for later (realism, not
+correctness): web submissions (`deviceid` `(web)`, no audio audit,
+sensors or media), sensor values, comments, Collect's media file names
+(`1791745516219.m4a`), seconds in typed times, phone-language
+`format-number` and phone-zone `decimal-date-time`.
 
 
 ## Waiting on the project owner
@@ -49,18 +70,6 @@ Small open points:
   `scripts/publish-stata-package.ps1`, then
   `git push origin main stata-package` (from a terminal where you are
   signed in to GitHub).
-
-- **Exports of the third coverage form** (`samples/coverage3/`, see its
-  README for the inventory of SurveyCTO features and the filling
-  scenarios A, B, C and optional D with `ctosim_coverage3_v2.xlsx`).
-
-Simulator gaps already found by running that form (fix with spec
-amendments; details in `samples/coverage3/README.md`, section 2):
-`count-if` / `sum-if` / `join-if` / `min-if` / `max-if` /
-`rank-index-if` make the walk fail; `format-date-time` follows the
-machine's language; a counted repeat with count 0 gets one instance;
-`search()` offers its placeholder row; `decimal-time()` of a text value
-fails. The form is not in `samples/xforms/` yet, because the walk fails.
 
 - Later: more XLSForms in `samples/forms/` to cover more cases.
 

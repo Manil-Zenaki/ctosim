@@ -184,3 +184,28 @@ Departures from the scenarios:
   Reader) before `m_barcode` could be scanned;
 - `g_shape` is empty (no shape could be walked indoors);
 - submission C still has a speed violation on `resp_code`.
+
+## Comparison with the simulator (2026-10-11)
+
+Files, columns and column order of the simulated wide and long exports
+match the real ones. Every gap of section 2 is fixed, and so are the
+gaps the export revealed: `hash()` is MD5, a calculation holding a date
+stores the date only (`today()`, `now()`, `date(20000)` give
+`2026-10-11`, `2024-10-04`), `choice-label()` of a `search()` question
+is empty, a `numbers_decimal` text holds a number, `month-year` stores
+the first day of the month (on Collect; the web kept the day), a table
+header (`label`) has no value, blank relevant select_multiples have `0`
+dummies, `instanceName` loses its trailing space, comments fields hold
+the URL of `Comments-<uuid>.csv`. 65 of the 73 `oracle` fields give
+SurveyCTO's exact value; the others depend on the date (`f_today`,
+`f_now`), chance (`f_uuid`, `f_random`), the form version
+(`f_version`), the input (`f_decimal_time`) or the phone: on the
+French-language phone `format-number` gave `1 234 567,891` and
+`decimal-date-time` read the string in the phone's time zone
+(`20458.708…` instead of `20458.5`).
+
+Observed but not simulated (realism): web submissions (`deviceid`
+`(web)`, no audio audit, sensors or media), sensor values, comments,
+Collect's media file names (`1791745516219.m4a`), seconds in typed
+times (`12:05:19 AM`), a calculated default the enumerator changed
+(`calc_default` = 99).
