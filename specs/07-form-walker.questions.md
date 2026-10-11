@@ -379,3 +379,130 @@ helpers provide all required signatures.
   compilation probe passed after the final Java edits. Existing tests,
   production source, the POM, and sample forms remain unchanged. No commit
   was made.
+
+### Amendment 2 questions and assumptions
+
+22. **Question:** Which numeric lexical forms, non-finite values, or overflow
+    behavior does `minimum-seconds` support?
+    **Assumption:** Test ordinary finite decimal numbers, negative numbers,
+    zero, positive fractions, and a minimum exceeding one day. Empty text,
+    ordinary nonnumeric text, and `1 + 90` cannot be read as numbers; the
+    attribute is not an XPath expression. Do not prescribe NaN/infinity,
+    exponent syntax, whitespace normalization, or overflow handling. Ignored
+    minima do not imply any particular warning policy. The namespace URI,
+    rather than the prefix, identifies both new attributes.
+    **Tests:** `FormWalkerAmendment2MinimumTimeTest`,
+    `absentInvalidAndNonpositiveMinimaNeverQualifyForViolations`, and namespace
+    cases in `FormWalkerAmendment2SpeedViolationTest`.
+
+23. **Question:** Does a question with a minimum wait or violate when it is
+    skipped, when an answer fails, or once for every failed constraint attempt?
+    **Assumption:** The amendment explicitly references handling under rules
+    5/6 and advancing under rule 7. Blank generation, conversion failure,
+    exhausted constraints, and accepted answers each constitute one handling.
+    Read-only, kept defaults, unsupported controls, irrelevant fields,
+    `calculate-here`, and fields without body controls do not. An override
+    that replaces a default makes the question eligible again. A positive
+    minimum below five seconds still qualifies for a violation.
+    **Tests:** `everyHandledOutcomeAdvancesOnceAndCanRecordOnlyOneViolation`,
+    `questionsNotHandledUnderRuleFiveOrSixNeitherWaitNorViolate`,
+    `minimumAppliesAgainWhenAnOverrideReplacesAnExistingAnswer`, and
+    `anyPositiveMinimumQualifiesEvenWhenTheClockDrawAlreadyExceedsIt`.
+
+24. **Question:** What does a report field's "no value" mean when it already
+    contains a default, and do repeated report fields show local or global totals?
+    **Assumption:** No violations clears any old report value rather than
+    preserving it or writing zero. Every relevant report field receives the
+    submission-wide count/list, including read-only fields and fields without
+    controls; this final assignment does not answer a question or advance the
+    clock. Relevance is checked at the end. Tests avoid undefined attribute
+    values, incompatible report data types, simultaneous `calculate` or
+    `calculate-here` attributes on a report bind, and dependencies that change
+    other report fields' relevance during the pass, because precedence and
+    ordering for those combinations are not specified.
+    **Tests:** Empty/stale/report-relevance cases,
+    `everyRelevantReportIsSetIncludingReadonlyFieldsAndFieldsWithoutControls`,
+    `nestedCountedAndUncountedRepeatsUseActualSiblingPositionsAndGlobalTotals`,
+    `clearingAStaleCountAlsoRefreshesItsDependents`, and final propagation/order
+    cases in `FormWalkerAmendment2SpeedViolationTest`.
+
+25. **Question:** How are paths formatted at the root, in ordinary groups,
+    after skipped repeat instances, and when navigation differs from XML order?
+    **Assumption:** Omit the instance root and the leaf index; every intermediate
+    element, including an ordinary group, has its one-based position among
+    same-name instance siblings. Skipped questions do not renumber the later
+    instances. Use actual navigation/violation order, preserving Unicode names,
+    with commas and no spaces. Every copy of the list uses these same paths.
+    **Tests:** `listUsesNavigationOrderNotInstanceOrBindOrderAndPreservesUnicode`,
+    `skippedRepeatInstancesDoNotRenumberThePathsOfLaterViolations`, and nested
+    repeat tests. Counted repeats use count-node paths as in the existing tests.
+
+26. **Question:** Are exact random sequences or independence across different
+    configuration values required for minimum times and speed violations?
+    **Assumption:** Do not guess an RNG, mixing formula, or draw order. Verify
+    replay for identical inputs, reset between walks, and meaningful seed/number
+    sensitivity over samples. Rate tests use fixed seeds, 2,500 submissions per
+    single-question rate, and the existing seven-standard-deviations-plus-two
+    tolerance. A multi-question test checks each question's marginal rate,
+    count/list consistency, order, and uniqueness without prescribing joint
+    independence. The clamp test uses the exact distribution of
+    `max(uniform integer in 5..60, ceil(m))`, not a new uniform draw in ceil(m)..60.
+    Endpoint samples are sized to make accidental omissions very unlikely.
+    The no-answer/no-clock-change comparison across rates uses fixed answers
+    and a minimum above 60; it does not assume unmentioned RNG stream coupling
+    for arbitrary answers or low minima across different configurations.
+    **Tests:** Rate, clamping, replay, and seed tests in the new minimum-time and
+    speed-violation classes; `violationDoesNotAlterFixedAnswersOrTheRequiredClockAdvance`.
+
+27. **Question:** Does upload delay depend on the form or other configuration
+    settings, and how is precision treated by `Submission.of`?
+    **Assumption:** "From config.seed() and the submission number alone" applies
+    to the delay, not the absolute upload timestamp. Match delays across an
+    empty form and a timed form with different dates, enumerator counts, zones,
+    and violation rates. Upload is local `end.plusMinutes(delay)`, preserving
+    seconds and not extending interview duration. `Submission.of` preserves
+    the exact supplied end, including nanoseconds, with no random delay. No
+    extra XML upload field or new factory validation behavior is inferred.
+    **Tests:** `FormWalkerAmendment2UploadTimeTest`; the uniformity test uses
+    4,800 fixed-seed draws, individual minute bins and four broad bins, and
+    checks the inclusive 1/240 endpoints.
+
+28. **Question:** What should happen to the committed Amendment 1 tests that
+    still require 15 decimal digits?
+    **Assumption:** Amendment 2 explicitly supersedes that format with exactly
+    16 lowercase hexadecimal characters. Per this run's instruction, leave all
+    existing tests unchanged, including their now-conflicting assertions and
+    earlier questions-file entries. New tests check the new format, within-
+    configuration uniqueness, per-enumerator stability, replay, seed extremes,
+    and independence from the form and other settings (including enumerator
+    count). Leading zeros are allowed; no particular encoding/hash or universal
+    collision freedom across different seeds is imposed.
+    **Tests:** `FormWalkerAmendment2DeviceIdTest`. The old decimal assertions in
+    `FormWalkerAmendmentEnumeratorTest` and `FormWalkerAmendmentCoverageTest`
+    will need separate reconciliation when running the complete suite against
+    an Amendment 2 implementation.
+
+### Amendment 2 build and validation
+
+- **Question:** Can `mvnw.cmd -o -q test-compile` run successfully here?
+- **Assumption:** The cached-dependency access failure is environmental, not
+  a test source error. The requested command reaches `testCompile` and fails
+  on `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. An offline `-e`
+  run confirms `java.nio.file.AccessDeniedException` in
+  `WindowsLinkSupport.getRealPath`. No repository copy, drive mapping,
+  installation, or build configuration modification was attempted.
+- **Tests:** The existing `.codex-runs/WalkerCompileProbe.java` compiles all
+  18 FormWalker test/support sources, including the five new files, with Java
+  release 17 against actual project class files and cached JUnit APIs. This
+  independently checks source/API compilation but is not a successful Maven
+  build. Logs and the Amendment 2-only JUnit harness are under `.codex-runs/`.
+- **Execution:** The final Amendment 2-only run discovers 83 cases: all fail,
+  with none skipped or aborted. There are 67 `ConfigException` failures because
+  `speedViolationRate` is not yet recognized, eight unsupported-operation
+  failures, and eight assertion failures. No `FormLoadException` occurs on
+  the exercised fixture-loading paths. Failures are retained as the requested
+  contracts; these results cannot validate statistical behavior until the
+  prerequisite config setting and walker amendment are implemented. The final
+  compilation probe succeeds after all Java edits. Production code was not
+  read or modified; existing tests and fixtures remain unchanged. No commit
+  was made.
