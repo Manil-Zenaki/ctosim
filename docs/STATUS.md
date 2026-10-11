@@ -18,6 +18,7 @@ what was learnt along the way.
 | 08 | SurveyCtoExporter | done: wide and long CSV, checked byte for byte against real exports of the coverage form |
 | 09 | Constraint hints | done |
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
+| 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; package built by `scripts/build-stata-package.ps1`, branch `stata-package` committed locally, not pushed (no GitHub remote yet) |
 
 Suite: 3667 Java tests and 331 Python tests, all green (2026-10-11).
 
@@ -41,6 +42,14 @@ Small open points:
 
 
 ## Waiting on the project owner
+
+- **Publishing on GitHub** (repository to be public, decided 2026-10-11):
+  create the repository, add it as `origin`, push `main` and
+  `stata-package`; then replace `<owner>/<repo>` in the help-free
+  instructions (developer guide, `net install` line). Before that, decide:
+  commits carry the author e-mail `mzenaki@alum.mit.edu`; the published
+  IOM form in `samples/forms/` (CC BY 4.0) contains three IOM staff
+  e-mails; no `LICENSE` file yet.
 
 - **Exports of the third coverage form** (`samples/coverage3/`, see its
   README for the inventory of SurveyCTO features and the filling

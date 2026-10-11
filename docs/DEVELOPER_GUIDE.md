@@ -115,6 +115,30 @@ Exit status: 0 on success (even with warnings), 1 for a problem with an
 input or output file, 2 for a wrong command line. The same inputs always
 produce byte-identical files, on any machine.
 
+### From Stata
+
+Stata users install the command once (Stata 16 or newer):
+
+```
+net install ctosim, from("https://raw.githubusercontent.com/<owner>/<repo>/stata-package/") replace
+```
+
+then, in any do-file or interactively (batch mode included):
+
+```
+ctosim using "household.xlsx", n(300) seed(42) clear
+ctosim using "household.xlsx", n(300) seed(42) dofile("import_household.do") replace clear
+```
+
+The first form imports the wide CSV as it is; the second runs the import
+do-file that SurveyCTO generates for the form (its Stata template), so the
+simulated data arrive exactly as the real data will (dates converted,
+labels applied). The options mirror the command line (`n`, `seed`,
+`config`, `saving`, `media`, `server`); results are in `r()`; `help ctosim`
+documents everything. Requirements: a Java 17 or newer (Stata 18+ ships
+one; otherwise install one or set `CTOSIM_JAVA`) and, for an XLSForm, a
+Python set in Stata (`python set exec`). Spec 11.
+
 ### Configuration
 
 A JSON file; every key is optional. Full rules: `specs/04-simulation-config.md`.
@@ -252,6 +276,9 @@ checked byte for byte against two real exports (`samples/coverage/`,
 | `samples/coverage/`, `samples/coverage2/` | fictitious forms deployed on SurveyCTO and their real exports (test fixtures) |
 | `scripts/codex-tests.ps1` | runs Codex as the independent test author |
 | `ctosim.cmd` | the command-line launcher |
+| `stata/` | the Stata command (`ctosim.ado`, help, `ctosim.pkg`, `stata.toc`) |
+| `src/stata-bridge/` | the helper that the Stata command loads with `javacall` (compiled for Java 8) |
+| `src/test/stata/` | the Stata tests (do-files, run in batch mode), written by Codex only |
 
 ## 6. Building and testing
 
@@ -264,6 +291,19 @@ mvnw.cmd -o package                               &rem tests + target/ctosim.jar
 ```
 
 Always check Maven's exit status before committing.
+
+The Stata command (spec 11) has its own build and tests:
+
+```
+powershell -File scriptsuild-stata-package.ps1    &rem target/stata-package (+ stata/ctosim_bridge.jar)
+powershell -File scripts\stata-tests.ps1            &rem each src/test/stata/test_*.do, in batch mode
+powershell -File scripts\publish-stata-package.ps1  &rem commit the package to the stata-package branch
+git push origin stata-package                        &rem make it installable with net install
+```
+
+The Stata tests use every installed Stata (`C:\Program Files\Stata*`),
+or the one named by `STATA_EXE`. Stata ignores `shell` in batch mode on
+Windows, so the command and the tests call Java through `javacall`.
 
 ## 7. Changing the code
 
