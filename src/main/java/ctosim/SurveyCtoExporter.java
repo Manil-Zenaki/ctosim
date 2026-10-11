@@ -35,6 +35,7 @@ import org.javarosa.core.model.QuestionDef;
 import org.javarosa.core.model.SelectChoice;
 import org.javarosa.core.model.condition.EvaluationContext;
 import org.javarosa.core.model.instance.AbstractTreeElement;
+import org.javarosa.core.model.instance.TreeElement;
 import org.javarosa.core.model.instance.TreeReference;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -54,7 +55,7 @@ public final class SurveyCtoExporter {
         "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
     private static final String[] GEOPOINT_PARTS = {"-Latitude", "-Longitude", "-Altitude", "-Accuracy"};
 
-    private enum Kind { GROUP, NOTE, REPEAT, DATE, TIME, DATETIME, SELECT_MULTIPLE, GEOPOINT, MEDIA, TEXT_AUDIT, OTHER }
+    private enum Kind { GROUP, NOTE, REPEAT, DATE, TIME, DATETIME, SELECT_MULTIPLE, GEOPOINT, MEDIA, TEXT_AUDIT, AUDIO_AUDIT, OTHER }
 
     /** A field giving columns, or a repeat group, placed in its container's item list. */
     private interface Item { }
@@ -76,13 +77,15 @@ public final class SurveyCtoExporter {
         }
     }
 
-    private record Parsed(Element root, String id) { }
+    private record Parsed(Element root, String id, String instanceName) { }
 
     private final String formId;
     private final String title;
     private final String version;
     private final String serverName;
     private final String rootName;
+    /** Whether the form has meta/instanceName (an instance_name setting): it then gets a column. */
+    private final boolean hasInstanceName;
     private final List<Item> rootItems = new ArrayList<>();
     private final List<Repeat> repeats = new ArrayList<>();
 
@@ -104,6 +107,8 @@ public final class SurveyCtoExporter {
 
         FormDef def = form.newEntryController().getModel().getForm();
         this.rootName = def.getMainInstance().getRoot().getName();
+        TreeElement meta = def.getMainInstance().getRoot().getChild("meta", 0);
+        this.hasInstanceName = meta != null && meta.getChild("instanceName", 0) != null;
         Set<String> counted = new HashSet<>();
         Map<String, List<String>> choices = new HashMap<>();
         scanForm(def, def.getChildren(), counted, choices);
@@ -123,16 +128,16 @@ public final class SurveyCtoExporter {
         List<String> header = new ArrayList<>();
         header.add("SubmissionDate");
         wideHeader(rootItems, "", maxima, header);
-        header.addAll(List.of("instanceID", "formdef_version", "KEY"));
+        header.addAll(metadataHeader());
 
         List<List<String>> rows = new ArrayList<>();
         rows.add(header);
         for (int i = 0; i < parsed.size(); i++) {
             Parsed p = parsed.get(i);
             List<String> row = new ArrayList<>();
-            row.add(formatDateTime(submissions.get(i).end()));
+            row.add(formatDateTime(submissions.get(i).submitted()));
             wideCells(rootItems, p.root(), "", p, maxima, row);
-            row.addAll(List.of(p.id(), version == null ? "" : version, p.id()));
+            row.addAll(metadataCells(p));
             rows.add(row);
         }
         return csv(rows);
@@ -143,7 +148,7 @@ public final class SurveyCtoExporter {
         List<String> mainHeader = new ArrayList<>();
         mainHeader.add("SubmissionDate");
         longHeader(rootItems, mainHeader);
-        mainHeader.addAll(List.of("instanceID", "formdef_version", "KEY"));
+        mainHeader.addAll(metadataHeader());
         List<List<String>> mainRows = new ArrayList<>();
         mainRows.add(mainHeader);
 
@@ -160,9 +165,9 @@ public final class SurveyCtoExporter {
         for (int i = 0; i < parsed.size(); i++) {
             Parsed p = parsed.get(i);
             List<String> row = new ArrayList<>();
-            row.add(formatDateTime(submissions.get(i).end()));
+            row.add(formatDateTime(submissions.get(i).submitted()));
             longCells(rootItems, p.root(), p.id(), p, row);
-            row.addAll(List.of(p.id(), version == null ? "" : version, p.id()));
+            row.addAll(metadataCells(p));
             mainRows.add(row);
             collectInstances(rootItems, p.root(), p.id(), p, repeatRows);
         }
@@ -318,7 +323,7 @@ public final class SurveyCtoExporter {
             return Kind.TEXT_AUDIT;
         }
         if (first.equals("audio") && second.equals("audit")) {
-            return Kind.OTHER;
+            return Kind.AUDIO_AUDIT;
         }
         return switch (first) {
             case "note" -> Kind.NOTE;
@@ -367,7 +372,8 @@ public final class SurveyCtoExporter {
         if (instanceId == null) {
             throw invalid(submission, "the instance has no meta/instanceID element");
         }
-        return new Parsed(root, instanceId.getTextContent());
+        Element instanceName = child(meta, "instanceName");
+        return new Parsed(root, instanceId.getTextContent(), instanceName == null ? "" : instanceName.getTextContent());
     }
 
     private static IllegalArgumentException invalid(Submission submission, String reason) {
@@ -569,13 +575,30 @@ public final class SurveyCtoExporter {
                 return List.of(stored.isEmpty() ? "" : attachmentUrl(p.id(), stored));
             }
             case TEXT_AUDIT -> {
-                String uuid = p.id().startsWith("uuid:") ? p.id().substring(5) : p.id();
-                return List.of(element == null ? "" : attachmentUrl(p.id(), "TA_" + uuid + ".csv"));
+                return List.of(element == null ? "" : attachmentUrl(p.id(), "TA_" + uuid(p) + ".csv"));
+            }
+            case AUDIO_AUDIT -> {
+                return List.of(element == null ? "" : attachmentUrl(p.id(), "AA_" + uuid(p) + "_AFTER_0S.m4a"));
             }
             default -> {
                 return List.of(stored);
             }
         }
+    }
+
+    private static String uuid(Parsed p) {
+        return p.id().startsWith("uuid:") ? p.id().substring(5) : p.id();
+    }
+
+    /** The metadata columns that end every row of the wide and main long files. */
+    private List<String> metadataHeader() {
+        return hasInstanceName ? List.of("instanceID", "instanceName", "formdef_version", "KEY")
+                : List.of("instanceID", "formdef_version", "KEY");
+    }
+
+    private List<String> metadataCells(Parsed p) {
+        String formdef = version == null ? "" : version;
+        return hasInstanceName ? List.of(p.id(), p.instanceName(), formdef, p.id()) : List.of(p.id(), formdef, p.id());
     }
 
     private static List<String> items(String value) {
