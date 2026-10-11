@@ -114,3 +114,17 @@ weights, a list of texts). See the project's developer guide.
 {synopt:{cmd:r(outdir)}}output directory (absolute path){p_end}
 {synopt:{cmd:r(wide)}}wide CSV file (absolute path){p_end}
 {synopt:{cmd:r(report)}}{cmd:run-report.txt} (absolute path){p_end}
+
+
+{title:Reporting a problem}
+
+{pstd}
+Send an e-mail to {browse "mailto:mzenaki@alum.mit.edu?subject=[ctosim] ":mzenaki@alum.mit.edu}
+with a subject that starts with {bf:[ctosim]}, for example
+{it:[ctosim] error 601 with an XLSForm}. Please include:
+
+{phang2}1. the {cmd:ctosim} command you typed;{p_end}
+{phang2}2. the Stata version (type {cmd:about});{p_end}
+{phang2}3. the version of ctosim (0.1.0; see the first line of this help file);{p_end}
+{phang2}4. the messages {cmd:ctosim} displayed, and {cmd:run-report.txt} from the output directory when there is one;{p_end}
+{phang2}5. if possible, the form (or a small form that shows the problem).{p_end}
