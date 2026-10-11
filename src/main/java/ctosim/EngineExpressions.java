@@ -1,10 +1,13 @@
 package ctosim;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -35,11 +38,40 @@ import org.w3c.dom.NodeList;
  *   simulated clock and seed; see {@link SessionEnvironment}). {@code random()} and
  *   {@code uuid()} are numbered like {@code index()}, so that two identical
  *   {@code once(random())} binds are not merged into a single draw.</li>
+ *   <li><b>Conditional repeat functions.</b> The engine evaluates every argument of a function
+ *   before calling it, so the condition of {@code count-if(${rows}, ${kind} = 'odd')} would be
+ *   evaluated once, for all instances together. Each call becomes the native function on the
+ *   nodes selected by a predicate, {@code count(/data/rows[boolean(/data/rows/kind = 'odd')])},
+ *   which the engine evaluates for each instance; relative references in the condition are
+ *   first made absolute from the expression's own node. {@code rank-index-if} becomes
+ *   {@code ctosim-rank-index-if(position, all nodes, included nodes)}.</li>
+ *   <li><b>Built-ins with SurveyCTO behaviour.</b> The engine matches its own functions before
+ *   custom ones, so {@code format-date-time} and {@code decimal-time} are renamed to internal
+ *   functions (English names; times written as text).</li>
+ *   <li><b>Dates stored by calculations.</b> Every {@code calculate} (except on time fields) is
+ *   wrapped in {@code ctosim-store(...)}, which stores a date or date-time result as its date
+ *   only, as SurveyCTO does.</li>
  * </ul>
  */
 final class EngineExpressions {
 
     static final String INTERNAL_INDEX = "ctosim-index";
+    static final String STORE = "ctosim-store";
+    static final String RANK_INDEX_IF = "ctosim-rank-index-if";
+    static final String FORMAT_DATE_TIME = "ctosim-format-date-time";
+    static final String DECIMAL_TIME = "ctosim-decimal-time";
+
+    /** SurveyCTO's conditional repeat functions, with the function each one becomes. */
+    private static final Map<String, String> CONDITIONAL = Map.of(
+            "count-if", "count", "sum-if", "sum", "min-if", "min", "max-if", "max",
+            "join-if", "join", "rank-index-if", RANK_INDEX_IF);
+    /** Arguments of each conditional function: the repeated nodes, then the condition, come last. */
+    private static final Map<String, Integer> CONDITIONAL_ARITY = Map.of(
+            "count-if", 2, "sum-if", 2, "min-if", 2, "max-if", 2, "join-if", 3, "rank-index-if", 3);
+    private static final Map<String, String> RENAMED = Map.of(
+            "format-date-time", FORMAT_DATE_TIME, "decimal-time", DECIMAL_TIME);
+    private static final Set<String> OPERATORS = Set.of("and", "or", "div", "mod");
+    private static final Pattern NUMERIC_REFERENCE = Pattern.compile("&#(\\d{5,7});");
 
     private static final Set<String> SELECT_FUNCTIONS = Set.of("selected", "selected-at", "count-selected");
 
@@ -62,15 +94,15 @@ final class EngineExpressions {
     static byte[] rewrite(Document doc, byte[] original) throws TransformerException {
         int[] indexCounter = {0};
         boolean changed = rewriteAttributes(doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "bind"),
-                BIND_EXPRESSIONS, indexCounter);
+                BIND_EXPRESSIONS, "nodeset", indexCounter);
         changed |= rewriteAttributes(doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "setvalue"),
-                new String[] {"value"}, indexCounter);
+                new String[] {"value"}, "ref", indexCounter);
         NodeList binds = doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "bind");
         for (int i = 0; i < binds.getLength(); i++) {
             Element bind = (Element) binds.item(i);
             if (bind.hasAttributeNS(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE)) {
                 String before = bind.getAttributeNS(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE);
-                String after = rewriteExpression(before, indexCounter);
+                String after = store(bind, rewriteExpression(before, indexCounter, contextPath(bind, "nodeset")));
                 if (!after.equals(before)) {
                     bind.setAttributeNS(FormLoader.CTOSIM_NS,
                             bind.getAttributeNodeNS(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE).getName(), after);
@@ -85,17 +117,39 @@ final class EngineExpressions {
         transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
         ByteArrayOutputStream out = new ByteArrayOutputStream(original.length + 256);
         transformer.transform(new DOMSource(doc), new StreamResult(out));
-        return out.toByteArray();
+        return supplementaryCharacters(out.toString(StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8);
     }
 
-    private static boolean rewriteAttributes(NodeList elements, String[] attributes, int[] indexCounter) {
+    /**
+     * The serialiser writes characters outside the Basic Multilingual Plane (emoji, rare CJK) as
+     * numeric references, which the engine's XML parser decodes wrongly; they are written as
+     * themselves instead.
+     */
+    private static String supplementaryCharacters(String xml) {
+        Matcher m = NUMERIC_REFERENCE.matcher(xml);
+        StringBuilder out = new StringBuilder(xml.length());
+        while (m.find()) {
+            int codePoint = Integer.parseInt(m.group(1));
+            m.appendReplacement(out, codePoint > 0xFFFF && Character.isValidCodePoint(codePoint)
+                    ? Matcher.quoteReplacement(new String(Character.toChars(codePoint))) : "$0");
+        }
+        m.appendTail(out);
+        return out.toString();
+    }
+
+    private static boolean rewriteAttributes(NodeList elements, String[] attributes, String contextAttribute,
+                                             int[] indexCounter) {
         boolean changed = false;
         for (int i = 0; i < elements.getLength(); i++) {
             Element e = (Element) elements.item(i);
+            String context = contextPath(e, contextAttribute);
             for (String attribute : attributes) {
                 if (e.hasAttribute(attribute)) {
                     String before = e.getAttribute(attribute);
-                    String after = rewriteExpression(before, indexCounter);
+                    String after = rewriteExpression(before, indexCounter, context);
+                    if (attribute.equals("calculate")) {
+                        after = store(e, after);
+                    }
                     if (!after.equals(before)) {
                         e.setAttribute(attribute, after);
                         changed = true;
@@ -106,8 +160,24 @@ final class EngineExpressions {
         return changed;
     }
 
-    /** Applies both rewrites to one expression; text inside string literals is never touched. */
-    static String rewriteExpression(String expr, int[] indexCounter) {
+    /** The absolute path an element's expressions are evaluated for, or null when it has none. */
+    private static String contextPath(Element e, String attribute) {
+        String path = e.getAttribute(attribute).strip();
+        return path.startsWith("/") ? path : null;
+    }
+
+    /** A calculation wrapped so that a date result is stored as a date only; time fields are left alone. */
+    private static String store(Element bind, String calculation) {
+        String type = bind.getAttribute("type");
+        return calculation.isBlank() || type.substring(type.indexOf(':') + 1).equals("time")
+                ? calculation : STORE + "(" + calculation + ")";
+    }
+
+    /**
+     * Applies the rewrites to one expression evaluated for the node at {@code context} (an
+     * absolute path, or null when unknown); text inside string literals is never touched.
+     */
+    static String rewriteExpression(String expr, int[] indexCounter, String context) {
         StringBuilder out = new StringBuilder(expr.length() + 16);
         int i = 0;
         while (i < expr.length()) {
@@ -124,6 +194,33 @@ final class EngineExpressions {
                 int close = closingParen(expr, open);
                 if (close > 0) {
                     List<String> args = splitArguments(expr.substring(open + 1, close));
+                    Integer arity = CONDITIONAL_ARITY.get(name);
+                    if (arity != null && args.size() == arity) {
+                        List<String> rewritten = new ArrayList<>();
+                        for (String arg : args) {
+                            rewritten.add(rewriteExpression(arg, indexCounter, context).strip());
+                        }
+                        String nodes = rewritten.get(arity - 2);
+                        String included = nodes + "[boolean(" + absolute(rewritten.get(arity - 1), context) + ")]";
+                        List<String> call = new ArrayList<>(rewritten.subList(0, arity - 2));
+                        if (name.equals("rank-index-if")) {
+                            call.add(nodes);
+                        }
+                        call.add(included);
+                        out.append(CONDITIONAL.get(name)).append('(').append(String.join(", ", call)).append(')');
+                        i = close + 1;
+                        continue;
+                    }
+                    String renamed = RENAMED.get(name);
+                    if (renamed != null) {
+                        out.append(renamed).append('(');
+                        for (int k = 0; k < args.size(); k++) {
+                            out.append(k > 0 ? "," : "").append(rewriteExpression(args.get(k), indexCounter, context));
+                        }
+                        out.append(')');
+                        i = close + 1;
+                        continue;
+                    }
                     String internal = ZERO_ARGUMENT_REWRITES.get(name);
                     if (internal != null && args.size() == 1 && args.get(0).isBlank()) {
                         out.append(internal).append('(');
@@ -137,7 +234,7 @@ final class EngineExpressions {
                     if (SELECT_FUNCTIONS.contains(name)) {
                         out.append(expr, i, open + 1);
                         for (int k = 0; k < args.size(); k++) {
-                            String arg = rewriteExpression(args.get(k), indexCounter);
+                            String arg = rewriteExpression(args.get(k), indexCounter, context);
                             if (k > 0) {
                                 out.append(',');
                             }
@@ -171,11 +268,85 @@ final class EngineExpressions {
             return null;
         }
         String name = expr.substring(at, end);
-        if (!ZERO_ARGUMENT_REWRITES.containsKey(name) && !SELECT_FUNCTIONS.contains(name)) {
+        if (!ZERO_ARGUMENT_REWRITES.containsKey(name) && !SELECT_FUNCTIONS.contains(name)
+                && !CONDITIONAL.containsKey(name) && !RENAMED.containsKey(name)) {
             return null;
         }
         int next = skipSpaces(expr, end);
         return next < expr.length() && expr.charAt(next) == '(' ? name : null;
+    }
+
+    /**
+     * The condition with its relative location paths made absolute from {@code context}, so that
+     * inside a predicate they still designate what they designate from the expression's node.
+     * Paths starting with {@code .} or a name are relative; function names, operators and
+     * numbers are not paths. Without a context the condition is returned unchanged.
+     */
+    private static String absolute(String condition, String context) {
+        if (context == null) {
+            return condition;
+        }
+        StringBuilder out = new StringBuilder(condition.length() + 32);
+        int i = 0;
+        while (i < condition.length()) {
+            char c = condition.charAt(i);
+            if (c == '\'' || c == '"') {
+                int end = stringEnd(condition, i);
+                out.append(condition, i, end);
+                i = end;
+                continue;
+            }
+            if (c == '[') { // a predicate's paths are relative to the node it filters
+                int end = closingParen(condition, i);
+                end = end < 0 ? condition.length() : end + 1;
+                out.append(condition, i, end);
+                i = end;
+                continue;
+            }
+            boolean starts = (c == '.' || Character.isLetter(c) || c == '_')
+                    && (i == 0 || !isPathChar(condition.charAt(i - 1)) && condition.charAt(i - 1) != '$');
+            if (!starts) {
+                out.append(c);
+                i++;
+                continue;
+            }
+            int end = i;
+            while (end < condition.length() && isPathChar(condition.charAt(end))) {
+                end++;
+            }
+            String path = condition.substring(i, end);
+            int next = skipSpaces(condition, end);
+            boolean function = next < condition.length() && condition.charAt(next) == '(';
+            boolean number = c == '.' && path.length() > 1 && Character.isDigit(path.charAt(1));
+            out.append(function || number || OPERATORS.contains(path) || path.contains("::")
+                    ? path : resolve(context, path));
+            i = end;
+        }
+        return out.toString();
+    }
+
+    /** {@code relative} resolved from the absolute path {@code context}. */
+    private static String resolve(String context, String relative) {
+        List<String> steps = new ArrayList<>();
+        for (String step : context.split("/")) {
+            if (!step.isEmpty()) {
+                steps.add(step);
+            }
+        }
+        for (String step : relative.split("/")) {
+            if (step.equals("..")) {
+                if (!steps.isEmpty()) {
+                    steps.remove(steps.size() - 1);
+                }
+            } else if (!step.isEmpty() && !step.equals(".")) {
+                steps.add(step);
+            }
+        }
+        return "/" + String.join("/", steps);
+    }
+
+    private static boolean isPathChar(char c) {
+        return isNameChar(c) || c == '/';
     }
 
     /** Index of the ')' matching the '(' at {@code open}, or -1 when unbalanced. */
@@ -197,7 +368,7 @@ final class EngineExpressions {
     }
 
     /** Top-level arguments of a call, exactly as written (white space kept). */
-    private static List<String> splitArguments(String inside) {
+    static List<String> splitArguments(String inside) {
         List<String> args = new ArrayList<>();
         int depth = 0;
         int start = 0;

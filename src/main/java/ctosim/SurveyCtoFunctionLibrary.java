@@ -1,16 +1,26 @@
 package ctosim;
 
 import java.math.RoundingMode;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.javarosa.core.model.Constants;
 import org.javarosa.core.model.FormDef;
 import org.javarosa.core.model.ItemsetBinding;
@@ -37,7 +47,9 @@ final class SurveyCtoFunctionLibrary {
     /** SurveyCTO's result for a rank that cannot be computed. */
     static final double NO_RANK = 999;
 
-    private static final String UNIT_SEPARATOR = "\u001F";
+    /** A time, alone or after a date: {@code HH:MM:SS}, an optional fraction and an optional offset. */
+    private static final Pattern TIME_TEXT = Pattern.compile(
+            "(?:\\d{4}-\\d{2}-\\d{2}T)?(\\d{2}):(\\d{2}):(\\d{2})(\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})?");
 
     private SurveyCtoFunctionLibrary() {
     }
@@ -61,6 +73,17 @@ final class SurveyCtoFunctionLibrary {
                 fn("upper", 1, 1, (a, ec) -> str(a[0]).toUpperCase(Locale.ROOT)),
                 fn("format-number", 1, 1, (a, ec) -> formatNumber(num(a[0]))),
                 fn("hash", 1, Integer.MAX_VALUE, (a, ec) -> hash(a)),
+                fn("count-if", 2, 2, (a, ec) -> XPathFuncExpr.count(chosen(a[0], a[1], ec))),
+                fn("sum-if", 2, 2, (a, ec) -> XPathFuncExpr.sum(chosen(a[0], a[1], ec).toArgList())),
+                fn("min-if", 2, 2, (a, ec) -> nativeExtreme("min", chosen(a[0], a[1], ec))),
+                fn("max-if", 2, 2, (a, ec) -> nativeExtreme("max", chosen(a[0], a[1], ec))),
+                fn("join-if", 3, 3, (a, ec) -> XPathFuncExpr.join(XPathFuncExpr.unpack(a[0]),
+                        chosen(a[1], a[2], ec).toArgList())),
+                fn("rank-index-if", 3, 3, (a, ec) -> rankIndex(a[0], a[1], chosen(a[1], a[2], ec))),
+                fn(EngineExpressions.RANK_INDEX_IF, 3, 3, (a, ec) -> rankIndex(a[0], a[1], a[2])),
+                fn(EngineExpressions.FORMAT_DATE_TIME, 2, 2, (a, ec) -> formatDateTime(a[0], a[1])),
+                fn(EngineExpressions.DECIMAL_TIME, 1, 1, (a, ec) -> decimalTime(XPathFuncExpr.unpack(a[0]))),
+                fn(EngineExpressions.STORE, 1, 1, (a, ec) -> stored(XPathFuncExpr.unpack(a[0]))),
                 fn("distance-between", 2, 2, (a, ec) -> distance(str(a[0]), str(a[1]))),
                 fn("short-geopoint", 1, 1, (a, ec) -> shortGeopoint(str(a[0]))),
                 fn("geo-scatter", 2, 2, (a, ec) -> str(a[0])),
@@ -149,13 +172,26 @@ final class SurveyCtoFunctionLibrary {
     }
 
     private static double rankIndex(Object position, Object repeated) {
+        return rankIndex(position, repeated, repeated);
+    }
+
+    /**
+     * The rank of the value at {@code position} (counted among all of {@code repeated}) among the
+     * values of the {@code included} nodes; an instance that is not included has no rank.
+     */
+    private static double rankIndex(Object position, Object repeated, Object included) {
         List<Double> values = new ArrayList<>();
+        List<Boolean> ranked = new ArrayList<>();
         if (repeated instanceof XPathNodeset nodes) {
+            Set<TreeReference> in = included instanceof XPathNodeset subset
+                    ? new HashSet<>(subset.getReferences()) : Set.of();
             for (int i = 0; i < nodes.size(); i++) {
                 values.add(num(nodes.getValAt(i)));
+                ranked.add(included == repeated || in.contains(nodes.getRefAt(i)));
             }
         } else {
             values.add(num(repeated));
+            ranked.add(true);
         }
         double p = num(position);
         if (Double.isNaN(p) || p != Math.floor(p) || p < 1 || p > values.size()) {
@@ -163,17 +199,111 @@ final class SurveyCtoFunctionLibrary {
         }
         int at = (int) p - 1;
         double v = values.get(at);
-        if (Double.isNaN(v)) {
+        if (Double.isNaN(v) || !ranked.get(at)) {
             return NO_RANK;
         }
         int ahead = 0;
         for (int i = 0; i < values.size(); i++) {
             double x = values.get(i);
-            if (!Double.isNaN(x) && (x > v || (x == v && i < at))) {
+            if (ranked.get(i) && !Double.isNaN(x) && (x > v || (x == v && i < at))) {
                 ahead++;
             }
         }
         return 1 + ahead;
+    }
+
+    // --- Conditional repeat functions -----------------------------------------------------
+
+    /**
+     * The nodes of {@code repeated} that a condition evaluated once includes: all of them or none.
+     * This is the meaning of a call evaluated outside the form's expressions, whose arguments the
+     * engine has already evaluated; the form's own calls are rewritten to filter each instance
+     * (see EngineExpressions).
+     */
+    private static XPathNodeset chosen(Object repeated, Object condition, EvaluationContext ec) {
+        if (!(repeated instanceof XPathNodeset nodes)) {
+            throw new XPathUnhandledException("a conditional repeat function needs a repeated field or group");
+        }
+        boolean include = condition instanceof XPathNodeset set ? set.size() > 0
+                : XPathFuncExpr.toBoolean(XPathFuncExpr.unpack(condition));
+        return include ? nodes : new XPathNodeset(new ArrayList<>(), ec.getMainInstance(), ec);
+    }
+
+    /** The engine's own min() or max() of a node-set, whose implementation is not public. */
+    private static Object nativeExtreme(String name, XPathNodeset nodes) {
+        try {
+            Method method = XPathFuncExpr.class.getDeclaredMethod(name, Object[].class);
+            method.setAccessible(true);
+            return method.invoke(null, (Object) nodes.toArgList());
+        } catch (InvocationTargetException e) {
+            throw e.getCause() instanceof RuntimeException r ? r : new IllegalStateException(e.getCause());
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("the engine's " + name + "() is not available", e);
+        }
+    }
+
+    // --- Dates and times ----------------------------------------------------------------
+
+    /** The engine's format-date-time, with English day and month abbreviations for %a and %b. */
+    private static String formatDateTime(Object value, Object format) {
+        Object v = XPathFuncExpr.unpack(value);
+        String f = str(format);
+        String whole = XPathFuncExpr.formatDateTime(v, f);
+        if (whole.isEmpty() || !(f.contains("%a") || f.contains("%b"))) {
+            return whole;
+        }
+        Date date = (Date) XPathFuncExpr.toDate(v, false);
+        StringBuilder out = new StringBuilder();
+        int from = 0;
+        for (int i = 0; i + 1 < f.length(); i++) {
+            if (f.charAt(i) == '%' && (f.charAt(i + 1) == 'a' || f.charAt(i + 1) == 'b')) {
+                if (i > from) {
+                    out.append(XPathFuncExpr.formatDateTime(v, f.substring(from, i)));
+                }
+                out.append(new SimpleDateFormat(f.charAt(i + 1) == 'a' ? "EEE" : "MMM", Locale.ENGLISH).format(date));
+                from = i + 2;
+                i++;
+            } else if (f.charAt(i) == '%') {
+                i++; // another code: it stays in the segment the engine formats
+            }
+        }
+        if (from < f.length()) {
+            out.append(XPathFuncExpr.formatDateTime(v, f.substring(from)));
+        }
+        return out.toString();
+    }
+
+    /** The time of day written in a time or date-time value, as a fraction of a day; NaN otherwise. */
+    private static double decimalTime(Object value) {
+        if (value instanceof Date date) {
+            Calendar c = Calendar.getInstance();
+            c.setTime(date);
+            double seconds = c.get(Calendar.HOUR_OF_DAY) * 3600 + c.get(Calendar.MINUTE) * 60 + c.get(Calendar.SECOND)
+                    + c.get(Calendar.MILLISECOND) / 1000.0;
+            return seconds / 86400;
+        }
+        Matcher m = TIME_TEXT.matcher(XPathFuncExpr.toString(value));
+        if (!m.matches()) {
+            return Double.NaN;
+        }
+        int hours = Integer.parseInt(m.group(1));
+        int minutes = Integer.parseInt(m.group(2));
+        int secs = Integer.parseInt(m.group(3));
+        if (hours > 23 || minutes > 59 || secs > 59) {
+            return Double.NaN;
+        }
+        double fraction = m.group(4) == null ? 0 : Double.parseDouble("0" + m.group(4));
+        return (hours * 3600 + minutes * 60 + secs + fraction) / 86400;
+    }
+
+    /** A calculation's result as SurveyCTO stores it: a date or date-time becomes its date only. */
+    private static Object stored(Object result) {
+        if (result instanceof Date date) {
+            Calendar c = Calendar.getInstance(); // the default time zone, which may have no zone id
+            c.setTime(date);
+            return LocalDate.of(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH)).toString();
+        }
+        return result;
     }
 
     // --- Lists of items -----------------------------------------------------------------
@@ -216,21 +346,21 @@ final class SurveyCtoFunctionLibrary {
         return s.equals("-0") ? "0" : s;
     }
 
+    /** MD5 of the arguments' string values, concatenated (spec 03, Amendment 4). */
     private static String hash(Object[] args) {
-        List<String> parts = new ArrayList<>(args.length);
+        StringBuilder joined = new StringBuilder();
         for (Object arg : args) {
-            parts.add(str(arg));
+            joined.append(str(arg));
         }
         try {
-            byte[] digest = MessageDigest.getInstance("SHA-256")
-                    .digest(String.join(UNIT_SEPARATOR, parts).getBytes(StandardCharsets.UTF_8));
+            byte[] digest = MessageDigest.getInstance("MD5").digest(joined.toString().getBytes(StandardCharsets.UTF_8));
             StringBuilder hex = new StringBuilder(digest.length * 2);
             for (byte b : digest) {
                 hex.append(Character.forDigit((b >> 4) & 0xf, 16)).append(Character.forDigit(b & 0xf, 16));
             }
             return hex.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
+            throw new IllegalStateException("MD5 is not available", e);
         }
     }
 
