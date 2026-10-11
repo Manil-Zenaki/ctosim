@@ -182,3 +182,23 @@ Tests are derived from spec 03 and its explicit relationship to spec 01. No repo
 37. **Can the requested offline Maven compilation complete in this sandbox?**
     Assumption: the existing cached-dependency access failure is an environment limitation; it does not justify changing production code, build configuration, dependencies, or test expectations. The requested `.\mvnw.cmd -o -q test-compile` was attempted and retried, exiting 1 at testCompile. A diagnostic `-e` run confirms `java.nio.file.AccessDeniedException` for `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs: `.codex-runs/03-amendment4-test-compile.log` and `.codex-runs/03-amendment4-test-compile-detail.log`.
     Tests affected: all Maven test compilation is blocked. Independently, all seven newly authored Java files, three unchanged test support/dependency files, and a temporary JUnit runner compile successfully with `--release 17` using the existing diagnostic compiler's in-memory dependency classes. No Maven repository was copied or changed. See `.codex-runs/03-amendment4-memory-compile.log`. The final targeted JUnit run discovers and executes all 265 new cases: 20 pass and 245 fail against the existing implementation, with no skipped or aborted cases/containers; see `.codex-runs/03-amendment4-junit.log`. Failures expose the pre-amendment stub, hashing, locale, decimal-time, and date-time-storage behavior; real-export walks currently stop at conditional-repeat evaluation. These runtime failures cannot establish that every downstream assertion will pass after implementation. No production source was opened, searched, or modified. All previously committed tests and fixtures remain unchanged.
+
+### Dispute 3 build verification
+
+- **Question:** Can the prescribed offline Maven test build complete after
+  correcting the disputed Amendment 4 evaluation sites?
+- **Assumption:** The cached dependency access failure remains an
+  environment limitation, not grounds to change expectations. The exact
+  test command and a diagnostic `-e` retry fail at `testCompile` with
+  `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+- **Tests affected:** Full Maven validation remains blocked. The existing
+  diagnostic compiler independently compiles all Amendment 4 tests and
+  their support classes with `--release 17`. JUnit executes 266 cases:
+  20 pass, 246 fail against the existing compiled implementation, none
+  are skipped or aborted. Logs: `.codex-runs/03-dispute3-maven-test.log`,
+  `.codex-runs/03-dispute3-maven-detail.log`,
+  `.codex-runs/03-dispute3-compile.log`, and
+  `.codex-runs/03-dispute3-junit.log`. No production source was read or
+  changed, and no dependency, Maven repository or build configuration
+  was changed.

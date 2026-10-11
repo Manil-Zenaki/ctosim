@@ -27,7 +27,8 @@ class SurveyCtoAmendment4ConditionalTest {
     void filtersEachInstanceInsteadOfEvaluatingTheConditionOnce(String function, Object expected) throws Exception {
         String call = conditional(function, ODD);
         var session = repeats(call, THREE).newEntryController();
-        assertValue(expected, evaluate(session, call));
+        String text = expected instanceof Double d ? Integer.toString(d.intValue()) : expected.toString();
+        assertEquals("[" + text + "]", value(child(root(session), "result")));
     }
 
     @ParameterizedTest @MethodSource("oracleCases")
@@ -74,11 +75,11 @@ class SurveyCtoAmendment4ConditionalTest {
 
     @ParameterizedTest @ValueSource(strings = {"sum", "min", "max", "join"})
     void excludedNonnumericNodesDoNotContaminateAggregation(String function) throws Exception {
-        var session = repeats("''", new String[]{"bad", "even", "bad"},
+        var session = repeats(conditional(function, ODD), new String[]{"bad", "even", "bad"},
                 new String[]{"-2.5", "odd", "a"}, new String[]{"", "even", ""},
                 new String[]{"7", "odd", "b"}).newEntryController();
-        assertValue(evaluate(session, nativeCall(function, "[kind = 'odd']")),
-                evaluate(session, conditional(function, ODD)));
+        Object expected = evaluate(session, "concat('[', " + nativeCall(function, "[kind = 'odd']") + ", ']')");
+        assertEquals(expected, value(child(root(session), "result")));
     }
 
     static Stream<Arguments> predicateValues() {
@@ -95,26 +96,28 @@ class SurveyCtoAmendment4ConditionalTest {
     }
 
     @Test void predicateCanCombineInstanceFieldsAndAnExternalThreshold() throws Exception {
-        var session = repeats("''", THREE).newEntryController();
-        assertValue(1.0, evaluate(session, conditional("count",
-                "/data/row/kind = 'odd' and /data/row/score > /data/threshold")));
+        var session = repeats(conditional("count",
+                "/data/row/kind = 'odd' and /data/row/score > /data/threshold"), THREE).newEntryController();
+        assertEquals("[1]", value(child(root(session), "result")));
     }
 
     @Test void predicateCanReferToTheRepeatNodeItself() throws Exception {
-        var session = repeats("''", THREE).newEntryController();
-        assertValue(2.0, evaluate(session, conditional("count", "boolean(/data/row[kind = 'odd'])")));
+        var session = repeats(conditional("count", "boolean(/data/row[kind = 'odd'])"), THREE).newEntryController();
+        assertEquals("[2]", value(child(root(session), "result")));
     }
 
     @Test void numericPredicateValuesAreConvertedSeparatelyForEachInstance() throws Exception {
-        var session = repeats("''", new String[]{"-2", "odd", "a"}, new String[]{"0", "odd", "b"},
+        var session = repeats(conditional("count", "number(/data/row/score)"),
+                new String[]{"-2", "odd", "a"}, new String[]{"0", "odd", "b"},
                 new String[]{"0.5", "odd", "c"}, new String[]{"bad", "odd", "d"}).newEntryController();
-        assertValue(2.0, evaluate(session, conditional("count", "number(/data/row/score)")));
+        assertEquals("[2]", value(child(root(session), "result")));
     }
 
     @Test void stringPredicateValuesAreConvertedSeparatelyForEachInstance() throws Exception {
-        var session = repeats("''", new String[]{"1", "", "a"}, new String[]{"2", "false", "b"},
+        var session = repeats(conditional("count", "string(/data/row/kind)"),
+                new String[]{"1", "", "a"}, new String[]{"2", "false", "b"},
                 new String[]{"3", "yes", "c"}).newEntryController();
-        assertValue(2.0, evaluate(session, conditional("count", "string(/data/row/kind)")));
+        assertEquals("[2]", value(child(root(session), "result")));
     }
 
     @ParameterizedTest @ValueSource(strings = {"count", "sum", "min", "max", "join"})
@@ -128,23 +131,23 @@ class SurveyCtoAmendment4ConditionalTest {
     }
 
     @Test void relativeReferencesResolveFromTheCallContextAndThenSelectEachInstance() throws Exception {
-        var session = repeats("''", THREE).newEntryController();
-        assertValue(40.0, evaluateAt(session, child(root(session), "result"),
-                "sum-if(../row/score, ../row/kind = ../wanted)"));
+        var session = repeats("sum-if(../row/score, ../row/kind = ../wanted)", THREE).newEntryController();
+        assertEquals("[40]", value(child(root(session), "result")));
     }
 
     @ParameterizedTest @ValueSource(strings = {"", "::", " | ", "\u2603"})
     void joinUsesTheSuppliedSeparatorAndDocumentOrderWithDuplicateUnicodeValues(String separator) throws Exception {
-        var session = repeats("''", new String[]{"2", "odd", "caf\u00e9"},
+        var session = repeats("join-if('" + separator + "', /data/row/label, " + ODD + ")",
+                new String[]{"2", "odd", "caf\u00e9"},
                 new String[]{"99", "even", "excluded"}, new String[]{"1", "odd", "\u6771\u4eac"},
                 new String[]{"2", "odd", "caf\u00e9"}).newEntryController();
-        assertValue(String.join(separator, "caf\u00e9", "\u6771\u4eac", "caf\u00e9"), evaluate(session,
-                "join-if('" + separator + "', /data/row/label, " + ODD + ")"));
+        assertEquals("[" + String.join(separator, "caf\u00e9", "\u6771\u4eac", "caf\u00e9") + "]",
+                value(child(root(session), "result")));
     }
 
     @Test void separatorCanBeAnExpression() throws Exception {
-        var session = repeats("''", THREE).newEntryController();
-        assertValue("10::30", evaluate(session, "join-if(concat(':', ':'), /data/row/score, " + ODD + ")"));
+        var session = repeats("join-if(concat(':', ':'), /data/row/score, " + ODD + ")", THREE).newEntryController();
+        assertEquals("[10::30]", value(child(root(session), "result")));
     }
 
     @Test void predicateReevaluatesAfterAnExternalAnswerChanges() throws Exception {

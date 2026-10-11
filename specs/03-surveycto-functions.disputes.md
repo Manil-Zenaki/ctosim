@@ -206,3 +206,106 @@ then start from that node. Tests that evaluate directly a call whose
 condition is the same for every instance (`true()`, `false()`, numbers,
 strings) are not disputed: in that case the condition evaluated once
 gives the same inclusion for every instance.
+
+## Adjudication of Dispute 3
+
+**Decision: upheld for all thirteen points; fix the evaluation sites,
+keep the expected results.** Amendment 4's "Where these rules apply"
+explicitly limits per-instance conditions and the new decimal-time
+behavior to the form's own expressions. It separately specifies eager,
+once-per-call argument evaluation for externally parsed calls, and native
+decimal-time behavior there. This scope rule is sufficient to decide the
+dispute; no claim about implementation internals is needed or was checked.
+
+The changed conditional tests read bracketed calculate results, following
+the existing fixtures. Brackets preserve strings and avoid confusing raw
+XPath Double results with whole-number calculate storage (Amendment 1).
+The expected numeric values, ordering, filtering and sentinels are unchanged.
+
+1. **filtersEachInstanceInsteadOfEvaluatingTheConditionOnce:** read the
+   existing `/data/result` calculation. Keep all six functions and their
+   expected count 2, sum 40, minimum 10, maximum 30, join `10|30`, and rank 2.
+   The spec requires those results for the form's per-instance condition.
+2. **excludedNonnumericNodesDoNotContaminateAggregation:** put the
+   conditional call in the calculation. Keep the independent native
+   aggregate over `[kind = 'odd']` as the oracle, with identical bracket
+   formatting for comparison. Amendment 4 explicitly delegates aggregate
+   semantics to the native function on included nodes only.
+3. **predicateCanCombineInstanceFieldsAndAnExternalThreshold:** calculate
+   the original condition in the form and retain count 1. The repeat
+   fields vary by candidate while `/data/threshold` keeps its call-context
+   meaning, as the amendment requires.
+4. **predicateCanReferToTheRepeatNodeItself:** calculate the original
+   `boolean(/data/row[kind = 'odd'])` condition and retain count 2. A
+   reference to the repeat itself must designate the candidate instance
+   during the form condition's evaluation.
+5. **numericPredicateValuesAreConvertedSeparatelyForEachInstance:**
+   calculate the condition in the form and retain count 2 for negative,
+   zero, fractional and nonnumeric score inputs. Per-instance XPath
+   boolean conversion includes the two nonzero numeric values.
+6. **stringPredicateValuesAreConvertedSeparatelyForEachInstance:**
+   calculate the condition in the form and retain count 2. Both nonempty
+   strings, including `false`, are true under XPath boolean conversion;
+   the empty string is false.
+7. **relativeReferencesResolveFromTheCallContextAndThenSelectEachInstance:**
+   bind the original relative expression to `/data/result` and retain sum
+   40. This keeps the same reference anchor and tests the amendment's
+   explicit relative-reference rule within its required scope.
+8. **joinUsesTheSuppliedSeparatorAndDocumentOrderWithDuplicateUnicodeValues:**
+   calculate the original join in the form. Keep all four separators,
+   Unicode text, duplicate included values, excluded row and document
+   order. These follow the included-node native join rule.
+9. **separatorCanBeAnExpression:** calculate the original call in the
+   form and retain `10::30`. The separator remains `concat(':', ':')`;
+   the common argument rule permits expressions.
+10. **nestedRepeatFilteringRetainsTheCallingParentAndGlobalReferences:**
+    keep the existing total assertions unchanged. Add `includedCount` to
+    each family and its template in `amendment4-nested.xml`, with the
+    original relative count expression in its calculate. Read that field
+    and retain counts 2 and 1. It is a sibling of `total`, so the relative
+    references retain the same parent and global context.
+11. **engineCreatedRepeatCanBecomeIncludedAfterItsAnswersAreEntered:**
+    parameterize the engine-creation and answer sequence over sum and
+    count calculations. Retain sum 47 and count 3 as separate cases,
+    each observing its stored result after entering the new instance's
+    score and kind. Neither case evaluates an external conditional call.
+12. **ranksOnlyIncludedNumericScoresButPositionsCountEveryInstance:**
+    create a calculation for each original position and read its result.
+    Keep every input row and expected rank, including excluded positions,
+    nonnumeric values, singleton repeats, numeric ordering and ties.
+    Amendment 4 retains original positions and the rank-index rules.
+13. **decimalTimeReturnsNaNForValuesThatAreNeitherTimesNorDateTimes:**
+    use `calculation(...)` and assert the stored result is Double NaN,
+    retaining all seven invalid inputs. The amendment and confirmed
+    assumption 33 require NaN for these inputs in form expressions;
+    native external evaluation is not the required observation site.
+
+Direct calls with constant conditions, native comparison calls, and
+unrelated tests remain unchanged. The previously adjudicated integer
+storage expectation (Dispute 1) and pulldata corrections (Dispute 2)
+are already present and remain supported by Amendments 1 and 3.
+No production source was read or changed. Build configuration and
+dependencies remain unchanged; compiled classes were used for validation.
+
+### Validation
+
+- `.\mvnw.cmd -o -q test` failed at `testCompile`. A diagnostic retry
+  with `-e` confirmed `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs:
+  `.codex-runs/03-dispute3-maven-test.log` and
+  `.codex-runs/03-dispute3-maven-detail.log`.
+- The existing diagnostic compiler successfully compiled all seven
+  Amendment 4 Java files, three unchanged test support/dependency files
+  and the JUnit runner with `--release 17`, using cached dependency class
+  bytes and existing compiled production classes. No Maven repository
+  was copied or changed. Log: `.codex-runs/03-dispute3-compile.log`.
+- The JUnit run discovered and executed **266 cases: 20 passed and 246
+  failed**, with no skipped or aborted tests and no failed containers.
+  The extra case is the separate engine-created-repeat count case.
+  Failures against the existing compiled implementation include repeated
+  condition evaluation, native decimal-time conversion errors, locale
+  formatting and other Amendment 4 behavior. These failures do not
+  justify weakening the amended spec's expectations. Log:
+  `.codex-runs/03-dispute3-junit.log`.
+- Compilation and test discovery/execution are confirmed independently;
+  a successful full Maven build and passing runtime suite are not.

@@ -29,9 +29,11 @@ class SurveyCtoAmendment4RankTest {
     void ranksOnlyIncludedNumericScoresButPositionsCountEveryInstance(String[] scores, String[] kinds, double[] expected) throws Exception {
         String[][] rows = new String[scores.length][];
         for (int i = 0; i < scores.length; i++) rows[i] = new String[]{scores[i], kinds[i], "row"};
-        var session = repeats("''", rows).newEntryController();
         for (int i = 0; i < expected.length; i++) {
-            assertValue(expected[i], evaluate(session, "rank-index-if(" + (i + 1) + ", /data/row/score, " + ODD + ")"));
+            var session = repeats("rank-index-if(" + (i + 1) + ", /data/row/score, " + ODD + ")", rows)
+                    .newEntryController();
+            assertEquals("[" + (int) expected[i] + "]", value(child(root(session), "result")),
+                    "Rank at original position " + (i + 1));
         }
     }
 

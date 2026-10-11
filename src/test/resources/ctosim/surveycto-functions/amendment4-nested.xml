@@ -1,13 +1,13 @@
 <h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
   <h:head><h:title>Nested conditional context</h:title><model>
     <instance><data id="conditional-context"><enabled>1</enabled>
-      <family jr:template=""><wanted/><total/><member jr:template=""><score/><kind/></member></family>
-      <family><wanted>odd</wanted><total/>
+      <family jr:template=""><wanted/><total/><includedCount/><member jr:template=""><score/><kind/></member></family>
+      <family><wanted>odd</wanted><total/><includedCount/>
         <member><score>10</score><kind>odd</kind></member>
         <member><score>20</score><kind>even</kind></member>
         <member><score>30</score><kind>odd</kind></member>
       </family>
-      <family><wanted>even</wanted><total/>
+      <family><wanted>even</wanted><total/><includedCount/>
         <member><score>100</score><kind>odd</kind></member>
         <member><score>200</score><kind>even</kind></member>
       </family>
@@ -17,6 +17,7 @@
     <bind nodeset="/data/family/member/score" type="decimal"/>
     <bind nodeset="/data/family/member/kind" type="string"/>
     <bind nodeset="/data/family/total" type="string" calculate="concat('[', sum-if(/data/family/member/score, /data/family/member/kind = /data/family/wanted and /data/enabled = 1), ']')"/>
+    <bind nodeset="/data/family/includedCount" type="string" calculate="concat('[', count-if(../member, ../member/kind = ../wanted and /data/enabled = 1), ']')"/>
   </model></h:head>
   <h:body><input ref="/data/enabled"><label>Enable</label></input>
     <repeat nodeset="/data/family">

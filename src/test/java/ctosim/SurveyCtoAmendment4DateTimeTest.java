@@ -83,8 +83,8 @@ class SurveyCtoAmendment4DateTimeTest {
 
     @ParameterizedTest @ValueSource(strings = {"", "garbage", "2026-01-05", "06:00", "25:00:00", "12:60:00", "-1:00:00"})
     void decimalTimeReturnsNaNForValuesThatAreNeitherTimesNorDateTimes(String input) throws Exception {
-        var session = expressionForm("decimal-time('" + input + "')").newEntryController();
-        assertValue(Double.NaN, evaluate(session, "decimal-time('" + input + "')"));
+        var session = calculation("decimal-time('" + input + "')").newEntryController();
+        assertValue(Double.NaN, value(child(root(session), "result")));
     }
 
     @Test void decimalTimeAcceptsAStringFieldAndKeepsNativeTimeFieldSupport() throws Exception {
