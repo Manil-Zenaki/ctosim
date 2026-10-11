@@ -7,7 +7,8 @@
     ctosim.ado, ctosim.sthlp, ctosim.pkg, stata.toc   from stata/
     ctosim.jar                                         target/ctosim-standalone.jar
     ctosim_bridge.jar                                  src/stata-bridge (compiled for Java 8)
-    ctosim_converter.zip                               the converter and its pure-Python libraries
+    ctosim_converter.zip, .jar                         the converter and its pure-Python libraries
+                                                       (the .jar is what net install installs)
   The converter's libraries are taken from the project's .venv.
 
 .EXAMPLE
@@ -70,6 +71,8 @@ $python = Join-Path $repo '.venv\Scripts\python.exe'
 & $python -I -c "import shutil, sys; shutil.make_archive(sys.argv[1], 'zip', sys.argv[2])" `
     (Join-Path $out 'ctosim_converter') $stage
 if ($LASTEXITCODE -ne 0) { throw "could not build ctosim_converter.zip" }
+# net install skips .zip files: the package installs the same archive as a .jar (spec 11, Amendment 2).
+Copy-Item (Join-Path $out 'ctosim_converter.zip') (Join-Path $out 'ctosim_converter.jar')
 Remove-Item -Recurse -Force $stage
 
 Write-Host "Stata package: $out"

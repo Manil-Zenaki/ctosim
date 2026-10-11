@@ -43,7 +43,8 @@ if ($LASTEXITCODE -ne 0) { throw 'could not prepare the stata-package worktree' 
 
 # Replace the branch content with the package.
 Get-ChildItem $worktree -Force | Where-Object Name -ne '.git' | Remove-Item -Recurse -Force
-Copy-Item (Join-Path $package '*') $worktree
+# The .zip copy of the converter is for development only: net install would skip it.
+Copy-Item (Join-Path $package '*') $worktree -Exclude '*.zip'
 git -C $worktree add -A
 git -C $worktree diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
