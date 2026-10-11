@@ -422,3 +422,15 @@ match, is not an error and gives no warning (33); a count of 0 concerns
 repeats created from their template (34); only the offered choices and
 the conversion of answers change, and a choice filter hides neither the
 placeholder nor the static choices (36).
+
+## Amendment 4: dates stored by calculations
+
+Spec 03, Amendment 4 makes every `calculate`, including a
+`calculate_here` (Amendment 1), whose result is a date or date-time
+store the date only, `YYYY-MM-DD`, in the session's time zone. A field
+calculated as `now()` therefore holds the walk's current date, without a
+time or an offset; to record the time a point is reached, SurveyCTO's
+documentation uses `once(format-date-time(now(), ...))`. Tests that read
+a timestamp from such a field are superseded by that amendment; the
+other timestamps of Amendment 1 (`start`, `end`, `datetime` and `time`
+answers) are unchanged.

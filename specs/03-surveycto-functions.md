@@ -366,6 +366,16 @@ every instance or none (and a condition that designates several nodes
 fails to evaluate); `format-date-time` and `decimal-time` keep the
 engine's own behaviour. `hash` behaves as above everywhere.
 
+Two further limits come from the engine. Inside a condition, a reference
+that applies its own predicate to a step of the repeat
+(`/data/row[kind = 'odd']`) is not restricted to the instance being
+checked: the engine binds a step to the current instance only when the
+step has no predicate, so such a reference designates every instance
+that passes its predicate. And a calculation whose result is `NaN`
+(`decimal-time('garbage')`, `number('abc')`) stores no value, as SurveyCTO
+does (`f_not_a_number` is empty in the third export); `NaN` is observable
+as the value of the expression itself, not of the field.
+
 Clarification (Amendment 4): assumptions 29–37 of the questions file are
 reviewed one by one and confirmed, within the scope just stated. In
 particular, results for empty and non-numeric values are the native

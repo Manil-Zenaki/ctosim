@@ -158,3 +158,16 @@ reviewed one by one and confirmed. In particular, property names and
 values are used exactly as given (14); an explicitly empty value may be
 stored as no value or as an empty string, and `username()` then returns
 `""` (15); an explicit empty map gives no username (20).
+
+## Amendment 3: dates stored by calculations
+
+Spec 03, Amendment 4 (from the third real export and SurveyCTO's
+documentation: "calling now() by itself will store only the date") makes
+every `calculate` whose result is a date or date-time store the date
+only, `YYYY-MM-DD`. A calculation `now()` therefore stores the clock's
+current **date**, in every session, simulated or ordinary; the rule
+"`now()` is the clock's current date-time" still holds for the function's
+value inside an expression, and the time stays observable through
+`format-date-time(now(), ...)` or `decimal-date-time(now())`. Tests that
+read the time of day, or a timestamp, from a field calculated as
+`now()` are superseded by that amendment.
