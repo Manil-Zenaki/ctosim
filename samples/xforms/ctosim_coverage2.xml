@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms">
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms" xmlns:ctosim="urn:ctosim:xforms">
   <h:head>
     <h:title>ctosim coverage test 2</h:title>
     <model odk:xforms-version="1.0.0">
@@ -180,17 +180,17 @@
       <bind nodeset="/data/duration" type="string" calculate="duration()"/>
       <bind nodeset="/data/text_audit" type="string" calculate="''"/>
       <bind nodeset="/data/audio_audit" type="string" calculate="''"/>
-      <bind nodeset="/data/sv_count" type="string" calculate="''"/>
-      <bind nodeset="/data/sv_list" type="string" calculate="''"/>
+      <bind nodeset="/data/sv_count" type="string" calculate="''" ctosim:speed-violations="count"/>
+      <bind nodeset="/data/sv_list" type="string" calculate="''" ctosim:speed-violations="list"/>
       <bind nodeset="/data/field_comments" type="string" calculate="''"/>
       <bind nodeset="/data/hhid" type="string" required="true()"/>
       <bind nodeset="/data/pl_head" type="string" calculate="pulldata('hh_preload', 'head_name', 'hhid',  /data/hhid )"/>
       <bind nodeset="/data/consent" type="string" required="true()"/>
       <bind nodeset="/data/main" relevant=" /data/consent  = 1"/>
-      <bind nodeset="/data/main/resp_name" type="string" required="true()"/>
+      <bind nodeset="/data/main/resp_name" type="string" required="true()" ctosim:minimum-seconds="10"/>
       <bind nodeset="/data/main/assets" type="string" constraint="not(selected(., '-99') and count-selected(.) &gt; 1)" jr:constraintMsg="'Don't know' cannot be combined"/>
       <bind nodeset="/data/main/transport" type="string"/>
-      <bind nodeset="/data/main/hh_size" type="int" constraint=". &gt;= 1 and . &lt;= 3" required="true()"/>
+      <bind nodeset="/data/main/hh_size" type="int" constraint=". &gt;= 1 and . &lt;= 3" required="true()" ctosim:minimum-seconds="10"/>
       <bind nodeset="/data/main/member/member_name" type="string" required="true()"/>
       <bind nodeset="/data/main/member/member_gps" type="geopoint"/>
       <bind nodeset="/data/main/member/member_activities" type="string"/>
