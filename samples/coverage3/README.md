@@ -145,7 +145,8 @@ or in the form that this form cannot carry alone:
 3. **Optional, form versions:** after A, B and C, upload
    `ctosim_coverage3_v2.xlsx` as a new version of the same form (same
    form id, with `villages.csv`), and fill **one more submission D**
-   (web is fine), typing v2 in the new question.
+   (web is fine): type D as the submission code (only version 2 accepts
+   it) and v2 in the new question.
 4. **Export** without changing the default options: the wide CSV, the
    long CSVs, the Stata templates, and if possible the attachments of
    submission A (text audit, comments, audio). Put them in
