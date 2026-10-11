@@ -1,0 +1,17 @@
+{
+  "form_id": "export_test", "title": "Amendment 2", "version": "v2",
+  "fields": [
+    {"name":"value", "type":"text", "xpath":"/data/value", "row":2},
+    {"name":"choices", "type":"select_multiple options", "xpath":"/data/choices", "row":3},
+    {"name":"comments", "type":"comments", "xpath":"/data/comments", "row":4},
+    {"name":"g", "type":"begin group", "xpath":"/data/g", "row":5},
+    {"name":"group_choices", "type":"select_multiple options", "xpath":"/data/g/group_choices", "row":6},
+    {"name":"group_comments", "type":"comments", "xpath":"/data/g/group_comments", "row":7},
+    {"name":"r", "type":"begin repeat", "xpath":"/data/r", "row":9},
+    {"name":"tags", "type":"select_multiple options", "xpath":"/data/r/tags", "row":10},
+    {"name":"repeat_comments", "type":"comments", "xpath":"/data/r/repeat_comments", "row":11},
+    {"name":"s", "type":"begin repeat", "xpath":"/data/r/s", "row":12},
+    {"name":"nested_tags", "type":"select_multiple options", "xpath":"/data/r/s/nested_tags", "row":13},
+    {"name":"nested_comments", "type":"comments", "xpath":"/data/r/s/nested_comments", "row":14}
+  ]
+}

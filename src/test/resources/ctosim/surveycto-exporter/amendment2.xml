@@ -1,0 +1,52 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Amendment 2</h:title><model>
+    <instance><data id="export_test">
+      <value/><choices>1</choices><comments/>
+      <g><group_choices>1</group_choices><group_comments/></g>
+      <r jr:template=""><tags>1</tags><repeat_comments/>
+        <s jr:template=""><nested_tags>1</nested_tags><nested_comments/></s>
+      </r>
+      <meta><instanceID/><instanceName>Definition default </instanceName></meta>
+    </data></instance>
+    <bind nodeset="/data/value" type="string"/>
+    <bind nodeset="/data/choices" type="select"/>
+    <bind nodeset="/data/comments" type="string"/>
+    <bind nodeset="/data/g/group_choices" type="select"/>
+    <bind nodeset="/data/g/group_comments" type="string"/>
+    <bind nodeset="/data/r/tags" type="select"/>
+    <bind nodeset="/data/r/repeat_comments" type="string"/>
+    <bind nodeset="/data/r/s/nested_tags" type="select"/>
+    <bind nodeset="/data/r/s/nested_comments" type="string"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/value"><label>Text</label></input>
+    <select ref="/data/choices"><label>Choices</label>
+      <item><label>One</label><value>1</value></item>
+      <item><label>Other</label><value>-99</value></item>
+      <item><label>Taxi</label><value>moto-taxi</value></item>
+    </select>
+    <input ref="/data/comments"><label>Comments attachment</label></input>
+    <group ref="/data/g"><label>Group</label>
+      <select ref="/data/g/group_choices"><label>Group choices</label>
+        <item><label>One</label><value>1</value></item>
+        <item><label>Other</label><value>-99</value></item>
+      </select>
+      <input ref="/data/g/group_comments"><label>Group comments</label></input>
+    </group>
+    <group><label>Repeat</label><repeat nodeset="/data/r">
+      <select ref="/data/r/tags"><label>Tags</label>
+        <item><label>One</label><value>1</value></item>
+        <item><label>Other</label><value>-99</value></item>
+      </select>
+      <input ref="/data/r/repeat_comments"><label>Repeat comments</label></input>
+      <group><label>Nested</label><repeat nodeset="/data/r/s">
+        <select ref="/data/r/s/nested_tags"><label>Nested tags</label>
+          <item><label>One</label><value>1</value></item>
+          <item><label>Other</label><value>-99</value></item>
+        </select>
+        <input ref="/data/r/s/nested_comments"><label>Nested comments</label></input>
+      </repeat></group>
+    </repeat></group>
+  </h:body>
+</h:html>
