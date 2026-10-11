@@ -237,3 +237,113 @@ zone-free date/time text.
 **Tests:** `defaultDateRangeIsExactly365DaysEndingOnProvidedToday`,
 `outputsDoNotDependOnDefaultLocale`, and
 `unrelatedPriorCallsDoNotCreateHiddenGeneratorState`.
+
+## Amendment 1: additional questions and assumptions
+
+Only new test classes were added for this amendment; the committed tests and
+their helpers were kept unchanged. Small questions and configuration inputs
+are constructed inline, so no additional resource fixtures are necessary.
+No production sources or implementation bodies were read.
+
+### 16. What if multiple numeric TEXT appearance words occur together?
+
+**Question:** Which rule wins when `numbers_decimal` occurs alongside `numbers`
+or `numbers_phone` on the same TEXT question?
+
+**Assumption:** The amendment does not specify precedence between those words.
+No tests require a particular result for that combination. Combinations whose
+words apply to different kinds are tested: `label` must not blank TEXT or DATE,
+and `numbers_decimal` must not displace DATE's `month-year` behavior.
+
+**Tests:** `AnswerGeneratorDecimalAppearanceTest.labelWordDoesNotSuppressDecimalText`,
+`AnswerGeneratorMonthYearAppearanceTest.appearancesForOtherKindsDoNotDisplaceMonthNormalization`;
+all other appearance fixtures avoid conflicting numeric TEXT words.
+
+### 17. Do the new words use the existing appearance token rules?
+
+**Question:** Are leading, trailing, and repeated spaces accepted, and are
+substrings such as `list-nolabel` sufficient to trigger `label`?
+
+**Assumption:** The confirmed assumption 7 applies to all three new words:
+space-separated complete words match, including with repeated spaces;
+substrings do not. Case folding, tabs, newlines, and nonbreaking spaces are
+still unspecified and untested.
+
+**Tests:** Complete-word and substring tests in `AnswerGeneratorDecimalAppearanceTest`,
+`AnswerGeneratorMonthYearAppearanceTest`, and `AnswerGeneratorLabelAppearanceTest`.
+
+### 18. Is month-year normalization applied before or after enforcing the date range?
+
+**Question:** Can the stored first-of-month date precede the configured minimum,
+and should months have equal probability?
+
+**Assumption:** The wording says to draw a DATE and then take its month's first
+day. Thus [2025-03-17, 2025-03-17] stores 2025-03-01, and each month's probability
+is its count of eligible days divided by the inclusive range length. The default
+window remains exactly 365 days ending on the supplied today. This is a direct
+reading of the amendment, not an added requirement to sample months uniformly
+or clamp the resulting date. The oracle enumerates eligible dates independently;
+it does not compare results against production DATE generation.
+
+**Tests:** All normalization and distribution tests in
+`AnswerGeneratorMonthYearAppearanceTest`, including singleton dates, partial
+months, leap days, and year boundaries.
+
+### 19. Must appearances share identical random draw sequences with base kinds?
+
+**Question:** Does "as for DECIMAL/DATE" mandate identical random API calls or
+exactly matching seeded outputs between different kinds or appearances?
+
+**Assumption:** No additional random call sequence is specified. Test the stated
+distributions and formats directly, and compare seeded sequences only for equal
+configuration and arguments. Existing assumptions 1, 2, 6, and 15 still apply.
+Decimal endpoint bins have probability 1/8 versus 1/4 for interior bins in
+[-0.02, 0.02]. Month probabilities are proportional to eligible days. Statistical
+checks use fixed seeds and the existing seven-standard-deviation-plus-two-count
+tolerance; retry variation is checked across sequences rather than requiring
+every consecutive answer to differ.
+
+**Tests:** `AnswerGeneratorAppearanceContractTest`, decimal distribution tests,
+and month distribution tests. Default-locale changes use the existing resource
+lock name and restore all locale categories in finally.
+
+### 20. Does the label exception override fixed values of every form?
+
+**Question:** Does a label select remain blank when required, fixed to an offered
+choice, fixed to an unoffered value, or fixed to an empty string?
+
+**Assumption:** Yes: "always blank" explicitly overrides both required and fixed
+values for SELECT_ONE and SELECT_MULTIPLE only. This does not impose random-state
+consumption requirements. For the first two new appearances, the existing blank
+and fixed-value precedence remains unchanged; TEXT's texts override also remains
+verbatim, including nonnumeric and empty strings.
+
+**Tests:** `AnswerGeneratorLabelAppearanceTest`, precedence tests in
+`AnswerGeneratorAppearanceContractTest`, and texts-override tests in
+`AnswerGeneratorDecimalAppearanceTest`.
+
+### 21. Build verification in this sandbox (2026-10-11)
+
+**Question:** Can the required offline compile be completed with the available
+filesystem access?
+
+**Assumption / result:** No successful compile can be claimed in this run.
+`mvnw.cmd -o -q test-compile` exits 1 with a fatal compiler error naming
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Repeating with `-e`
+identifies `java.nio.file.AccessDeniedException` in Windows real-path resolution
+while closing the JAR filesystem. A diagnostic run with
+`-Dmaven.compiler.fork=true` also fails with the same access error and unresolved
+project types (including Question, QuestionKind, SimulationConfig, and
+AnswerGenerator) in both existing and new tests. A direct javac check of only
+the four new classes and existing AnswerGeneratorTestSupport likewise cannot
+resolve the project types from target/classes, and reports AccessDeniedException
+while closing the cached JUnit params JAR. Its output directory is under
+`.codex-runs/answer-appearances-compile`.
+
+No repositories were copied, drives mapped, dependencies installed, production
+code read or changed, or build configuration changed to work around these errors.
+Compilation must be rechecked in an environment with working access to the
+existing build outputs and Maven cache; runtime tests were not run.
+
+**Tests:** All four new Amendment 1 test classes. Their public API usage is
+derived solely from specs 04 and 05 and the unchanged existing test helper.
