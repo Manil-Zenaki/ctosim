@@ -31,10 +31,13 @@ for b in ethiopia_migration_household ipa_household_survey ethiopia_mnh_facility
   .venv/Scripts/python -m ctosim_xlsform samples/forms/$b.xlsx -o samples/xforms/$b.xml
 done
 .venv/Scripts/python -m ctosim_xlsform samples/coverage/ctosim_coverage.xlsx -o samples/xforms/ctosim_coverage.xml
+.venv/Scripts/python -m ctosim_xlsform samples/coverage2/ctosim_coverage2.xlsx -o samples/xforms/ctosim_coverage2.xml
+.venv/Scripts/python -m ctosim_xlsform samples/coverage3/ctosim_coverage3.xlsx -o samples/xforms/ctosim_coverage3.xml
 ```
 
-`ctosim_coverage.xml` comes from the fictitious coverage form in
-`coverage/` (see `coverage/README.md`).
+`ctosim_coverage.xml`, `ctosim_coverage2.xml` and `ctosim_coverage3.xml`
+come from the fictitious coverage forms in `coverage/`, `coverage2/` and
+`coverage3/` (see their READMEs).
 
 The two other forms are not converted: as published they are invalid (see
 the notes above), and the converter rejects them with the offending row.

@@ -264,3 +264,101 @@ file, even to check that the form initialises (27). Amendment 3 supersedes
 the earlier rule that `pulldata` accepts any arguments and is listed by
 `stubbedFunctions()` (28): tests written before it that expect this are
 out of date.
+
+## Amendment 4: third real export
+
+From the export of the third coverage form (`samples/coverage3/`), whose
+group `oracle` computes SurveyCTO functions on constant inputs, filled
+with SurveyCTO Collect on Android and on the web. Everything not
+mentioned here is unchanged.
+
+### Conditional repeat functions
+
+`count-if`, `sum-if`, `join-if`, `min-if`, `max-if` and `rank-index-if`
+are implemented; they are no longer stubs and no longer listed by
+`stubbedFunctions()`.
+
+| Function | Result |
+|---|---|
+| `count-if(repeatgroup, expression)` | number: what `count(repeatgroup)` gives, counting only the **included** instances. |
+| `sum-if(repeatedfield, expression)` | what `sum(repeatedfield)` gives on the nodes of the included instances only. |
+| `min-if(repeatedfield, expression)` | what `min(repeatedfield)` gives on the nodes of the included instances only. |
+| `max-if(repeatedfield, expression)` | what `max(repeatedfield)` gives on the nodes of the included instances only. |
+| `join-if(sep, repeatedfield, expression)` | what `join(sep, repeatedfield)` gives on the nodes of the included instances only. |
+| `rank-index-if(position, repeatedfield, expression)` | number: what `rank-index(position, repeatedfield)` gives when the ranking is made among the included instances only. `position` still counts every instance (1 is the first instance of the repeat, included or not); a `position` that designates an instance that is not included gives `999`. |
+
+- `repeatgroup` is a reference to a repeat; `repeatedfield` a reference
+  to a field inside a repeat. They designate the same instances, or
+  fields of the same instances, as they do in the non-conditional
+  function (in the same evaluation context).
+- An instance is **included** when `expression`, evaluated for that
+  instance, is true (as XPath `boolean()` converts its result). In that
+  evaluation, a reference to the repeat or to a node inside it designates
+  the node of that instance; other references designate what they
+  designate in the call's evaluation context. The instances are taken in
+  document order.
+- With no included instance, the result is what the non-conditional
+  function gives on an empty node-set.
+- A call with a number of arguments other than the signature's fails to
+  evaluate.
+
+Example (the form's `oracle/auto` repeat has three instances whose
+`a_value` is 10, 20, 30 and `a_kind` is `odd`, `even`, `odd`):
+`count-if(${auto}, ${a_kind} = 'odd')` is 2, `sum-if(${a_value}, ${a_kind} = 'odd')`
+is 40, `join-if(' ', ${a_value}, ${a_kind} = 'odd')` is `10 30`,
+`min-if` 10, `max-if` 30, and
+`rank-index-if(1, ${a_value}, ${a_kind} = 'even')` is 999.
+
+### `hash`
+
+`hash(v1, ..., vn)` (at least one argument) is the lowercase hexadecimal
+**MD5** digest of the UTF-8 encoding of the arguments' string values
+concatenated with no separator. `hash('abc')` is
+`900150983cd24fb0d6963f7d28e17f72`. (Only one-argument calls have been
+observed; the rule for several arguments is an assumption.) This replaces
+the SHA-256 rule above.
+
+### `format-date-time`
+
+The day and month names written by `%a` and `%b` are the English
+three-letter abbreviations (`Mon` ... `Sun`, `Jan` ... `Dec`, with
+`Sep`), whatever the default locale. Everything else about the function
+is unchanged. `format-date-time(date('2026-01-05'), '%Y/%m/%d %a %b %e %n')`
+is `2026/01/05 Mon Jan 5 1`.
+
+### `decimal-time`
+
+`decimal-time(v)` accepts, besides a time field's value, a string holding
+a time (`HH:MM:SS`, optionally with a fraction of a second and a UTC
+offset) or a date-time (`YYYY-MM-DDTHH:MM:SS`, same options). The result
+is the time of day written in `v`, as a fraction of a day (the offset is
+not applied): `decimal-time('2013-01-31T18:00:00')` is `0.75`,
+`decimal-time('06:00:00')` is `0.25`. A value that is neither gives
+`NaN`.
+
+### Dates stored by calculations
+
+When a `calculate` field's expression evaluates to a date or date-time
+(`today()`, `now()`, `date(...)`, `date-time(...)`), the field stores
+the **date only**, as `YYYY-MM-DD`: the calendar date of that instant in
+the default time zone (during a walk, the session's time zone, spec 07
+Amendment 1). `today()` and `now()` on 11 October 2026 both store
+`2026-10-11`; `date(20000)` stores `2024-10-04`. Expressions that use the
+field read that stored value. A date or date-time wrapped in another
+function (`format-date-time(now(), ...)`, `decimal-date-time(...)`) is
+not affected.
+
+### Acceptance against the third export
+
+`samples/xforms/ctosim_coverage3.xml` loads with media directory
+`samples/coverage3`. In the instance XML of any submission walked from
+it with `FormWalker` and the default configuration (spec 07), every field
+of the group `/data/oracle` (outside its repeats) whose value does not
+depend on the date, the time, the device or chance holds the value shown
+in the column of the same name in
+`samples/coverage3/wide/ctosim coverage test 3_WIDE.csv` (the same in
+its four rows; a field whose element is absent from the XML, or empty,
+matches an empty cell). This covers every field of the group except `f_today`,
+`f_now`, `f_date_before_today`, `f_decimal_date_time`, `f_decimal_time`,
+`f_version`, `f_uuid`, `f_random` and `f_format_number` (whose value on
+the phones followed the phone's language).

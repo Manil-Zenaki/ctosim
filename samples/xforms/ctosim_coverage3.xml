@@ -1,0 +1,840 @@
+<?xml version="1.0"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:odk="http://www.opendatakit.org/xforms" xmlns:ctosim="urn:ctosim:xforms">
+  <h:head>
+    <h:title>ctosim coverage test 3</h:title>
+    <model odk:xforms-version="1.0.0">
+      <instance>
+        <data id="ctosim_coverage3" version="2610120001">
+          <starttime/>
+          <endtime/>
+          <deviceid/>
+          <subscriberid/>
+          <simid/>
+          <devicephonenum/>
+          <username/>
+          <duration/>
+          <caseid/>
+          <text_audit/>
+          <audio_audit/>
+          <sv_count/>
+          <sv_list/>
+          <field_comments/>
+          <light_mean/>
+          <pct_quiet/>
+          <resp_code/>
+          <oracle>
+            <sel_default>b</sel_default>
+            <never_shown/>
+            <f_div/>
+            <f_third/>
+            <f_product/>
+            <f_mod/>
+            <f_negative/>
+            <f_small_sum/>
+            <f_big/>
+            <f_div_zero/>
+            <f_not_a_number/>
+            <f_round/>
+            <f_int/>
+            <f_pow/>
+            <f_sqrt/>
+            <f_exp/>
+            <f_log10/>
+            <f_pi/>
+            <f_abs/>
+            <f_min_max/>
+            <f_format_number/>
+            <f_string_of_whole/>
+            <f_true/>
+            <f_false/>
+            <f_if/>
+            <f_coalesce/>
+            <f_empty/>
+            <f_relevant_skipped/>
+            <f_concat/>
+            <f_substr/>
+            <f_string_length/>
+            <f_lower/>
+            <f_upper/>
+            <f_linebreak/>
+            <f_comma_quote/>
+            <f_regex/>
+            <f_hash/>
+            <f_today/>
+            <f_now/>
+            <f_format_date/>
+            <f_format_datetime/>
+            <f_date_minus_one/>
+            <f_date_from_number/>
+            <f_date_before_today/>
+            <f_decimal_date_time/>
+            <f_decimal_time/>
+            <f_version/>
+            <f_selected/>
+            <f_count_selected/>
+            <f_selected_at/>
+            <f_choice_label/>
+            <f_count_items/>
+            <f_item_at/>
+            <f_item_index/>
+            <f_item_present/>
+            <f_de_duplicate/>
+            <f_rank_value/>
+            <f_uuid/>
+            <f_random/>
+            <n_auto>3</n_auto>
+            <auto jr:template="">
+              <a_index/>
+              <a_value/>
+              <a_kind/>
+            </auto>
+            <auto>
+              <a_index/>
+              <a_value/>
+              <a_kind/>
+            </auto>
+            <agg_count/>
+            <agg_sum/>
+            <agg_min/>
+            <agg_max/>
+            <agg_join/>
+            <agg_count_if/>
+            <agg_sum_if/>
+            <agg_join_if/>
+            <agg_min_if/>
+            <agg_max_if/>
+            <agg_indexed/>
+            <agg_rank/>
+            <agg_rank_if/>
+            <expr_rep_count/>
+            <expr_rep jr:template="">
+              <e_index/>
+            </expr_rep>
+            <expr_rep>
+              <e_index/>
+            </expr_rep>
+          </oracle>
+          <defaults>
+            <def_keep>7</def_keep>
+            <def_change>abc</def_change>
+            <calc_default/>
+          </defaults>
+          <values>
+            <t_comma_quote/>
+            <t_accents/>
+            <t_leading_zeros/>
+            <t_numbers/>
+            <t_numbers_decimal/>
+            <d_whole/>
+            <d_trailing_zero/>
+            <d_negative/>
+            <i_negative/>
+            <i_large/>
+            <i_minimum_time/>
+          </values>
+          <dates>
+            <dt_old/>
+            <dt_month_year/>
+            <dt_month/>
+            <dt_no_calendar/>
+            <tm_after_midnight/>
+            <tm_noon/>
+            <dtm_any/>
+          </dates>
+          <selects>
+            <s_minimal/>
+            <s_likert/>
+            <s_randomized/>
+            <m_many/>
+            <m_blank/>
+            <s_comma_label/>
+            <s_other/>
+            <s_other_specify/>
+            <region/>
+            <district/>
+            <districts_multi/>
+            <village/>
+            <village_label/>
+          </selects>
+          <screen>
+            <fl_a/>
+            <fl_b/>
+          </screen>
+          <table>
+            <tbl_header/>
+            <tbl_water/>
+            <tbl_power/>
+          </table>
+          <skipped>
+            <skipped_text/>
+          </skipped>
+          <outer>
+            <middle>
+              <inner>
+                <deep_text/>
+              </inner>
+            </middle>
+          </outer>
+          <n_people/>
+          <person jr:template="">
+            <p_name/>
+            <p_age/>
+            <p_school/>
+            <this_field_name_is_longer_than_thirty_two_characters/>
+            <health>
+              <visit jr:template="">
+                <visit_date/>
+              </visit>
+              <visit>
+                <visit_date/>
+              </visit>
+            </health>
+          </person>
+          <person>
+            <p_name/>
+            <p_age/>
+            <p_school/>
+            <this_field_name_is_longer_than_thirty_two_characters/>
+            <health>
+              <visit>
+                <visit_date/>
+              </visit>
+            </health>
+          </person>
+          <media>
+            <m_audio/>
+            <m_video/>
+            <m_file/>
+            <m_signature/>
+            <m_barcode/>
+            <g_trace/>
+            <g_shape/>
+          </media>
+          <thanks/>
+          <meta>
+            <instanceID/>
+            <instanceName/>
+          </meta>
+        </data>
+      </instance>
+      <instance id="abc">
+        <root>
+          <item>
+            <name>a</name>
+            <label>Alpha</label>
+          </item>
+          <item>
+            <name>b</name>
+            <label>Beta</label>
+          </item>
+          <item>
+            <name>c</name>
+            <label>Gamma</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="many">
+        <root>
+          <item>
+            <name>1</name>
+            <label>One</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>Two</label>
+          </item>
+          <item>
+            <name>3</name>
+            <label>Three</label>
+          </item>
+          <item>
+            <name>4</name>
+            <label>Four</label>
+          </item>
+          <item>
+            <name>5</name>
+            <label>Five</label>
+          </item>
+          <item>
+            <name>6</name>
+            <label>Six</label>
+          </item>
+          <item>
+            <name>7</name>
+            <label>Seven</label>
+          </item>
+          <item>
+            <name>8</name>
+            <label>Eight</label>
+          </item>
+          <item>
+            <name>9</name>
+            <label>Nine</label>
+          </item>
+          <item>
+            <name>10</name>
+            <label>Ten</label>
+          </item>
+          <item>
+            <name>11</name>
+            <label>Eleven</label>
+          </item>
+          <item>
+            <name>12</name>
+            <label>Twelve</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="agree">
+        <root>
+          <item>
+            <name>1</name>
+            <label>Strongly disagree</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>Disagree</label>
+          </item>
+          <item>
+            <name>3</name>
+            <label>Neutral</label>
+          </item>
+          <item>
+            <name>4</name>
+            <label>Agree</label>
+          </item>
+          <item>
+            <name>5</name>
+            <label>Strongly agree</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="comma_labels">
+        <root>
+          <item>
+            <name>1</name>
+            <label>Yes, sure</label>
+          </item>
+          <item>
+            <name>0</name>
+            <label>No, never</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="other">
+        <root>
+          <item>
+            <name>1</name>
+            <label>Maize</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>Teff</label>
+          </item>
+          <item>
+            <name>96</name>
+            <label>Other</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="region">
+        <root>
+          <item>
+            <name>1</name>
+            <label>North</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>South</label>
+          </item>
+        </root>
+      </instance>
+      <instance id="district">
+        <root>
+          <item>
+            <name>11</name>
+            <label>North-A</label>
+            <filter>1</filter>
+          </item>
+          <item>
+            <name>12</name>
+            <label>North-B</label>
+            <filter>1</filter>
+          </item>
+          <item>
+            <name>21</name>
+            <label>South-A</label>
+            <filter>2</filter>
+          </item>
+          <item>
+            <name>22</name>
+            <label>South-B</label>
+            <filter>2</filter>
+          </item>
+        </root>
+      </instance>
+      <instance id="freq">
+        <root>
+          <item>
+            <name>1</name>
+            <label>Never</label>
+          </item>
+          <item>
+            <name>2</name>
+            <label>Sometimes</label>
+          </item>
+          <item>
+            <name>3</name>
+            <label>Often</label>
+          </item>
+        </root>
+      </instance>
+      <bind nodeset="/data/starttime" jr:preload="timestamp" type="dateTime" jr:preloadParams="start"/>
+      <bind nodeset="/data/endtime" jr:preload="timestamp" type="dateTime" jr:preloadParams="end"/>
+      <bind nodeset="/data/deviceid" jr:preload="property" type="string" jr:preloadParams="deviceid"/>
+      <bind nodeset="/data/subscriberid" jr:preload="property" type="string" jr:preloadParams="subscriberid"/>
+      <bind nodeset="/data/simid" jr:preload="property" type="string" jr:preloadParams="simserial"/>
+      <bind nodeset="/data/devicephonenum" jr:preload="property" type="string" jr:preloadParams="phonenumber"/>
+      <bind nodeset="/data/username" jr:preload="property" type="string" jr:preloadParams="username"/>
+      <bind nodeset="/data/duration" type="string" calculate="duration()"/>
+      <bind nodeset="/data/caseid" type="string" calculate="''"/>
+      <bind nodeset="/data/text_audit" type="string" calculate="''"/>
+      <bind nodeset="/data/audio_audit" type="string" calculate="''"/>
+      <bind nodeset="/data/sv_count" type="string" calculate="''" ctosim:speed-violations="count"/>
+      <bind nodeset="/data/sv_list" type="string" calculate="''" ctosim:speed-violations="list"/>
+      <bind nodeset="/data/field_comments" type="string" calculate="''"/>
+      <bind nodeset="/data/light_mean" type="string" calculate="''"/>
+      <bind nodeset="/data/pct_quiet" type="string" calculate="''"/>
+      <bind nodeset="/data/resp_code" type="string" constraint="regex(., '^[ABC]$')" jr:constraintMsg="A, B or C" required="true()" ctosim:minimum-seconds="10"/>
+      <bind nodeset="/data/oracle/sel_default" type="string"/>
+      <bind nodeset="/data/oracle/never_shown" type="string" relevant="1 = 2"/>
+      <bind nodeset="/data/oracle/f_div" type="string" calculate="10 div 4"/>
+      <bind nodeset="/data/oracle/f_third" type="string" calculate="1 div 3"/>
+      <bind nodeset="/data/oracle/f_product" type="string" calculate="2 * 3"/>
+      <bind nodeset="/data/oracle/f_mod" type="string" calculate="17 mod 5"/>
+      <bind nodeset="/data/oracle/f_negative" type="string" calculate="-7 + 2"/>
+      <bind nodeset="/data/oracle/f_small_sum" type="string" calculate="0.1 + 0.2"/>
+      <bind nodeset="/data/oracle/f_big" type="string" calculate="123456789 * 1000"/>
+      <bind nodeset="/data/oracle/f_div_zero" type="string" calculate="1 div 0"/>
+      <bind nodeset="/data/oracle/f_not_a_number" type="string" calculate="number('abc')"/>
+      <bind nodeset="/data/oracle/f_round" type="string" calculate="round(2.567, 2)"/>
+      <bind nodeset="/data/oracle/f_int" type="string" calculate="int(-2.5)"/>
+      <bind nodeset="/data/oracle/f_pow" type="string" calculate="pow(2, 10)"/>
+      <bind nodeset="/data/oracle/f_sqrt" type="string" calculate="sqrt(2)"/>
+      <bind nodeset="/data/oracle/f_exp" type="string" calculate="exp(1)"/>
+      <bind nodeset="/data/oracle/f_log10" type="string" calculate="log10(1000)"/>
+      <bind nodeset="/data/oracle/f_pi" type="string" calculate="pi()"/>
+      <bind nodeset="/data/oracle/f_abs" type="string" calculate="abs(-3.5)"/>
+      <bind nodeset="/data/oracle/f_min_max" type="string" calculate="concat(min(4, 2, 9), '/', max(4, 2, 9))"/>
+      <bind nodeset="/data/oracle/f_format_number" type="string" calculate="format-number(1234567.891)"/>
+      <bind nodeset="/data/oracle/f_string_of_whole" type="string" calculate="string(5.0)"/>
+      <bind nodeset="/data/oracle/f_true" type="string" calculate="1 = 1"/>
+      <bind nodeset="/data/oracle/f_false" type="string" calculate="1 &gt; 2"/>
+      <bind nodeset="/data/oracle/f_if" type="string" calculate="if(3 &gt; 2, 'yes', 'no')"/>
+      <bind nodeset="/data/oracle/f_coalesce" type="string" calculate="coalesce('', 'fallback')"/>
+      <bind nodeset="/data/oracle/f_empty" type="string" calculate="empty('')"/>
+      <bind nodeset="/data/oracle/f_relevant_skipped" type="string" calculate="relevant( /data/oracle/never_shown )"/>
+      <bind nodeset="/data/oracle/f_concat" type="string" calculate="concat('a', 1, 'b')"/>
+      <bind nodeset="/data/oracle/f_substr" type="string" calculate="substr('abcdef', 1, 3)"/>
+      <bind nodeset="/data/oracle/f_string_length" type="string" calculate="string-length('héllo')"/>
+      <bind nodeset="/data/oracle/f_lower" type="string" calculate="lower('ÉCOLE Mixte')"/>
+      <bind nodeset="/data/oracle/f_upper" type="string" calculate="upper('école mixte')"/>
+      <bind nodeset="/data/oracle/f_linebreak" type="string" calculate="concat('line one', linebreak(), 'line two')"/>
+      <bind nodeset="/data/oracle/f_comma_quote" type="string" calculate="concat('a, b', ' &quot;quoted&quot;')"/>
+      <bind nodeset="/data/oracle/f_regex" type="string" calculate="regex('abc123', '^[a-z]+[0-9]+$')"/>
+      <bind nodeset="/data/oracle/f_hash" type="string" calculate="hash('abc')"/>
+      <bind nodeset="/data/oracle/f_today" type="string" calculate="today()"/>
+      <bind nodeset="/data/oracle/f_now" type="string" calculate="now()"/>
+      <bind nodeset="/data/oracle/f_format_date" type="string" calculate="format-date-time(date('2026-01-05'), '%Y/%m/%d %a %b %e %n')"/>
+      <bind nodeset="/data/oracle/f_format_datetime" type="string" calculate="format-date-time(date-time('2026-01-05T14:07:09'), '%Y-%m-%d %H:%M:%S %h')"/>
+      <bind nodeset="/data/oracle/f_date_minus_one" type="string" calculate="date('2026-03-01') - 1"/>
+      <bind nodeset="/data/oracle/f_date_from_number" type="string" calculate="date(20000)"/>
+      <bind nodeset="/data/oracle/f_date_before_today" type="string" calculate="date('2026-01-05') &lt; today()"/>
+      <bind nodeset="/data/oracle/f_decimal_date_time" type="string" calculate="decimal-date-time('2026-01-05T12:00:00')"/>
+      <bind nodeset="/data/oracle/f_decimal_time" type="string" calculate="decimal-time( /data/dates/tm_noon )"/>
+      <bind nodeset="/data/oracle/f_version" type="string" calculate="version()"/>
+      <bind nodeset="/data/oracle/f_selected" type="string" calculate="selected('a b c', 'b')"/>
+      <bind nodeset="/data/oracle/f_count_selected" type="string" calculate="count-selected('a b c')"/>
+      <bind nodeset="/data/oracle/f_selected_at" type="string" calculate="selected-at('a b c', 1)"/>
+      <bind nodeset="/data/oracle/f_choice_label" type="string" calculate="choice-label( /data/oracle/sel_default ,  /data/oracle/sel_default )"/>
+      <bind nodeset="/data/oracle/f_count_items" type="string" calculate="count-items(' ', 'x y z')"/>
+      <bind nodeset="/data/oracle/f_item_at" type="string" calculate="item-at(',', 'x,y,z', 1)"/>
+      <bind nodeset="/data/oracle/f_item_index" type="string" calculate="item-index(',', 'x,y,z', 'z')"/>
+      <bind nodeset="/data/oracle/f_item_present" type="string" calculate="item-present(',', 'x,y,z', 'w')"/>
+      <bind nodeset="/data/oracle/f_de_duplicate" type="string" calculate="de-duplicate(' ', 'b a b c a')"/>
+      <bind nodeset="/data/oracle/f_rank_value" type="string" calculate="rank-value(20, '10 30 20')"/>
+      <bind nodeset="/data/oracle/f_uuid" type="string" calculate="once(uuid())"/>
+      <bind nodeset="/data/oracle/f_random" type="string" calculate="once(random())"/>
+      <bind nodeset="/data/oracle/n_auto" type="int" required="true()" readonly="true()"/>
+      <bind nodeset="/data/oracle/auto/a_index" type="string" calculate="index()"/>
+      <bind nodeset="/data/oracle/auto/a_value" type="string" calculate="index() * 10"/>
+      <bind nodeset="/data/oracle/auto/a_kind" type="string" calculate="if(index() mod 2 = 1, 'odd', 'even')"/>
+      <bind nodeset="/data/oracle/agg_count" type="string" calculate="count( /data/oracle/auto )"/>
+      <bind nodeset="/data/oracle/agg_sum" type="string" calculate="sum( /data/oracle/auto/a_value )"/>
+      <bind nodeset="/data/oracle/agg_min" type="string" calculate="min( /data/oracle/auto/a_value )"/>
+      <bind nodeset="/data/oracle/agg_max" type="string" calculate="max( /data/oracle/auto/a_value )"/>
+      <bind nodeset="/data/oracle/agg_join" type="string" calculate="join(' ',  /data/oracle/auto/a_value )"/>
+      <bind nodeset="/data/oracle/agg_count_if" type="string" calculate="count-if( /data/oracle/auto ,  /data/oracle/auto/a_kind  = 'odd')"/>
+      <bind nodeset="/data/oracle/agg_sum_if" type="string" calculate="sum-if( /data/oracle/auto/a_value ,  /data/oracle/auto/a_kind  = 'odd')"/>
+      <bind nodeset="/data/oracle/agg_join_if" type="string" calculate="join-if(' ',  /data/oracle/auto/a_value ,  /data/oracle/auto/a_kind  = 'odd')"/>
+      <bind nodeset="/data/oracle/agg_min_if" type="string" calculate="min-if( /data/oracle/auto/a_value ,  /data/oracle/auto/a_kind  = 'odd')"/>
+      <bind nodeset="/data/oracle/agg_max_if" type="string" calculate="max-if( /data/oracle/auto/a_value ,  /data/oracle/auto/a_kind  = 'odd')"/>
+      <bind nodeset="/data/oracle/agg_indexed" type="string" calculate="indexed-repeat( /data/oracle/auto/a_value ,  /data/oracle/auto , 2)"/>
+      <bind nodeset="/data/oracle/agg_rank" type="string" calculate="rank-index(1,  /data/oracle/auto/a_value )"/>
+      <bind nodeset="/data/oracle/agg_rank_if" type="string" calculate="rank-index-if(1,  /data/oracle/auto/a_value ,  /data/oracle/auto/a_kind  = 'even')"/>
+      <bind nodeset="/data/oracle/expr_rep_count" type="string" readonly="true()" calculate=" /data/oracle/n_auto  - 1"/>
+      <bind nodeset="/data/oracle/expr_rep/e_index" type="string" calculate="index()"/>
+      <bind nodeset="/data/defaults/def_keep" type="int"/>
+      <bind nodeset="/data/defaults/def_change" type="string"/>
+      <bind nodeset="/data/defaults/calc_default" type="int" calculate=" /data/defaults/def_keep  * 2"/>
+      <bind nodeset="/data/values/t_comma_quote" type="string"/>
+      <bind nodeset="/data/values/t_accents" type="string"/>
+      <bind nodeset="/data/values/t_leading_zeros" type="string"/>
+      <bind nodeset="/data/values/t_numbers" type="string"/>
+      <bind nodeset="/data/values/t_numbers_decimal" type="string"/>
+      <bind nodeset="/data/values/d_whole" type="decimal"/>
+      <bind nodeset="/data/values/d_trailing_zero" type="decimal"/>
+      <bind nodeset="/data/values/d_negative" type="decimal"/>
+      <bind nodeset="/data/values/i_negative" type="int"/>
+      <bind nodeset="/data/values/i_large" type="int"/>
+      <bind nodeset="/data/values/i_minimum_time" type="int" ctosim:minimum-seconds="10"/>
+      <bind nodeset="/data/dates/dt_old" type="date"/>
+      <bind nodeset="/data/dates/dt_month_year" type="date"/>
+      <bind nodeset="/data/dates/dt_month" type="date"/>
+      <bind nodeset="/data/dates/dt_no_calendar" type="date"/>
+      <bind nodeset="/data/dates/tm_after_midnight" type="time"/>
+      <bind nodeset="/data/dates/tm_noon" type="time"/>
+      <bind nodeset="/data/dates/dtm_any" type="dateTime"/>
+      <bind nodeset="/data/selects/s_minimal" type="string"/>
+      <bind nodeset="/data/selects/s_likert" type="string"/>
+      <bind nodeset="/data/selects/s_randomized" type="string"/>
+      <bind nodeset="/data/selects/m_many" type="string"/>
+      <bind nodeset="/data/selects/m_blank" type="string"/>
+      <bind nodeset="/data/selects/s_comma_label" type="string"/>
+      <bind nodeset="/data/selects/s_other" type="string"/>
+      <bind nodeset="/data/selects/s_other_specify" type="string" relevant=" /data/selects/s_other  = 96"/>
+      <bind nodeset="/data/selects/region" type="string"/>
+      <bind nodeset="/data/selects/district" type="string"/>
+      <bind nodeset="/data/selects/districts_multi" type="string"/>
+      <bind nodeset="/data/selects/village" type="string"/>
+      <bind nodeset="/data/selects/village_label" type="string" calculate="choice-label( /data/selects/village ,  /data/selects/village )"/>
+      <bind nodeset="/data/screen/fl_a" type="int"/>
+      <bind nodeset="/data/screen/fl_b" type="int"/>
+      <bind nodeset="/data/table/tbl_header" type="string"/>
+      <bind nodeset="/data/table/tbl_water" type="string"/>
+      <bind nodeset="/data/table/tbl_power" type="string"/>
+      <bind nodeset="/data/skipped" relevant="1 = 2"/>
+      <bind nodeset="/data/skipped/skipped_text" type="string"/>
+      <bind nodeset="/data/outer/middle/inner/deep_text" type="string"/>
+      <bind nodeset="/data/n_people" type="int" constraint=". &gt;= 0 and . &lt;= 3" required="true()"/>
+      <bind nodeset="/data/person/p_name" type="string"/>
+      <bind nodeset="/data/person/p_age" type="int"/>
+      <bind nodeset="/data/person/p_school" type="string" relevant=" ../p_age  &lt; 18"/>
+      <bind nodeset="/data/person/this_field_name_is_longer_than_thirty_two_characters" type="string"/>
+      <bind nodeset="/data/person/health/visit/visit_date" type="date"/>
+      <bind nodeset="/data/media/m_audio" type="binary"/>
+      <bind nodeset="/data/media/m_video" type="binary"/>
+      <bind nodeset="/data/media/m_file" type="binary"/>
+      <bind nodeset="/data/media/m_signature" type="binary"/>
+      <bind nodeset="/data/media/m_barcode" type="barcode"/>
+      <bind nodeset="/data/media/g_trace" type="geotrace"/>
+      <bind nodeset="/data/media/g_shape" type="geoshape"/>
+      <bind nodeset="/data/thanks" readonly="true()" type="string"/>
+      <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+      <bind nodeset="/data/meta/instanceName" type="string" calculate="concat('C3-',  /data/resp_code , ' ')"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/resp_code">
+      <label>Submission code: type A, B or C as told in the instructions</label>
+    </input>
+    <group ref="/data/oracle">
+      <label>Calculations (nothing to enter)</label>
+      <select1 ref="/data/oracle/sel_default">
+        <label>Pre-selected answer: leave Beta selected</label>
+        <itemset nodeset="instance('abc')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <input ref="/data/oracle/never_shown">
+        <label>Never shown</label>
+      </input>
+      <input ref="/data/oracle/n_auto">
+        <label>Number of computed rows (read only, 3)</label>
+      </input>
+      <group ref="/data/oracle/auto">
+        <label>Computed row</label>
+        <repeat nodeset="/data/oracle/auto" jr:count=" /data/oracle/n_auto "/>
+      </group>
+      <group ref="/data/oracle/expr_rep">
+        <label>Row counted by an expression</label>
+        <repeat nodeset="/data/oracle/expr_rep" jr:count=" /data/oracle/expr_rep_count "/>
+      </group>
+    </group>
+    <group ref="/data/defaults">
+      <label>Defaults</label>
+      <input ref="/data/defaults/def_keep">
+        <label>Pre-filled 7: do NOT change it</label>
+      </input>
+      <input ref="/data/defaults/def_change">
+        <label>Pre-filled 'abc': replace it with xyz</label>
+      </input>
+      <input ref="/data/defaults/calc_default">
+        <label>Calculated (7 x 2): try to change it to 99</label>
+      </input>
+    </group>
+    <group ref="/data/values">
+      <label>Text and numbers</label>
+      <input ref="/data/values/t_comma_quote">
+        <label>Type exactly: Hello, "world"</label>
+      </input>
+      <input ref="/data/values/t_accents">
+        <label>Type exactly: Élodie à Ouagadougou, niño</label>
+      </input>
+      <input ref="/data/values/t_leading_zeros">
+        <label>Type exactly: 007</label>
+      </input>
+      <input ref="/data/values/t_numbers" appearance="numbers">
+        <label>Type exactly: 012345678901</label>
+      </input>
+      <input ref="/data/values/t_numbers_decimal" appearance="numbers_decimal">
+        <label>Type exactly: 3.50</label>
+      </input>
+      <input ref="/data/values/d_whole">
+        <label>Type exactly: 5</label>
+      </input>
+      <input ref="/data/values/d_trailing_zero">
+        <label>Type exactly: 0.10</label>
+      </input>
+      <input ref="/data/values/d_negative">
+        <label>Type exactly: -3.75</label>
+      </input>
+      <input ref="/data/values/i_negative">
+        <label>Type exactly: -12</label>
+      </input>
+      <input ref="/data/values/i_large">
+        <label>Type exactly: 123456789</label>
+      </input>
+      <input ref="/data/values/i_minimum_time">
+        <label>Type 1 (this question has a minimum time)</label>
+      </input>
+    </group>
+    <group ref="/data/dates">
+      <label>Dates and times</label>
+      <input ref="/data/dates/dt_old">
+        <label>Enter 15 June 1950</label>
+      </input>
+      <input ref="/data/dates/dt_month_year" appearance="month-year">
+        <label>Enter March 2025</label>
+      </input>
+      <input ref="/data/dates/dt_month" appearance="month">
+        <label>Enter any month (note which)</label>
+      </input>
+      <input ref="/data/dates/dt_no_calendar" appearance="no-calendar">
+        <label>Enter 31 December 2025</label>
+      </input>
+      <input ref="/data/dates/tm_after_midnight">
+        <label>Enter 00:05 (5 minutes past midnight)</label>
+      </input>
+      <input ref="/data/dates/tm_noon">
+        <label>Enter 12:30 (half past noon)</label>
+      </input>
+      <input ref="/data/dates/dtm_any">
+        <label>Enter 1 January 2026, 23:59</label>
+      </input>
+    </group>
+    <group ref="/data/selects">
+      <label>Choices</label>
+      <select1 ref="/data/selects/s_minimal" appearance="minimal">
+        <label>Drop-down: choose Eleven</label>
+        <itemset nodeset="instance('many')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/selects/s_likert" appearance="likert">
+        <label>Scale: choose Agree</label>
+        <itemset nodeset="instance('agree')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/selects/s_randomized" appearance="randomized">
+        <label>Shuffled list: choose Ten</label>
+        <itemset nodeset="instance('many')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select ref="/data/selects/m_many">
+        <label>Tick One, Ten and Twelve</label>
+        <itemset nodeset="instance('many')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select>
+      <select ref="/data/selects/m_blank">
+        <label>Leave this question BLANK (tick nothing)</label>
+        <itemset nodeset="instance('many')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select>
+      <select1 ref="/data/selects/s_comma_label">
+        <label>Choose 'Yes, sure'</label>
+        <itemset nodeset="instance('comma_labels')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/selects/s_other">
+        <label>Choose Other</label>
+        <itemset nodeset="instance('other')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <input ref="/data/selects/s_other_specify">
+        <label>Specify: type Bananas</label>
+      </input>
+      <select1 ref="/data/selects/region">
+        <label>Region: choose South</label>
+        <itemset nodeset="instance('region')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/selects/district">
+        <label>District: choose South-B</label>
+        <itemset nodeset="instance('district')/root/item[filter =  /data/selects/region ]">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select ref="/data/selects/districts_multi">
+        <label>Districts of the chosen region: tick both</label>
+        <itemset nodeset="instance('district')/root/item[filter =  /data/selects/region ]">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select>
+      <select1 ref="/data/selects/village" appearance="search('villages', 'matches', 'region',  /data/selects/region )">
+        <label>Village (loaded from villages.csv, South only): choose Hawassa</label>
+        <item>
+          <label>village_name</label>
+          <value>village_id</value>
+        </item>
+      </select1>
+    </group>
+    <group appearance="field-list" ref="/data/screen">
+      <label>One screen (field-list)</label>
+      <input ref="/data/screen/fl_a">
+        <label>Type 1</label>
+      </input>
+      <input ref="/data/screen/fl_b">
+        <label>Type 2</label>
+      </input>
+    </group>
+    <group appearance="field-list" ref="/data/table">
+      <label>Table (label / list-nolabel)</label>
+      <select1 ref="/data/table/tbl_header" appearance="label">
+        <label>How often?</label>
+        <itemset nodeset="instance('freq')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/table/tbl_water" appearance="list-nolabel">
+        <label>Water: Often</label>
+        <itemset nodeset="instance('freq')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+      <select1 ref="/data/table/tbl_power" appearance="list-nolabel">
+        <label>Power: Never</label>
+        <itemset nodeset="instance('freq')/root/item">
+          <value ref="name"/>
+          <label ref="label"/>
+        </itemset>
+      </select1>
+    </group>
+    <group ref="/data/skipped">
+      <label>Never shown group</label>
+      <input ref="/data/skipped/skipped_text">
+        <label>Never shown</label>
+      </input>
+    </group>
+    <group ref="/data/outer">
+      <label>Nested groups</label>
+      <group ref="/data/outer/middle">
+        <label>Middle</label>
+        <group ref="/data/outer/middle/inner">
+          <label>Inner</label>
+          <input ref="/data/outer/middle/inner/deep_text">
+            <label>Type: deep</label>
+          </input>
+        </group>
+      </group>
+    </group>
+    <input ref="/data/n_people">
+      <label>Number of people: type 2 (C: type 0)</label>
+    </input>
+    <group ref="/data/person">
+      <label>Person</label>
+      <repeat nodeset="/data/person" jr:count=" /data/n_people ">
+        <input ref="/data/person/p_name">
+          <label>Name (any)</label>
+        </input>
+        <input ref="/data/person/p_age">
+          <label>Age: person 1 is 30, person 2 is 5</label>
+        </input>
+        <input ref="/data/person/p_school">
+          <label>School name (any)</label>
+        </input>
+        <input ref="/data/person/this_field_name_is_longer_than_thirty_two_characters">
+          <label>Long field name: type x</label>
+        </input>
+        <group ref="/data/person/health">
+          <label>Health</label>
+          <group ref="/data/person/health/visit">
+            <label>Health visit (person 1: add 2, person 2: add 0)</label>
+            <repeat nodeset="/data/person/health/visit">
+              <input ref="/data/person/health/visit/visit_date">
+                <label>Visit date (any)</label>
+              </input>
+            </repeat>
+          </group>
+        </group>
+      </repeat>
+    </group>
+    <group ref="/data/media">
+      <label>Media and locations</label>
+      <upload ref="/data/media/m_audio" mediatype="audio/*">
+        <label>Record 2 seconds of audio</label>
+      </upload>
+      <upload ref="/data/media/m_video" mediatype="video/*">
+        <label>Record 2 seconds of video (or skip on the web)</label>
+      </upload>
+      <upload ref="/data/media/m_file" mediatype="application/*">
+        <label>Attach any small file (or skip)</label>
+      </upload>
+      <upload ref="/data/media/m_signature" mediatype="image/*" appearance="signature">
+        <label>Sign here</label>
+      </upload>
+      <input ref="/data/media/m_barcode">
+        <label>Scan any barcode (or skip on the web)</label>
+      </input>
+      <input ref="/data/media/g_trace">
+        <label>Record a short line of 2 to 3 points</label>
+      </input>
+      <input ref="/data/media/g_shape">
+        <label>Record a small shape of 3 to 4 points</label>
+      </input>
+    </group>
+    <input ref="/data/thanks">
+      <label>Thank you. Add a comment on one question before finishing (not in submission C).</label>
+    </input>
+  </h:body>
+</h:html>
