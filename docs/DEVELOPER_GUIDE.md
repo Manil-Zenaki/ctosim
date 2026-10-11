@@ -120,7 +120,7 @@ produce byte-identical files, on any machine.
 Stata users install the command once (Stata 16 or newer):
 
 ```
-net install ctosim, from("https://raw.githubusercontent.com/<owner>/<repo>/stata-package/") replace
+net install ctosim, from("https://raw.githubusercontent.com/Manil-Zenaki/ctosim/stata-package/") replace
 ```
 
 then, in any do-file or interactively (batch mode included):

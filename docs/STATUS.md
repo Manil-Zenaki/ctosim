@@ -43,13 +43,10 @@ Small open points:
 
 ## Waiting on the project owner
 
-- **Publishing on GitHub** (repository to be public, decided 2026-10-11):
-  create the repository, add it as `origin`, push `main` and
-  `stata-package`; then replace `<owner>/<repo>` in the
-  instructions (developer guide, `net install` line). Before that, decide:
-  commits carry the author e-mail `mzenaki@alum.mit.edu`; the published
-  IOM form in `samples/forms/` (CC BY 4.0) contains three IOM staff
-  e-mails; no `LICENSE` file yet.
+- **Publishing on GitHub**: repository https://github.com/Manil-Zenaki/ctosim
+  (public, empty), set as `origin` on 2026-10-11; push `main` and
+  `stata-package`. Stata users install from
+  `https://raw.githubusercontent.com/Manil-Zenaki/ctosim/stata-package/`.
 
 - **Exports of the third coverage form** (`samples/coverage3/`, see its
   README for the inventory of SurveyCTO features and the filling

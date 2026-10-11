@@ -60,6 +60,15 @@ simulated data then arrive exactly as the real data will, with converted
 dates, labels and text fields.
 
 
+{title:Installation}
+
+{pstd}
+Install or reinstall with{p_end}
+{phang2}{cmd:. net install ctosim, from("https://raw.githubusercontent.com/Manil-Zenaki/ctosim/stata-package/") replace}{p_end}
+{pstd}
+and update with {cmd:ado update ctosim, update}.
+
+
 {title:Requirements}
 
 {phang}

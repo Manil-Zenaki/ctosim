@@ -9,6 +9,19 @@ cleaning and analysis code can be written before fieldwork.
 ctosim.cmd form.xlsx -n 300 -s 42 -c config.json
 ```
 
+## Install in Stata (16 or newer)
+
+```
+net install ctosim, from("https://raw.githubusercontent.com/Manil-Zenaki/ctosim/stata-package/") replace
+help ctosim
+```
+
+Update later with `ado update ctosim, update`. Needs a Java 17 or newer
+(Stata 18+ includes one) and, to convert XLSForms, a Python set in Stata
+(`python set exec`).
+
+## Documentation
+
 Start with `docs/DEVELOPER_GUIDE.md` (installing, running, configuration,
 how it works, glossary). Design: `docs/ARCHITECTURE.md`. How code and
 tests are written: `docs/WORKFLOW.md`. Current state: `docs/STATUS.md`.
