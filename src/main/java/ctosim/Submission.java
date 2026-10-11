@@ -11,15 +11,17 @@ public final class Submission {
     private final String instanceXml;
     private final LocalDateTime start;
     private final LocalDateTime end;
+    private final LocalDateTime submitted;
     private final int answered;
     private final List<String> warnings;
 
-    Submission(int number, String instanceXml, LocalDateTime start, LocalDateTime end, int answered,
-               List<String> warnings) {
+    Submission(int number, String instanceXml, LocalDateTime start, LocalDateTime end, LocalDateTime submitted,
+               int answered, List<String> warnings) {
         this.number = number;
         this.instanceXml = instanceXml;
         this.start = start;
         this.end = end;
+        this.submitted = submitted;
         this.answered = answered;
         this.warnings = List.copyOf(warnings);
     }
@@ -32,13 +34,20 @@ public final class Submission {
         if (number < 1) {
             throw new IllegalArgumentException("submission number must be at least 1: " + number);
         }
-        return new Submission(number, instanceXml, start, end, 0, List.of());
+        return of(number, instanceXml, start, end, end);
     }
 
     /** A submission received at {@code submitted}. See specs/08-surveycto-exporter.md, Amendment 1. */
     public static Submission of(int number, String instanceXml, LocalDateTime start, LocalDateTime end,
                                 LocalDateTime submitted) {
-        throw new UnsupportedOperationException("not implemented");
+        Objects.requireNonNull(instanceXml, "instanceXml");
+        Objects.requireNonNull(start, "start");
+        Objects.requireNonNull(end, "end");
+        Objects.requireNonNull(submitted, "submitted");
+        if (number < 1) {
+            throw new IllegalArgumentException("submission number must be at least 1: " + number);
+        }
+        return new Submission(number, instanceXml, start, end, submitted, 0, List.of());
     }
 
     public int number() {
@@ -60,7 +69,7 @@ public final class Submission {
 
     /** When the server received the submission. See specs/07-form-walker.md, Amendment 2. */
     public LocalDateTime submitted() {
-        throw new UnsupportedOperationException("not implemented");
+        return submitted;
     }
 
     /** Questions for which the engine accepted an answer from the walker. */

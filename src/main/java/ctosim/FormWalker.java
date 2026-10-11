@@ -39,6 +39,9 @@ import org.javarosa.xpath.parser.XPathSyntaxException;
 public final class FormWalker {
 
     static final int MAX_ATTEMPTS = 50;
+    /** Converter bind attributes (spec 02, Amendment 3), in {@link FormLoader#CTOSIM_NS}. */
+    static final String MINIMUM_SECONDS = "minimum-seconds";
+    static final String SPEED_VIOLATIONS = "speed-violations";
     static final int MAX_STEPS = 100_000;
     private static final int START_MINUTES = 540;
     private static final int MIN_SECONDS = 5;
@@ -87,7 +90,7 @@ public final class FormWalker {
     }
 
     /**
-     * One 15-digit device id per enumerator, drawn in enumerator order from the seed alone, so
+     * One 16-character hexadecimal device id (like an Android id) per enumerator, drawn in enumerator order from the seed alone, so
      * an enumerator keeps its device whatever the number of enumerators.
      */
     private static String[] deviceIds(SimulationConfig config) {
@@ -98,8 +101,8 @@ public final class FormWalker {
             String id;
             do {
                 StringBuilder digits = new StringBuilder(15);
-                for (int k = 0; k < 15; k++) {
-                    digits.append(random.nextInt(10));
+                for (int k = 0; k < 16; k++) {
+                    digits.append(Character.forDigit(random.nextInt(16), 16));
                 }
                 id = digits.toString();
             } while (!seen.add(id));
@@ -139,6 +142,8 @@ public final class FormWalker {
         private final FormEntryController session;
         private final List<String> warnings = new ArrayList<>();
         private final Map<String, Integer> repeatTargets = new HashMap<>();
+        private final SplittableRandom violationDraws;
+        private final List<String> violations = new ArrayList<>();
         private int answered;
 
         Walk(int number) {
@@ -150,6 +155,7 @@ public final class FormWalker {
             this.start = config.start()
                     .plusDays(timing.nextInt(config.fieldworkDays()))
                     .plusMinutes(timing.nextInt(START_MINUTES + 1));
+            this.violationDraws = new SplittableRandom(seed(base, number, 8));
             this.clock = new SimulatedClock(start);
             int enumerator = 1 + new SplittableRandom(seed(base, number, 5)).nextInt(config.enumerators());
             this.session = form.newSimulatedSession(clock, seed(base, number, 1), Map.of(
@@ -167,6 +173,7 @@ public final class FormWalker {
                 }
             }
             FormDef def = session.getModel().getForm();
+            reportSpeedViolations(def, def.getMainInstance().getRoot());
             refreshDurations(def, def.getMainInstance().getRoot());
             def.postProcessInstance();
             String xml;
@@ -175,7 +182,9 @@ public final class FormWalker {
             } catch (IOException e) {
                 throw new UncheckedIOException("submission " + number + ": the instance could not be serialised", e);
             }
-            return new Submission(number, xml, start, clock.now(), answered, warnings);
+            LocalDateTime end = clock.now();
+            LocalDateTime submitted = end.plusMinutes(1 + new SplittableRandom(seed(config.seed(), number, 7)).nextInt(240));
+            return new Submission(number, xml, start, end, submitted, answered, warnings);
         }
 
         private int step(int steps) {
@@ -229,12 +238,13 @@ public final class FormWalker {
             boolean required = prompt.isRequired();
             Question question = new Question(name, kind, choices, appearance == null ? "" : appearance, required,
                     ConstraintHints.forCurrentQuestion(session));
+            double minimum = minimumSeconds(prompt);
 
             for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
                 String text = generator.generate(question, clock.now().toLocalDate(), answers);
                 if (text == null) {
                     clear(ref);
-                    advanceClock();
+                    handled(ref, minimum);
                     return;
                 }
                 IAnswerData data = convert(prompt, text);
@@ -242,12 +252,12 @@ public final class FormWalker {
                     clear(ref);
                     warn("field '" + name + "' (" + path + "): the value '" + text + "' cannot be given to this question; left blank");
                     warnIfRequired(required, name, path);
-                    advanceClock();
+                    handled(ref, minimum);
                     return;
                 }
                 if (session.answerQuestion(data, true) == FormEntryController.ANSWER_OK) {
                     answered++;
-                    advanceClock();
+                    handled(ref, minimum);
                     return;
                 }
             }
@@ -255,7 +265,7 @@ public final class FormWalker {
             warn("field '" + name + "' (" + path + "): no answer satisfied its constraint after "
                     + MAX_ATTEMPTS + " attempts; left blank");
             warnIfRequired(required, name, path);
-            advanceClock();
+            handled(ref, minimum);
         }
 
         /** Recomputes, in document order, every relevant field whose calculation calls duration(). */
@@ -283,8 +293,35 @@ public final class FormWalker {
             session.getModel().getForm().setValue(null, ref, true);
         }
 
-        private void advanceClock() {
-            clock.advance(Duration.ofSeconds(MIN_SECONDS + timing.nextInt(MAX_SECONDS - MIN_SECONDS + 1)));
+        /**
+         * After a question was answered or left blank: a speed violation may be recorded when it has a
+         * minimum time, and the clock advances, by at least that minimum.
+         */
+        private void handled(TreeReference ref, double minimum) {
+            if (minimum > 0 && violationDraws.nextDouble() < config.speedViolationRate()) {
+                violations.add(violationPath(ref));
+            }
+            long seconds = MIN_SECONDS + timing.nextInt(MAX_SECONDS - MIN_SECONDS + 1);
+            if (minimum > 0) {
+                seconds = Math.max(seconds, (long) Math.ceil(minimum));
+            }
+            clock.advance(Duration.ofSeconds(seconds));
+        }
+
+        /** Sets the speed-violation count and list fields from the violations recorded. */
+        private void reportSpeedViolations(FormDef def, TreeElement element) {
+            if (element.getMult() == TreeReference.INDEX_TEMPLATE) {
+                return;
+            }
+            String report = element.getBindAttributeValue(FormLoader.CTOSIM_NS, SPEED_VIOLATIONS);
+            if (("count".equals(report) || "list".equals(report)) && element.isRelevant()) {
+                String value = violations.isEmpty() ? null
+                        : "count".equals(report) ? String.valueOf(violations.size()) : String.join(",", violations);
+                def.setValue(value == null ? null : new StringData(value), element.getRef(), true);
+            }
+            for (int i = 0; i < element.getNumChildren(); i++) {
+                reportSpeedViolations(def, element.getChildAt(i));
+            }
         }
 
         // --- Repeats ------------------------------------------------------------------
@@ -329,6 +366,35 @@ public final class FormWalker {
         EvaluationContext context = new EvaluationContext(def.getEvaluationContext(), ref);
         Object result = parsed.eval(def.getMainInstance(), context);
         def.setValue(IAnswerData.wrapData(result, node.getDataType()), ref, true);
+    }
+
+    /** The minimum time of a question, from its bind; NaN when it has none or it cannot be read. */
+    static double minimumSeconds(FormEntryPrompt prompt) {
+        TreeElement attribute = TreeElement.getAttribute(prompt.getBindAttributes(), FormLoader.CTOSIM_NS, MINIMUM_SECONDS);
+        if (attribute == null) {
+            return Double.NaN;
+        }
+        try {
+            double value = Double.parseDouble(attribute.getAttributeValue());
+            return Double.isFinite(value) ? value : Double.NaN;
+        } catch (NumberFormatException e) {
+            return Double.NaN;
+        }
+    }
+
+    /** A question as SurveyCTO lists it among speed violations: main[1]/member[2]/member_name. */
+    static String violationPath(TreeReference ref) {
+        StringBuilder path = new StringBuilder();
+        for (int i = 1; i < ref.size(); i++) {
+            if (i > 1) {
+                path.append('/');
+            }
+            path.append(ref.getName(i));
+            if (i < ref.size() - 1) {
+                path.append('[').append(Math.max(ref.getMultiplicity(i), 0) + 1).append(']');
+            }
+        }
+        return path.toString();
     }
 
     /** A reference as a path without positions: /data/member/age. */
