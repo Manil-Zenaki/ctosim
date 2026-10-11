@@ -316,3 +316,8 @@ their own type.
 - **Namespace.** The root declares the prefix `ctosim` for
   `urn:ctosim:xforms` whenever the XForm has any `ctosim:` attribute
   (from this amendment or Amendment 2), and only then.
+
+Clarification (Amendment 3): the assumptions recorded for Amendment 3 in
+the questions file are reviewed one by one and confirmed: every enabled
+row with a minimum time gets the attribute, whatever its type; only
+ordinary numbers ≥ 0 are accepted; disabled rows keep none.
