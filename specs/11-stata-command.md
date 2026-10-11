@@ -115,7 +115,11 @@ guarantees, spec 10).
 
 `ctosim.sthlp` documents the syntax, every option, the two ways of
 loading the data, the stored results, the programs needed (Stata's Java;
-a Python for XLSForms) and one example of each loading mode.
+a Python for XLSForms), one example of each loading mode, and how to
+report a problem: by e-mail to `mzenaki@alum.mit.edu`, with a subject
+starting with `[ctosim]`, giving the command typed, the Stata version
+(`about`), ctosim's version (the help file's) and the run report when
+there is one.
 
 ## Packaging (not covered by unit tests)
 
