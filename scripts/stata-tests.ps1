@@ -48,6 +48,13 @@ $testDir = if ($TestDir) { (Resolve-Path $TestDir).Path } else { Join-Path $repo
 $tests = @(Get-ChildItem $testDir -Filter $Filter -File -ErrorAction SilentlyContinue | Sort-Object Name)
 if ($tests.Count -eq 0) { Write-Warning "No tests matching $Filter in src/test/stata."; exit 0 }
 
+# Test-support files that the tests build from source before Stata starts (Stata ignores shell in
+# batch mode on Windows, so the tests cannot build them themselves): every build-*.ps1 next to them.
+foreach ($fixtureBuild in Get-ChildItem $testDir -Filter 'build-*.ps1' -File | Sort-Object Name) {
+    & $fixtureBuild.FullName
+    if (-not $?) { throw "$($fixtureBuild.Name) failed" }
+}
+
 $root = Join-Path $repo 'target\stata-tests'
 $failed = @()
 foreach ($t in $tests) {
