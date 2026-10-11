@@ -4,7 +4,7 @@
     <h:title>ctosim coverage test 2</h:title>
     <model odk:xforms-version="1.0.0">
       <instance>
-        <data id="ctosim_coverage2" version="2610100001">
+        <data id="ctosim_coverage2" version="2610100005">
           <starttime/>
           <endtime/>
           <deviceid/>

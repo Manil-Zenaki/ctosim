@@ -57,3 +57,15 @@ the workbook. All names and values are fictitious.
 
 As for the first form, the submitter's e-mail and the server name will be
 anonymised before the exports are committed as test fixtures.
+
+## Exports received (2026-10-10)
+
+`wide/` and `long/` hold the raw exports of the three submissions, all
+filled with SurveyCTO Collect on Android, with the Stata templates
+SurveyCTO generated. Edits to the downloaded files: the submitter's
+e-mail is replaced by `enumerator@example.org`, the server name in URLs
+by `example`, and the device's Android ID by `a1b2c3d4e5f60718`. The form
+was re-uploaded as version 2610100005; the builder now writes that
+version. The export report PDF is not committed. Departures from the
+scenarios: member 2 of submission B has activities `None`, one child and
+one job; no comment was recorded.

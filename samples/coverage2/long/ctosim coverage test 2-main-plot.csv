@@ -1,0 +1,4 @@
+plot_crop,plot_gps-Latitude,plot_gps-Longitude,plot_gps-Altitude,plot_gps-Accuracy,PARENT_KEY,KEY,SET-OF-plot
+1,38.880519,-77.0170947,-13.3,12.1,uuid:595d7ef3-487a-4f99-9091-231fe7c630b7,uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-plot[1],uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-plot
+2,38.8804938,-77.0170461,-10.1,16.9,uuid:595d7ef3-487a-4f99-9091-231fe7c630b7,uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-plot[2],uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-plot
+2,38.8805022,-77.0171183,-10.1,17.3,uuid:c8e06234-3061-4a64-84a2-fa0849f8c3b1,uuid:c8e06234-3061-4a64-84a2-fa0849f8c3b1/main-plot[1],uuid:c8e06234-3061-4a64-84a2-fa0849f8c3b1/main-plot

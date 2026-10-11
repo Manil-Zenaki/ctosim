@@ -29,3 +29,6 @@ samples/_probe/
 
 # SurveyCTO sample form and exports, reference only (terms of reuse unknown)
 samples/surveycto_example/
+
+# SurveyCTO export reports (binary, name the account and server)
+*_export_report.pdf

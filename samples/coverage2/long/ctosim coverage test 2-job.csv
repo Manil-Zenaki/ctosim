@@ -1,0 +1,4 @@
+job_title,job_days,job_days_1,job_days_6,job_days__99,PARENT_KEY,KEY,SET-OF-job
+Prof,1 6,1,1,0,uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-member[1],uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-member[1]/job[1],uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-member[1]/job
+Thinker,6,0,1,0,uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-member[1],uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-member[1]/job[2],uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-member[1]/job
+Plumber,1 6,1,1,0,uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-member[2],uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-member[2]/job[1],uuid:595d7ef3-487a-4f99-9091-231fe7c630b7/main-member[2]/job
