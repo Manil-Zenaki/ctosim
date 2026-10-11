@@ -194,3 +194,6 @@ is a zip archive, and Python imports from it the same way). The
   is made importable by the simulator's Python.
 
 The package lists `ctosim_converter.jar` (the same archive).
+
+Clarification (Amendment 2): the questions recorded for Amendment 2
+(B1–B4) are reviewed one by one and confirmed.
