@@ -7,7 +7,8 @@ exports") and the cases its three submissions left empty:
 - a geopoint inside a repeat, and a select_multiple inside a nested repeat;
 - a counted repeat nested in another repeat (name of its count column);
 - the instanceName column (settings: instance_name);
-- what comments, audio audit and speed violations fields hold;
+- what comments, audio audit and speed violations fields hold (resp_name and hh_size have a
+  minimum time, so that moving on too fast records speed violations);
 - choice values with letters and hyphens in select_multiple dummy column names;
 - a relevant select_multiple left blank (dummy cells);
 - a top-level enumerator-controlled repeat with instances, and a refused consent.
@@ -24,7 +25,7 @@ from openpyxl import Workbook
 HERE = Path(__file__).parent
 
 SURVEY_HEADER = ["type", "name", "label", "hint", "appearance", "constraint", "constraint message",
-                 "relevance", "required", "calculation", "repeat_count"]
+                 "relevance", "required", "calculation", "repeat_count", "minimum_seconds"]
 
 SURVEY = [
     # SurveyCTO metadata, as the online designer adds them, plus Collect-only audits
@@ -45,14 +46,16 @@ SURVEY = [
      "required": "yes"},
 
     {"type": "begin group", "name": "main", "label": "Household", "relevance": "${consent} = 1"},
-    {"type": "text", "name": "resp_name", "label": "Respondent's first name (fictitious)", "required": "yes"},
+    {"type": "text", "name": "resp_name", "label": "Respondent's first name (fictitious; answer in under 10 seconds)",
+     "required": "yes", "minimum_seconds": "10"},
     {"type": "select_multiple assets", "name": "assets", "label": "Assets owned",
      "constraint": "not(selected(., '-99') and count-selected(.) > 1)",
      "constraint message": "'Don't know' cannot be combined"},
     {"type": "select_multiple transport", "name": "transport",
      "label": "Means of transport used last month (choice values with letters and hyphens)"},
-    {"type": "integer", "name": "hh_size", "label": "Number of household members (1 to 3 for this test)",
-     "constraint": ". >= 1 and . <= 3", "required": "yes"},
+    {"type": "integer", "name": "hh_size",
+     "label": "Number of household members (1 to 3 for this test; answer in under 10 seconds)",
+     "constraint": ". >= 1 and . <= 3", "required": "yes", "minimum_seconds": "10"},
 
     # Counted repeat holding a geopoint, a nested counted repeat and a nested
     # enumerator-controlled repeat with a select_multiple

@@ -45,7 +45,11 @@ columns in a repeat, dummies in a nested repeat, `instanceName`, and what
   three scenarios (B on SurveyCTO Collect if possible), export wide and
   long CSVs into `samples/coverage2/wide/` and `long/`. They settle spec
   08's "Not observed" conventions; anonymise e-mail and server name before
-  committing, then amend spec 08 where the export differs.
+  committing, then amend spec 08 where the export differs. Already known
+  from SurveyCTO's documentation: a `comments` field holds the URL of a
+  per-submission CSV of comments (the exporter currently writes the
+  stored value, empty); `speed violations count` is a number and `list` a
+  comma-separated list of fields; audio audits are SurveyCTO Collect only.
 - Later: more XLSForms in `samples/forms/` to cover more cases.
 
 ## Final deliverable still to do

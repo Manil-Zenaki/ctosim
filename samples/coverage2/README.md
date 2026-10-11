@@ -12,7 +12,7 @@ submissions of the first coverage form left empty:
 | `instanceName` | settings `instance_name` | name and position of the column |
 | Choice values with letters and hyphens | `transport` (`bus`, `moto-taxi`, `x2`) | `transport_moto_taxi` or `transport_moto-taxi`? |
 | Relevant select_multiple left blank | `member_activities` | are its dummy cells empty or 0? |
-| Collect-only fields | `audio_audit`, `sv_count`, `sv_list`, `field_comments` | what they hold (file URL, number, text?) |
+| Audit and comment fields | `audio_audit` (Collect only), `sv_count`, `sv_list`, `field_comments` | what they hold: audio file URL, number, comma-separated field list, comments file URL (and its name) |
 | Enumerator-controlled top-level repeat with instances | `plot` | wide columns and the long `plot` file |
 | Refused consent | `consent` = No | cells of the whole skipped group |
 
@@ -25,9 +25,14 @@ the workbook. All names and values are fictitious.
    `ctosim_coverage2.xlsx`, with `hh_preload.csv` attached.
 2. **Fill 3 test submissions** with invented answers only. If you can, fill
    submission **B with SurveyCTO Collect on an Android device**: the audio
-   audit, speed violations and comments fields only work there. In the
-   comments, write a short comment on any question (long-press the
-   question, or the comment icon).
+   audit only works there (web browsers cannot record audio in the
+   background). Speed violations and comments work on the web too.
+   - **Speed violations** (B and C): `resp_name` and `hh_size` must stay on
+     screen 10 seconds; answer them at once and try to move on immediately,
+     two or three times, before waiting.
+   - **Comments** (B and C): add a short comment on one or two questions
+     (web form: *Options* menu, *Add comment*; Collect: three-dot menu or
+     the pencil button).
    - **A:** consent = **No** (the interview stops).
    - **B:** consent = Yes; assets **Radio** and **Bicycle**; transport
      **Bus** and **Motorbike taxi**; household size **2**.

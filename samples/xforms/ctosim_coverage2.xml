@@ -222,7 +222,7 @@
     <group ref="/data/main">
       <label>Household</label>
       <input ref="/data/main/resp_name">
-        <label>Respondent's first name (fictitious)</label>
+        <label>Respondent's first name (fictitious; answer in under 10 seconds)</label>
       </input>
       <select ref="/data/main/assets">
         <label>Assets owned</label>
@@ -239,7 +239,7 @@
         </itemset>
       </select>
       <input ref="/data/main/hh_size">
-        <label>Number of household members (1 to 3 for this test)</label>
+        <label>Number of household members (1 to 3 for this test; answer in under 10 seconds)</label>
       </input>
       <group ref="/data/main/member">
         <label>Member</label>
