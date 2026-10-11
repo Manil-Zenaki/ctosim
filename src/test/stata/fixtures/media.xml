@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Stata media</h:title><model>
+    <instance><data id="stata_media"><lookup/><quantity/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/lookup" type="string" calculate="pulldata('people', 'name', 'id', '1')"/>
+    <bind nodeset="/data/quantity" type="int" required="true()"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body><input ref="/data/quantity"><label>Quantity</label></input></h:body>
+</h:html>

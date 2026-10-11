@@ -1,0 +1,4 @@
+{"form_id":"stata_media","title":"Stata media","version":null,"fields":[
+  {"name":"lookup","type":"calculate","xpath":"/data/lookup","row":2},
+  {"name":"quantity","type":"integer","xpath":"/data/quantity","row":3}
+]}

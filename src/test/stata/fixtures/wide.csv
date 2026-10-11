@@ -1,0 +1,5 @@
+SubmissionDate,KEY,age,amount,notes,group-name,empty,numeric_text,very_long_column_name_exceeding_thirty_two_characters
+"Jan 5, 2026 8:00:00 AM",uuid:one,42,3.25,"café, 東京",7,,001,yes
+"Jan 5, 2026 8:01:00 AM",uuid:two,-4,-2.5,"said ""hello""",8,,002,no
+"Jan 5, 2026 8:02:00 AM",uuid:three,,0,"first line
+second line",9,,003,yes
