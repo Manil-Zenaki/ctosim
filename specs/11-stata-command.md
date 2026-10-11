@@ -80,7 +80,7 @@ The options are passed to the simulator as the command line's `-n`,
 5. **Returns** in `r()`:
    - `r(N)`: the number of submissions simulated;
    - `r(warnings)`: the number of warnings;
-   - `r(seed)`: the seed used;
+   - `r(seed)`: the seed used (a scalar);
    - `r(form_id)`: the form id;
    - `r(outdir)`: the output directory, as an absolute path;
    - `r(wide)`: the wide CSV file's absolute path;
@@ -168,6 +168,10 @@ of "Finding the programs" is replaced by:
 
 In addition:
 
+- **Helper.** The command also uses its helper `ctosim_bridge.jar`,
+  installed with it and found along the ado-path. It is not the
+  simulator: `CTOSIM_JAR` does not replace it. When it is missing, the
+  command stops with error 601 saying to reinstall the package.
 - **Batch mode.** The command works the same in an interactive session
   and in a do-file run in batch mode (`stata /e do file.do`), on Windows
   included (where Stata ignores `shell` in batch mode).
