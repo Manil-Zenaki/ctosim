@@ -312,3 +312,17 @@ spec 08 Amendment 1 and the unchanged rules it incorporates.
 All temporary transcription/diagnostic scripts and logs are under
 `.codex-runs/`. No dependency was installed, Maven repository copied, drive
 mapped, or commit made.
+
+### Dispute adjudication validation
+
+`mvnw.cmd -o -q test` could not complete: it stopped in `testCompile`
+with a fatal compiler error naming the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, as in the earlier
+validation attempts. Log: `.codex-runs/exporter-dispute-test.log`.
+The independent compiler probe compiled 11 exporter-related test/support
+sources successfully. A diagnostic JUnit run of the corrected
+`SurveyCtoExporterValueTest` and unchanged
+`SurveyCtoExporterAudioAuditAmendmentTest` passed all 145 tests.
+Logs: `.codex-runs/exporter-dispute-compile.log` and
+`.codex-runs/exporter-dispute-junit.log`. The full Maven suite remains
+unverified; the ruling is recorded in `08-surveycto-exporter.disputes.md`.

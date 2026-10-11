@@ -64,7 +64,7 @@ class SurveyCtoExporterValueTest {
         assertValueBoth(single(temp, type), value(stored), stored);
     }
 
-    @ParameterizedTest @ValueSource(strings = {"text", "integer", "decimal", "select_one codes", "barcode", "geotrace", "geoshape", "calculate", "calculate_here", "comments", "audio audit", "speed violations limit=5", "sensor_statistic accelerometer", "deviceid", "unknown_extension", "TEXT", "AuDiO audit"})
+    @ParameterizedTest @ValueSource(strings = {"text", "integer", "decimal", "select_one codes", "barcode", "geotrace", "geoshape", "calculate", "calculate_here", "comments", "speed violations limit=5", "sensor_statistic accelerometer", "deviceid", "unknown_extension", "TEXT"})
     void otherTypesAreStoredVerbatimIncludingSpecialMultiwordTypes(String type) throws Exception {
         String stored = " 2026-10-15T08:30:27+03:00, é & \"家庭\" \r\n ";
         assertValueBoth(single(temp, type), value(stored), stored);
