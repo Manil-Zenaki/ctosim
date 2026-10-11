@@ -1,0 +1,9 @@
+v 3
+d ctosim: simulate submissions of a SurveyCTO form and load them in Stata.
+d Runs the ctosim simulator with Stata's Java (and Stata's Python for XLSForms),
+d then imports the wide export or runs the form's SurveyCTO import do-file.
+d Requires Stata 16 or newer.
+f ctosim.ado
+f ctosim.sthlp
+f ctosim.jar
+f ctosim_converter.zip
