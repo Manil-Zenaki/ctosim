@@ -290,3 +290,29 @@ Clarification (Amendment 2): assumptions 16–20 of the questions file are
 reviewed one by one and confirmed. In particular, an enabled
 `calculate_here` row with no calculation still declares the `ctosim`
 namespace, while a disabled one does not (17).
+
+## Amendment 3: minimum times and speed-violation fields
+
+SurveyCTO records a **speed violation** when the enumerator tries to leave
+a field before its `minimum_seconds` have passed; `speed violations count`
+and `speed violations list` fields hold the result. So that the simulator
+can reproduce them, the converter keeps that information in the XForm,
+as bind attributes in the namespace of Amendment 2. Everything else is
+unchanged; in particular these rows are still listed in the catalog with
+their own type.
+
+- **`minimum_seconds` column.** A survey row whose `minimum_seconds` cell
+  is not empty (after trimming) gets the bind attribute
+  `ctosim:minimum-seconds` holding that number as text, written like the
+  form version (a whole number has no decimal part: `10.0` gives `"10"`;
+  `2.5` gives `"2.5"`). A value that is not a number ≥ 0 raises
+  `ConversionError` naming the row. Rows of a disabled block keep no
+  attribute (they are left out). The column is otherwise ignored, as
+  before.
+- **Speed-violation fields.** A `speed violations count` row's bind gets
+  `ctosim:speed-violations="count"`, a `speed violations list` row's bind
+  `ctosim:speed-violations="list"`; both stay hidden calculates with an
+  empty value. `speed violations audit` rows are unchanged.
+- **Namespace.** The root declares the prefix `ctosim` for
+  `urn:ctosim:xforms` whenever the XForm has any `ctosim:` attribute
+  (from this amendment or Amendment 2), and only then.
