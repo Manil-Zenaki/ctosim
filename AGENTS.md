@@ -9,7 +9,8 @@ confirm one.
 
 - Write **comprehensive unit tests** for the module described in the spec
   file you are given (`specs/NN-*.md`): JUnit 5 for Java modules, pytest for
-  Python modules (the spec says `Language: Python`).
+  Python modules (the spec says `Language: Python`), Stata do-files for Stata
+  modules (the spec says `Language: Stata`).
 - The spec is the **only source of truth**. Derive every expectation from
   it. Do **not** open, read or search production code (`src/main/`,
   `converter/src/`), except the public API stubs the spec names (signatures
@@ -62,6 +63,14 @@ is right, and explain your decision at the end of the disputes file.
 - Python: `.venv\Scripts\python -m pytest converter/tests -q`. The package
   is installed in the virtual environment in editable mode; do not install
   anything (there is no network).
+- Stata: tests are do-files under `src/test/stata/`; each `test_*.do` runs on
+  its own and must stop with an error (`assert`, `confirm`, `rcof`, ...) when
+  an expectation fails. Run them with
+  `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`; the
+  Stata package is already built in `target/stata-package/`. The runner puts
+  `stata/` on the ado-path, sets the globals `CTOSIM_REPO` and
+  `CTOSIM_TESTDIR`, and runs each test in a fresh working directory. If
+  Stata cannot be started from your sandbox, say so in your questions file.
 - `JAVA_HOME` is set by the calling script.
 - Tests for a module that is not implemented yet are expected to fail.
   They must **compile**.

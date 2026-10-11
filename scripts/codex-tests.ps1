@@ -46,9 +46,13 @@ if (git status --porcelain) { throw 'Working tree is not clean; commit or stash 
 if ($Dispute -and -not (Test-Path $disputes)) { throw "No disputes file: $disputes" }
 
 # --- Prompt -----------------------------------------------------------------
-$isPython = (Get-Content $specPath -Raw) -match '(?m)^Language:\s*Python'
-$testDir = if ($isPython) { 'converter/tests' } else { 'src/test' }
-$mainDir = if ($isPython) { 'converter/src' } else { 'src/main' }
+$specText = Get-Content $specPath -Raw
+$language = if ($specText -match '(?m)^Language:\s*Python') { 'python' }
+            elseif ($specText -match '(?m)^Language:\s*Stata') { 'stata' }
+            else { 'java' }
+$isPython = $language -eq 'python'
+$testDir = switch ($language) { 'python' { 'converter/tests' } 'stata' { 'src/test/stata' } default { 'src/test' } }
+$mainDir = switch ($language) { 'python' { 'converter/src' } 'stata' { 'stata' } default { 'src/main' } }
 
 if ($Dispute) {
     $prompt = @"
@@ -58,6 +62,15 @@ Decide strictly on the spec. If a test is wrong, fix it. If it is right, keep it
 Append your decision and reasoning for each disputed point at the end of $disputes.
 Run the tests to make sure they compile or import. Do not read implementation code under $mainDir/
 beyond the public signatures.
+"@
+} elseif ($language -eq 'stata') {
+    $prompt = @"
+Read AGENTS.md, then the spec $specRel. Write comprehensive tests for this Stata command as
+do-files under src/test/stata (one test_*.do per area; helpers and fixtures alongside, fixtures
+under src/test/stata/fixtures). Each test do-file must stop with an error when an expectation
+fails and run to the end otherwise. Record ambiguities and the assumptions you made in $questions.
+Run them with: powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1
+(failing tests are expected because the command is not implemented yet).
 "@
 } elseif ($isPython) {
     $prompt = @"
@@ -74,13 +87,14 @@ under src/test/java (and fixtures under src/test/resources). Record ambiguities 
 assumptions you made in $questions. Make sure the tests compile with: mvnw.cmd -o -q test-compile
 (failing tests are expected because the module is not implemented yet).
 "@
-    if ($Focus) {
-        $prompt += @"
+}
+if ($Focus -and -not $Dispute) {
+    $prompt += @"
 
 Existing tests for this spec are already committed and must be kept. In this run, add tests
-only for this part of the spec: $Focus. Put them in new test classes; do not rewrite existing ones.
+only for this part of the spec: $Focus. Put them in new test files or classes; do not rewrite
+existing ones.
 "@
-    }
 }
 
 # --- Run Codex --------------------------------------------------------------
