@@ -38,6 +38,10 @@ public final class AnswerGenerator {
 
         FieldOverride override = config.field(question.name()).orElse(null);
         boolean select = question.kind() == QuestionKind.SELECT_ONE || question.kind() == QuestionKind.SELECT_MULTIPLE;
+        List<String> words = Arrays.asList(question.appearance().split(" "));
+        if (select && words.contains("label")) {
+            return null; // the header row of a table: it shows the labels and cannot be answered
+        }
         if (select && question.choices().isEmpty()) {
             return null;
         }
@@ -61,8 +65,10 @@ public final class AnswerGenerator {
                     question.hints(), true), random);
             case DECIMAL -> decimal(hinted(range instanceof NumericRange r ? r : config.decimalRange(),
                     question.hints(), false), random);
-            case TEXT -> text(question, texts, random);
-            case DATE -> date(hinted(dateRange(range, today), question.hints()), random).toString();
+            case TEXT -> words.contains("numbers_decimal") && texts.isEmpty()
+                    ? decimal(hinted(range instanceof NumericRange r ? r : config.decimalRange(), question.hints(), false), random)
+                    : text(question, texts, random);
+            case DATE -> monthYear(date(hinted(dateRange(range, today), question.hints()), random), words).toString();
             case TIME -> time(random);
             case DATETIME -> date(hinted(dateRange(range, today), question.hints()), random) + "T" + time(random);
             case GEOPOINT -> point(random.nextDouble() * 2 - 1, random.nextDouble() * 2 - 1);
@@ -164,6 +170,11 @@ public final class AnswerGenerator {
         double value = range.min() == range.max() ? range.min() : random.nextDouble(range.min(), range.max());
         BigDecimal rounded = BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
         return rounded.signum() == 0 ? "0" : rounded.stripTrailingZeros().toPlainString();
+    }
+
+    /** SurveyCTO Collect stores the first day of the month for a month-year question. */
+    private static LocalDate monthYear(LocalDate date, List<String> words) {
+        return words.contains("month-year") ? date.withDayOfMonth(1) : date;
     }
 
     // --- Text -----------------------------------------------------------------------
