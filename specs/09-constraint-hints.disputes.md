@@ -77,3 +77,13 @@
   Logs: `.codex-runs/09-dispute-maven-test.log`,
   `.codex-runs/09-dispute-maven-detail.log`, `.codex-runs/09-dispute-compile.log`,
   and `.codex-runs/09-dispute-junit.log`.
+
+## Dispute 2: a satisfiable constraint expected to stay blank (spec 07 Amendment 6)
+
+`ConstraintHintsAmendment2WalkerTest.rejectedCandidatesStillLeaveBlankAndProduceConstraintAndRequiredWarnings`
+uses `. >= 100 and . <= 104 and . * 2 = 206`, which 103 satisfies. Its
+candidates (100, 104) are rejected, but spec 07 Amendment 6 then
+searches the integers of the drawing range [100, 104] and answers 103.
+Requested: keep the test's intent (candidates rejected, then blank with
+constraint and required warnings) with a constraint no integer
+satisfies, for example `. >= 100 and . <= 104 and . * 2 = 207`.

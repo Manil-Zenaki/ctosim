@@ -287,3 +287,25 @@ nested repeats and separate parents; and ensure source repeat counts do
 not change snapshot counts. Existing checks for invalid cross-field
 values and suppressed recalculation remain. Updated questions 42 and 43
 to record these corrections. No production source was read or modified.
+
+## Dispute 5: tests that expect a blank answer for a satisfiable constraint (Amendment 6)
+
+Amendment 6 makes the walker search before leaving a question blank:
+a question stays blank only when no value of the search levels (spec 05,
+Amendment 2) satisfies its constraint. Three tests expect a blank answer
+for a constraint that such a value satisfies:
+
+1. `FormWalkerDistributionTest.retriesUseFreshDrawsAndApproximateTheFiftyAttemptBudget`:
+   `. * 2 = 2` is satisfied by 1, an integer of the drawing range, so no
+   submission is blank. The 50-attempt budget is no longer observable
+   through blank answers (attempts do not move the clock either).
+   Requested: assert that every submission answers 1 without warnings,
+   or remove the statistical exhaustion check.
+2. `FormWalkerAmendment5FinalCheckTest.retriesUseFreshDrawsAndApproximatelyFiftyAttemptsBeforeClearing`:
+   `concat(., '') = 'good'` is satisfied by the offered choice `good`,
+   which level 1 of a select_one lists. Requested: as in point 1.
+3. `FormWalkerAmendment5FinalCheckTest.anUnrepairableGeneratedAnswerIsClearedWithoutChangingAnswered`:
+   the late constraint `. <= 5` is satisfied by 0 to 5; the final check
+   repairs the fixed answer 9 (Clarification 45: the search applies also
+   to a fixed value). Requested: make the late constraint unsatisfiable
+   (for example `. <= 5 and . > 5`) so that the answer is cleared.
