@@ -1,0 +1,23 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa" xmlns:ct="urn:ctosim:xforms">
+  <h:head><h:title>Profile draw independence</h:title><model>
+    <instance><data id="walker-seven-randomness">
+      <started/><finished/><username/><deviceid/><session_random/><answer/><row jr:template=""><item/></row>
+      <violations/><paths/><meta><instanceID/></meta>
+    </data></instance>
+    <bind nodeset="/data/started" type="dateTime" jr:preload="timestamp" jr:preloadParams="start"/>
+    <bind nodeset="/data/finished" type="dateTime" jr:preload="timestamp" jr:preloadParams="end"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/deviceid" type="string" jr:preload="property" jr:preloadParams="deviceid"/>
+    <bind nodeset="/data/session_random" type="decimal" calculate="once(random())"/>
+    <bind nodeset="/data/answer" type="int" ct:minimum-seconds="1"/>
+    <bind nodeset="/data/row/item" type="string" ct:minimum-seconds="1"/>
+    <bind nodeset="/data/violations" type="int" ct:speed-violations="count"/>
+    <bind nodeset="/data/paths" type="string" ct:speed-violations="list"/>
+    <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/answer"><label>Answer</label></input>
+    <repeat nodeset="/data/row"><input ref="/data/row/item"><label>Item</label></input></repeat>
+  </h:body>
+</h:html>

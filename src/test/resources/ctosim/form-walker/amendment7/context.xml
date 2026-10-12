@@ -1,0 +1,28 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Rule and expression context</h:title><model>
+    <instance><data id="walker-seven-context">
+      <household><age/><income/><annual/><category/></household>
+      <size>3</size><row jr:template=""><index/><answer/><branch/></row>
+    </data></instance>
+    <bind nodeset="/data/household/age" type="int"/>
+    <bind nodeset="/data/household/income" type="int"/>
+    <bind nodeset="/data/household/annual" type="int" calculate="/data/household/income * 12"/>
+    <bind nodeset="/data/household/category" type="string"/>
+    <bind nodeset="/data/size" type="int"/>
+    <bind nodeset="/data/row/index" type="int" calculate="position(..)"/>
+    <bind nodeset="/data/row/answer" type="int"/>
+    <bind nodeset="/data/row/branch" type="string"/>
+  </model></h:head>
+  <h:body>
+    <group ref="/data/household"><label>Household</label>
+      <input ref="/data/household/age"><label>Age</label></input>
+      <input ref="/data/household/income"><label>Income</label></input>
+      <input ref="/data/household/category"><label>Category</label></input>
+    </group>
+    <repeat nodeset="/data/row" jr:count="/data/size">
+      <input ref="/data/row/answer"><label>Answer</label></input>
+      <input ref="/data/row/branch"><label>Branch</label></input>
+    </repeat>
+  </h:body>
+</h:html>

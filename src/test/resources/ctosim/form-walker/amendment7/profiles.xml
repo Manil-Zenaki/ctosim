@@ -1,0 +1,13 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head><h:title>Profile acceptance</h:title><model>
+    <instance><data id="walker-seven-profiles"><profile_name/><branch/><again/></data></instance>
+    <bind nodeset="/data/profile_name" type="string" required="true()"/>
+    <bind nodeset="/data/branch" type="string" required="true()"/>
+    <bind nodeset="/data/again" type="string"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/profile_name"><label>Profile</label></input>
+    <input ref="/data/branch"><label>Branch</label></input>
+    <input ref="/data/again"><label>Same profile</label></input>
+  </h:body>
+</h:html>
