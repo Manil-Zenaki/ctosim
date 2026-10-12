@@ -186,18 +186,21 @@ public final class AnswerGenerator {
         return rounded.signum() == 0 ? "0" : rounded.stripTrailingZeros().toPlainString();
     }
 
-    /** As generate(question, today, random), with {@code override} as the question's override (spec 05, Amendment 3). */
-    public String generate(Question question, LocalDate today, RandomGenerator random, FieldOverride override) {
-        throw new UnsupportedOperationException("spec 05, Amendment 3");
-    }
-
     /** The answer in XForm value format, or {@code null} to leave the question blank. */
     public String generate(Question question, LocalDate today, RandomGenerator random) {
+        Objects.requireNonNull(question, "question");
+        return generate(question, today, random, config.field(question.name()).orElse(null));
+    }
+
+    /**
+     * As generate(question, today, random), with {@code override} as the question's override, as the
+     * walker computes it from the configuration's rules (spec 05, Amendment 3); null for none.
+     */
+    public String generate(Question question, LocalDate today, RandomGenerator random, FieldOverride override) {
         Objects.requireNonNull(question, "question");
         Objects.requireNonNull(today, "today");
         Objects.requireNonNull(random, "random");
 
-        FieldOverride override = config.field(question.name()).orElse(null);
         boolean select = question.kind() == QuestionKind.SELECT_ONE || question.kind() == QuestionKind.SELECT_MULTIPLE;
         List<String> words = Arrays.asList(question.appearance().split(" "));
         if (select && words.contains("label")) {
@@ -225,23 +228,26 @@ public final class AnswerGenerator {
         }
         Question q = question;
         ConstraintHints hints = chosen;
+        Distribution distribution = override == null ? null : override.distribution().orElse(null);
+        Area area = override != null && override.area().isPresent() ? override.area().get() : config.area().orElse(null);
 
         return switch (question.kind()) {
             case SELECT_ONE -> selectOne(question.choices(), weights, hints, random);
             case SELECT_MULTIPLE -> selectMultiple(question.choices(), weights, hints, random);
-            case INTEGER -> notExcluded(hints, random, () -> integer(hinted(range instanceof NumericRange r ? r : config.integerRange(),
-                    hints, true), random));
-            case DECIMAL -> notExcluded(hints, random, () -> decimal(hinted(range instanceof NumericRange r ? r : config.decimalRange(),
-                    hints, false), random));
+            case INTEGER -> notExcluded(hints, random, () -> number(hinted(range instanceof NumericRange r ? r : config.integerRange(),
+                    hints, true), distribution, true, random));
+            case DECIMAL -> notExcluded(hints, random, () -> number(hinted(range instanceof NumericRange r ? r : config.decimalRange(),
+                    hints, false), distribution, false, random));
             case TEXT -> words.contains("numbers_decimal") && texts.isEmpty()
-                    ? notExcluded(hints, random, () -> decimal(hinted(range instanceof NumericRange r ? r : config.decimalRange(), hints, false), random))
+                    ? notExcluded(hints, random, () -> number(hinted(range instanceof NumericRange r ? r : config.decimalRange(), hints, false),
+                    distribution, false, random))
                     : texts.isEmpty() ? notExcluded(hints, random, () -> text(q, texts, random)) : text(q, texts, random);
             case DATE -> monthYear(date(hinted(dateRange(range, today), question.hints()), random), words).toString();
             case TIME -> time(random);
             case DATETIME -> date(hinted(dateRange(range, today), question.hints()), random) + "T" + time(random);
-            case GEOPOINT -> point(random.nextDouble() * 2 - 1, random.nextDouble() * 2 - 1);
-            case GEOTRACE -> String.join("; ", trace(random));
-            case GEOSHAPE -> shape(random);
+            case GEOPOINT -> point(latitude(area, random), longitude(area, random));
+            case GEOTRACE -> String.join("; ", trace(area, random));
+            case GEOSHAPE -> shape(area, random);
             case BARCODE -> digits(10, random);
             case IMAGE -> media(question, ".jpg", random);
             case AUDIO -> media(question, ".m4a", random);
@@ -471,9 +477,46 @@ public final class AnswerGenerator {
         return words.contains("month-year") ? date.withDayOfMonth(1) : date;
     }
 
+    /**
+     * A number in {@code range}: uniform as before, or from the distribution, drawn again while it
+     * falls outside the range (up to 100 times) and then moved to the nearest end.
+     */
+    private static String number(NumericRange range, Distribution distribution, boolean integer, RandomGenerator random) {
+        if (distribution == null) {
+            return integer ? integer(range, random) : decimal(range, random);
+        }
+        double x = sample(distribution, random);
+        for (int i = 0; i < 100 && (x < range.min() || x > range.max()); i++) {
+            x = sample(distribution, random);
+        }
+        x = Math.max(range.min(), Math.min(range.max(), x));
+        if (!integer) {
+            return formatDecimal(x);
+        }
+        double lo = Math.ceil(range.min());
+        double hi = Math.floor(range.max());
+        if (lo > hi) {
+            return Long.toString(Math.round(range.min()));
+        }
+        double rounded = BigDecimal.valueOf(x).setScale(0, RoundingMode.HALF_UP).doubleValue();
+        return Long.toString((long) Math.max(lo, Math.min(hi, rounded)));
+    }
+
+    private static double sample(Distribution d, RandomGenerator random) {
+        if (d.sd() == 0) {
+            return d.mean();
+        }
+        if (d.kind().equals("lognormal")) {
+            double sigma2 = Math.log(1 + (d.sd() * d.sd()) / (d.mean() * d.mean()));
+            double mu = Math.log(d.mean()) - sigma2 / 2;
+            return Math.exp(mu + Math.sqrt(sigma2) * random.nextGaussian());
+        }
+        return d.mean() + d.sd() * random.nextGaussian();
+    }
+
     // --- Text -----------------------------------------------------------------------
 
-    private static String text(Question question, List<String> texts, RandomGenerator random) {
+    private String text(Question question, List<String> texts, RandomGenerator random) {
         if (!texts.isEmpty()) {
             return texts.get(random.nextInt(texts.size()));
         }
@@ -517,11 +560,98 @@ public final class AnswerGenerator {
                 return s.toString();
             }
         }
+        String plausible = plausible(question.name(), random);
+        if (plausible != null) {
+            return plausible;
+        }
         if (numeric) {
             return digits(8, random);
         }
         return question.name() + " " + (1 + random.nextInt(9999));
     }
+
+    // --- Plausible texts by field name (spec 05, Amendment 3) ---------------------------
+
+    private static final Set<String> PHONE = Set.of("phone", "tel", "telephone", "mobile", "cell");
+    private static final Set<String> EMAIL = Set.of("email", "mail");
+    private static final Set<String> PLACE = Set.of("village", "town", "city", "locality", "district", "commune",
+            "place", "location");
+    private static final Set<String> PERSON = Set.of("name", "nom", "prenom", "firstname", "surname", "lastname", "fullname");
+    private static final Set<String> COMMENT = Set.of("comment", "comments", "remark", "remarks", "note", "notes",
+            "specify", "other", "why", "reason", "describe", "description", "explain");
+
+    /** A plausible answer for a text field whose name says what it holds, or null. */
+    private String plausible(String name, RandomGenerator random) {
+        Set<String> words = new HashSet<>(Arrays.asList(name
+                .replaceAll("([a-z])([A-Z])", "$1 $2")
+                .replaceAll("[_\\-0-9]+", " ")
+                .toLowerCase(Locale.ROOT).trim().split(" +")));
+        if (!java.util.Collections.disjoint(words, PHONE)) {
+            return "0" + digits(9, random);
+        }
+        if (!java.util.Collections.disjoint(words, EMAIL)) {
+            String first = ascii(pick("firstName", random));
+            String last = ascii(pick("lastName", random));
+            return (first + "." + last + (1 + random.nextInt(99)) + "@example.org").toLowerCase(Locale.ROOT);
+        }
+        if (!java.util.Collections.disjoint(words, PLACE) && config.textPools().containsKey("place")) {
+            return pick("place", random);
+        }
+        if (!java.util.Collections.disjoint(words, PERSON)) {
+            if (words.contains("firstname") || words.contains("prenom")) {
+                return pick("firstName", random);
+            }
+            if (words.contains("surname") || words.contains("lastname")) {
+                return pick("lastName", random);
+            }
+            return pick("firstName", random) + " " + pick("lastName", random);
+        }
+        if (!java.util.Collections.disjoint(words, COMMENT)) {
+            return pick("comment", random);
+        }
+        return null;
+    }
+
+    private String pick(String pool, RandomGenerator random) {
+        List<String> entries = config.textPools().getOrDefault(pool, BUILT_IN_POOLS.get(pool));
+        return entries.get(random.nextInt(entries.size()));
+    }
+
+    private static String ascii(String s) {
+        return java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replaceAll("[^A-Za-z]", "");
+    }
+
+    private static final Map<String, List<String>> BUILT_IN_POOLS = Map.of(
+            "firstName", List.of("Aisha", "Abebe", "Amina", "Kwame", "Fatou", "Moussa", "Chipo", "Tendai", "Wanjiru", "Kofi",
+                    "Mariam", "Ibrahim", "Nadia", "Youssef", "Leila", "Omar", "Priya", "Ravi", "Anjali", "Arjun",
+                    "Mei", "Wei", "Nguyen", "Linh", "Siti", "Budi", "Maria", "José", "Ana", "Carlos",
+                    "Lucía", "Mateo", "Sofia", "Luca", "Elena", "Jean", "Marie", "Pierre", "Hélène", "John",
+                    "Mary", "David", "Sarah", "Tigist", "Hanna", "Dawit", "Grace", "Samuel"),
+            "lastName", List.of("Mohammed", "Tesfaye", "Diallo", "Traoré", "Mensah", "Okafor", "Banda", "Moyo", "Kamau", "Otieno",
+                    "Haddad", "Benali", "Khan", "Hussain", "Sharma", "Patel", "Singh", "Chen", "Wang", "Tran",
+                    "Santoso", "Rahman", "García", "Rodríguez", "López", "Silva", "Santos", "Rossi", "Ivanova", "Martin",
+                    "Dubois", "Bernard", "Smith", "Johnson", "Brown", "Kebede", "Girma", "Ndlovu", "Coulibaly", "Sow",
+                    "Mwangi", "Abdi"),
+            "comment", List.of("Respondent was busy, interview completed quickly.", "No problem during the interview.",
+                    "The household head answered most questions.", "Respondent asked to repeat some questions.",
+                    "Interview interrupted once, then resumed.", "Neighbours were present during part of the interview.",
+                    "Respondent was not sure about the amounts.", "Answers confirmed with the spouse.",
+                    "Language: local language, translated.", "Respondent preferred not to answer some questions.",
+                    "Information taken from documents shown by the respondent.", "Recall period was difficult for the respondent.",
+                    "The respondent gave approximate values.", "Good cooperation from the household.",
+                    "Children were present and sometimes answered.", "Bad network, GPS took a long time.",
+                    "Visited twice before finding the respondent.", "Respondent was in a hurry.",
+                    "Some answers checked again at the end.", "The respondent was very cooperative.",
+                    "Loud environment, some answers repeated.", "Household recently moved here.",
+                    "Seasonal worker, away part of the year.", "Prices given for the last market day.",
+                    "Respondent counted livestock with the enumerator.", "Distance estimated by the respondent.",
+                    "Respondent unsure of exact age.", "Date of birth taken from an identity card.",
+                    "The respondent's son helped with dates.", "Interview done in the field, not at home.",
+                    "Rain during the interview, short break.", "Respondent reported a recent illness.",
+                    "No electricity in the area.", "Water source shared with neighbours.",
+                    "Other: small trade at the market.", "Other: works for a relative.",
+                    "Specified: motorbike repair.", "Specified: tailoring.", "Reason: too far from the school.",
+                    "Reason: lack of money.", "Reason: health problems."));
 
     /** A random string matching the whole pattern, or null when none can be produced. */
     private static String matching(String pattern, RandomGenerator random) {
@@ -630,9 +760,19 @@ public final class AnswerGenerator {
         return String.format(Locale.ROOT, "%.6f %.6f 0 5", lat, lon);
     }
 
-    private static List<String> trace(RandomGenerator random) {
-        double lat = random.nextDouble() * 2 - 1;
-        double lon = random.nextDouble() * 2 - 1;
+    private static double latitude(Area area, RandomGenerator random) {
+        double u = random.nextDouble();
+        return area == null ? u * 2 - 1 : area.minLatitude() + u * (area.maxLatitude() - area.minLatitude());
+    }
+
+    private static double longitude(Area area, RandomGenerator random) {
+        double u = random.nextDouble();
+        return area == null ? u * 2 - 1 : area.minLongitude() + u * (area.maxLongitude() - area.minLongitude());
+    }
+
+    private static List<String> trace(Area area, RandomGenerator random) {
+        double lat = latitude(area, random);
+        double lon = longitude(area, random);
         List<String> points = new ArrayList<>(4);
         points.add(point(lat, lon));
         for (int i = 1; i < 4; i++) {
@@ -643,8 +783,8 @@ public final class AnswerGenerator {
         return points;
     }
 
-    private static String shape(RandomGenerator random) {
-        List<String> points = trace(random);
+    private static String shape(Area area, RandomGenerator random) {
+        List<String> points = trace(area, random);
         points.add(points.get(0));
         return String.join("; ", points);
     }
