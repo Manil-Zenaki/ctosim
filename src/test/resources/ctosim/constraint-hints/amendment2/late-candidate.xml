@@ -1,0 +1,13 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa" xmlns:sim="urn:ctosim:xforms">
+  <h:head><h:title>Late candidate repair</h:title><model>
+    <instance><data id="late-candidate"><answer>old</answer><gate>0</gate></data></instance>
+    <bind nodeset="/data/answer" type="string" required="true()"
+          constraint="if(/data/gate = 0, true(), . = 'repaired')"/>
+    <bind nodeset="/data/gate" type="int" required="true()" sim:minimum-seconds="61"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/answer"><label>Earlier answer</label></input>
+    <input ref="/data/gate"><label>Gate</label></input>
+  </h:body>
+</h:html>

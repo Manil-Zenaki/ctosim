@@ -56,3 +56,167 @@ Expectations come from spec 09 and the contracts it amends (04, 05, 06 and 07), 
 - Calling the already bundled `.tools/apache-maven-3.9.16/bin/mvn.cmd -o -q test-compile` reaches javac but fails with `java.nio.file.AccessDeniedException` while Java's ZIP filesystem resolves the existing `commons-io-2.5.jar` path. A forked javac attempt also reports missing existing project classes and the same file-access failure.
 - A diagnostic compiler driver under `.codex-runs/` reads the same existing binary dependencies through an in-memory classpath, avoiding that Windows path-resolution failure. JavaCompiler with `--release 17`, UTF-8 and annotation processing disabled successfully compiled all new test sources and their three existing helper sources against the actual compiled public APIs. This is supplementary compilation evidence, not a claim that the requested Maven command passed. Logs and diagnostic probes remain under `.codex-runs/` only.
 - The compiled suite was also executed through JUnit Platform: 271 cases discovered and started, 102 passed, 169 failed, none skipped or aborted. The remaining failures expose unimplemented extraction or missing hint application, as expected for this stage; no form-loading or parameter-resolution failures remained. The repeat fixture uses a bound count node because JavaRosa requires a node reference for `jr:count`.
+
+## Amendment 2 questions and test assumptions
+
+This run adds only `ConstraintHintsAmendment2*` Java classes and the
+`constraint-hints/amendment2/late-candidate.xml` resource. All pre-existing tests
+are retained verbatim, including older expectations that Amendment 2 supersedes
+(for example, treating `or` as opaque). No production source was read or changed;
+the amended public constructor and accessors were verified with `javap -public`
+against compiled classes. The spec and its referenced contracts supply the
+expectations; existing test helpers supply form construction and engine navigation.
+
+13. **How is a constraint with zero alternatives represented, and are impossible
+    alternatives removed during extraction?**
+    Assumption: the spec does not define a distinct public representation for zero
+    alternatives, or explicitly require extraction to prune contradictory terms.
+    Tests therefore assert boolean identities with at least one surviving branch
+    and test each stated unsatisfiability rule through generator choice using
+    manually constructed alternatives. They do not require pruning or a particular
+    record for bare `false()`.
+    Tests: `booleanIdentitiesCollapseToASingleDirectHint`,
+    `falseBranchDoesNotLeakHintsOrCandidates`, `impossibleAlternatives` cases in
+    `ConstraintHintsAmendment2AlternativesTest`.
+
+14. **What does "first" mean for a Cartesian product, and do truncated branches
+    still contribute candidates?**
+    Assumption: enumerate each left alternative in order, and for it each right
+    alternative in order. The retained first 64 alternatives are also the source
+    of candidates; discarded alternatives do not contribute candidates. Duplicate
+    alternatives are not required to be merged. A `true()` branch remains an
+    unconstrained alternative, rather than absorbing other disjuncts.
+    Tests: `conjunctionDistributesLeftToRightAcrossEveryPairOfAlternatives`,
+    `cartesianExpansionIsAlsoCappedInLeftThenRightOrder`,
+    `unionKeepsOnlyTheFirstSixtyFourAlternatives`,
+    `trueDisjunctIsAnEmptyAlternativeAndDoesNotEraseTheOtherBranch`.
+
+15. **Which candidates arise from string equalities, reversed equalities,
+    fractional singletons, and impossible intervals?**
+    Assumption: the explicit `. = E` rule includes nonnumeric strings (including
+    Unicode), even though those strings give no numeric bound. Candidate strings
+    are evaluated in the current session and deduplicated by string equality.
+    Candidates are collected per alternative: equality values first, then closed
+    numeric ends. For `. = 2.5`, only the first candidate `2.5` is asserted; the
+    spec leaves unclear whether its inverted INTEGER-rounded endpoints are added.
+    Reversed equality candidates, date candidates, and candidates from impossible
+    alternatives are not asserted. No expectation relies on filtering candidates
+    against unsupported conjuncts before the engine tries them.
+    Tests: candidate extraction methods in `ConstraintHintsAmendment2ExtractionTest`
+    and candidate rescue/order/endpoint methods in `ConstraintHintsAmendment2WalkerTest`.
+
+16. **What happens after all exclusion retries fail, and is "up to 20 times"
+    inclusive of the first draw?**
+    Assumption: bounded termination is required, but the returned value and the
+    initial-draw-versus-redraw count are unspecified. Exhaustion tests assert
+    termination without asserting a returned value or a random-call protocol.
+    Successful-redraw tests use domains where a run of 20 excluded draws has
+    negligible probability (at most 0.2 per draw, fixed seeds). They do not
+    prescribe exclusion membership normalization beyond exact answer strings.
+    Tests: exclusion methods in `ConstraintHintsAmendment2TextAndExclusionTest`.
+
+17. **How do prefixes behave when too long for the maximum, when multiple
+    incompatible prefixes occur, or when a pattern is unsupported?**
+    Assumption: those combinations have no specified resolution and are not
+    tested. Satisfiable prefix tests count the prefix in the total length and
+    inherit the old length defaults when a length bound is present; with neither
+    bound there are eight suffix characters. A usable pattern takes precedence.
+    BMP Unicode tests avoid imposing an unstated supplementary-code-point length
+    policy. Empty-prefix extraction is tested, but its suffix alphabet is not.
+    Tests: `prefixes`, `prefixTotalLengthsAreUniformAndIncludeBothEndpoints`,
+    `eachSuffixPositionUsesUniformCharacters`,
+    `usablePatternTakesPrecedenceOverAConflictingPrefix`, `emptyLiteralPrefixIsPreserved`.
+
+18. **How are special codes and weights handled inside constrained select_multiple
+    answers?**
+    Assumption: explicit inclusion can require a special code alongside another
+    choice; count hints suppress the old automatic special singleton draw. The
+    unchanged rules retain choice order, uniqueness and weighted sampling of
+    remaining choices; included choices are mandatory even with zero weight.
+    Tests do not impose an ordinary-versus-special distribution for unconstrained
+    remaining slots. "Hints do not constrain" is tested with absent selection
+    hints; redundant bounds and exclusions naming unavailable choices are left open.
+    Tests: selection count, inclusion, ordering, weighting, and special-singleton
+    methods in `ConstraintHintsAmendment2SelectTest`.
+
+19. **Are missing included choices and contradictory single-set select hints
+    errors or fallback cases?**
+    Assumption: for select_multiple, these cannot be met with offered choices and
+    hence use the specified fallback. An empty choice list still follows the
+    original blank rule. A select_one with every choice excluded falls back.
+    Unavailable or multiple inclusions on a direct select_one hint set are not
+    tested; multiple inclusions are tested as an explicitly unsatisfiable
+    alternative. As confirmed by the original clarification 10, ignored hints
+    preserve the baseline random stream.
+    Tests: `impossibleSelectionHintsAreIgnoredWithTheSameRandomStream`,
+    `noOfferedChoicesStillReturnsBlankDespiteInclusions`, alternatives fallback tests.
+
+20. **How do new hints interact with fixed values, texts overrides and blanks?**
+    Assumption: the unchanged blank and fixed-value rules run before all new
+    generator behavior. A texts override ignores prefix and length hints. The
+    interaction between texts overrides and excluded values is not asserted,
+    because "hints are ignored" and the new general TEXT exclusion rule could
+    be read differently. Candidates are a later walker fallback even when the
+    rejected generator proposals came from a fixed override: Amendment 2 states
+    that candidates are tried after 50 rejected proposals without an exception.
+    Tests: `blankAndFixedRulesStillPrecedeAlternativeChoice`,
+    `fixedValueStillWinsOverExclusion`, `textsOverrideIgnoresPrefixAndLengthHints`,
+    walker candidate tests.
+
+21. **Can these tests observe exactly 50 walker attempts or prove exactly 20
+    exclusion redraws without production instrumentation?**
+    Assumption: the public API does not expose attempt counts or a specified
+    number of random primitive calls. Fixed rejected proposals reliably exercise
+    candidate fallback, but do not measure the internal 50 calls. A minimum time
+    of 61 seconds makes any extra question-time advance observable. For final
+    repair, a valid kept default is invalidated by a later gate answer, and the
+    default text generator cannot produce the equality candidate; the test
+    requires refreshed candidates, unchanged `answered()` and no repair time.
+    Tests: candidate clock and final-check methods in
+    `ConstraintHintsAmendment2WalkerTest`.
+
+22. **What is the null-input policy for the four new collection arguments?**
+    Assumption: their public values must never be null, but the spec does not
+    prescribe rejection versus normalization of null constructor inputs or null
+    collection elements. Tests use valid collections and check defensive copies,
+    immutability and iteration order; they do not mandate an exception policy.
+    Tests: `ConstraintHintsAmendment2ContractTest`.
+
+23. **How should real-form acceptance handle optional blanks and unrelated
+    warnings?**
+    Assumption: use exactly `SimulationConfig.defaults()` for every XML form and
+    submission 1 through 50, and explicitly load coverage-3 with its media
+    directory. Optional blanks and other warning categories are outside this
+    amendment's stated criterion. The assertion matches the meaning of exhausted
+    constraint/final constraint warnings without requiring exact punctuation.
+    Tests: `ConstraintHintsAmendment2AcceptanceTest` (300 cases with the six
+    currently published forms). Generator distribution checks elsewhere use fixed
+    seeds, 12,000 to 30,000 draws and the existing seven-standard-deviation-plus-two
+    binomial tolerance, avoiding dependence on a particular random API call order.
+
+### Amendment 2 build verification
+
+- The initial `mvnw.cmd -o -q test-compile` succeeded before adding sources (the
+  existing output was up to date). After adding sources, the requested command
+  reaches recompilation but fails in javac's ZIP filesystem with
+  `java.nio.file.AccessDeniedException` for the existing
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The `-e` retry confirms
+  that cause. No build configuration or dependencies were changed, copied or
+  downloaded. Logs are under `.codex-runs/09-amendment2-test-compile*.log`.
+- A diagnostic compiler under `.codex-runs/` reads the existing binary classpath
+  in memory to bypass that Windows path-resolution error, as used in earlier
+  test-author runs. It compiles the new classes, existing required test helpers
+  and a JUnit runner with `--release 17`, UTF-8 and annotation processing disabled.
+  This is supplementary evidence that the test sources compile, not a claim
+  that the requested Maven recompilation passed.
+- Final diagnostic compilation succeeds for all eight new Java files, the four
+  existing helper sources they need, and the runner (13 sources total). JUnit
+  execution of the six focused test classes discovers and runs 195 cases:
+  55 pass and 140 fail. All 300 real-form acceptance cases also run: 297 pass
+  and three fail with the prohibited constraint warning. There are no skipped
+  or aborted tests, failed test containers, form-loading errors or parameter
+  resolution errors. All 143 failures are assertion failures against the current
+  unimplemented Amendment 2 behavior. Final logs:
+  `.codex-runs/09-amendment2-memory-compile.log`,
+  `.codex-runs/09-amendment2-junit.log`, and
+  `.codex-runs/09-amendment2-acceptance.log`.
