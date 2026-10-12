@@ -20,7 +20,7 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 
-Suite: 4301 Java tests, 331 Python tests and 35 Stata tests, all green (2026-10-11).
+Suite: 4475 Java tests, 331 Python tests and 35 Stata tests, all green (2026-10-12).
 
 ## Next step
 
@@ -44,6 +44,14 @@ header (`label`) appearances, zeros for blank relevant select_multiples,
 trimmed `instanceName`, comments file URLs. 65 of the 73 `oracle`
 functions now give SurveyCTO's exact result; the other 8 depend on the
 date, chance, the form version or the phone's language.
+
+Spec 07 Amendment 5 (2026-10-12): no answer in a submission violates its
+question's constraint; the walker re-checks every answered question at
+the end of the form, as Collect does when finalising. A question whose
+constraint is a disjunction (`(. >= 0 and . <= 10) or . = 99`) gives no
+hints, so 50 random draws can still fail and leave it blank (a few per
+hundred submissions in the IPA and migration forms); hints for
+disjunctions would be a spec 09 amendment.
 
 The four disputes these amendments raised (specs 03, 06, 07, 08) were
 adjudicated on 2026-10-11: all upheld. Codex had stopped on its usage
