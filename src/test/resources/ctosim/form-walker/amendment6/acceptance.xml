@@ -1,0 +1,26 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Amendment six acceptance</h:title><model>
+    <instance><data id="walker-amendment-six">
+      <integer_answer/><decimal_answer/><text_answer/><date_answer/><time_answer/><multiple_answer/>
+    </data></instance>
+    <bind nodeset="/data/integer_answer" type="int" required="true()" constraint=". mod 7 = 3"/>
+    <bind nodeset="/data/decimal_answer" type="decimal" required="true()" constraint="int(. * 4) = . * 4 and . &gt; 1000"/>
+    <bind nodeset="/data/text_answer" type="string" required="true()" constraint="contains(., '@')"/>
+    <bind nodeset="/data/date_answer" type="date" required="true()" constraint="format-date-time(., '%d') = '13'"/>
+    <bind nodeset="/data/time_answer" type="time" required="true()" constraint="format-date-time(., '%H') = '07'"/>
+    <bind nodeset="/data/multiple_answer" type="select" required="true()" constraint="count-selected(.) = 3 and not(selected(., 'a'))"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/integer_answer"><label>Integer</label></input>
+    <input ref="/data/decimal_answer"><label>Decimal</label></input>
+    <input ref="/data/text_answer"><label>Text</label></input>
+    <input ref="/data/date_answer"><label>Date</label></input>
+    <input ref="/data/time_answer"><label>Time</label></input>
+    <select ref="/data/multiple_answer"><label>Multiple</label>
+      <item><label>A</label><value>a</value></item><item><label>B</label><value>b</value></item>
+      <item><label>C</label><value>c</value></item><item><label>D</label><value>d</value></item>
+      <item><label>E</label><value>e</value></item><item><label>F</label><value>f</value></item>
+    </select>
+  </h:body>
+</h:html>

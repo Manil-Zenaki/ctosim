@@ -867,3 +867,145 @@ configuration, generator, and simulated-session contracts.
   not a successful Maven run. Logs: `.codex-runs/walker-dispute4-maven-test.log`
   and `.codex-runs/walker-dispute4-compile.log`. Execution results are
   recorded in the final adjudication in `07-form-walker.disputes.md`.
+
+## Amendment 6 questions and assumptions (2026-10-12)
+
+Only new `FormWalkerAmendment6*` classes and the
+`ctosim/form-walker/amendment6/acceptance.xml` fixture are added. Earlier
+classes and fixtures are retained. Production source was neither read nor
+modified; existing test helpers are reused through their test APIs.
+
+45. **Question:** Does search override a configured fixed value when all
+    proposals violate the constraint? Can tests force the fallback without
+    relying on a particular random sequence?
+    **Assumption:** Yes: spec 05 Amendment 2 explicitly excludes fixed values,
+    missing rates and texts from search, and spec 09 confirms that candidates
+    are tried even after rejected fixed proposals. Most tests fix a convertible
+    but invalid answer and use arithmetic/function-wrapped constraints that
+    produce no hint candidates. This forces all 50 proposals to fail. Search
+    outside configured numeric/date ranges is permitted at the broad level.
+    A successful proposal or hint candidate retains precedence over search.
+    **Tests:** `FormWalkerAmendment6SearchTest`, the forced late-repair cases
+    in `FormWalkerAmendment6LifecycleTest`, and the candidate-priority test.
+
+46. **Question:** Is the text/barcode literal level tried even when a literal
+    is an argument to a function, uses double quotes, repeats, or is Unicode?
+    **Assumption:** "String literals written in the constraint" means parsed
+    XPath string values, regardless of quote style or position. Deduplication
+    occurs before the uniform draw. The literal level precedes every generator
+    level; a rejected literal level falls through. No exact seeded draw/order
+    is asserted because the random-number implementation is unspecified.
+    Empty literals are not tested as accepted answers: their interaction with
+    blank-value and requiredness semantics is not defined by this amendment.
+    **Tests:** Text/barcode literal, Unicode, duplicate-frequency, prefix,
+    rejected-literal, and broad-text cases in `FormWalkerAmendment6SearchTest`.
+
+47. **Question:** How should uniformity and dependence on the answers' random
+    sequence be checked without generator/RNG injection?
+    **Assumption:** Check black-box uniformity with 800 fixed-seed submissions
+    and seven binomial standard deviations plus two observations per category.
+    One case has four valid integers among invalid candidates; another has
+    two distinct accepted literals, one written twice. Tests reject always
+    choosing the first/last value, ignoring valid values, duplicate weighting,
+    and mixing later levels into a successful earlier one. Replay compares
+    XML, times, answered count and warnings across fresh loads and interleaved
+    walk orders; 30 submissions check that changing the seed changes at least
+    one searched answer. Exact RNG calls and the 49-versus-50 boundary cannot
+    be observed robustly through the public API and are not prescribed.
+    **Tests:** `searchChoosesUniformlyFromAllAcceptedValuesAndDeduplicatesLiterals`
+    and `searchedAnswersReplayAcrossLoadsAndWalkOrderAndDependOnTheSeed`.
+
+48. **Question:** How can evaluation without instance mutation and conversion
+    skipping be checked through the public API?
+    **Assumption:** A dependent `once(/data/answer)` must capture only the
+    accepted answer, and an ordinary dependent calculation must update after
+    that answer is committed. An unconvertible spec-09 candidate must not
+    prevent subsequent search. Search itself is supplied by the real generator,
+    whose levels are specified to contain values formatted for the kind; there
+    is no public way to inject a malformed level value. The tests therefore do
+    not fabricate a generator or inspect walker internals merely to observe
+    that conversion-skip branch. Date/time/select and Unicode cases exercise
+    real answer conversion. A select must not invent a constraint literal
+    absent from its offered choices. Initial conversion failure still follows
+    the existing no-retry rule and does not trigger constraint search.
+    **Tests:** `evaluatingSearchCandidatesDoesNotWriteThemOrRunTheirDependentCalculations`,
+    `unconvertibleHintCandidateDoesNotPreventSearchingTheLaterLevels`, type-specific
+    search cases, and the initial conversion/select-unavailable cases.
+
+49. **Question:** Do finite search limits imply failure even when a valid
+    answer exists beyond all listed values? Does intentional missingness search?
+    **Assumption:** The precise finite levels govern the broad introductory
+    statement. A wrapped equality to integer 10001 outside the configured
+    range, a five-selection requirement after a fixed rejected proposal, and a
+    kind with no levels may still fail. An optional generator null remains a
+    deliberately blank answer and does not search. When exhaustion really
+    occurs, existing initial/final warning rules, requiredness, ordering and
+    immutability apply. Warning text is checked by meaning-bearing fragments,
+    not a complete sentence, following the confirmed earlier assumptions.
+    **Tests:** Exhaustion, absent-level, five-choice, missingness and conversion
+    cases in the two unit-test classes. The published acceptance test rejects
+    warnings containing `constraint`: all constraint warnings specified for
+    the walker describe failed satisfaction or failed final checking; unrelated
+    warnings remain allowed.
+
+50. **Question:** Which existing accounting/context rules apply to fallback
+    success at navigation versus at the final check?
+    **Assumption:** Initial success counts once and still performs exactly one
+    question handling. Final repair changes neither answered count, clock nor
+    speed violations. Minimum time 61 seconds and violation rate 1 make this
+    observable without assuming a clock RNG stream. A final repair of a kept
+    default does not retroactively count it. Repeat context is evaluated for
+    each instance. Search's `today` is the current clock date: the late-date
+    case forces a date at the upper broad-level boundary, 3652 days after the
+    end date, after navigation advances by two days. Using the initial date
+    would leave that target outside every searched level.
+    **Tests:** Clock/report, final repair, repeat-context and midnight cases
+    in `FormWalkerAmendment6LifecycleTest`.
+
+51. **Question:** What configuration and requiredness should the six-shape
+    acceptance fixture use, given the default 5% optional missing rate?
+    **Assumption:** Use exactly `SimulationConfig.defaults()` and make all six
+    questions required in the fixture so the explicit requirement to answer
+    every question in submissions 1..20 is compatible with ordinary missingness.
+    Their six constraints are copied verbatim from Amendment 6 (XML escaping
+    only). Separately discover every published XML form and test each submission
+    1..50 with default settings, using the specified coverage-3 media directory.
+    Published samples are read-only. No unsupported function failures are
+    suppressed and no acceptance cases are skipped.
+    **Tests:** `FormWalkerAmendment6AcceptanceTest` (300 current published-form
+    cases plus 20 six-shape cases).
+
+### Amendment 6 build and validation
+
+- **Question:** Can the requested `mvnw.cmd -o -q test-compile` complete?
+- **Assumption:** The cached dependency access failure is an environment
+  limitation, not a test-source error. The requested command fails in
+  `testCompile` on `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+  The offline `-e` diagnostic confirms `java.nio.file.AccessDeniedException`
+  at `WindowsLinkSupport.getRealPath`. No dependencies, repositories, drive
+  mappings or build configuration were changed.
+- **Compilation:** The existing `.codex-runs/WalkerAmendment5CompileProbe.java`
+  successfully compiled all 33 FormWalker test/support sources, including
+  the final three new classes, with Java release 17 against actual project
+  classes and cached JavaRosa/JUnit APIs. The probe uses in-memory jar class
+  entries to avoid the failing Windows canonicalization. This independently
+  verifies compilation; it is not a successful Maven invocation. Logs:
+  `.codex-runs/walker-amendment6-test-compile.log`,
+  `.codex-runs/walker-amendment6-test-compile-detail.log`, and
+  `.codex-runs/walker-amendment6-probe-compile.log`.
+- **Execution:** The final new suite comprises 373 parameterized cases:
+  53 unit cases, 300 published-form acceptance cases, and 20 explicit
+  six-shape acceptance cases. The final unit run has 11 passes and 42
+  assertion failures. All 300 published-form cases passed in the full run;
+  the 20 explicit-shape cases all fail with assertions that searchable
+  questions remain blank. No final fixture-loading failures, runtime
+  exceptions, aborted tests or skipped cases remain. The two repeat
+  fixtures were corrected to reference a count node, as JavaRosa requires,
+  before final compilation and rerunning the units. Final execution totals
+  across these runs are 311 passing and 62 failing cases. Logs:
+  `.codex-runs/walker-amendment6-junit.log` (initial full run),
+  `.codex-runs/walker-amendment6-unit-final.log`, and
+  `.codex-runs/walker-amendment6-shapes-final.log`.
+- Existing tests and fixtures, production source, build settings and samples
+  remain unchanged. No commit was made. Temporary diagnostics remain under
+  `.codex-runs/`.
