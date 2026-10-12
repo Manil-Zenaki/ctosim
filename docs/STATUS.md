@@ -20,7 +20,7 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 
-Suite: 4300 Java tests (57 failing, all disputed, see below) and 331 Python tests (2026-10-11). Once the disputes are settled and the suite is green, republish the Stata package (`scripts/publish-stata-package.ps1`): its jar predates these fixes.
+Suite: 4301 Java tests, 331 Python tests and 35 Stata tests, all green (2026-10-11).
 
 ## Next step
 
@@ -45,14 +45,12 @@ trimmed `instanceName`, comments file URLs. 65 of the 73 `oracle`
 functions now give SurveyCTO's exact result; the other 8 depend on the
 date, chance, the form version or the phone's language.
 
-**Open: four disputes** (specs 03, 06, 07, 08) on tests superseded by
-these amendments, or that hit two engine limits (a predicate on the
-repeat's own step inside a condition; `NaN` results stored as no value).
-Codex hit its usage limit on 2026-10-11; run when it is back:
-`scripts/codex-tests.ps1 specs/NN-x.md -Dispute` for 03, 06, 07 and 08.
-Until then 57 tests fail, all of them disputed. Codex also stopped
-before writing the spec 08 questions file (its tests were committed by
-hand).
+The four disputes these amendments raised (specs 03, 06, 07, 08) were
+adjudicated on 2026-10-11: all upheld. Codex had stopped on its usage
+limit before writing the spec 08 questions file for Amendment 2 (its
+tests were committed by hand). Two engine limits are written in spec 03
+Amendment 4: a predicate on the repeat's own step inside a condition is
+not restricted to the instance, and a `NaN` result stores no value.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
