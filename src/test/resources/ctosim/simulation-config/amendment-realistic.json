@@ -1,0 +1,38 @@
+{
+  "seed": 83,
+  "submissions": 19,
+  "start": "2024-02-29T09:15:20",
+  "fieldworkDays": 17,
+  "missingRate": 0.2,
+  "specialRate": 0.3,
+  "specialValues": ["99", "-88"],
+  "repeats": {"min": 0, "max": 7},
+  "integerRange": {"min": -5, "max": 120},
+  "decimalRange": {"min": -1.5, "max": 2000.25},
+  "timeZone": "+05:45",
+  "enumerators": 23,
+  "speedViolationRate": 0.4,
+  "profiles": {"urban": 2.5, "rural": 7.5, "unused": 0},
+  "area": {"minLatitude": 8.5, "maxLatitude": 9.5, "minLongitude": 38, "maxLongitude": 40},
+  "textPools": {"place": ["Adama", "東京", "Adama"], "firstName": ["Élodie"], "comment": ["line one\nline two"], "lastName": ["O'Neil", "李"]},
+  "fields": {
+    "income": {
+      "distribution": {"lognormal": {"mean": 1200.5, "sd": 450.25}},
+      "min": 0, "max": 10000, "missingRate": 0.15,
+      "when": [
+        {"if": "profile() = 'rural'", "distribution": {"normal": {"mean": 800, "sd": 100}}, "min": 0, "max": 3000, "missingRate": 0},
+        {"if": "${age} < 18", "value": 0, "missingRate": 1}
+      ]
+    },
+    "derived": {"expr": "${income} * 12", "missingRate": 0.25},
+    "gps": {"area": {"minLatitude": -4, "maxLatitude": -3, "minLongitude": -75, "maxLongitude": -74}},
+    "conditional": {"when": [
+      {"if": "${age} >= 18", "expr": "${income} + 1"},
+      {"if": "1 = 1", "weights": {"z": 3, "a": 1}},
+      {"if": "1 = 1", "texts": ["Élodie", "東京"]},
+      {"if": "1 = 1", "area": {"minLatitude": 1, "maxLatitude": 2, "minLongitude": 3, "maxLongitude": 4}},
+      {"if": "1 = 1", "min": "2020-01-01", "max": "2021-12-31"},
+      {"if": "1 = 1", "missingRate": 0.75}
+    ]}
+  }
+}

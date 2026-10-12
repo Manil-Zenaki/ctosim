@@ -291,3 +291,143 @@ spec 04; no production source was read.
   or existing tests should be changed to work around it. **Dependent tests:**
   Compilation of all three new Amendment 2 test classes remains unverified.
   Runtime tests were not run because compilation did not complete.
+
+## Amendment 3: realistic data
+
+Existing tests, fixtures, and questions are preserved. New coverage is in
+`SimulationConfigRealisticParsingTest`, `SimulationConfigRealisticRulesTest`,
+`SimulationConfigRealisticValidationTest`, `SimulationConfigRealisticCopiesTest`,
+and `SimulationConfigRealisticIoTest`, with `SimulationConfigRealisticSupport`
+and `amendment-realistic.json`. Only the spec, build configuration, and existing
+tests were inspected; no production source was read.
+
+22. **Which override combinations are permitted with `area`, and does a rule
+    conflict with the parent override's settings?**
+    - **Assumption:** The explicit exclusion lists govern combinations. `area`
+      alone is a setting; it can coexist with `expr`, `distribution`, or `value`
+      and `missingRate`. A parent's settings and each rule body are validated
+      separately: a parent `value` does not prohibit a rule's `expr` or
+      `distribution`. No settings are merged or evaluated by this module.
+    - **Dependent tests:** `areaCanAccompanySettingsWithNoExplicitAreaConflict`,
+      `ruleAndParentAnswerKindsAreValidatedSeparately`,
+      `whenAloneIsAValidOverrideAndDoesNotPromoteRuleSettingsToTheParent`, and
+      `incompatibleOverrideSettings` (also exercised through `load`).
+
+23. **Are absent settings inherited into accessors, and which empty containers
+    are valid?**
+    - **Assumption:** An absent field area remains an empty optional even with
+      a top-level area. `textPools()` contains only explicitly overridden pools,
+      not the generator's built-in pools. An empty `textPools` object is valid:
+      only its individual arrays have a nonempty constraint. Empty `profiles`
+      and empty individual text pools are explicitly invalid.
+    - **Unresolved:** `when: []` has no stated minimum length, but the base rule
+      requires at least one override setting. No test requires acceptance or
+      rejection of an empty top-level `when` array. A nested `when: []` inside
+      a rule is rejected because nesting is expressly forbidden.
+    - **Dependent tests:** `fieldAreaDoesNotRequireOrOverwriteGlobalArea`,
+      `customTextPoolsContainOnlySpecifiedPoolsAndPreserveExactEntries`,
+      `emptyTextPoolMappingDoesNotInventOverrides`, and `invalidRules`.
+
+24. **What expression validation and preservation are required?**
+    - **Assumption:** Parseable expressions are preserved exactly, including
+      whitespace. The parser accepts `${name}` references to absent fields and
+      `profile()` without a profile declaration; no form lookup, evaluation,
+      boolean-result requirement for `if`, or profile-name resolution occurs.
+      Tests use basic XPath syntax, plus the explicitly supported extensions.
+      Expressions in false or later rules are still validated. Rule order and
+      duplicate conditions are retained in the returned list.
+    - **Unresolved:** Unknown function handling, detailed `${name}` grammar,
+      quoted literal `${...}` substitution, and whitespace-only `if`/`expr`
+      strings are not tested. Invalid XPath tests require source, key, and
+      explanation; they do not prescribe an exception cause type or parser
+      wording. JSON syntax failures independently require line and cause.
+    - **Dependent tests:** All expression and order tests in
+      `SimulationConfigRealisticRulesTest`, their load counterparts, and the
+      false-condition case in `invalidRules`.
+
+25. **How specific must paths be for compound errors?**
+    - **Assumption:** Existing confirmed question 1 still governs missing
+      members, reversed bounds, invalid names, and conflicts: the containing
+      object or a more specific path is accepted. A value with one unambiguous
+      location must name its full path. Amendment 3 explicitly illustrates
+      bracket indexes, so malformed second-rule conditions require
+      `fields.answer.when[1].if` and invalid third pool entries require
+      `textPools.place[2]`. An out-of-domain coordinate that also reverses the
+      bounds may report the area object or a member. Duplicate keys retain
+      question 2's flexibility about syntax versus validation classification.
+    - **Dependent tests:** The validation matrices, malformed XPath tests,
+      duplicate-key tests, and their corresponding load tests.
+
+26. **Are text duplicates, Unicode, internal spaces, and extreme numbers valid?**
+    - **Assumption:** Profile names permit Unicode and internal spaces under
+      the stated nonempty/no-edge-whitespace rule; names are case-sensitive.
+      Text pool entries preserve Unicode, leading/trailing spaces, newlines,
+      order, and duplicates. Only zero-length pool entries are expressly
+      forbidden. Profile weights remain relative, unnormalized values.
+      Normal means may be negative or zero; lognormal means must be positive;
+      zero standard deviation and standard deviations exceeding the mean are
+      allowed. Numeric distribution bounds need not contain the mean.
+    - **Unresolved:** Whitespace-only pool entries, Unicode edge-whitespace
+      classification, exact-decimal rounding at numeric limits, underflow,
+      and double overflow remain untested, consistent with questions 7 and 19.
+      No constructor validation is inferred for the new public records.
+    - **Dependent tests:** Profile/text/distribution acceptance tests,
+      `distributionAllowsEqualFractionalNumericBoundsAndMissingRate`, and the
+      corresponding rejection matrices. Record constructors only build valid
+      expected values.
+
+27. **How do immutability, copies, and generation requirements extend?**
+    - **Assumption:** Every new collection is unmodifiable, including nested
+      pool lists and rule-body collections. Mutations that change a collection
+      throw `UnsupportedOperationException`, as confirmed in question 10.
+      Copies preserve all new settings and their order, including nested rule
+      bodies, without requiring identity sharing or copying of immutable
+      values. Loading reads a snapshot rather than a live view of the file.
+      Repeated parsing gives the same observable data. No sampling,
+      statistical-rate, geometry-generation, rule-selection, or seed-diversity
+      behavior is tested: the amendment assigns use to specs 05 and 07.
+    - **Dependent tests:** All tests in `SimulationConfigRealisticCopiesTest`,
+      `loadedSettingsSurviveCopiesAndReplacementOfTheSourceFile`, and the
+      parse/load fixture comparison. No undocumented size limits are asserted.
+
+28. **Do new schema words become reserved in arbitrary-name mappings?**
+    - **Assumption:** No. The explicit schemas accept each new key only at its
+      documented location, with case-sensitive spelling after JSON escape
+      decoding. Arbitrary field names, choice codes, and profile names keep
+      their documented naming rules. In particular, `if` is allowed only in a
+      rule schema and is not itself a field-override setting.
+    - **Dependent tests:** `newWordsRemainLegalArbitraryFieldAndChoiceNames`,
+      `escapedNewKeysAndNamesAreDecodedBeforeRecognition`, `unknownKeys`, and
+      `duplicateKeys` (including their load counterparts).
+
+### Amendment 3 build verification (2026-10-12)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile`, then repeated with `-e`
+  for diagnosis. Both failed at `maven-compiler-plugin:3.15.0:testCompile`.
+  The detailed cause is `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac closes
+  its archive file manager (`WindowsPath.toRealPath` /
+  `ZipFileSystemProvider.removeFileSystem`). Logs are
+  `.codex-runs/04-realistic-test-compile.log` and
+  `.codex-runs/04-realistic-test-compile-detail.log`.
+- A direct javac check limited to the new tests, existing test support,
+  `target/classes`, and cached JUnit dependencies could not resolve production
+  types such as `SimulationConfig` and `FieldOverride`; it also encountered
+  the archive-close access error on a cached `opentest4j` jar. Its log is
+  `.codex-runs/04-realistic-javac.log`.
+- As a separate source check, all six new Java files plus the existing test
+  support **compiled successfully with Java release 17** against temporary
+  signatures transcribed solely from spec 04 and the actual cached JUnit API.
+  This probe lives entirely in `.codex-runs/04-realistic-probe/`. It uses the
+  compiler API and leaves the archive manager open until process exit to
+  avoid the sandbox's archive-close error; compiler diagnostics still fail
+  the probe. Result: `.codex-runs/04-realistic-signature-compile.log`.
+  This checks Java syntax, types, and JUnit overloads against the documented
+  contract; it does **not** establish that the repository Maven build passes.
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies and compiled public API classes?
+  **Assumption:** This environment limitation does not authorize edits to
+  production code, dependency permissions, or the build. No Maven repository
+  was copied, no drive was mapped, and no dependencies were installed.
+  **Dependent tests:** Repository compilation and runtime execution of all
+  Amendment 3 test classes remain unverified. Existing tests are unchanged.
