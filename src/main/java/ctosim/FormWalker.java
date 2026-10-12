@@ -17,6 +17,7 @@ import java.util.SplittableRandom;
 import java.util.TimeZone;
 import org.javarosa.core.model.Constants;
 import org.javarosa.core.model.FormDef;
+import org.javarosa.core.model.FormIndex;
 import org.javarosa.core.model.SelectChoice;
 import org.javarosa.core.model.condition.EvaluationContext;
 import org.javarosa.core.model.data.AnswerDataFactory;
@@ -44,6 +45,8 @@ public final class FormWalker {
     static final String MINIMUM_SECONDS = "minimum-seconds";
     static final String SPEED_VIOLATIONS = "speed-violations";
     static final int MAX_STEPS = 100_000;
+    /** Passes of the end-of-form constraint check that may answer questions again (Amendment 5). */
+    static final int MAX_CONSTRAINT_PASSES = 5;
     private static final int START_MINUTES = 540;
     private static final int MIN_SECONDS = 5;
     private static final int MAX_SECONDS = 60;
@@ -173,6 +176,7 @@ public final class FormWalker {
                     newRepeatPrompt();
                 }
             }
+            enforceConstraints();
             FormDef def = session.getModel().getForm();
             reportSpeedViolations(def, def.getMainInstance().getRoot());
             refreshDurations(def, def.getMainInstance().getRoot());
@@ -221,7 +225,7 @@ public final class FormWalker {
                 return;
             }
             boolean overridden = config.field(name).isPresent();
-            if (prompt.getAnswerValue() != null && !overridden) {
+            if (prompt.getAnswerValue() != null && !overridden && satisfiesConstraint(ref, prompt)) {
                 return; // keep a default or a value set by a calculation or an action
             }
             QuestionKind kind = kind(prompt);
@@ -229,31 +233,10 @@ public final class FormWalker {
                 warn("field '" + name + "' (" + path + ") uses a control that cannot be simulated; left unanswered");
                 return;
             }
-            List<String> choices = new ArrayList<>();
-            if (prompt.getSelectChoices() != null && (kind == QuestionKind.SELECT_ONE || kind == QuestionKind.SELECT_MULTIPLE)) {
-                for (SelectChoice choice : prompt.getSelectChoices()) {
-                    choices.add(choice.getValue());
-                }
-            }
-            String appearance = prompt.getQuestion().getAppearanceAttr();
-            // Choices loaded from an attached file by search() (spec 07, Amendment 3).
-            List<String> loaded = null;
-            if (appearance != null && (kind == QuestionKind.SELECT_ONE || kind == QuestionKind.SELECT_MULTIPLE)) {
-                // A choice filter does not apply: the placeholder and static choices come from the whole list.
-                List<String> formChoices = SurveyCtoExporter.choiceValues(session.getModel().getForm(), prompt.getQuestion());
-                SearchChoices.Result search = SearchChoices.load(appearance, formChoices,
-                        expression -> evaluate(expression, ref), form.attachments());
-                if (search != null) {
-                    if (search.warning() != null) {
-                        warn("field '" + name + "' (" + path + "): " + search.warning() + "; only its static choices are offered");
-                    }
-                    choices = search.choices();
-                    loaded = choices;
-                }
-            }
-            boolean required = prompt.isRequired();
-            Question question = new Question(name, kind, choices, appearance == null ? "" : appearance, required,
-                    ConstraintHints.forCurrentQuestion(session));
+            Prepared prepared = prepare(prompt, ref, name, path, kind, true);
+            Question question = prepared.question();
+            List<String> loaded = prepared.loaded();
+            boolean required = question.required();
             double minimum = minimumSeconds(prompt);
 
             for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -282,6 +265,110 @@ public final class FormWalker {
                     + MAX_ATTEMPTS + " attempts; left blank");
             warnIfRequired(required, name, path);
             handled(ref, minimum);
+        }
+
+        /** The generator's question for the current prompt, with its search() choices when it has any. */
+        private record Prepared(Question question, List<String> loaded) { }
+
+        private Prepared prepare(FormEntryPrompt prompt, TreeReference ref, String name, String path, QuestionKind kind,
+                                 boolean report) {
+            List<String> choices = new ArrayList<>();
+            if (prompt.getSelectChoices() != null && (kind == QuestionKind.SELECT_ONE || kind == QuestionKind.SELECT_MULTIPLE)) {
+                for (SelectChoice choice : prompt.getSelectChoices()) {
+                    choices.add(choice.getValue());
+                }
+            }
+            String appearance = prompt.getQuestion().getAppearanceAttr();
+            // Choices loaded from an attached file by search() (spec 07, Amendment 3).
+            List<String> loaded = null;
+            if (appearance != null && (kind == QuestionKind.SELECT_ONE || kind == QuestionKind.SELECT_MULTIPLE)) {
+                // A choice filter does not apply: the placeholder and static choices come from the whole list.
+                List<String> formChoices = SurveyCtoExporter.choiceValues(session.getModel().getForm(), prompt.getQuestion());
+                SearchChoices.Result search = SearchChoices.load(appearance, formChoices,
+                        expression -> evaluate(expression, ref), form.attachments());
+                if (search != null) {
+                    if (search.warning() != null && report) {
+                        warn("field '" + name + "' (" + path + "): " + search.warning() + "; only its static choices are offered");
+                    }
+                    choices = search.choices();
+                    loaded = choices;
+                }
+            }
+            Question question = new Question(name, kind, choices, appearance == null ? "" : appearance,
+                    prompt.isRequired(), ConstraintHints.forCurrentQuestion(session));
+            return new Prepared(question, loaded);
+        }
+
+        private boolean satisfiesConstraint(TreeReference ref, FormEntryPrompt prompt) {
+            return session.getModel().getForm().evaluateConstraint(ref, prompt.getAnswerValue());
+        }
+
+        // --- Constraints at the end of the form (Amendment 5) ---------------------------
+
+        /**
+         * Like SurveyCTO Collect when a form is finalised: every question that holds a value must
+         * satisfy its constraint on the final instance. A question that does not is answered again;
+         * after a few passes, or when no answer is accepted, it is cleared.
+         */
+        private void enforceConstraints() {
+            for (int pass = 1; pass <= MAX_CONSTRAINT_PASSES; pass++) {
+                if (!constraintPass(false)) {
+                    return;
+                }
+            }
+            while (constraintPass(true)) {
+                // each pass clears at least one value, so this ends
+            }
+        }
+
+        /** One pass over the questions in form order; true when it changed a value. */
+        private boolean constraintPass(boolean clearOnly) {
+            session.jumpToIndex(FormIndex.createBeginningOfFormIndex());
+            boolean changed = false;
+            int steps = 0;
+            for (int event = step(++steps); event != FormEntryController.EVENT_END_OF_FORM; event = step(++steps)) {
+                if (event != FormEntryController.EVENT_QUESTION) {
+                    continue;
+                }
+                FormEntryPrompt prompt = session.getModel().getQuestionPrompt();
+                TreeReference ref = session.getModel().getFormIndex().getReference();
+                // The value is read from the instance: the prompt drops a select value that its
+                // filtered choice list does not hold, such as a value loaded by search().
+                TreeElement node = session.getModel().getForm().getMainInstance().resolveReference(ref);
+                IAnswerData value = node == null ? null : node.getValue();
+                QuestionKind kind = kind(prompt);
+                if (prompt.isReadOnly() || value == null || kind == null
+                        || TreeElement.getAttribute(prompt.getBindAttributes(), FormLoader.CTOSIM_NS,
+                        FormLoader.CALCULATE_HERE) != null) {
+                    continue;
+                }
+                if (session.getModel().getForm().evaluateConstraint(ref, value)) {
+                    continue;
+                }
+                changed = true;
+                String name = ref.getNameLast();
+                String path = ref.toString(true);
+                if (clearOnly || !answerAgain(prompt, ref, name, path, kind)) {
+                    clear(ref);
+                    warn("field '" + name + "' (" + path + "): its constraint does not hold at the end of the form; left blank");
+                    warnIfRequired(prompt.isRequired(), name, path);
+                }
+            }
+            return changed;
+        }
+
+        /** Asks the generator again for the current question; true when the engine accepted an answer. */
+        private boolean answerAgain(FormEntryPrompt prompt, TreeReference ref, String name, String path, QuestionKind kind) {
+            Prepared prepared = prepare(prompt, ref, name, path, kind, false);
+            for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                String text = generator.generate(prepared.question(), clock.now().toLocalDate(), answers);
+                IAnswerData data = text == null ? null
+                        : prepared.loaded() == null ? convert(prompt, text) : convertLoaded(kind, text, prepared.loaded());
+                if (data != null && session.answerQuestion(data, true) == FormEntryController.ANSWER_OK) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /** The string value of {@code expression} evaluated for the node at {@code ref}. */
