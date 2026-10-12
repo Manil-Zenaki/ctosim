@@ -56,6 +56,8 @@ public final class FormWalker {
     private final AnswerGenerator generator;
     private final List<String> configWarnings;
     private final String[] deviceIds;
+    /** Generic path of each field name of the form (its first occurrence), for ${name} in expressions. */
+    private final Map<String, String> paths = new HashMap<>();
 
     public FormWalker(LoadedForm form, SimulationConfig config) {
         this.form = Objects.requireNonNull(form, "form");
@@ -72,6 +74,23 @@ public final class FormWalker {
                         + form.formId() + "'");
             }
         }
+        collectPaths(form.newEntryController().getModel().getForm().getMainInstance().getRoot(), "", paths);
+        Set<String> referenced = new java.util.TreeSet<>();
+        for (String name : config.overriddenFields()) {
+            FieldOverride override = config.field(name).orElseThrow();
+            override.expression().ifPresent(e -> referenced.addAll(references(e)));
+            for (OverrideRule rule : override.rules()) {
+                referenced.addAll(references(rule.condition()));
+                rule.override().expression().ifPresent(e -> referenced.addAll(references(e)));
+            }
+        }
+        for (String name : referenced) {
+            if (!names.contains(name) && !config.overriddenFields().contains(name)) {
+                warnings.add("configuration: field '" + name + "' (in an expression) does not name any element of form '"
+                        + form.formId() + "'");
+            }
+        }
+        warnings.sort(null);
         this.configWarnings = List.copyOf(warnings);
     }
 
@@ -120,6 +139,26 @@ public final class FormWalker {
         return "enumerator" + String.format(Locale.ROOT, "%0" + width + "d", enumerator);
     }
 
+    private static final java.util.regex.Pattern REFERENCE = java.util.regex.Pattern.compile("\\$\\{([^}]*)\\}");
+
+    /** The field names written as ${name} in an expression of the configuration. */
+    private static Set<String> references(String expression) {
+        Set<String> names = new HashSet<>();
+        java.util.regex.Matcher m = REFERENCE.matcher(expression);
+        while (m.find()) {
+            names.add(m.group(1));
+        }
+        return names;
+    }
+
+    private static void collectPaths(TreeElement element, String parent, Map<String, String> paths) {
+        String path = parent + "/" + element.getName();
+        paths.putIfAbsent(element.getName(), path);
+        for (int i = 0; i < element.getNumChildren(); i++) {
+            collectPaths(element.getChildAt(i), path, paths);
+        }
+    }
+
     private static void collectNames(TreeElement element, Set<String> names) {
         names.add(element.getName());
         for (int i = 0; i < element.getNumChildren(); i++) {
@@ -147,6 +186,8 @@ public final class FormWalker {
         private final List<String> warnings = new ArrayList<>();
         private final Map<String, Integer> repeatTargets = new HashMap<>();
         private final SplittableRandom violationDraws;
+        /** The submission's profile (spec 07, Amendment 7); "" without profiles. */
+        private final String profile;
         private final List<String> violations = new ArrayList<>();
         private int answered;
 
@@ -160,6 +201,7 @@ public final class FormWalker {
                     .plusDays(timing.nextInt(config.fieldworkDays()))
                     .plusMinutes(timing.nextInt(START_MINUTES + 1));
             this.violationDraws = new SplittableRandom(seed(base, number, 8));
+            this.profile = drawProfile(new SplittableRandom(seed(base, number, 9)));
             this.clock = new SimulatedClock(start);
             int enumerator = 1 + new SplittableRandom(seed(base, number, 5)).nextInt(config.enumerators());
             this.session = form.newSimulatedSession(clock, seed(base, number, 1), Map.of(
@@ -238,9 +280,16 @@ public final class FormWalker {
             List<String> loaded = prepared.loaded();
             boolean required = question.required();
             double minimum = minimumSeconds(prompt);
+            Effective effective = effectiveOverride(name, path, ref);
+            FieldOverride override = effective.override();
+            if (effective.blank()) {
+                clear(ref); // an expression whose value is empty leaves the question blank
+                handled(ref, minimum);
+                return;
+            }
 
             for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-                String text = generator.generate(question, clock.now().toLocalDate(), answers);
+                String text = generator.generate(question, clock.now().toLocalDate(), answers, override);
                 if (text == null) {
                     clear(ref);
                     handled(ref, minimum);
@@ -365,8 +414,9 @@ public final class FormWalker {
         /** Asks the generator again for the current question; true when the engine accepted an answer. */
         private boolean answerAgain(FormEntryPrompt prompt, TreeReference ref, String name, String path, QuestionKind kind) {
             Prepared prepared = prepare(prompt, ref, name, path, kind, false);
+            FieldOverride override = effectiveOverride(name, path, ref).override();
             for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-                String text = generator.generate(prepared.question(), clock.now().toLocalDate(), answers);
+                String text = generator.generate(prepared.question(), clock.now().toLocalDate(), answers, override);
                 IAnswerData data = text == null ? null
                         : prepared.loaded() == null ? convert(prompt, text) : convertLoaded(kind, text, prepared.loaded());
                 if (data != null && session.answerQuestion(data, true) == FormEntryController.ANSWER_OK) {
@@ -417,6 +467,151 @@ public final class FormWalker {
                 }
             }
             return false;
+        }
+
+        // --- Rules, expressions and profiles (spec 07, Amendment 7) ---------------------
+
+        private String drawProfile(SplittableRandom random) {
+            Map<String, Double> profiles = config.profiles();
+            if (profiles.isEmpty()) {
+                return "";
+            }
+            double total = profiles.values().stream().mapToDouble(Double::doubleValue).sum();
+            double target = random.nextDouble() * total;
+            String last = "";
+            for (Map.Entry<String, Double> entry : profiles.entrySet()) {
+                if (entry.getValue() > 0) {
+                    last = entry.getKey();
+                    target -= entry.getValue();
+                    if (target < 0) {
+                        return entry.getKey();
+                    }
+                }
+            }
+            return last;
+        }
+
+        /** A question's override as it applies, and whether its expression asks for a blank answer. */
+        private record Effective(FieldOverride override, boolean blank) { }
+
+        /**
+         * The question's override once its first applicable rule is merged in and its expression
+         * evaluated (an expression's value becomes a fixed value; an empty value, a blank answer).
+         */
+        private Effective effectiveOverride(String name, String path, TreeReference ref) {
+            FieldOverride override = config.field(name).orElse(null);
+            if (override == null) {
+                return new Effective(null, false);
+            }
+            FieldOverride base = override;
+            OverrideRule applied = null;
+            for (OverrideRule rule : base.rules()) {
+                Object value = configExpression(rule.condition(), name, path, ref);
+                if (value != null && truth(value)) {
+                    applied = rule;
+                    break;
+                }
+            }
+            override = applied != null ? base.with(applied.override()) : base.withoutRules();
+            if (override.expression().isPresent()) {
+                Object value = configExpression(override.expression().get(), name, path, ref);
+                if (value == null) { // the expression is absent: the other settings apply
+                    return new Effective(applied != null ? base.with(applied.override().withoutExpression())
+                            : base.withoutRules().withoutExpression(), false);
+                }
+                String text = XPathFuncExpr.toString(XPathFuncExpr.unpack(value));
+                return new Effective(override.fixedTo(text), text.isEmpty());
+            }
+            return new Effective(override, false);
+        }
+
+        /** XPath boolean(): a node-set is true when it is not empty. */
+        private static boolean truth(Object value) {
+            return value instanceof org.javarosa.xpath.XPathNodeset nodes ? nodes.size() > 0
+                    : XPathFuncExpr.toBoolean(XPathFuncExpr.unpack(value));
+        }
+
+        /** An XPath string literal for {@code s}, whatever quotes it holds. */
+        private static String literal(String s) {
+            if (!s.contains("'")) {
+                return "'" + s + "'";
+            }
+            if (!s.contains("\"")) {
+                return "\"" + s + "\"";
+            }
+            StringBuilder concat = new StringBuilder("concat(''");
+            for (String part : s.split("'", -1)) {
+                concat.append(", '").append(part).append("'");
+                concat.append(", \"'\"");
+            }
+            concat.setLength(concat.length() - ", \"'\"".length());
+            return concat.append(")").toString();
+        }
+
+        /** Function names of an expression that neither the engine nor the form's session provides. */
+        private void unknownFunctions(org.javarosa.xpath.expr.XPathExpression e, EvaluationContext ec, Set<String> out) {
+            if (e instanceof org.javarosa.xpath.expr.XPathFuncExpr f) {
+                String fn = f.id.toString();
+                if (!SurveyCtoFunctions.ENGINE_BUILT_INS.contains(fn) && !ec.getFunctionHandlers().containsKey(fn)) {
+                    out.add(fn);
+                }
+                for (org.javarosa.xpath.expr.XPathExpression a : f.args) {
+                    unknownFunctions(a, ec, out);
+                }
+            } else if (e instanceof org.javarosa.xpath.expr.XPathBinaryOpExpr b) {
+                unknownFunctions(b.a, ec, out);
+                unknownFunctions(b.b, ec, out);
+            } else if (e instanceof org.javarosa.xpath.expr.XPathUnaryOpExpr u) {
+                unknownFunctions(u.a, ec, out);
+            } else if (e instanceof org.javarosa.xpath.expr.XPathPathExpr p) {
+                if (p.filtExpr != null) {
+                    unknownFunctions(p.filtExpr, ec, out);
+                }
+                for (org.javarosa.xpath.expr.XPathStep step : p.steps) {
+                    if (step.predicates != null) {
+                        for (org.javarosa.xpath.expr.XPathExpression pred : step.predicates) {
+                            unknownFunctions(pred, ec, out);
+                        }
+                    }
+                }
+            } else if (e instanceof org.javarosa.xpath.expr.XPathFilterExpr f) {
+                unknownFunctions(f.x, ec, out);
+            }
+        }
+
+        /** A configuration expression evaluated for the question; null (with a warning) when it cannot be. */
+        private Object configExpression(String expression, String name, String path, TreeReference ref) {
+            StringBuilder resolved = new StringBuilder();
+            java.util.regex.Matcher m = REFERENCE.matcher(expression);
+            while (m.find()) {
+                String field = paths.get(m.group(1));
+                if (field == null) {
+                    warn("field '" + name + "' (" + path + "): the configuration expression '" + expression
+                            + "' names an unknown field '" + m.group(1) + "'");
+                    return null;
+                }
+                m.appendReplacement(resolved, java.util.regex.Matcher.quoteReplacement(" " + field + " "));
+            }
+            m.appendTail(resolved);
+            String text = resolved.toString().replaceAll("\\bprofile\\(\\s*\\)",
+                    java.util.regex.Matcher.quoteReplacement(literal(profile)));
+            text = EngineExpressions.rewriteExpression(text, new int[] {1_000_000}, genericPath(ref));
+            try {
+                FormDef def = session.getModel().getForm();
+                EvaluationContext ec = new EvaluationContext(def.getEvaluationContext(), ref);
+                org.javarosa.xpath.expr.XPathExpression parsed = XPathParseTool.parseXPath(text);
+                Set<String> unknown = new java.util.TreeSet<>();
+                unknownFunctions(parsed, ec, unknown);
+                if (!unknown.isEmpty()) {
+                    throw new IllegalArgumentException("unknown function " + String.join(", ", unknown));
+                }
+                Object value = parsed.eval(def.getMainInstance(), ec);
+                return value instanceof org.javarosa.xpath.XPathNodeset ? value : XPathFuncExpr.unpack(value);
+            } catch (XPathSyntaxException | RuntimeException e) {
+                warn("field '" + name + "' (" + path + "): the configuration expression '" + expression
+                        + "' cannot be evaluated (" + e.getMessage() + ")");
+                return null;
+            }
         }
 
         /** The string value of {@code expression} evaluated for the node at {@code ref}. */
