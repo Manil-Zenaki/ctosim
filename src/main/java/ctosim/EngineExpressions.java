@@ -237,11 +237,22 @@ final class EngineExpressions {
         return path.startsWith("/") ? path : null;
     }
 
-    /** A calculation wrapped so that a date result is stored as a date only; time fields are left alone. */
+    /**
+     * A calculation wrapped so that a date result is stored as a date only; time fields are left
+     * alone. The engine turns any text stored in a dateTime field back into a date-time, so a
+     * calculated dateTime field is declared as text, which is what SurveyCTO stores.
+     */
     private static String store(Element bind, String calculation) {
         String type = bind.getAttribute("type");
-        return calculation.isBlank() || type.substring(type.indexOf(':') + 1).equals("time")
-                ? calculation : STORE + "(" + calculation + ")";
+        int colon = type.indexOf(':');
+        String local = type.substring(colon + 1);
+        if (calculation.isBlank() || local.equals("time")) {
+            return calculation;
+        }
+        if (local.equals("dateTime")) {
+            bind.setAttribute("type", type.substring(0, colon + 1) + "string");
+        }
+        return STORE + "(" + calculation + ")";
     }
 
     /**
