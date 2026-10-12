@@ -260,7 +260,7 @@ public final class FormWalker {
                     return;
                 }
             }
-            if (tryCandidates(prompt, question, kind, loaded)) {
+            if (tryCandidates(prompt, question, kind, loaded) || search(prompt, question, kind, loaded, ref)) {
                 answered++;
                 handled(ref, minimum);
                 return;
@@ -373,7 +373,39 @@ public final class FormWalker {
                     return true;
                 }
             }
-            return tryCandidates(prompt, prepared.question(), kind, prepared.loaded());
+            return tryCandidates(prompt, prepared.question(), kind, prepared.loaded())
+                    || search(prompt, prepared.question(), kind, prepared.loaded(), ref);
+        }
+
+        /**
+         * Tries, level by level, the constraint's string literals (text questions) and the
+         * generator's search values; answers one the constraint accepts, drawn uniformly among the
+         * accepted values of the first level that has any (spec 07, Amendment 6).
+         */
+        private boolean search(FormEntryPrompt prompt, Question question, QuestionKind kind, List<String> loaded,
+                               TreeReference ref) {
+            List<List<String>> levels = new ArrayList<>();
+            if (kind == QuestionKind.TEXT || kind == QuestionKind.BARCODE) {
+                levels.add(ConstraintHints.stringLiterals(session));
+            }
+            levels.addAll(generator.searchValues(question, clock.now().toLocalDate()));
+            FormDef def = session.getModel().getForm();
+            for (List<String> level : levels) {
+                List<IAnswerData> accepted = new ArrayList<>();
+                for (String value : level) {
+                    IAnswerData data = loaded == null ? convert(prompt, value) : convertLoaded(kind, value, loaded);
+                    if (data != null && def.evaluateConstraint(ref, data)) {
+                        accepted.add(data);
+                    }
+                }
+                if (!accepted.isEmpty()) {
+                    IAnswerData chosen = accepted.get(answers.nextInt(accepted.size()));
+                    if (session.answerQuestion(chosen, true) == FormEntryController.ANSWER_OK) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         /** The constraint's candidate values, in order, until the engine accepts one (spec 09, Amendment 2). */

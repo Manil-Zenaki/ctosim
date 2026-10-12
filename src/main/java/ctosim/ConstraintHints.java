@@ -104,6 +104,39 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
         }
     }
 
+    /** The string literals written in the current question's constraint, in order, without duplicates. */
+    static List<String> stringLiterals(FormEntryController session) {
+        Set<String> literals = new LinkedHashSet<>();
+        try {
+            FormEntryModel model = session.getModel();
+            FormDef form = model.getForm();
+            TreeReference ref = form.getChildInstanceRef(model.getFormIndex());
+            AbstractTreeElement node = ref == null ? null : form.getMainInstance().resolveReference(ref);
+            if (node instanceof TreeElement element && element.getConstraint() != null
+                    && element.getConstraint().constraint instanceof XPathConditional conditional) {
+                collectLiterals(conditional.getExpr(), literals);
+            }
+        } catch (RuntimeException e) {
+            // no literals
+        }
+        return List.copyOf(literals);
+    }
+
+    private static void collectLiterals(XPathExpression expr, Set<String> out) {
+        if (expr instanceof XPathStringLiteral literal) {
+            out.add(literal.s);
+        } else if (expr instanceof XPathFuncExpr func) {
+            for (XPathExpression arg : func.args) {
+                collectLiterals(arg, out);
+            }
+        } else if (expr instanceof XPathBinaryOpExpr binary) {
+            collectLiterals(binary.a, out);
+            collectLiterals(binary.b, out);
+        } else if (expr instanceof XPathUnaryOpExpr unary) {
+            collectLiterals(unary.a, out);
+        }
+    }
+
     /** At most this many alternatives are kept (spec 09, Amendment 2). */
     static final int MAX_ALTERNATIVES = 64;
 

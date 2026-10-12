@@ -30,9 +30,160 @@ public final class AnswerGenerator {
         this.specialValues = Set.copyOf(config.specialValues());
     }
 
-    /** Answers to try, level by level, when drawing fails (spec 05, Amendment 2). */
+    /** At most this many values are listed from one drawing range. */
+    static final int SEARCH_SPREAD = 10_001;
+    static final int SEARCH_COMBINATIONS = 20_000;
+
+    /**
+     * Answers to try, level by level, when drawn answers break the constraint: first those the
+     * generator would expect, then any answer of the kind (spec 05, Amendment 2).
+     */
     public List<List<String>> searchValues(Question question, LocalDate today) {
-        throw new UnsupportedOperationException("spec 05, Amendment 2");
+        Objects.requireNonNull(question, "question");
+        Objects.requireNonNull(today, "today");
+        FieldOverride override = config.field(question.name()).orElse(null);
+        FieldRange range = override == null ? null : override.range().orElse(null);
+        List<ConstraintHints> drawing = new ArrayList<>();
+        if (question.hints().alternatives().isEmpty()) {
+            drawing.add(question.hints());
+        } else {
+            for (ConstraintHints alternative : question.hints().alternatives()) {
+                if (satisfiable(alternative, question.kind())) {
+                    drawing.add(alternative);
+                }
+            }
+        }
+        Set<String> first = new java.util.LinkedHashSet<>();
+        Set<String> second = new java.util.LinkedHashSet<>();
+        switch (question.kind()) {
+            case INTEGER, DECIMAL -> {
+                boolean integer = question.kind() == QuestionKind.INTEGER;
+                NumericRange base = range instanceof NumericRange r ? r
+                        : integer ? config.integerRange() : config.decimalRange();
+                for (ConstraintHints h : drawing) {
+                    NumericRange r = hinted(base, h, integer);
+                    for (long v : spread((long) Math.ceil(r.min()), (long) Math.floor(r.max()))) {
+                        first.add(Long.toString(v));
+                    }
+                    if (!integer) {
+                        first.add(formatDecimal(r.min()));
+                        first.add(formatDecimal(r.max()));
+                    }
+                }
+                for (long v = -10_000; v <= 10_000; v++) {
+                    second.add(Long.toString(v));
+                }
+                if (!integer) {
+                    for (int k = -10_000; k <= 10_000; k++) {
+                        second.add(formatDecimal(k / 100.0));
+                    }
+                }
+            }
+            case DATE, DATETIME -> {
+                String time = question.kind() == QuestionKind.DATETIME ? "T12:00:00" : "";
+                for (ConstraintHints h : drawing) {
+                    DateRange r = hinted(dateRange(range, today), h);
+                    long days = ChronoUnit.DAYS.between(r.min(), r.max());
+                    for (long d : spread(0, days)) {
+                        first.add(r.min().plusDays(d) + time);
+                    }
+                }
+                for (LocalDate d = today.minusDays(36_524); !d.isAfter(today.plusDays(3_652)); d = d.plusDays(1)) {
+                    second.add(d + time);
+                }
+            }
+            case TIME -> {
+                for (int minute = 0; minute < 24 * 60; minute++) {
+                    first.add(String.format(Locale.ROOT, "%02d:%02d:00", minute / 60, minute % 60));
+                }
+                for (int second2 = 0; second2 < 24 * 3600; second2++) {
+                    second.add(String.format(Locale.ROOT, "%02d:%02d:%02d", second2 / 3600, second2 / 60 % 60, second2 % 60));
+                }
+            }
+            case SELECT_ONE -> first.addAll(question.choices());
+            case SELECT_MULTIPLE -> combinations(question.choices(), first);
+            case TEXT, BARCODE -> {
+                first.addAll(question.hints().candidates());
+                for (ConstraintHints h : drawing) {
+                    if (h.prefix() != null) {
+                        for (int n = 1; n <= 12; n++) {
+                            first.add(h.prefix() + "0".repeat(n));
+                        }
+                    }
+                }
+                for (long v = -10_000; v <= 10_000; v++) {
+                    second.add(Long.toString(v));
+                }
+                for (int n = 1; n <= 100; n++) {
+                    second.add("a".repeat(n));
+                    second.add("0".repeat(n));
+                    second.add("1".repeat(n));
+                }
+            }
+            default -> {
+                return List.of();
+            }
+        }
+        return second.isEmpty() ? List.of(List.copyOf(first)) : List.of(List.copyOf(first), List.copyOf(second));
+    }
+
+    /** The integers from lo to hi, or SEARCH_SPREAD of them spread evenly (both ends included). */
+    private static List<Long> spread(long lo, long hi) {
+        List<Long> values = new ArrayList<>();
+        if (lo > hi) {
+            return values;
+        }
+        if (hi - lo < SEARCH_SPREAD) {
+            for (long v = lo; v <= hi; v++) {
+                values.add(v);
+            }
+            return values;
+        }
+        double step = (double) (hi - lo) / (SEARCH_SPREAD - 1);
+        for (int i = 0; i < SEARCH_SPREAD; i++) {
+            long v = i == SEARCH_SPREAD - 1 ? hi : lo + Math.round(i * step);
+            if (values.isEmpty() || values.get(values.size() - 1) != v) {
+                values.add(v);
+            }
+        }
+        return values;
+    }
+
+    /** Non-empty combinations of at most 4 choices, by size then in choice order. */
+    private static void combinations(List<String> choices, Set<String> out) {
+        int n = choices.size();
+        for (int size = 1; size <= Math.min(4, n); size++) {
+            int[] at = new int[size];
+            for (int i = 0; i < size; i++) {
+                at[i] = i;
+            }
+            while (true) {
+                if (out.size() >= SEARCH_COMBINATIONS) {
+                    return;
+                }
+                StringBuilder s = new StringBuilder();
+                for (int i = 0; i < size; i++) {
+                    s.append(i > 0 ? " " : "").append(choices.get(at[i]));
+                }
+                out.add(s.toString());
+                int i = size - 1;
+                while (i >= 0 && at[i] == n - size + i) {
+                    i--;
+                }
+                if (i < 0) {
+                    break;
+                }
+                at[i]++;
+                for (int j = i + 1; j < size; j++) {
+                    at[j] = at[j - 1] + 1;
+                }
+            }
+        }
+    }
+
+    private static String formatDecimal(double value) {
+        BigDecimal rounded = BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
+        return rounded.signum() == 0 ? "0" : rounded.stripTrailingZeros().toPlainString();
     }
 
     /** As generate(question, today, random), with {@code override} as the question's override (spec 05, Amendment 3). */
