@@ -4,8 +4,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import static ctosim.ConstraintHintsTestSupport.attribute;
 import static ctosim.FormWalkerTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -94,15 +92,24 @@ class ConstraintHintsWalkerTest {
         }
     }
 
-    @ParameterizedTest @ValueSource(strings = {". > 10 and . < 0", ". >= 900000000 and . <= 999999999"})
-    @Timeout(20)
-    void unsatisfiedOrFixedContradictingAnswersStillGiveConstraintAndRequiredWarnings(String expression) throws Exception {
-        var loaded = single("int", "required=\"true()\" constraint=\"" + attribute(expression) + "\"");
+    @Test @Timeout(20)
+    void impossibleConstraintStillGivesConstraintAndRequiredWarnings() throws Exception {
+        var loaded = single("int", "required=\"true()\" constraint=\"" + attribute(". > 10 and . < 0") + "\"");
         Submission s = new FormWalker(loaded, config("\"fields\":{\"answer\":{\"value\":\"5\"}}")).walk(1);
         assertEquals("", value(s, "answer"));
         assertEquals(0, s.answered());
         assertWarning(s, "answer", "constraint");
         assertWarning(s, "answer", "required");
+    }
+
+    @Test @Timeout(20)
+    void candidatesRescueFixedValueThatContradictsTheConstraintWithoutWarnings() throws Exception {
+        var loaded = single("int", "required=\"true()\" constraint=\""
+                + attribute(". >= 900000000 and . <= 999999999") + "\"");
+        Submission s = new FormWalker(loaded, config("\"fields\":{\"answer\":{\"value\":\"5\"}}")).walk(1);
+        assertEquals("900000000", value(s, "answer"));
+        assertEquals(1, s.answered());
+        assertTrue(s.warnings().isEmpty(), s.warnings().toString());
     }
 
     @Test @Timeout(600)

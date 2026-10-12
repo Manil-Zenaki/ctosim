@@ -21,6 +21,18 @@ import static org.javarosa.form.api.FormEntryController.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ConstraintHintsExtractionTest {
+    // Amendment 2 adds candidates without changing these original components.
+    private static void assertOriginalComponents(ConstraintHints expected, ConstraintHints actual) {
+        assertAll(() -> assertEquals(expected.lower(), actual.lower()),
+                () -> assertEquals(expected.upper(), actual.upper()),
+                () -> assertEquals(expected.earliest(), actual.earliest()),
+                () -> assertEquals(expected.latest(), actual.latest()),
+                () -> assertEquals(expected.minLength(), actual.minLength()),
+                () -> assertEquals(expected.maxLength(), actual.maxLength()),
+                () -> assertEquals(expected.pattern(), actual.pattern()),
+                () -> assertTrue(actual.alternatives().isEmpty(), "A single conjunction has direct hints"));
+    }
+
     @Test void noneHasSevenNullComponents() {
         ConstraintHints h = ConstraintHints.none();
         assertNotNull(h);
@@ -126,7 +138,7 @@ class ConstraintHintsExtractionTest {
 
     @ParameterizedTest @MethodSource("comparisons")
     void extractsOnlyTheTightestNumericBounds(String expression, ConstraintHints expected) throws Exception {
-        assertEquals(expected, extract(expression));
+        assertOriginalComponents(expected, extract(expression));
     }
 
     @ParameterizedTest @CsvSource(delimiter = '|', value = {
@@ -147,17 +159,48 @@ class ConstraintHintsExtractionTest {
     }
 
     @ParameterizedTest @ValueSource(strings = {
-        ". > 5 or . < 2", "not(. > 5)", "selected(., '1')", ". * 2 < 10",
-        "10 > . * 2", ". != 5", "string(.) = '5'", "string-length(../x) > 3",
+        ". * 2 < 10", "10 > . * 2", "string(.) = '5'", "string-length(../x) > 3",
         ". > . + 1", ". <= string-length(.)", "string-length(.) > .",
         "regex(., concat('a', 'b'))", "regex(../x, '[0-9]+')", "true()"})
     void unsupportedShapesContributeNoHints(String expression) throws Exception {
         assertEquals(ConstraintHints.none(), extract(expression));
     }
 
-    @Test void ignoresDisjunctionInsideConjunctionWithoutDiscardingValidSiblings() throws Exception {
-        assertEquals(numeric(3d, true, 20d, true), extract("(. > 100 or . < 1) and . >= 3 and . <= 20"));
-        assertEquals(ConstraintHints.none(), extract("(. > 3 and . < 20) or . = 100"));
+    @Test void disjunctionInsideConjunctionDistributesValidSiblingsToEachBranch() throws Exception {
+        var h = extract("(. > 10 or . < 5) and . >= 3 and . <= 20");
+        assertOriginalComponents(ConstraintHints.none(), new ConstraintHints(h.lower(), h.upper(),
+                h.earliest(), h.latest(), h.minLength(), h.maxLength(), h.pattern()));
+        assertEquals(List.of(numeric(10d, false, 20d, true), numeric(3d, true, 5d, false)), h.alternatives());
+        assertEquals(List.of("11", "20", "3", "4"), h.candidates());
+    }
+
+    @Test void rangeOrEqualityProducesOrderedAlternativesAndCandidates() throws Exception {
+        var h = extract("(. > 3 and . < 20) or . = 100");
+        assertEquals(List.of(numeric(3d, false, 20d, false), numeric(100d, true, 100d, true)), h.alternatives());
+        assertEquals(List.of("4", "19", "100"), h.candidates());
+    }
+
+    @Test void disjunctionOfOneSidedBoundsProducesOrderedAlternatives() throws Exception {
+        assertEquals(List.of(numeric(5d, false, null, false), numeric(null, false, 2d, false)),
+                extract(". > 5 or . < 2").alternatives());
+    }
+
+    @Test void negatedComparisonProducesItsComplementaryBound() throws Exception {
+        assertEquals(numeric(null, false, 5d, true), extract("not(. > 5)"));
+    }
+
+    @Test void selectedLiteralProducesAnIncludedChoice() throws Exception {
+        var h = extract("selected(., '1')");
+        assertOriginalComponents(ConstraintHints.none(), h);
+        assertEquals(List.of("1"), List.copyOf(h.included()));
+        assertTrue(h.excluded().isEmpty());
+    }
+
+    @Test void inequalityProducesAnExcludedValue() throws Exception {
+        var h = extract(". != 5");
+        assertOriginalComponents(ConstraintHints.none(), h);
+        assertEquals(List.of("5"), List.copyOf(h.excluded()));
+        assertTrue(h.included().isEmpty());
     }
 
     @ParameterizedTest @ValueSource(strings = {
@@ -173,7 +216,7 @@ class ConstraintHintsExtractionTest {
     }
 
     @Test void firstRegexWinsAndAllKindsOfHintsCanCoexist() throws Exception {
-        assertEquals(new ConstraintHints(new Bound(1, true), new Bound(9, false),
+        assertOriginalComponents(new ConstraintHints(new Bound(1, true), new Bound(9, false),
                 new DateBound(TODAY, true), null, 2, 4, "first"),
                 extract(". >= 1 and regex(., 'first') and string-length(.) > 1 and . < 9"
                         + " and regex(., 'second') and string-length(.) <= 4 and . >= today()"));
@@ -185,11 +228,11 @@ class ConstraintHintsExtractionTest {
 
     @Test void relativeAndAbsoluteReferencesUseQuestionContextAndCurrentAnswers() throws Exception {
         var s = session("int", ". >= ../x and . <= /data/source + 100");
-        assertEquals(numeric(31d, true, 117d, true), ConstraintHints.forCurrentQuestion(s));
+        assertOriginalComponents(numeric(31d, true, 117d, true), ConstraintHints.forCurrentQuestion(s));
         FormIndex index = SimulatedSessionTestSupport.question(s, "source");
         assertEquals(ANSWER_OK, s.answerQuestion(index, new IntegerData(200), true));
         SimulatedSessionTestSupport.question(s, "group/answer");
-        assertEquals(numeric(31d, true, 300d, true), ConstraintHints.forCurrentQuestion(s));
+        assertOriginalComponents(numeric(31d, true, 300d, true), ConstraintHints.forCurrentQuestion(s));
     }
 
     @ParameterizedTest @CsvSource(delimiter = '|', value = {
@@ -206,7 +249,7 @@ class ConstraintHintsExtractionTest {
     @ParameterizedTest @ValueSource(strings = {". = /data/date", "/data/date = ."})
     void dateEqualitySetsBothInclusiveBounds(String expression) throws Exception {
         LocalDate leap = LocalDate.of(2040, 2, 29);
-        assertEquals(dates(leap, true, leap, true), extract(expression));
+        assertOriginalComponents(dates(leap, true, leap, true), extract(expression));
     }
 
     @Test void dateBoundsUseTightnessAndExclusiveTies() throws Exception {
@@ -234,7 +277,7 @@ class ConstraintHintsExtractionTest {
             TimeZone.setDefault(TimeZone.getTimeZone(zone));
             LocalDate day = java.time.OffsetDateTime.parse("2040-03-01T00:30:00+02:00")
                     .atZoneSameInstant(TimeZone.getDefault().toZoneId()).toLocalDate();
-            assertEquals(dates(day, true, day, true), extract(". = /data/stamp"));
+            assertOriginalComponents(dates(day, true, day, true), extract(". = /data/stamp"));
         } finally { TimeZone.setDefault(previous); }
     }
 

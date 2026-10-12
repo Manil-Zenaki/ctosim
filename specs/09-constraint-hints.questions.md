@@ -220,3 +220,19 @@ expectations; existing test helpers supply form construction and engine navigati
   `.codex-runs/09-amendment2-memory-compile.log`,
   `.codex-runs/09-amendment2-junit.log`, and
   `.codex-runs/09-amendment2-acceptance.log`.
+
+### Dispute 1 build verification
+
+- `mvnw.cmd -o -q test` reaches test compilation but is blocked by
+  `java.nio.file.AccessDeniedException` for the existing
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, confirmed by an
+  offline `-e` retry. No dependencies or build configuration were changed.
+- The existing in-memory binary-classpath compiler approach compiled all
+  constraint-hint test sources and required helpers successfully (18 sources
+  including the runner, Java 17 target). This is supplementary compilation
+  evidence, not a successful Maven build.
+- The revised extraction and walker classes plus the Amendment 2 extraction
+  and walker classes ran through JUnit Platform: 209 tests passed, zero failed,
+  skipped or aborted. Logs are `.codex-runs/09-dispute-maven-test.log`,
+  `.codex-runs/09-dispute-maven-detail.log`, `.codex-runs/09-dispute-compile.log`,
+  and `.codex-runs/09-dispute-junit.log`. No new behavioral assumptions were needed.
