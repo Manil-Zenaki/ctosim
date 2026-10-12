@@ -17,7 +17,7 @@ class SimulatedSessionTimeTest {
     @Test void calculationsReadTheClockBeforeAnyNavigation() throws Exception {
         var session = load().newSimulatedSession(new SimulatedClock(START), SEED);
         assertEquals(START.toLocalDate(), date(session, "today_value"));
-        assertTime(session, "now_value", START);
+        assertFormattedTime(session, "now_value", START);
         assertEquals(0, number(session, "elapsed"));
     }
 
@@ -77,14 +77,14 @@ class SimulatedSessionTimeTest {
         clock.advance(Duration.ofSeconds(3));
         tick(session, 1);
         assertEquals(START.plusSeconds(3).toLocalDate(), date(session, "today_value"));
-        assertTime(session, "now_value", START.plusSeconds(3));
+        assertFormattedTime(session, "now_value", START.plusSeconds(3));
     }
 
     @Test void repeatedRecalculationWithoutAnAdvanceDoesNotUseRealTime() throws Exception {
         var session = load().newSimulatedSession(new SimulatedClock(START), SEED);
         for (int i = 1; i <= 20; i++) {
             tick(session, i);
-            assertTime(session, "now_value", START);
+            assertFormattedTime(session, "now_value", START);
             assertEquals(START.toLocalDate(), date(session, "today_value"));
             assertEquals(0, number(session, "elapsed"));
         }
@@ -144,12 +144,13 @@ class SimulatedSessionTimeTest {
             var start = LocalDateTime.parse(startText);
             var clock = new SimulatedClock(start);
             var session = load().newSimulatedSession(clock, SEED);
-            for (String path : new String[]{"now_value", "action_now", "started"}) assertTime(session, path, start);
+            assertFormattedTime(session, "now_value", start);
+            for (String path : new String[]{"action_now", "started"}) assertTime(session, path, start);
             for (String path : new String[]{"today_value", "action_today"}) assertEquals(start.toLocalDate(), date(session, path));
             clock.advance(Duration.ofDays(1));
             tick(session, 1);
             finish(session);
-            assertTime(session, "now_value", start.plusDays(1));
+            assertFormattedTime(session, "now_value", start.plusDays(1));
             assertTime(session, "finished", start.plusDays(1));
             assertEquals(start.plusDays(1).toLocalDate(), date(session, "today_value"));
         } finally {
@@ -168,7 +169,7 @@ class SimulatedSessionTimeTest {
             clock.advance(Duration.ofHours(3));
             tick(session, 1);
             assertEquals(10_800, number(session, "elapsed"));
-            assertTime(session, "now_value", start.plusHours(3));
+            assertFormattedTime(session, "now_value", start.plusHours(3));
         } finally {
             TimeZone.setDefault(previous);
         }

@@ -16,7 +16,7 @@
       <bind nodeset="/data/answer" type="string"/>
       <bind nodeset="/data/doubled" type="int" calculate="/data/tick * 2"/>
       <bind nodeset="/data/today_value" type="date" calculate="if(/data/tick &gt;= 0, today(), today())"/>
-      <bind nodeset="/data/now_value" type="dateTime" calculate="if(/data/tick &gt;= 0, now(), now())"/>
+      <bind nodeset="/data/now_value" type="string" calculate="format-date-time(if(/data/tick &gt;= 0, now(), now()), '%Y-%m-%d %H:%M:%S')"/>
       <bind nodeset="/data/elapsed" type="decimal" calculate="duration() + 0 * /data/tick"/>
       <bind nodeset="/data/draw" type="decimal" calculate="if(/data/tick &gt;= 0, random(), 0)"/>
       <bind nodeset="/data/generated_uuid" type="string" calculate="if(/data/tick &gt;= 0, uuid(), '')"/>

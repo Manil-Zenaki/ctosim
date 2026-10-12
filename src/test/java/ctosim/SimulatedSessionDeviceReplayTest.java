@@ -68,7 +68,7 @@ class SimulatedSessionDeviceReplayTest {
         var clock = new SimulatedClock(START);
         var session = load().newSimulatedSession(clock, SEED, properties("clock-user"));
         assertTime(session, "started", START);
-        assertTime(session, "now_value", START);
+        assertFormattedTime(session, "now_value", START);
         assertTime(session, "action_now", START);
         assertEquals(START.toLocalDate(), date(session, "today_value"));
         assertEquals(START.toLocalDate(), date(session, "action_today"));
@@ -77,7 +77,7 @@ class SimulatedSessionDeviceReplayTest {
         assertNull(node(session, "finished").getValue());
         clock.advance(Duration.ofSeconds(3));
         tick(session, 1);
-        assertTime(session, "now_value", START.plusSeconds(3));
+        assertFormattedTime(session, "now_value", START.plusSeconds(3));
         assertEquals(START.plusSeconds(3).toLocalDate(), date(session, "today_value"));
         assertEquals(3, number(session, "elapsed"));
         clock.advance(Duration.ofSeconds(7));

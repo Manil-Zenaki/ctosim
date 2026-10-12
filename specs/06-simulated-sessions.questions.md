@@ -318,3 +318,16 @@ the unchanged clock/random/session rules it explicitly incorporates, and spec
 - No repository copies, drive mappings, dependency installations, production
   edits, POM edits, or changes to existing tests were made. Temporary logs are
   confined to `.codex-runs/`.
+
+## Dispute 2 adjudication validation (2026-10-11)
+
+- **Question:** Can the build account access the existing cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` during test compilation?
+- **Assumption:** This is an environment blocker, not evidence about test
+  correctness. `mvnw.cmd -o -q test` failed at `testCompile`; the diagnostic
+  retry with `-e` confirmed `java.nio.file.AccessDeniedException` for that
+  JAR. No repository copies, drive mappings, or installations were attempted.
+  The log is `.codex-runs/06-dispute-2-test.log`.
+- **Tests:** All nine tests named in Dispute 2 now observe time through a
+  formatted string calculation as Amendment 3 permits. Compilation and
+  execution of these changes remain unverified; the full suite did not run.

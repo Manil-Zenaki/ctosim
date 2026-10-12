@@ -1,7 +1,10 @@
 package ctosim;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -38,9 +41,9 @@ class SimulatedSessionIsolationTest {
         firstClock.advance(Duration.ofDays(2));
         tick(first, 1);
         tick(second, 1);
-        assertTime(first, "now_value", START.plusDays(2));
+        assertFormattedTime(first, "now_value", START.plusDays(2));
         assertEquals(172_800, number(first, "elapsed"));
-        assertTime(second, "now_value", START.plusYears(5));
+        assertFormattedTime(second, "now_value", START.plusYears(5));
         assertEquals(0, number(second, "elapsed"));
         secondClock.advance(Duration.ofSeconds(11));
         tick(first, 2);
@@ -123,12 +126,12 @@ class SimulatedSessionIsolationTest {
             finish(ordinary);
             LocalDate lastDate = LocalDate.now();
             long upper = System.currentTimeMillis();
-            assertCurrentTime(ordinary, "now_value", lower, upper);
+            assertCurrentFormattedTime(ordinary, "now_value", lower, upper);
             assertCurrentTime(ordinary, "finished", lower, upper);
             assertTrue(date(ordinary, "today_value").equals(firstDate) || date(ordinary, "today_value").equals(lastDate));
             assertEquals(0, number(ordinary, "elapsed"));
         }
-        assertTime(simulated, "now_value", START.plusDays(50));
+        assertFormattedTime(simulated, "now_value", START.plusDays(50));
         assertEquals(4_320_000, number(simulated, "elapsed"));
     }
 
@@ -137,7 +140,7 @@ class SimulatedSessionIsolationTest {
         var session = form.newEntryController();
         long upper = System.currentTimeMillis();
         assertCurrentTime(session, "started", lower, upper);
-        assertCurrentTime(session, "now_value", lower, upper);
+        assertCurrentFormattedTime(session, "now_value", lower, upper);
         assertCurrentTime(session, "action_now", lower, upper);
         assertNull(value(session, "finished"));
         assertEquals(0, number(session, "elapsed"));
@@ -148,6 +151,18 @@ class SimulatedSessionIsolationTest {
         long actual = assertInstanceOf(Date.class, value(session, field)).getTime();
         assertTrue(actual >= lower - 1_000 && actual <= upper + 1_000,
                 field + " must retain native wall-clock behavior");
+    }
+
+    private static void assertCurrentFormattedTime(FormEntryController session, String field, long lower, long upper) {
+        String actual = assertInstanceOf(String.class, value(session, field));
+        LocalDateTime.parse(actual, NOW_FORMAT); // Reject malformed or date-only values.
+        // Compare formatted instants to avoid guessing an offset during a DST overlap.
+        for (long second = Math.floorDiv(lower - 1_000, 1_000);
+                second <= Math.floorDiv(upper + 1_000, 1_000); second++) {
+            String candidate = Instant.ofEpochSecond(second).atZone(ZoneId.systemDefault()).format(NOW_FORMAT);
+            if (candidate.equals(actual)) return;
+        }
+        fail(field + " must retain native wall-clock behavior: " + actual);
     }
 
     @Test void openingSimulationsDoesNotResetNativeRandomnessToTheirSeed() throws Exception {
@@ -198,7 +213,7 @@ class SimulatedSessionIsolationTest {
             assertEquals("session-" + i, value(session, "answer"));
             assertEquals(i, number(session, "elapsed"));
             assertTime(session, "started", START.plusDays(i));
-            assertTime(session, "now_value", START.plusDays(i).plusSeconds(i));
+            assertFormattedTime(session, "now_value", START.plusDays(i).plusSeconds(i));
         }
     }
 }

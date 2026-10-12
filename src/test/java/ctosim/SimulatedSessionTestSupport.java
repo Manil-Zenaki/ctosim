@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 final class SimulatedSessionTestSupport {
     static final LocalDateTime START = LocalDateTime.of(2040, 2, 28, 23, 59, 58);
     static final long SEED = 0x61A72B39C45DL;
+    static final DateTimeFormatter NOW_FORMAT = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss", java.util.Locale.ROOT);
     static final String UUID_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
 
     private SimulatedSessionTestSupport() {}
@@ -91,6 +93,11 @@ final class SimulatedSessionTestSupport {
     static void assertTime(FormEntryController session, String path, LocalDateTime expected) {
         Date actual = assertInstanceOf(Date.class, value(session, path), path);
         assertEquals(expected.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(), actual.getTime(), path);
+    }
+
+    static void assertFormattedTime(FormEntryController session, String path, LocalDateTime expected) {
+        // Amendment 3: preserve the function's time inside the expression, before calculation storage.
+        assertEquals(expected.format(NOW_FORMAT), assertInstanceOf(String.class, value(session, path), path), path);
     }
 
     static void assertUuid(Object actual) {
