@@ -260,6 +260,11 @@ public final class FormWalker {
                     return;
                 }
             }
+            if (tryCandidates(prompt, question, kind, loaded)) {
+                answered++;
+                handled(ref, minimum);
+                return;
+            }
             clear(ref);
             warn("field '" + name + "' (" + path + "): no answer satisfied its constraint after "
                     + MAX_ATTEMPTS + " attempts; left blank");
@@ -364,6 +369,17 @@ public final class FormWalker {
                 String text = generator.generate(prepared.question(), clock.now().toLocalDate(), answers);
                 IAnswerData data = text == null ? null
                         : prepared.loaded() == null ? convert(prompt, text) : convertLoaded(kind, text, prepared.loaded());
+                if (data != null && session.answerQuestion(data, true) == FormEntryController.ANSWER_OK) {
+                    return true;
+                }
+            }
+            return tryCandidates(prompt, prepared.question(), kind, prepared.loaded());
+        }
+
+        /** The constraint's candidate values, in order, until the engine accepts one (spec 09, Amendment 2). */
+        private boolean tryCandidates(FormEntryPrompt prompt, Question question, QuestionKind kind, List<String> loaded) {
+            for (String candidate : question.hints().candidates()) {
+                IAnswerData data = loaded == null ? convert(prompt, candidate) : convertLoaded(kind, candidate, loaded);
                 if (data != null && session.answerQuestion(data, true) == FormEntryController.ANSWER_OK) {
                     return true;
                 }

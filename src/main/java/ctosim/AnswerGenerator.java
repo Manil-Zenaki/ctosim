@@ -57,17 +57,24 @@ public final class AnswerGenerator {
         Map<String, Double> weights = override == null ? Map.of() : override.weights();
         FieldRange range = override == null ? null : override.range().orElse(null);
         List<String> texts = override == null ? List.of() : override.texts();
+        ConstraintHints chosen = chosenHints(question, random);
+        if (chosen != question.hints()) {
+            question = new Question(question.name(), question.kind(), question.choices(), question.appearance(),
+                    question.required(), chosen);
+        }
+        Question q = question;
+        ConstraintHints hints = chosen;
 
         return switch (question.kind()) {
-            case SELECT_ONE -> selectOne(question.choices(), weights, random);
-            case SELECT_MULTIPLE -> selectMultiple(question.choices(), weights, random);
-            case INTEGER -> integer(hinted(range instanceof NumericRange r ? r : config.integerRange(),
-                    question.hints(), true), random);
-            case DECIMAL -> decimal(hinted(range instanceof NumericRange r ? r : config.decimalRange(),
-                    question.hints(), false), random);
+            case SELECT_ONE -> selectOne(question.choices(), weights, hints, random);
+            case SELECT_MULTIPLE -> selectMultiple(question.choices(), weights, hints, random);
+            case INTEGER -> notExcluded(hints, random, () -> integer(hinted(range instanceof NumericRange r ? r : config.integerRange(),
+                    hints, true), random));
+            case DECIMAL -> notExcluded(hints, random, () -> decimal(hinted(range instanceof NumericRange r ? r : config.decimalRange(),
+                    hints, false), random));
             case TEXT -> words.contains("numbers_decimal") && texts.isEmpty()
-                    ? decimal(hinted(range instanceof NumericRange r ? r : config.decimalRange(), question.hints(), false), random)
-                    : text(question, texts, random);
+                    ? notExcluded(hints, random, () -> decimal(hinted(range instanceof NumericRange r ? r : config.decimalRange(), hints, false), random))
+                    : texts.isEmpty() ? notExcluded(hints, random, () -> text(q, texts, random)) : text(q, texts, random);
             case DATE -> monthYear(date(hinted(dateRange(range, today), question.hints()), random), words).toString();
             case TIME -> time(random);
             case DATETIME -> date(hinted(dateRange(range, today), question.hints()), random) + "T" + time(random);
@@ -83,7 +90,133 @@ public final class AnswerGenerator {
         };
     }
 
+    // --- Alternatives of a constraint (spec 09, Amendment 2) ---------------------------
+
+    /** Draws again, up to 20 times, while the answer is one the constraint excludes. */
+    private static String notExcluded(ConstraintHints hints, RandomGenerator random, java.util.function.Supplier<String> draw) {
+        String answer = draw.get();
+        for (int i = 0; i < 20 && answer != null && hints.excluded().contains(answer); i++) {
+            answer = draw.get();
+        }
+        return answer;
+    }
+
+    /**
+     * The hints to draw with: the question's own, or one of its satisfiable alternatives, a
+     * special one (a single allowed value, such as a "don't know" code) with probability specialRate.
+     */
+    private ConstraintHints chosenHints(Question question, RandomGenerator random) {
+        List<ConstraintHints> alternatives = question.hints().alternatives();
+        if (alternatives.isEmpty()) {
+            return question.hints();
+        }
+        List<ConstraintHints> special = new ArrayList<>();
+        List<ConstraintHints> other = new ArrayList<>();
+        for (ConstraintHints alternative : alternatives) {
+            if (satisfiable(alternative, question.kind())) {
+                (isSpecial(alternative, question.kind()) ? special : other).add(alternative);
+            }
+        }
+        if (special.isEmpty() && other.isEmpty()) {
+            return ConstraintHints.none();
+        }
+        List<ConstraintHints> group = special.isEmpty() ? other : other.isEmpty() ? special
+                : random.nextDouble() < config.specialRate() ? special : other;
+        return group.get(random.nextInt(group.size()));
+    }
+
+    private static boolean satisfiable(ConstraintHints h, QuestionKind kind) {
+        boolean integer = kind == QuestionKind.INTEGER;
+        if (h.lower() != null && h.upper() != null && closedLower(h.lower(), integer) > closedUpper(h.upper(), integer)) {
+            return false;
+        }
+        if (h.earliest() != null && h.latest() != null && closedEarliest(h.earliest()).isAfter(closedLatest(h.latest()))) {
+            return false;
+        }
+        if (h.minLength() != null && h.maxLength() != null && h.minLength() > h.maxLength()) {
+            return false;
+        }
+        if (h.minSelected() != null && h.maxSelected() != null && h.minSelected() > h.maxSelected()) {
+            return false;
+        }
+        for (String value : h.included()) {
+            if (h.excluded().contains(value)) {
+                return false;
+            }
+        }
+        if (h.maxSelected() != null && h.included().size() > h.maxSelected()) {
+            return false;
+        }
+        return kind != QuestionKind.SELECT_ONE || h.included().size() <= 1;
+    }
+
+    private static boolean isSpecial(ConstraintHints h, QuestionKind kind) {
+        boolean integer = kind == QuestionKind.INTEGER;
+        if (h.lower() != null && h.upper() != null && closedLower(h.lower(), integer) == closedUpper(h.upper(), integer)) {
+            return true;
+        }
+        if (h.earliest() != null && h.latest() != null && closedEarliest(h.earliest()).equals(closedLatest(h.latest()))) {
+            return true;
+        }
+        return !h.included().isEmpty() && h.maxSelected() != null && h.included().size() == h.maxSelected();
+    }
+
+    private static LocalDate closedEarliest(DateBound bound) {
+        return bound.inclusive() ? bound.value() : bound.value().plusDays(1);
+    }
+
+    private static LocalDate closedLatest(DateBound bound) {
+        return bound.inclusive() ? bound.value() : bound.value().minusDays(1);
+    }
+
     // --- Selects --------------------------------------------------------------------
+
+    /** Select one within the constraint's excluded and included choices; ignored when nothing is left. */
+    private String selectOne(List<String> choices, Map<String, Double> weights, ConstraintHints hints, RandomGenerator random) {
+        if (hints.excluded().isEmpty() && hints.included().isEmpty()) {
+            return selectOne(choices, weights, random);
+        }
+        List<String> offered = new ArrayList<>(choices);
+        offered.removeAll(hints.excluded());
+        if (!hints.included().isEmpty()) {
+            String value = hints.included().iterator().next();
+            return offered.contains(value) ? value : selectOne(choices, weights, random);
+        }
+        return offered.isEmpty() ? selectOne(choices, weights, random) : selectOne(offered, weights, random);
+    }
+
+    /** Select multiple within the constraint's choices and selection count; ignored when it cannot be met. */
+    private String selectMultiple(List<String> choices, Map<String, Double> weights, ConstraintHints hints,
+                                  RandomGenerator random) {
+        if (hints.excluded().isEmpty() && hints.included().isEmpty() && hints.minSelected() == null
+                && hints.maxSelected() == null) {
+            return selectMultiple(choices, weights, random);
+        }
+        List<String> offered = new ArrayList<>(choices);
+        offered.removeAll(hints.excluded());
+        if (!offered.containsAll(hints.included())) {
+            return selectMultiple(choices, weights, random);
+        }
+        int min = Math.max(1, Math.max(hints.minSelected() == null ? 1 : hints.minSelected(), hints.included().size()));
+        int max = Math.min(hints.maxSelected() != null ? hints.maxSelected() : Math.max(3, min), offered.size());
+        if (min > max) {
+            return selectMultiple(choices, weights, random);
+        }
+        int size = min + random.nextInt(max - min + 1);
+        Set<String> chosen = new HashSet<>(hints.included());
+        List<String> remaining = new ArrayList<>(offered);
+        remaining.removeAll(chosen);
+        while (chosen.size() < size) {
+            chosen.add(remaining.remove(weightedIndex(remaining, weights, random)));
+        }
+        List<String> answer = new ArrayList<>();
+        for (String choice : choices) {
+            if (chosen.contains(choice) && !answer.contains(choice)) {
+                answer.add(choice);
+            }
+        }
+        return String.join(" ", answer);
+    }
 
     private String selectOne(List<String> choices, Map<String, Double> weights, RandomGenerator random) {
         List<String> special = new ArrayList<>();
@@ -190,6 +323,25 @@ public final class AnswerGenerator {
             String matching = matching(hints.pattern(), random);
             if (matching != null) {
                 return matching;
+            }
+        }
+        if (hints.prefix() != null) {
+            String prefix = hints.prefix();
+            boolean digitsOnly = numeric || !prefix.isEmpty() && prefix.chars().allMatch(c -> c >= '0' && c <= '9');
+            int rest = 8;
+            boolean fits = true;
+            if (hints.minLength() != null || hints.maxLength() != null) {
+                int lo = Math.max(hints.minLength() != null ? hints.minLength() : prefix.length(), prefix.length());
+                int hi = hints.maxLength() != null ? hints.maxLength() : Math.max(lo, 10); // the length rule's default
+                fits = hi >= lo;
+                rest = fits ? lo + random.nextInt(hi - lo + 1) - prefix.length() : 0;
+            }
+            if (fits) {
+                StringBuilder s = new StringBuilder(prefix);
+                for (int i = 0; i < rest; i++) {
+                    s.append(digitsOnly ? (char) ('0' + random.nextInt(10)) : (char) ('a' + random.nextInt(26)));
+                }
+                return s.toString();
             }
         }
         if (hints.minLength() != null || hints.maxLength() != null) {

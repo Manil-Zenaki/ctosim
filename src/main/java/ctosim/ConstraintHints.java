@@ -78,25 +78,115 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
             if (constraint == null || !(constraint.constraint instanceof XPathConditional conditional)) {
                 return NONE;
             }
-            Builder hints = new Builder(form, ref);
-            List<XPathExpression> terms = new ArrayList<>();
-            conjunction(conditional.getExpr(), terms);
-            for (XPathExpression term : terms) {
-                hints.term(term);
+            Alternatives reader = new Alternatives(form, ref);
+            List<List<Term>> alternatives = reader.read(conditional.getExpr(), false);
+            List<ConstraintHints> sets = new ArrayList<>();
+            List<String> candidates = new ArrayList<>();
+            for (List<Term> alternative : alternatives) {
+                Builder builder = new Builder(form, ref);
+                for (Term term : alternative) {
+                    builder.term(term.expr(), term.negated());
+                }
+                sets.add(builder.build());
+                builder.addCandidates(candidates);
             }
-            return hints.build();
+            List<String> distinct = List.copyOf(new LinkedHashSet<>(candidates));
+            if (sets.size() == 1) {
+                ConstraintHints one = sets.get(0);
+                return new ConstraintHints(one.lower(), one.upper(), one.earliest(), one.latest(), one.minLength(),
+                        one.maxLength(), one.pattern(), one.prefix(), one.excluded(), one.included(),
+                        one.minSelected(), one.maxSelected(), null, distinct);
+            }
+            return new ConstraintHints(null, null, null, null, null, null, null, null, null, null, null, null,
+                    sets, distinct);
         } catch (RuntimeException e) {
             return NONE; // the constraint's content never makes this fail
         }
     }
 
-    /** The terms of a top-level conjunction, nested conjunctions flattened. */
-    private static void conjunction(XPathExpression expr, List<XPathExpression> terms) {
-        if (expr instanceof XPathBoolExpr bool && bool.op == XPathBoolExpr.AND) {
-            conjunction(bool.a, terms);
-            conjunction(bool.b, terms);
-        } else {
-            terms.add(expr);
+    /** At most this many alternatives are kept (spec 09, Amendment 2). */
+    static final int MAX_ALTERNATIVES = 64;
+
+    /** One term of an alternative, possibly negated. */
+    private record Term(XPathExpression expr, boolean negated) { }
+
+    /**
+     * Turns a constraint into alternatives: conjunctions of terms, any one of which makes the
+     * constraint hold (and/or distributed, not() moved inward, if() resolved or expanded).
+     */
+    private static final class Alternatives {
+        private final FormDef form;
+        private final TreeReference context;
+
+        Alternatives(FormDef form, TreeReference context) {
+            this.form = form;
+            this.context = context;
+        }
+
+        List<List<Term>> read(XPathExpression expr, boolean negated) {
+            if (expr instanceof XPathBoolExpr bool) {
+                boolean and = bool.op == XPathBoolExpr.AND;
+                List<List<Term>> a = read(bool.a, negated);
+                List<List<Term>> b = read(bool.b, negated);
+                return and != negated ? product(a, b) : union(a, b);
+            }
+            if (expr instanceof XPathFuncExpr func) {
+                String name = func.id.toString();
+                if (name.equals("not") && func.args.length == 1) {
+                    return read(func.args[0], !negated);
+                }
+                if ((name.equals("true") || name.equals("false")) && func.args.length == 0) {
+                    return name.equals("true") != negated ? List.of(List.of()) : List.of();
+                }
+                if (name.equals("if") && func.args.length == 3) {
+                    XPathExpression c = func.args[0];
+                    if (!usesSelf(c)) {
+                        Boolean holds = condition(c);
+                        if (holds != null) {
+                            return read(holds ? func.args[1] : func.args[2], negated);
+                        }
+                        return List.of(List.of(new Term(expr, negated)));
+                    }
+                    return union(product(read(c, false), read(func.args[1], negated)),
+                            product(read(c, true), read(func.args[2], negated)));
+                }
+            }
+            return List.of(List.of(new Term(expr, negated)));
+        }
+
+        private Boolean condition(XPathExpression c) {
+            try {
+                Object v = c.eval(form.getMainInstance(), new EvaluationContext(form.getEvaluationContext(), context));
+                return XPathFuncExpr.toBoolean(XPathFuncExpr.unpack(v));
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
+
+        private static List<List<Term>> union(List<List<Term>> a, List<List<Term>> b) {
+            List<List<Term>> out = new ArrayList<>(a);
+            for (List<Term> x : b) {
+                if (out.size() >= MAX_ALTERNATIVES) {
+                    break;
+                }
+                out.add(x);
+            }
+            return out;
+        }
+
+        private static List<List<Term>> product(List<List<Term>> a, List<List<Term>> b) {
+            List<List<Term>> out = new ArrayList<>();
+            for (List<Term> x : a) {
+                for (List<Term> y : b) {
+                    if (out.size() >= MAX_ALTERNATIVES) {
+                        return out;
+                    }
+                    List<Term> both = new ArrayList<>(x);
+                    both.addAll(y);
+                    out.add(both);
+                }
+            }
+            return out;
         }
     }
 
@@ -108,6 +198,12 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
                 && path.steps[0].axis == XPathStep.AXIS_SELF
                 && path.steps[0].test == XPathStep.TEST_TYPE_NODE
                 && (path.steps[0].predicates == null || path.steps[0].predicates.length == 0);
+    }
+
+    /** True for {@code .} or {@code string(.)} (the loader wraps select functions' first argument). */
+    private static boolean isSelfValue(XPathExpression expr) {
+        return isSelf(expr) || expr instanceof XPathFuncExpr func && "string".equals(func.id.toString())
+                && func.args.length == 1 && isSelf(func.args[0]);
     }
 
     /** True for {@code string-length(.)}. */
@@ -162,7 +258,18 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
         return false;
     }
 
-    private enum Op { LT, LTE, GT, GTE, EQ }
+    private enum Op { LT, LTE, GT, GTE, EQ, NEQ }
+
+    private static Op negate(Op op) {
+        return switch (op) {
+            case LT -> Op.GTE;
+            case LTE -> Op.GT;
+            case GT -> Op.LTE;
+            case GTE -> Op.LT;
+            case EQ -> Op.NEQ;
+            case NEQ -> Op.EQ;
+        };
+    }
 
     /** Accumulates the tightest hints over the terms of one constraint. */
     private static final class Builder {
@@ -175,16 +282,35 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
         private Integer minLength;
         private Integer maxLength;
         private String pattern;
+        private String prefix;
+        private final Set<String> excluded = new LinkedHashSet<>();
+        private final Set<String> included = new LinkedHashSet<>();
+        private Integer minSelected;
+        private Integer maxSelected;
+        private final List<String> equalities = new ArrayList<>();
 
         Builder(FormDef form, TreeReference context) {
             this.form = form;
             this.context = context;
         }
 
-        void term(XPathExpression term) {
+        void term(XPathExpression term, boolean negated) {
             Op op;
             XPathExpression left;
             XPathExpression right;
+            if (term instanceof XPathFuncExpr func && "selected".equals(func.id.toString()) && func.args.length == 2
+                    && isSelfValue(func.args[0]) && func.args[1] instanceof XPathStringLiteral choice) {
+                (negated ? excluded : included).add(choice.s);
+                return;
+            }
+            if (!negated && term instanceof XPathFuncExpr func && "starts-with".equals(func.id.toString())
+                    && func.args.length == 2 && isSelfValue(func.args[0]) && !usesSelf(func.args[1])) {
+                Object v = evaluate(func.args[1]);
+                if (v != null && prefix == null) {
+                    prefix = XPathFuncExpr.toString(v);
+                }
+                return;
+            }
             if (term instanceof XPathCmpExpr cmp) {
                 op = switch (cmp.op) {
                     case XPathCmpExpr.LT -> Op.LT;
@@ -195,11 +321,11 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
                 };
                 left = cmp.a;
                 right = cmp.b;
-            } else if (term instanceof XPathEqExpr eq && eq.isEqual()) {
-                op = Op.EQ;
+            } else if (term instanceof XPathEqExpr eq) {
+                op = eq.isEqual() ? Op.EQ : Op.NEQ;
                 left = eq.a;
                 right = eq.b;
-            } else if (term instanceof XPathFuncExpr func && "regex".equals(func.id.toString())
+            } else if (!negated && term instanceof XPathFuncExpr func && "regex".equals(func.id.toString())
                     && func.args.length == 2 && isSelf(func.args[0]) && func.args[1] instanceof XPathStringLiteral literal) {
                 if (pattern == null) {
                     pattern = literal.s;
@@ -211,6 +337,9 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
             if (op == null) {
                 return;
             }
+            if (negated) {
+                op = negate(op);
+            }
             if (isSelf(left) && !usesSelf(right)) {
                 value(op, right);
             } else if (isSelf(right) && !usesSelf(left)) {
@@ -219,6 +348,52 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
                 length(op, right);
             } else if (isLengthOfSelf(right) && !usesSelf(left)) {
                 length(flip(op), left);
+            } else if (isCountOfSelf(left) && !usesSelf(right)) {
+                count(op, right);
+            } else if (isCountOfSelf(right) && !usesSelf(left)) {
+                count(flip(op), left);
+            } else if (op == Op.EQ && !usesSelf(right)) {
+                prefix(left, right);
+            } else if (op == Op.EQ && !usesSelf(left)) {
+                prefix(right, left);
+            }
+        }
+
+        /** {@code count-selected(.)}. */
+        private static boolean isCountOfSelf(XPathExpression expr) {
+            return expr instanceof XPathFuncExpr func && "count-selected".equals(func.id.toString())
+                    && func.args.length == 1 && isSelfValue(func.args[0]);
+        }
+
+        /** A prefix from {@code substr(., 0, n) = 'p'} with n the length of p. */
+        private void prefix(XPathExpression call, XPathExpression text) {
+            if (!(call instanceof XPathFuncExpr func) || !"substr".equals(func.id.toString()) || func.args.length != 3
+                    || !isSelfValue(func.args[0]) || usesSelf(func.args[1]) || usesSelf(func.args[2])) {
+                return;
+            }
+            Object start = evaluate(func.args[1]);
+            Object end = evaluate(func.args[2]);
+            Object p = evaluate(text);
+            if (start == null || end == null || p == null) {
+                return;
+            }
+            String value = XPathFuncExpr.toString(p);
+            if (number(start) == 0 && number(end) == value.length() && prefix == null) {
+                prefix = value;
+            }
+        }
+
+        /** Selection-count bounds from {@code count-selected(.) OP e}, as inclusive integers. */
+        private void count(Op op, XPathExpression e) {
+            Integer[] range = integers(op, e);
+            if (range == null) {
+                return;
+            }
+            if (range[0] != null) {
+                minSelected = minSelected == null ? range[0] : Math.max(minSelected, range[0]);
+            }
+            if (range[1] != null) {
+                maxSelected = maxSelected == null ? range[1] : Math.min(maxSelected, range[1]);
             }
         }
 
@@ -229,6 +404,7 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
                 case GT -> Op.LT;
                 case GTE -> Op.LTE;
                 case EQ -> Op.EQ;
+                case NEQ -> Op.NEQ;
             };
         }
 
@@ -237,6 +413,13 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
             Object v = evaluate(e);
             if (v == null) {
                 return;
+            }
+            if (op == Op.NEQ) {
+                excluded.add(XPathFuncExpr.toString(v));
+                return;
+            }
+            if (op == Op.EQ) {
+                equalities.add(XPathFuncExpr.toString(v));
             }
             if (v instanceof Date date) {
                 LocalDate day = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -262,13 +445,30 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
 
         /** Length bounds from {@code string-length(.) OP e}, as inclusive integers. */
         private void length(Op op, XPathExpression e) {
-            Object v = evaluate(e);
-            if (v == null || v instanceof Date) {
+            Integer[] range = integers(op, e);
+            if (range == null) {
                 return;
+            }
+            Integer min = range[0];
+            Integer max = range[1];
+            if (min != null) {
+                min = Math.max(0, min);
+                minLength = minLength == null ? min : Math.max(minLength, min);
+            }
+            if (max != null) {
+                maxLength = maxLength == null ? max : Math.min(maxLength, max);
+            }
+        }
+
+        /** Inclusive integer bounds {min, max} (either null) from {@code f OP e}; null when there are none. */
+        private Integer[] integers(Op op, XPathExpression e) {
+            Object v = evaluate(e);
+            if (v == null || v instanceof Date || op == Op.NEQ) {
+                return null;
             }
             double x = number(v);
             if (!Double.isFinite(x)) {
-                return;
+                return null;
             }
             Integer min = switch (op) {
                 case GT -> (int) Math.floor(x) + 1;
@@ -282,10 +482,18 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
             };
             if (min != null) {
                 min = Math.max(0, min);
-                minLength = minLength == null ? min : Math.max(minLength, min);
             }
-            if (max != null) {
-                maxLength = maxLength == null ? max : Math.min(maxLength, max);
+            return new Integer[] {min, max};
+        }
+
+        /** Values worth trying: this alternative's equalities, then the closed ends of its interval. */
+        void addCandidates(List<String> out) {
+            out.addAll(equalities);
+            if (lower != null && upper != null) {
+                double lo = lower.inclusive() ? Math.ceil(lower.value()) : Math.floor(lower.value()) + 1;
+                double hi = upper.inclusive() ? Math.floor(upper.value()) : Math.ceil(upper.value()) - 1;
+                out.add(XPathFuncExpr.toString(lo));
+                out.add(XPathFuncExpr.toString(hi));
             }
         }
 
@@ -308,7 +516,8 @@ public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, Date
         }
 
         ConstraintHints build() {
-            return new ConstraintHints(lower, upper, earliest, latest, minLength, maxLength, pattern);
+            return new ConstraintHints(lower, upper, earliest, latest, minLength, maxLength, pattern,
+                    prefix, excluded, included, minSelected, maxSelected, null, null);
         }
     }
 
