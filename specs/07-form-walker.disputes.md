@@ -216,3 +216,74 @@ Maven suite are not green. Logs are
    repeats in the frozen form (templates and repeat controls) so that
    `index()` gives each instance's position, or evaluate constraints in
    the walked session itself.
+
+## Adjudication after spec 09 Amendment 2
+
+### Dispute 1: retain the budget check, supersede its disjunction fixture
+
+The earlier adjudication was correct under spec 09 Amendment 1. Its
+premise that disjunctions give no hints is explicitly superseded by
+Amendment 2's whole-constraint alternatives and candidate rules. The
+50-proposal budget remains, followed by candidate attempts when any
+exist. Apply the fixture correction in Dispute 4 below; retain the
+statistical check and its answer, warning, and clock assertions.
+
+### Dispute 2: keep the corrected device-id tests
+
+The current three assertions use `[0-9a-f]{16}`, and the renamed
+single-enumerator test describes that format. These agree with spec 07
+Amendment 2. Keep the format, stable identity, distinctness, enumerator
+distribution, and timestamp assertions unchanged.
+
+### Dispute 3: keep both previously corrected calculation tests
+
+The body-position test now stores `format-date-time(now(), ...)` as text
+and compares a local date-time. The time-zone tests assert date-only
+values for raw `now()` and `once(now())` calculations, while retaining
+offset assertions for preloaded timestamps and generated answers. These
+are the distinctions required by spec 07 Amendment 4; no further change
+is warranted.
+
+### Dispute 4, point 1: accepted; use constraints without hints or candidates
+
+Spec 09 Amendment 2 explicitly amends both navigation retries and the
+Amendment 5 final check: after 50 rejected proposals, the walker tries
+the constraint's candidates before clearing. It also derives alternatives
+from disjunctions. Thus `. = 1 or . = 1` supplies singleton numeric hints
+and candidate `1`; `/data/gate = 0 or . = 'good'` supplies candidate
+`good`. Expecting the original exhaustion frequencies is now incorrect.
+
+Change the navigation constraint to `. * 2 = 2` and the final-check
+constraint to `/data/gate = 0 or concat(., '') = 'good'`. These validate
+the same generated values but match none of the specified hint or
+candidate shapes: `.` is inside arithmetic or a function, not a direct
+equality operand. Keep the fixed seeds, sample sizes, generous binomial
+tolerances, and all other assertions. The exhaustion probabilities remain
+`(19/20)^50` and `0.98^51` respectively; the latter includes the original
+navigation draw followed by 50 final-repair draws. These statistical tests
+do not distinguish the exact 49/50/51 boundary.
+
+### Dispute 4, point 2: accepted; preserve repeat identity in the oracle
+
+Spec 07 Amendment 5 requires evaluating constraints in each relevant
+repeat instance on the final instance. Spec 03's `index()` is the
+1-based position of the innermost enclosing repeat, including through
+ordinary groups. A frozen form with no repeat declarations instead gives
+the expression an outside-repeat context. For the reported second row,
+`6` satisfies the specified 3..6 branch; the oracle's first-row branch
+is an invalid expectation. Keep the published-form acceptance assertion
+and correct its evaluation context.
+
+The oracle now copies the repeat hierarchy as structural controls and
+adds blank templates from the source form. It does not copy `jr:count`,
+calculations, actions, relevance, or preloads, and does not navigate or
+answer the snapshot. Submitted values and actual repeat instances remain
+the basis for evaluation; templates are excluded from inspection. A repeat
+absent from the snapshot and its available templates is not recreated.
+
+Added focused oracle checks that accept a valid second-row age and reject
+a value allowed only in the first row; verify innermost indices across
+nested repeats and separate parents; and ensure source repeat counts do
+not change snapshot counts. Existing checks for invalid cross-field
+values and suppressed recalculation remain. Updated questions 42 and 43
+to record these corrections. No production source was read or modified.

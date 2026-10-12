@@ -767,7 +767,10 @@ configuration, generator, and simulated-session contracts.
     controls and their binds; exclude `calculate_here`, read-only, absent,
     and blank fields. Build a separate minimal form containing the serialized
     submission and only its original type/constraint bindings. No calculates,
-    actions, preloads, relevance rules, or repeat controls are copied. Evaluate
+    actions, preloads, relevance rules, or repeat counts are copied. Repeat
+    controls and blank templates preserve repeat identity for `index()`;
+    no submitted value or actual repeat instance is regenerated. (Corrected
+    during Dispute 4: omitting repeat declarations lost the required context.) Evaluate
     each original expression using JavaRosa's public XPath API in the node's
     actual repeated context, with simulated time set to submission end. This
     uses the engine's specified expression semantics, not the walker's check.
@@ -794,8 +797,10 @@ configuration, generator, and simulated-session contracts.
     exhaustion but requires at least one successful repair over 160 walks;
     50 uniform draws over 365 dates give a probability below `3e-10` of no
     successes in all walks. Hints may increase this success rate. Statistical
-    attempt-budget assertions use explicit choice weights and a field
-    reference in the constraint, avoiding numeric/regex hint assumptions.
+    attempt-budget assertions use explicit choice weights and wrap `.` in
+    `concat(., '')`, alongside the gate reference, so spec 09 Amendment 2
+    supplies neither hints nor fallback candidates. The numeric navigation
+    budget test likewise uses `. * 2 = 2`.
     **Tests:** Select repair, repeat context, seed sensitivity, and
     `finalRepairUsesTheClockDateAfterCrossingMidnight`.
 
@@ -846,3 +851,19 @@ configuration, generator, and simulated-session contracts.
 - Existing tests, production source, build configuration, and sample forms
   remain unchanged. No commit was made. Temporary probes and logs stay under
   `.codex-runs/`.
+
+### Dispute 4 build validation
+
+- **Question:** Can the prescribed offline Maven test run compile the
+  adjudicated tests in this environment?
+- **Assumption:** The recurring cached dependency failure is a build
+  limitation, not a reason to change test expectations. `mvnw.cmd -o -q
+  test` again failed in `testCompile` on `commons-io-2.5.jar`. No build
+  settings, cached dependencies, or production files were changed.
+- **Tests:** The existing offline compiler probe compiled all 30
+  FormWalker test/support sources, including the corrected retry fixtures,
+  repeat-aware oracle, and its two new regression cases. This verifies
+  compilation against the real project classes and cached APIs, but is
+  not a successful Maven run. Logs: `.codex-runs/walker-dispute4-maven-test.log`
+  and `.codex-runs/walker-dispute4-compile.log`. Execution results are
+  recorded in the final adjudication in `07-form-walker.disputes.md`.

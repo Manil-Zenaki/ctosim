@@ -123,8 +123,9 @@ class FormWalkerAmendment5FinalCheckTest {
 
     @Test @Timeout(90)
     void retriesUseFreshDrawsAndApproximatelyFiftyAttemptsBeforeClearing() throws Exception {
+        // Wrapping '.' in concat prevents both hints and post-budget candidates (spec 09 Amendment 2).
         LoadedForm form = amended5("<answer/><gate>0</gate>",
-                bind("answer", "select1", constraint("/data/gate = 0 or . = 'good'"))
+                bind("answer", "select1", constraint("/data/gate = 0 or concat(., '') = 'good'"))
                 + bind("gate", "int", ""), selectControl("answer", false) + input("gate"));
         FormWalker walker = new FormWalker(form, settings(gateAnd("\"weights\":{\"bad\":49,\"good\":1}")));
         int blank = 0;

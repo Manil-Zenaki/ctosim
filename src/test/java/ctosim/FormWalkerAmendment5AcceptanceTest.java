@@ -64,4 +64,43 @@ class FormWalkerAmendment5AcceptanceTest {
         assertThrows(AssertionError.class, () -> assertConstraints(parse(definition),
                 "<data id=\"oracle\"><answer>6</answer><limit>5</limit></data>", LocalDateTime.of(2040, 1, 1, 12, 0)));
     }
+
+    @Test void oracleUsesTheEnclosingRepeatIndexThroughOrdinaryGroups() throws Exception {
+        String definition = resource("amendment5/template.xml")
+                .replace("__INSTANCE__", "<row jr:template=\"\"><group><age/></group></row>")
+                .replace("__BINDS__", bind("row/group/age", "int",
+                        "constraint=\"if(index() = 1, . &gt;= 18, . &gt;= 3 and . &lt;= 6)\""))
+                .replace("__ACTIONS__", "").replace("__BODY__", "<repeat nodeset=\"/data/row\">"
+                        + "<group ref=\"/data/row/group\">" + input("row/group/age") + "</group></repeat>");
+        String valid = "<data id=\"oracle\"><row><group><age>18</age></group></row>"
+                + "<row><group><age>6</age></group></row></data>";
+        var parsed = parse(definition);
+        var end = LocalDateTime.of(2040, 1, 1, 12, 0);
+        assertEquals(2, assertConstraints(parsed, valid, end));
+        AssertionError failure = assertThrows(AssertionError.class,
+                () -> assertConstraints(parsed, valid.replace("<age>6</age>", "<age>18</age>"), end));
+        assertTrue(failure.getMessage().contains("violates"));
+    }
+
+    @Test void oracleUsesTheInnermostRepeatIndexWithoutRecreatingCountedInstances() throws Exception {
+        String definition = resource("amendment5/template.xml")
+                .replace("__INSTANCE__", "<total/><outer jr:template=\"\"><answer/>"
+                        + "<inner jr:template=\"\"><answer/></inner></outer>")
+                .replace("__BINDS__", bind("total", "int",
+                        "constraint=\". = count(/data/outer) and count(/data/outer/inner) = 3\"")
+                        + bind("outer/answer", "int", "constraint=\". = index()\"")
+                        + bind("outer/inner/answer", "int", "constraint=\". = index()\""))
+                .replace("__ACTIONS__", "").replace("__BODY__", input("total") + "<repeat nodeset=\"/data/outer\" jr:count=\"9\">"
+                        + input("outer/answer") + "<repeat nodeset=\"/data/outer/inner\" jr:count=\"9\">"
+                        + input("outer/inner/answer") + "</repeat></repeat>");
+        String valid = "<data id=\"oracle\"><total>3</total><outer><answer>1</answer><inner><answer>1</answer></inner>"
+                + "<inner><answer>2</answer></inner></outer><outer><answer>2</answer>"
+                + "<inner><answer>1</answer></inner></outer><outer><answer>3</answer></outer></data>";
+        var parsed = parse(definition);
+        var end = LocalDateTime.of(2040, 1, 1, 12, 0);
+        assertEquals(7, assertConstraints(parsed, valid, end));
+        AssertionError failure = assertThrows(AssertionError.class, () -> assertConstraints(parsed,
+                valid.replace("<inner><answer>2</answer>", "<inner><answer>1</answer>"), end));
+        assertTrue(failure.getMessage().contains("violates"));
+    }
 }
