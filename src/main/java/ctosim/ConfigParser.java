@@ -39,9 +39,16 @@ final class ConfigParser {
             .withResolverStyle(ResolverStyle.STRICT);
 
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
-            "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone", "enumerators", "speedViolationRate");
+            "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
+            "enumerators", "speedViolationRate", "profiles", "area", "textPools");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
-    private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate");
+    private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
+            "distribution", "expr", "area", "when");
+    private static final Set<String> RULE_KEYS = Set.of("if", "value", "min", "max", "weights", "texts", "missingRate",
+            "distribution", "expr", "area");
+    private static final Set<String> AREA_KEYS = Set.of("minLatitude", "maxLatitude", "minLongitude", "maxLongitude");
+    private static final Set<String> MEAN_SD = Set.of("mean", "sd");
+    private static final Set<String> POOLS = Set.of("firstName", "lastName", "place", "comment");
 
     private final String source;
 
@@ -101,8 +108,13 @@ final class ConfigParser {
         double speedViolations = root.has("speedViolationRate")
                 ? rate(root.get("speedViolationRate"), "speedViolationRate") : d.speedViolationRate();
 
+        Map<String, Double> profiles = root.has("profiles") ? profiles(root.get("profiles")) : Map.of();
+        Area area = root.has("area") ? area(root.get("area"), "area") : null;
+        Map<String, List<String>> pools = root.has("textPools") ? textPools(root.get("textPools")) : Map.of();
+
         return new SimulationConfig(seed, submissions, start, days, missing, special, specialValues,
-                repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations);
+                repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations,
+                profiles, area, pools);
     }
 
     // --- Sections -------------------------------------------------------------------
@@ -166,21 +178,168 @@ final class ConfigParser {
     }
 
     private FieldOverride override(JsonNode node, String path) throws ConfigException {
+        return override(node, path, false);
+    }
+
+    /** An override, or a rule's settings when {@code rule} (then "if" is required and "when" not allowed). */
+    private FieldOverride override(JsonNode node, String path, boolean rule) throws ConfigException {
         JsonNode o = object(node, path);
-        checkKeys(o, path, OVERRIDE_KEYS);
-        if (o.size() == 0) {
-            throw error(path, "must set at least one of value, min/max, weights, texts or missingRate");
+        checkKeys(o, path, rule ? RULE_KEYS : OVERRIDE_KEYS);
+        if (o.size() == 0 || rule && o.size() == 1 && o.has("if")) {
+            throw error(path, "must set at least one of value, expr, min/max, weights, texts, distribution, area"
+                    + (rule ? "" : ", when") + " or missingRate");
         }
         boolean hasValue = o.has("value");
-        if (hasValue && (o.has("min") || o.has("max") || o.has("weights") || o.has("texts"))) {
-            throw error(path, "value cannot be combined with min/max, weights or texts");
+        if (hasValue && (o.has("min") || o.has("max") || o.has("weights") || o.has("texts") || o.has("expr")
+                || o.has("distribution"))) {
+            throw error(path, "value cannot be combined with expr, min/max, weights, texts or distribution");
+        }
+        if (o.has("expr") && (o.has("min") || o.has("max") || o.has("weights") || o.has("texts") || o.has("distribution"))) {
+            throw error(path, "expr cannot be combined with value, min/max, weights, texts or distribution");
+        }
+        if (o.has("distribution") && (o.has("weights") || o.has("texts"))) {
+            throw error(path, "distribution cannot be combined with value, weights or texts");
         }
         String value = hasValue ? fixedValue(o.get("value"), path + ".value") : null;
         FieldRange range = (o.has("min") || o.has("max")) ? fieldRange(o, path) : null;
         Map<String, Double> weights = o.has("weights") ? weights(o.get("weights"), path + ".weights") : Map.of();
         List<String> texts = o.has("texts") ? texts(o.get("texts"), path + ".texts") : List.of();
         Double missingRate = o.has("missingRate") ? rate(o.get("missingRate"), path + ".missingRate") : null;
-        return new FieldOverride(value, range, weights, texts, missingRate);
+        Distribution distribution = o.has("distribution") ? distribution(o.get("distribution"), path + ".distribution") : null;
+        if (distribution != null && range instanceof DateRange) {
+            throw error(path, "distribution can only be combined with numeric min/max");
+        }
+        String expr = o.has("expr") ? expression(o.get("expr"), path + ".expr") : null;
+        Area area = o.has("area") ? area(o.get("area"), path + ".area") : null;
+        List<OverrideRule> rules = new ArrayList<>();
+        if (rule) {
+            expression(o.get("if"), path + ".if");
+        } else if (o.has("when")) {
+            JsonNode when = o.get("when");
+            if (!when.isArray() || when.size() == 0) {
+                throw error(path + ".when", "must be a non-empty array of rules" + found(when));
+            }
+            for (int i = 0; i < when.size(); i++) {
+                String rulePath = path + ".when[" + i + "]";
+                JsonNode r = object(when.get(i), rulePath);
+                if (!r.has("if")) {
+                    throw error(rulePath, "must have an \"if\" condition");
+                }
+                rules.add(new OverrideRule(r.get("if").textValue(), override(r, rulePath, true)));
+            }
+        }
+        return new FieldOverride(value, range, weights, texts, missingRate, distribution, expr, area, rules);
+    }
+
+    private Distribution distribution(JsonNode node, String path) throws ConfigException {
+        JsonNode o = object(node, path);
+        checkKeys(o, path, Set.of("normal", "lognormal"));
+        if (o.size() != 1) {
+            throw error(path, "must have exactly one of normal or lognormal");
+        }
+        String kind = o.has("normal") ? "normal" : "lognormal";
+        String p = path + "." + kind;
+        JsonNode params = object(o.get(kind), p);
+        checkKeys(params, p, MEAN_SD);
+        if (!params.has("mean") || !params.has("sd")) {
+            throw error(p, "must have both mean and sd");
+        }
+        double mean = number(params.get("mean"), p + ".mean");
+        double sd = number(params.get("sd"), p + ".sd");
+        if (sd < 0) {
+            throw error(p + ".sd", "must not be negative (" + sd + ")");
+        }
+        if (kind.equals("lognormal") && !(mean > 0)) {
+            throw error(p + ".mean", "must be greater than 0 for a lognormal distribution (" + mean + ")");
+        }
+        return new Distribution(kind, mean, sd);
+    }
+
+    private Area area(JsonNode node, String path) throws ConfigException {
+        JsonNode o = object(node, path);
+        checkKeys(o, path, AREA_KEYS);
+        for (String key : List.of("minLatitude", "maxLatitude", "minLongitude", "maxLongitude")) {
+            if (!o.has(key)) {
+                throw error(path, "must have " + key);
+            }
+        }
+        double minLat = coordinate(o.get("minLatitude"), path + ".minLatitude", 90);
+        double maxLat = coordinate(o.get("maxLatitude"), path + ".maxLatitude", 90);
+        double minLon = coordinate(o.get("minLongitude"), path + ".minLongitude", 180);
+        double maxLon = coordinate(o.get("maxLongitude"), path + ".maxLongitude", 180);
+        if (minLat > maxLat) {
+            throw error(path, "minLatitude (" + minLat + ") must not be greater than maxLatitude (" + maxLat + ")");
+        }
+        if (minLon > maxLon) {
+            throw error(path, "minLongitude (" + minLon + ") must not be greater than maxLongitude (" + maxLon + ")");
+        }
+        return new Area(minLat, maxLat, minLon, maxLon);
+    }
+
+    private double coordinate(JsonNode node, String path, double limit) throws ConfigException {
+        double value = number(node, path);
+        if (!(value >= -limit && value <= limit)) {
+            throw error(path, "must be between " + (int) -limit + " and " + (int) limit + ", not " + value);
+        }
+        return value;
+    }
+
+    private Map<String, Double> profiles(JsonNode node) throws ConfigException {
+        JsonNode o = object(node, "profiles");
+        if (o.size() == 0) {
+            throw error("profiles", "must list at least one profile");
+        }
+        Map<String, Double> profiles = new LinkedHashMap<>();
+        boolean positive = false;
+        for (Iterator<Map.Entry<String, JsonNode>> it = o.fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> entry = it.next();
+            String name = entry.getKey();
+            if (name.isEmpty() || !name.equals(name.strip())) {
+                throw error("profiles", "the profile name \"" + name + "\" must be non-empty, without leading or trailing white space");
+            }
+            double weight = number(entry.getValue(), "profiles." + name);
+            if (weight < 0) {
+                throw error("profiles." + name, "a weight must not be negative (" + weight + ")");
+            }
+            positive |= weight > 0;
+            profiles.put(name, weight);
+        }
+        if (!positive) {
+            throw error("profiles", "at least one weight must be greater than 0");
+        }
+        return profiles;
+    }
+
+    private Map<String, List<String>> textPools(JsonNode node) throws ConfigException {
+        JsonNode o = object(node, "textPools");
+        checkKeys(o, "textPools", POOLS);
+        Map<String, List<String>> pools = new LinkedHashMap<>();
+        for (Iterator<Map.Entry<String, JsonNode>> it = o.fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> entry = it.next();
+            String path = "textPools." + entry.getKey();
+            List<String> texts = texts(entry.getValue(), path);
+            for (int i = 0; i < texts.size(); i++) {
+                if (texts.get(i).isEmpty()) {
+                    throw error(path + "[" + i + "]", "must not be an empty string");
+                }
+            }
+            pools.put(entry.getKey(), texts);
+        }
+        return pools;
+    }
+
+    /** An XPath expression of the configuration: a non-empty string that parses once ${x} are paths. */
+    private String expression(JsonNode node, String path) throws ConfigException {
+        String text = string(node, path);
+        if (text.isBlank()) {
+            throw error(path, "must not be empty");
+        }
+        try {
+            org.javarosa.xpath.XPathParseTool.parseXPath(text.replaceAll("\\$\\{([^}]*)\\}", "/data/$1"));
+        } catch (org.javarosa.xpath.parser.XPathSyntaxException | RuntimeException e) {
+            throw error(path, "is not a valid expression (" + e.getMessage() + ")");
+        }
+        return text;
     }
 
     private FieldRange fieldRange(JsonNode o, String path) throws ConfigException {

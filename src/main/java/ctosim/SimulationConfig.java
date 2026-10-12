@@ -43,11 +43,28 @@ public final class SimulationConfig {
     private final ZoneId timeZone;
     private final int enumerators;
     private final double speedViolationRate;
+    private final Map<String, Double> profiles;
+    private final Area area;
+    private final Map<String, List<String>> textPools;
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
                      NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
                      ZoneId timeZone, int enumerators, double speedViolationRate) {
+        this(seed, submissions, start, fieldworkDays, missingRate, specialRate, specialValues, repeatMin, repeatMax,
+                integerRange, decimalRange, fields, timeZone, enumerators, speedViolationRate, Map.of(), null, Map.of());
+    }
+
+    SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
+                     double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
+                     NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
+                     ZoneId timeZone, int enumerators, double speedViolationRate,
+                     Map<String, Double> profiles, Area area, Map<String, List<String>> textPools) {
+        this.profiles = Collections.unmodifiableMap(new java.util.LinkedHashMap<>(profiles));
+        this.area = area;
+        java.util.Map<String, List<String>> pools = new java.util.LinkedHashMap<>();
+        textPools.forEach((k, v) -> pools.put(k, List.copyOf(v)));
+        this.textPools = Collections.unmodifiableMap(pools);
         this.seed = seed;
         this.submissions = submissions;
         this.start = start;
@@ -164,16 +181,16 @@ public final class SimulationConfig {
     /** Probability of a speed violation on a field with a minimum time. See specs/04, Amendment 2. */
     /** Profile weights in file order; empty when not set (spec 04, Amendment 3). */
     public java.util.Map<String, Double> profiles() {
-        throw new UnsupportedOperationException("spec 04, Amendment 3");
+        return profiles;
     }
 
     public java.util.Optional<Area> area() {
-        throw new UnsupportedOperationException("spec 04, Amendment 3");
+        return java.util.Optional.ofNullable(area);
     }
 
     /** Text pools in file order; empty when not set. */
     public java.util.Map<String, java.util.List<String>> textPools() {
-        throw new UnsupportedOperationException("spec 04, Amendment 3");
+        return textPools;
     }
 
     public double speedViolationRate() {
@@ -183,7 +200,7 @@ public final class SimulationConfig {
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
@@ -192,6 +209,6 @@ public final class SimulationConfig {
         }
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools);
     }
 }
