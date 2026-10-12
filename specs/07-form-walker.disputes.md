@@ -192,3 +192,27 @@ Maven suite are not green. Logs are
 `.codex-runs/walker-dispute3-maven-test.log`,
 `.codex-runs/walker-dispute3-compile.log`, and
 `.codex-runs/walker-dispute3-junit.log`.
+
+## Dispute 4: retry-budget tests and the Amendment 5 oracle after spec 09 Amendment 2
+
+1. `FormWalkerDistributionTest.retriesUseFreshDrawsAndApproximateTheFiftyAttemptBudget`
+   (constraint `. = 1 or . = 1`) and
+   `FormWalkerAmendment5FinalCheckTest.retriesUseFreshDrawsAndApproximatelyFiftyAttemptsBeforeClearing`
+   (constraint `/data/gate = 0 or . = 'good'`) measure how often 50
+   rejected draws exhaust. Spec 09 Amendment 2 derives hints from
+   disjunctions and gives both constraints a candidate (`1`, `good`) that
+   the walker tries after the 50 attempts, so they never exhaust.
+   Requested: use constraints that give neither hints nor candidates,
+   where `.` sits inside another expression: `. * 2 = 2` for the integer
+   case, `concat(., '') = 'good'` (with the gate) for the select case.
+2. `FormWalkerAmendment5AcceptanceTest.everyPopulatedQuestionInEveryPublishedSubmissionSatisfiesItsFinalConstraint`
+   reports `/data/consented_grp[1]/f_hr_rpt[2]/f_hr_age_r[1] = 6 violates
+   if(index() = 1, . >= 18, if(index() = 2, . >= 3 and . <=6, ...))`.
+   For the second instance `index()` is 2 (spec 03), so the constraint is
+   `. >= 3 and . <= 6`, which 6 satisfies; the engine accepted the value.
+   The oracle's frozen form copies no repeat declaration, so the SurveyCTO
+   `index()` (the position of the enclosing repeat instance) finds no
+   repeat and returns 1 for every node. Requested: declare the form's
+   repeats in the frozen form (templates and repeat controls) so that
+   `index()` gives each instance's position, or evaluate constraints in
+   the walked session itself.
