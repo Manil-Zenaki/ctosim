@@ -35,6 +35,11 @@ public final class AnswerGenerator {
         throw new UnsupportedOperationException("spec 05, Amendment 2");
     }
 
+    /** As generate(question, today, random), with {@code override} as the question's override (spec 05, Amendment 3). */
+    public String generate(Question question, LocalDate today, RandomGenerator random, FieldOverride override) {
+        throw new UnsupportedOperationException("spec 05, Amendment 3");
+    }
+
     /** The answer in XForm value format, or {@code null} to leave the question blank. */
     public String generate(Question question, LocalDate today, RandomGenerator random) {
         Objects.requireNonNull(question, "question");

@@ -250,3 +250,67 @@ alternatives, one per satisfiable alternative, in order; otherwise one.
 | `SELECT_ONE` | every offered choice | — |
 | `SELECT_MULTIPLE` | every non-empty combination of the offered choices with at most 4 choices, by size then in the order of the choices (at most 20 000 combinations) | — |
 | `TEXT`, `BARCODE` | the hint candidates (spec 09), then, with a prefix, the prefix followed by 1 to 12 zeros | every integer from −10 000 to 10 000, then for n from 1 to 100 the strings of n `a`, of n `0` and of n `1` |
+
+## Amendment 3: realistic data
+
+Uses the settings of spec 04, Amendment 3. Everything not mentioned here
+is unchanged.
+
+### API addition
+
+```java
+// added to AnswerGenerator:
+public String generate(Question question, java.time.LocalDate today,
+                       java.util.random.RandomGenerator random, FieldOverride override);
+```
+
+It generates as `generate(question, today, random)` does, but with
+`override` as the question's override instead of
+`config.field(question.name())` (`null` for no override). The walker
+passes the override that holds once its rules are applied (spec 07,
+Amendment 7); `generate(question, today, random)` is
+`generate(question, today, random, config.field(question.name()).orElse(null))`.
+The override's `rules()` and `expression()` are ignored here.
+
+### Distributions (`INTEGER`, `DECIMAL`, and `TEXT` with `numbers_decimal`)
+
+When the override has a `distribution`, a number is drawn from it
+instead of uniformly: `normal` with the given mean and standard
+deviation; `lognormal` as `exp(N(μ, σ))` with
+`σ² = ln(1 + sd²/mean²)` and `μ = ln(mean) − σ²/2` (so the variable has
+the given mean and standard deviation). The number is then kept within
+the range the uniform draw would have used (the override's `min`/`max`
+or the configuration's range, narrowed by the constraint's hints, spec
+09): a draw outside it is drawn again, up to 100 times, after which it
+is moved to the nearest end of the range. It is written as before
+(`INTEGER` rounded half-up to an integer; `DECIMAL` to two decimals).
+`sd` = 0 gives the mean (moved into the range).
+
+### Area (`GEOPOINT`, `GEOTRACE`, `GEOSHAPE`)
+
+The first point's latitude and longitude are drawn uniformly within the
+override's `area`, otherwise the configuration's `area`, otherwise
+[−1, 1] as before. Later points of a trace or shape move from it as
+before and are not limited to the area.
+
+### Plausible texts (`TEXT`)
+
+After the `texts` override, the pattern, prefix and length hints (which
+keep precedence), and before the `numbers` appearance rule, a text
+question whose **name** suggests what it holds gets a plausible answer.
+The name is split into words at `_`, `-`, digits and lower-to-upper case
+changes, and compared in lower case; the first matching line applies:
+
+| Words (any of) | Answer |
+|---|---|
+| `phone`, `tel`, `telephone`, `mobile`, `cell` | `0` followed by 9 random digits |
+| `email`, `mail` | `<first>.<last><n>@example.org` in lower case, with first and last names from the pools reduced to ASCII letters (accents removed, other characters dropped), `n` from 1 to 99 |
+| `village`, `town`, `city`, `locality`, `district`, `commune`, `place`, `location` | a `place` from the pool, when `textPools` has one; otherwise this line does not apply |
+| `name`, `nom`, `prenom`, `firstname`, `surname`, `lastname`, `fullname` | `<first> <last>` from the `firstName` and `lastName` pools (only `<first>` for `firstname` and `prenom`, only `<last>` for `surname` and `lastname`) |
+| `comment`, `comments`, `remark`, `remarks`, `note`, `notes`, `specify`, `other`, `why`, `reason`, `describe`, `description`, `explain` | a `comment` from the pool |
+
+Pools are drawn from uniformly. The built-in `firstName`, `lastName` and
+`comment` pools hold at least 40 entries each, mixing several regions
+and languages (their exact content is not specified); `textPools`
+replaces a pool. There is no built-in `place` pool. A name matching no
+line keeps the rules of spec 05.
