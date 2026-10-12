@@ -162,6 +162,20 @@ public final class SimulationConfig {
     }
 
     /** Probability of a speed violation on a field with a minimum time. See specs/04, Amendment 2. */
+    /** Profile weights in file order; empty when not set (spec 04, Amendment 3). */
+    public java.util.Map<String, Double> profiles() {
+        throw new UnsupportedOperationException("spec 04, Amendment 3");
+    }
+
+    public java.util.Optional<Area> area() {
+        throw new UnsupportedOperationException("spec 04, Amendment 3");
+    }
+
+    /** Text pools in file order; empty when not set. */
+    public java.util.Map<String, java.util.List<String>> textPools() {
+        throw new UnsupportedOperationException("spec 04, Amendment 3");
+    }
+
     public double speedViolationRate() {
         return speedViolationRate;
     }

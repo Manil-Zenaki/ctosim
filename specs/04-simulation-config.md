@@ -230,3 +230,87 @@ The rules of "Strictness" and "Errors" apply (an error is located at
 Clarification (Amendment 2): assumptions 18–21 of the questions file are
 reviewed one by one and confirmed (the rates are independent; only the
 top level gains the key; the usual diagnostics apply).
+
+## Amendment 3: realistic data
+
+Answers drawn uniformly and independently of each other are valid but
+unlike real data: ages, incomes and school levels are unrelated, every
+point lies near latitude 0, and names read `resp_name 417`. This
+amendment adds the settings that make simulated data realistic:
+distributions, rules that depend on earlier answers, household
+profiles, a survey area and pools of plausible texts. How they are used
+is in spec 05 (Amendment 3) and spec 07 (Amendment 7). Everything not
+mentioned here is unchanged.
+
+### New public types and accessors
+
+```java
+public record Distribution(String kind, double mean, double sd) { }   // kind: "normal" or "lognormal"
+public record Area(double minLatitude, double maxLatitude,
+                   double minLongitude, double maxLongitude) { }
+public record OverrideRule(String condition, FieldOverride override) { }
+
+// added to FieldOverride:
+public java.util.Optional<Distribution> distribution();
+public java.util.Optional<String> expression();          // key "expr"
+public java.util.Optional<Area> area();
+public java.util.List<OverrideRule> rules();               // key "when"; empty when not set
+
+// added to SimulationConfig:
+public java.util.Map<String, Double> profiles();           // file order; empty when not set
+public java.util.Optional<Area> area();
+public java.util.Map<String, java.util.List<String>> textPools();   // file order; empty when not set
+```
+
+### New top-level keys
+
+| Key | Type | Default | Constraint | Meaning |
+|---|---|---|---|---|
+| `profiles` | object mapping a profile name to a number ≥ 0 | none | at least one entry, at least one weight > 0; names non-empty, without leading or trailing white space | One profile is drawn per submission, in proportion to its weight; rules and expressions can test it with `profile()`. |
+| `area` | object, see "Area" | none | | Where geopoints, geotraces and geoshapes are drawn. |
+| `textPools` | object mapping a pool name to an array of strings | none | names among `firstName`, `lastName`, `place`, `comment`; each array non-empty, entries non-empty | Replaces the generator's built-in pool of that name. |
+
+### New field-override keys
+
+| Key | Type | Meaning |
+|---|---|---|
+| `distribution` | object with exactly one key, `normal` or `lognormal`, whose value is `{"mean": number, "sd": number}` | Numbers are drawn from this distribution instead of uniformly. `sd` ≥ 0; for `lognormal`, `mean` > 0 (`mean` and `sd` are those of the variable itself, not of its logarithm). |
+| `expr` | string | An XPath expression, written as in the form (`${field}` references allowed), whose value is the answer. |
+| `area` | object, see "Area" | Replaces the top-level `area` for this field. |
+| `when` | array of rule objects | Conditional settings, see "Rules". |
+
+`expr` cannot be combined with `value`, `min`/`max`, `weights`, `texts`
+or `distribution`. `distribution` can be combined with `min`/`max`
+(numbers only) and `missingRate`, not with `value`, `weights` or
+`texts`. An override may now consist of `when` alone.
+
+### Area
+
+`{"minLatitude": number, "maxLatitude": number, "minLongitude": number,
+"maxLongitude": number}`, all four keys required, with −90 ≤
+`minLatitude` ≤ `maxLatitude` ≤ 90 and −180 ≤ `minLongitude` ≤
+`maxLongitude` ≤ 180.
+
+### Rules
+
+Each element of `when` is an object with a key `if` (a non-empty string,
+an XPath expression) and at least one of the field-override keys
+`value`, `expr`, `min`/`max`, `weights`, `texts`, `distribution`,
+`area`, `missingRate`, combined under the same restrictions as in an
+override. `when` is not allowed inside a rule. In `OverrideRule`,
+`condition()` is the `if` string and `override()` the rule's settings
+(with empty `rules()`).
+
+### Expressions
+
+The strings of `if` and `expr` are XPath expressions in which
+`${name}` stands for a field of the form and `profile()` for the
+submission's profile. The configuration checks that each one parses
+(after replacing every `${name}` by a path); one that does not parse is
+an error located at its key (`fields.age.when[1].if`). Whether the
+fields exist is not checked here.
+
+The rules of "Strictness" and "Errors" apply to every new key; an error
+is located at its path (`profiles.rural`, `area.minLatitude`,
+`fields.income.distribution.lognormal.mean`, `textPools.place[2]`).
+`withSeed` and `withSubmissions` keep every setting.

@@ -45,4 +45,22 @@ public final class FieldOverride {
     public OptionalDouble missingRate() {
         return missingRate == null ? OptionalDouble.empty() : OptionalDouble.of(missingRate);
     }
+
+    public Optional<Distribution> distribution() {
+        throw new UnsupportedOperationException("spec 04, Amendment 3");
+    }
+
+    /** The "expr" key. */
+    public Optional<String> expression() {
+        throw new UnsupportedOperationException("spec 04, Amendment 3");
+    }
+
+    public Optional<Area> area() {
+        throw new UnsupportedOperationException("spec 04, Amendment 3");
+    }
+
+    /** The "when" rules, in file order; empty when not set. */
+    public List<OverrideRule> rules() {
+        throw new UnsupportedOperationException("spec 04, Amendment 3");
+    }
 }
