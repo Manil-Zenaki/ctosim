@@ -535,3 +535,55 @@ whose questions have the constraints `. mod 7 = 3` (integer),
 `format-date-time(., '%H') = '07'` (time),
 `count-selected(.) = 3 and not(selected(., 'a'))` (select_multiple of
 six choices) gets a valid answer to each of them in submissions 1 to 20.
+
+## Amendment 7: rules, expressions and profiles
+
+Uses the settings of spec 04, Amendment 3. Everything not mentioned here
+is unchanged.
+
+### Profiles
+
+When the configuration has `profiles`, each submission draws one, in
+proportion to the weights, from `config.seed()` and the submission
+number alone (so it does not change the other draws of the submission).
+Within that submission, `profile()` in a rule's condition or an `expr`
+is the profile's name; without profiles it is `""`.
+
+### The override of a question
+
+When a question is reached (rule 4 of "Questions"), the walker computes
+its **effective override** from `config.field(name)`:
+
+1. the conditions of its `when` rules are evaluated in order, as XPath
+   `boolean()`, in the session, with the question node as context and
+   each `${x}` replaced by the path of field `x` (as the converter does,
+   spec 02); the first rule whose condition is true applies, and its
+   settings replace the override's settings of the same keys (`min` and
+   `max` together; any other key of the override is kept). When no
+   condition is true, the override's own settings apply;
+2. when the resulting settings have an `expr`, it is evaluated the same
+   way and its string value becomes a fixed `value` (an empty string
+   leaves the question blank, like a `null` answer).
+
+The effective override is what `AnswerGenerator.generate(question,
+today, random, override)` receives (spec 05, Amendment 3), and what the
+other rules of this spec read in place of `config.field(name)` (for
+example the fixed value of the blank rule). A field named in the
+configuration still counts as overridden for rule 2 (kept values),
+whatever its rules give.
+
+A condition or `expr` that cannot be evaluated (an unknown field, an
+evaluation error) gives a warning that names the field and the
+expression; such a condition counts as false, such an `expr` as absent.
+A `${x}` naming no field of the form is reported by `configWarnings()`
+as other unknown names are.
+
+### Acceptance
+
+With a configuration whose `profiles` are `{"a": 1, "b": 3}`, a text
+question whose override is `{"expr": "profile()"}` holds `a` or `b` in
+every submission, both occur among submissions 1 to 100 (about a quarter
+`a`), and a second text question with rules `if: "profile() = 'a'"` →
+`value: "x"` and otherwise `value: "y"` holds `x` exactly in the
+submissions whose first question holds `a`. Walking the same submission
+number twice gives the same profile.
