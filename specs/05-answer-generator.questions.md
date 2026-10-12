@@ -347,3 +347,149 @@ existing build outputs and Maven cache; runtime tests were not run.
 
 **Tests:** All four new Amendment 1 test classes. Their public API usage is
 derived solely from specs 04 and 05 and the unchanged existing test helper.
+
+## Amendment 2: search values questions and assumptions
+
+This run adds only `AnswerGeneratorSearchNumberTest`,
+`AnswerGeneratorSearchTemporalTest`, `AnswerGeneratorSearchChoiceTextTest`,
+`AnswerGeneratorSearchContractTest`, and `AnswerGeneratorSearchSupport`.
+Existing tests and helpers remain unchanged. Inputs are small inline questions,
+configuration strings, and hints constructed with the existing spec 09 test
+builder; no resource files or form-engine sessions are needed. Expectations
+come from spec 05 Amendment 2 and its explicit references to specs 04 and 09.
+No production source or implementation bodies were read.
+
+### 22. Are empty levels retained, and what happens with integer-free ranges?
+
+**Question:** Does an empty Level 1 remain in the outer list? Does an INTEGER
+range containing no integer search an empty list or the `Math.round(min)`
+fallback used by `generate`? What happens when every alternative is
+unsatisfiable?
+
+**Assumption:** Empty-level representation is left open. Empty selects must
+have no values, with or without an empty level. TEXT/BARCODE without hints
+must still provide their complete broad level, optionally preceded by empty
+levels. An integer-free configured range and all-unsatisfiable alternatives
+are not tested: the search table's wording and the drawing fallbacks do not
+unambiguously settle their search results. A single contradictory hint interval
+uses the configured range, as explicitly stated in spec 09. Mixed alternatives
+skip contradictory intervals and keep satisfiable ones.
+
+**Tests:** `emptySelectHasNoSearchValues`, `noHintsStillProvideTheBroadTextSearch`,
+the numeric/date hint matrices, and numeric/date alternative-order tests.
+
+### 23. Where do fractional decimal endpoints appear?
+
+**Question:** Does "its integers and its two ends" put fractional endpoints
+after all integers, or place the lower end first in numerical order? How is
+that sequence sampled when it is larger than 10,001 values?
+
+**Assumption:** Do not impose the endpoints' placement relative to interior
+integers. Small fractional ranges must contain exactly the formatted ends
+and interior integers, with integers in ascending order and no duplicates.
+With no interior integers the two ends are in lower-then-upper order.
+Oversized decimal tests use integral endpoints so there is no endpoint-order
+ambiguity. Fractional-endpoint sampling above the cap remains untested.
+
+**Tests:** `fractionalDecimalEndsAndEveryInteriorIntegerArePresentExactlyOnce`,
+`decimalEndsAreHalfUpFormattedAndDeduplicated`,
+`exclusiveDecimalHintsMoveEndsByOneCent`,
+`integralDecimalRangesRespectTheCapAndEvenSpacing`.
+
+### 24. Which rounding applies to evenly spread integer and date samples?
+
+**Question:** What tie-breaking rule applies when an evenly spread point is
+halfway between two integers or two days?
+
+**Assumption:** Rounding to the kind's precision means a nearest integer or
+day; either result is allowed at an exact half tie. Each output must lie
+within half a unit of its ideal evenly spaced position, remain strictly
+increasing, include both ends, and meet the cap. Exact two-unit spacing is
+also tested. Decimal output uses the already-confirmed half-up formatting.
+Caps apply separately to each drawing range before levels combine ranges
+and remove repeated values. Narrow integer ranges above Integer.MAX_VALUE
+are tested; representability extremes outside assumption 5 remain untested.
+
+**Tests:** `oversizedIntegerRangesAreSpreadAcrossBothEnds`,
+`dateCapEnumeratesSmallRangesAndSpreadsLargeRangesIncludingBothEnds`,
+`valueCapIsPerDrawingRangeRatherThanPerLevel`,
+`largeDateAlternativesEachReceiveTheirOwn10001ValueBudget`.
+
+### 25. How far does deduplication extend, and what is the combination order?
+
+**Question:** Are repeated answers removed within each level or across levels?
+For equal-sized select combinations, what does "in the order of the choices"
+mean?
+
+**Assumption:** Deduplicate within each level, preserving first occurrence.
+An answer in Level 1 can appear again in Level 2, whose complete list is
+specified independently. Equal-sized combinations are ordered lexicographically
+by their ascending offered-choice indices, and each answer uses display order.
+The 20,000 cap keeps the first combinations in that order. Special choices
+participate in combinations like any offered choice; drawing weights and
+specialRate do not change exhaustive search. Select fixtures keep assumption
+4's unique, nonempty, whitespace-free choice values. Duplicate candidates,
+overlapping ranges, decimal endpoints, and broad-level section overlaps provide
+the specified duplicate coverage without assuming duplicate-choice semantics.
+
+**Tests:** Exact broad-level tests, alternative-order tests,
+`fourChoiceSearchIncludesEveryNonemptySubsetInSizeThenDisplayOrder`,
+`combinationLimitKeepsTheFirst20000AndNeverSelectsMoreThanFour`, and candidate/
+prefix deduplication tests. The 26- and 27-choice fixtures straddle the cap
+with 17,901 and 20,853 possible combinations respectively.
+
+### 26. Do non-range hints or appearances further restrict search lists?
+
+**Question:** Must the table's TEXT/BARCODE candidate and prefix values obey
+length/pattern hints? Do `numbers_decimal`, `month-year`, or `label` change
+the listed levels? Are select include/exclude hints applied to offered choices?
+
+**Assumption:** The explicit text search recipe is literal: preserve candidates
+verbatim, then append the prefix plus 1 through 12 zeros, even when a pattern
+or length hint would reject those answers. Broad levels likewise enumerate the
+table's complete values independently of drawing hints. For appearances and
+select include/exclude hints, the interaction is insufficiently specified;
+these combinations are not tested. TEXT/BARCODE fixtures use top-level candidates
+and prefix, not prefixes inside alternatives, whose aggregation is unspecified.
+
+**Tests:** `textSearchDoesNotTruncatePrefixesToLengthHintsOrReplaceThemWithPatternDraws`,
+all complete broad-level tests, candidate and prefix tests. All search questions
+have empty appearance strings and select questions have no choice hints.
+
+### 27. What additional API guarantees apply to searchValues?
+
+**Question:** Must the outer list be unmodifiable, must null arguments throw
+NullPointerException, or must equal calls return distinct collection objects?
+
+**Assumption:** Only each individual level is explicitly required to be
+unmodifiable. Outer-list mutability, identity/caching, and null-argument errors
+are not asserted because Amendment 2 does not state them. Determinism is tested
+by equality across instances and repeated calls, including intervening drawing
+and search calls. Locale checks use the existing `java.util.Locale.default`
+resource lock and restore all locale categories. Fixed values, both missing
+rates, optional/required status, and text overrides cannot change the search
+recipe. No particular random draw sequence is asserted.
+
+**Tests:** `AnswerGeneratorSearchContractTest`; no additional error tests.
+
+### 28. Amendment 2 compilation verification (2026-10-12)
+
+**Question:** Can the new tests be compiled by the requested offline command
+in this sandbox?
+
+**Assumption / result:** Compilation is not verified. Before adding files,
+`mvnw.cmd -o -q test-compile` returned success with the existing build state.
+After adding the tests, the same command exits 1 with a fatal compiler error
+for `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The `-e` diagnostic
+identifies `java.nio.file.AccessDeniedException` in Windows real-path resolution
+while closing the JAR filesystem. A separate attempt with the quoted argument
+`-Dmaven.compiler.fork=true` also exits 1 and reports unresolved existing project
+types such as Question, QuestionKind, SimulationConfig, and AnswerGenerator.
+This is not a successful compile or an expected runtime assertion failure.
+
+Logs are under `.codex-runs/answer-search/`. No Maven repositories were copied,
+drives mapped, dependencies installed, or production/build configuration changed.
+Runtime tests were not run; compilation needs rechecking where the existing
+dependency cache and project outputs are accessible.
+
+**Tests:** All four new Amendment 2 test classes and their new helper.
