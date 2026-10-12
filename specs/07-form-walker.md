@@ -434,3 +434,57 @@ documentation uses `once(format-date-time(now(), ...))`. Tests that read
 a timestamp from such a field are superseded by that amendment; the
 other timestamps of Amendment 1 (`start`, `end`, `datetime` and `time`
 answers) are unchanged.
+
+## Amendment 5: no answer violates its question's constraint
+
+When a form is filled normally, an answer cannot violate its question's
+constraint: SurveyCTO Collect checks the constraint when the enumerator
+leaves the question, and checks every question again when the form is
+finalised. Until now the walker checked an answer only when it gave it,
+so a value could still violate its constraint at the end (a kept default,
+or a constraint that refers to a question answered later). Everything
+not mentioned here is unchanged.
+
+### The guarantee
+
+In the instance XML of every submission, every **question** that holds a
+value satisfies its own constraint, evaluated on the final instance. A
+question here is a field the walker meets as a question (rule 4 of
+"Questions": not read-only, a control the generator has a kind for),
+in every repeat instance where it is relevant. Fields without a control
+(`calculate`), read-only fields, `calculate_here` fields and questions
+without a constraint are not concerned.
+
+### Kept values
+
+Rule 2 of "Questions" keeps a value the question already has (a default,
+or a value set by a calculation or an action) only when that value
+satisfies the question's constraint. Otherwise the walker answers the
+question as if it had no value (rules 4 to 7).
+
+### Check at the end of the form
+
+After the last question, before the speed-violation fields and the
+`duration()` recalculation of Amendments 1 and 2, the walker goes over
+the questions in form order and evaluates the constraint of each one
+that holds a value:
+
+- a question whose constraint holds is left as it is;
+- a question whose constraint does not hold is answered again: the
+  generator is asked for answers (fresh draws, `today` the clock's date)
+  until the engine accepts one, up to 50 attempts. The clock does not
+  move, no speed violation is recorded and `answered()` does not change;
+- when no attempt is accepted, the question is cleared and a warning
+  names it and says that its constraint does not hold at the end of the
+  form (and, when it is required, a second warning says that it is
+  required).
+
+Answering or clearing a question can change other values, so the check
+is repeated until a pass changes nothing; after 5 passes, every question
+whose constraint still does not hold is cleared, with the same warnings,
+until none remains.
+
+Acceptance: for each form of `samples/xforms/` (the coverage-3 form with
+media directory `samples/coverage3`), in submissions 1 to 20 walked with
+the default configuration, every question that holds a value satisfies
+its constraint on the final instance.
