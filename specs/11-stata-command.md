@@ -201,3 +201,43 @@ The package lists `ctosim_converter.jar` (the same archive).
 
 Clarification (Amendment 2): the questions recorded for Amendment 2
 (B1–B4) are reviewed one by one and confirmed.
+
+## Amendment 3: use cases in the help file
+
+The help file is where Stata users learn the command; it now shows what
+the simulator can do, from the simplest call to realistic data. The
+rules of "Help file" above still apply; this amendment adds to them.
+
+### Examples
+
+The section **Examples** holds two parts, titled **Basic examples** and
+**Advanced examples**. Each example is a short sentence saying what it
+does, followed by the command(s) in `{cmd:}` form. Together they show:
+
+- Basic: simulating a form and importing the data as plain data (`n()`,
+  `seed()`, `clear`); loading them with SurveyCTO's import do-file
+  (`dofile()`, `replace`); choosing the output directory (`saving()`);
+  a form with attached CSV files (`media()`); reading the stored results
+  (`return list`, `r(N)`, `r(warnings)`) and opening the run report
+  (`type "\`r(report)'"`).
+- Advanced: a configuration file (`config()`) that fixes a value,
+  restricts a range, weights the choices of a question and changes the
+  missing rate; realistic data with household **profiles**, a
+  **distribution** (normal or lognormal), **conditional rules** (`when`
+  with `if`), a computed answer (`expr`), a survey **area** and **text
+  pools**; several data sets with different seeds in a loop, to test
+  analysis code on more than one sample; and checking with `assert` that
+  an answer respects the form's constraint.
+
+Every configuration used in an example is shown in full, as JSON, in
+the help file, and uses only keys of spec 04.
+
+### Configuration
+
+The section **Configuration** names every top-level key and every
+field-override key of spec 04 (including `profiles`, `area`,
+`textPools`, `distribution`, `when`, `if` and `expr`), with one line each
+on what it does, and says that generated answers always satisfy their
+question's constraint when it can be satisfied, and that text questions
+named like `resp_name`, `phone_number`, `email` or `other_specify` get
+plausible answers without any setting.
