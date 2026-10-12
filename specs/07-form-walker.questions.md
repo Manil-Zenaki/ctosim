@@ -689,3 +689,160 @@ in specs 03, 04, and 05. Production source was not opened or searched.
   retained under Amendment 4, including spec 03's clarification that
   date storage applies regardless of declared field type. Log:
   `.codex-runs/walker-dispute3-junit.log`.
+
+## Amendment 5 questions and assumptions (2026-10-12)
+
+Only new `FormWalkerAmendment5*` Java files and the
+`form-walker/amendment5/template.xml` fixture are added. Existing test
+classes and fixtures are retained. Production source was neither read nor
+modified. Expectations come from spec 07 and its referenced public loader,
+configuration, generator, and simulated-session contracts.
+
+37. **Question:** Does "form order" mean control/navigation order or primary
+    instance element order? Are changes within a pass immediately visible?
+    **Assumption:** It means the order of questions in the form body. Each
+    repair/clear is visible to subsequent questions and their calculations;
+    earlier questions are checked again on subsequent passes. Tests put the
+    body in a different order from the instance and use backward dependencies.
+    **Tests:** `finalFailureWarningsFollowControlOrderRatherThanInstanceElementOrder`,
+    `clearingALaterQuestionInvalidatesAnEarlierOneOnTheNextPass`, and
+    `fiveRepairPassesAreFollowedByClearingUntilEvenEarlierDependentsAreValid`.
+
+38. **Question:** Does the initial final check count toward the five passes,
+    and how is termination after that limit interpreted?
+    **Assumption:** There are at most five repair passes total. After those,
+    only invalid populated questions are cleared, repeatedly until no invalid
+    populated question remains. A chain of length five must fully repair; a
+    longer backward dependency chain retains the five repaired terminal
+    values and clears the remaining prefix, including values invalidated by
+    earlier clearing sweeps. No clearing-order assertion is made in this
+    fallback phase. Blank nodes do not violate the guarantee.
+    **Tests:** The chain cases of lengths 1, 2, 5, 6, 8, and 12 in
+    `FormWalkerAmendment5ConvergenceTest`.
+
+39. **Question:** How should constraints that depend on post-processing
+    (speed reports, final duration, end timestamp), volatile XPath functions,
+    changing repeat counts, or newly relevant questions be handled?
+    **Assumption:** The guarantee and placement of the final check do not
+    fully specify these interactions. Tests do not prescribe a resolution
+    for constraints made invalid *after* the check by post-processing, or
+    for volatile/self-modifying constraints and new repeat creation. They
+    do verify that repair changes are visible to calculations and report
+    relevance, and that a now-irrelevant question is excluded. They do not
+    require traversal of a question that was never previously relevant.
+    **Tests:** `repairsRefreshCalculationsAndReportRelevanceBeforeReportsArePopulated`,
+    `clearingRefreshesDependentCalculations`, `aRepairCanMakeAnotherInvalidQuestionIrrelevant`,
+    and the exclusion tests in `FormWalkerAmendment5ScopeTest`.
+
+40. **Question:** What happens if the generator returns null or an
+    unconvertible value during a final repair? Can tests observe exactly 50
+    calls through the public API?
+    **Assumption:** Do not assert the unspecified final-repair null/conversion
+    warning or retry policy. Initial invalid-default handling follows the
+    explicit ordinary rules, including null clearing. There is no public
+    generator injection/call counter. The retry test therefore checks the
+    probability implied by one original draw and up to 50 fresh repair draws:
+    700 submissions with bad:good weights 49:1, expected clearing probability
+    `0.98^51`, tolerance seven binomial standard deviations plus two. This
+    detects missing/stale retries, very short budgets, and unlimited retries;
+    it cannot reliably distinguish 49 from 50 attempts. No exact random
+    sequence or implementation of seed mixing is assumed.
+    **Tests:** `retriesUseFreshDrawsAndApproximatelyFiftyAttemptsBeforeClearing`,
+    select repair cases, and invalid-default blank handling.
+
+41. **Question:** How are final-failure warnings distinguished and counted?
+    **Assumption:** A failure warning contains the field name, `constraint`,
+    and `end`, without requiring an exact sentence. Each failed populated
+    instance emits one warning, then a separate `required` warning when
+    required on the final instance. Subsequent passes do not warn again for
+    the cleared value. Warning prefixes, ordering, immutability, and replay
+    remain as specified. Repeat warnings need name the question, but need not
+    include its indexed path.
+    **Tests:** `assertFinalFailure` callers, final requiredness/replay tests,
+    warning order test, and per-relevant-repeat failure test.
+
+42. **Question:** How can real-form constraints be checked independently
+    against the final submission without mutating or recalculating it?
+    **Assumption:** Parse the original form to identify supported question
+    controls and their binds; exclude `calculate_here`, read-only, absent,
+    and blank fields. Build a separate minimal form containing the serialized
+    submission and only its original type/constraint bindings. No calculates,
+    actions, preloads, relevance rules, or repeat controls are copied. Evaluate
+    each original expression using JavaRosa's public XPath API in the node's
+    actual repeated context, with simulated time set to submission end. This
+    uses the engine's specified expression semantics, not the walker's check.
+    Select values are read as strings in this oracle so no choice-list
+    conversion can alter them. The oracle explicitly requires absolute bind
+    and control paths (as in the current published forms); it fails rather
+    than silently ignoring a different path syntax. Sanity tests prove that
+    a second-repeat violation and a cross-field violation are detected and
+    that source calculations cannot repair an invalid snapshot.
+    **Tests:** `FormWalkerAmendment5AcceptanceTest` and its oracle support.
+    Acceptance is separately parameterized for every XML form and every
+    submission number 1..20, with exactly the default configuration and the
+    explicitly required coverage-3 media directory. The remaining forms use
+    the loader's normal media-directory behavior. No claim requires a
+    particular question to be nonblank in each stochastic submission.
+
+43. **Question:** What reliability is required for stochastic success and
+    end-date checks, and do constraint hints change the expected draws?
+    **Assumption:** Fixed seeds and generous probabilities are used, never
+    exact sequences. Select-one/two-choice select-multiple tests permit
+    exhaustion with the specified warning and require at least 55 successful
+    results in 60 submissions. Numeric repeat
+    repairs draw from ranges of size at most three. The end-date test permits
+    exhaustion but requires at least one successful repair over 160 walks;
+    50 uniform draws over 365 dates give a probability below `3e-10` of no
+    successes in all walks. Hints may increase this success rate. Statistical
+    attempt-budget assertions use explicit choice weights and a field
+    reference in the constraint, avoiding numeric/regex hint assumptions.
+    **Tests:** Select repair, repeat context, seed sensitivity, and
+    `finalRepairUsesTheClockDateAfterCrossingMidnight`.
+
+44. **Question:** Which existing calculated/unsupported values are covered?
+    **Assumption:** An editable calculated question remains a question;
+    `once()` plus explicit `readonly=false()` makes its initial calculated
+    value stable and replaceable. A calculation without a control, a read-only
+    control, and a `calculate_here` question are explicitly excluded. The
+    amendment does not clearly say whether an invalid default on an
+    unsupported control should be kept under rule 2 or proceed to its usual
+    unsupported warning; no new expectation is imposed for that combination.
+    **Tests:** `editableCalculationDefaultIsCheckedWhenReached` and
+    `fieldsWithoutControlsReadonlyAndCalculateHereAreExcludedEvenWithFalseConstraints`.
+
+### Amendment 5 build and validation
+
+- **Question:** Can the requested `mvnw.cmd -o -q test-compile` complete?
+- **Assumption:** A cached-jar filesystem access failure is environmental,
+  not evidence of a Java source error. The initial up-to-date baseline
+  invocation completed, but compiling the added sources with the exact
+  requested command fails in `testCompile` on
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. A final offline
+  `-e` invocation confirms `java.nio.file.AccessDeniedException` at
+  `WindowsLinkSupport.getRealPath`. No repositories were copied, packages
+  installed, drives mapped, or build settings changed.
+- **Tests:** The diagnostic compiler in
+  `.codex-runs/WalkerAmendment5CompileProbe.java` successfully compiles all
+  30 FormWalker test/support sources with Java release 17 against the actual
+  project classes and cached JavaRosa/JUnit APIs. It reads the existing jar
+  class entries in memory to bypass the compiler's failing Windows path
+  canonicalization; it supplies no substitute production classes. This is
+  separate compilation verification, not a successful Maven invocation.
+  Logs are `.codex-runs/walker-amendment5-test-compile.log`,
+  `.codex-runs/walker-amendment5-test-compile-detail.log`, and
+  `.codex-runs/walker-amendment5-probe-compile.log`.
+- **Execution:** The diagnostic JUnit launcher runs 174 cases: 130 pass,
+  44 fail with assertion failures, and none are skipped or aborted. There
+  are no container, form-loading, or runtime exception failures. This
+  includes all 120 published-form/submission combinations and two oracle
+  sanity tests. One published submission retains `resp_contact=0` in the
+  IPA form, violating its phone constraint. The other failures exercise
+  the pending Amendment 5 behavior. The full log is
+  `.codex-runs/walker-amendment5-junit.log`. After relaxing the select
+  success-frequency check to allow the contract's rare exhausted retries,
+  all sources were compiled again and the unit classes rerun; the acceptance
+  classes were unchanged. The final targeted log is
+  `.codex-runs/walker-amendment5-unit-final.log`.
+- Existing tests, production source, build configuration, and sample forms
+  remain unchanged. No commit was made. Temporary probes and logs stay under
+  `.codex-runs/`.
