@@ -1,6 +1,6 @@
 package ctosim;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -37,13 +37,14 @@ class FormWalkerAmendmentCalculateHereTest {
         LoadedForm form = amendedForm("<early/><first/><elapsed/><at_here/><second/>",
                 here("early", "int", "duration()", "readonly=\"true()\"")
                 + bind("first", "string", "") + here("elapsed", "int", "duration()", "readonly=\"true()\"")
-                + here("at_here", "dateTime", "now()", "readonly=\"true()\"") + bind("second", "string", ""),
+                + here("at_here", "string", "format-date-time(now(), '%Y-%m-%dT%H:%M:%S')", "readonly=\"true()\"")
+                + bind("second", "string", ""),
                 input("early") + input("first") + input("elapsed") + input("at_here") + input("second"));
         Submission result = new FormWalker(form, completeConfig()).walk(1);
         assertEquals(0, integer(result, "early"));
         long elapsed = integer(result, "elapsed");
         assertTrue(elapsed >= 5 && elapsed <= 60);
-        assertEquals(result.start().plusSeconds(elapsed), OffsetDateTime.parse(value(result, "at_here")).toLocalDateTime());
+        assertEquals(result.start().plusSeconds(elapsed), LocalDateTime.parse(value(result, "at_here")));
         assertTrue(seconds(result) - elapsed >= 5 && seconds(result) - elapsed <= 60);
         assertEquals(2, result.answered());
     }

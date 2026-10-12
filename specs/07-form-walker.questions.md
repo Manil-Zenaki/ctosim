@@ -668,3 +668,24 @@ in specs 03, 04, and 05. Production source was not opened or searched.
   cases do not imply the amendment is implemented. The final Java edits
   were compiled before this run. Existing tests, production source, build
   configuration, and published sample files are unchanged; no commit was made.
+
+### Dispute 3 build and validation
+
+- **Question:** Can the prescribed `mvnw.cmd -o -q test` complete for
+  this adjudication?
+- **Assumption:** Failure accessing the cached dependency does not
+  establish a test source error. The command reaches `testCompile` but
+  fails on `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+  No dependencies or build configuration were changed.
+- **Tests:** The existing `.codex-runs/WalkerCompileProbe.java` compiled
+  all 23 FormWalker test/support sources successfully against project
+  class files and cached JUnit APIs. This verifies compilation separately
+  from Maven. Logs: `.codex-runs/walker-dispute3-maven-test.log` and
+  `.codex-runs/walker-dispute3-compile.log`.
+- **Execution:** The five disputed test classes ran 73 cases: 62 passed,
+  11 failed, none skipped or aborted. All failures are the `opened`
+  date-only assertion in the two time-zone parameterized tests; the XML
+  contains a midnight timestamp with an offset. These expectations are
+  retained under Amendment 4, including spec 03's clarification that
+  date storage applies regardless of declared field type. Log:
+  `.codex-runs/walker-dispute3-junit.log`.

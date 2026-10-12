@@ -33,14 +33,14 @@ class FormWalkerAmendmentTimeZoneTest {
             TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Honolulu"));
             Submission result = walk(timestamps(), "\"timeZone\":\"" + zone + "\",\"missingRate\":0");
             ZoneOffset expected = zone.equals("UTC") ? ZoneOffset.UTC : ZoneOffset.of(zone);
-            for (String path : new String[]{"started", "finished", "opened", "datetime_answer", "last_now"}) {
+            for (String path : new String[]{"started", "finished", "datetime_answer"}) {
                 assertEquals(expected, OffsetDateTime.parse(value(result, path)).getOffset(), path);
             }
             assertEquals(expected, OffsetTime.parse(value(result, "time_answer")).getOffset());
             assertEquals(result.start(), OffsetDateTime.parse(value(result, "started")).toLocalDateTime());
-            assertEquals(result.start(), OffsetDateTime.parse(value(result, "opened")).toLocalDateTime());
+            assertEquals(result.start().toLocalDate().toString(), value(result, "opened"));
             assertEquals(result.end(), OffsetDateTime.parse(value(result, "finished")).toLocalDateTime());
-            assertEquals(result.end(), OffsetDateTime.parse(value(result, "last_now")).toLocalDateTime());
+            assertEquals(result.end().toLocalDate().toString(), value(result, "last_now"));
         } finally {
             TimeZone.setDefault(original);
         }
@@ -55,9 +55,11 @@ class FormWalkerAmendmentTimeZoneTest {
     void regionOffsetsFollowTheSimulatedDate(String zone, String start, String offset) throws Exception {
         Submission result = walk(timestamps(), "\"timeZone\":\"" + zone + "\",\"start\":\"" + start
                 + "\",\"fieldworkDays\":1,\"missingRate\":0");
-        for (String path : new String[]{"started", "finished", "opened", "last_now"}) {
+        for (String path : new String[]{"started", "finished"}) {
             assertEquals(ZoneOffset.of(offset), OffsetDateTime.parse(value(result, path)).getOffset(), path);
         }
+        assertEquals(result.start().toLocalDate().toString(), value(result, "opened"));
+        assertEquals(result.end().toLocalDate().toString(), value(result, "last_now"));
     }
 
     @Test void completeSubmissionIsIndependentOfTheMachinesDefaultZone() throws Exception {

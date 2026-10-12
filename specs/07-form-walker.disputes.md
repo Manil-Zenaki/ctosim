@@ -128,3 +128,67 @@ documentation records this way) and compare the local date-time, or
 assert the date-only value; keep the other fields of these tests
 (`start`, `end`, `datetime` and `time` answers, `duration()`), which are
 unchanged.
+
+## Adjudication including Amendment 4
+
+### Dispute 1: keep the corrected retry-budget test
+
+The current fixture uses `. = 1 or . = 1`, which accepts exactly 1 and
+provides no hints under spec 09's "Deriving hints" and Amendment 1.
+Spec 07 still requires up to 50 fresh attempts. The configured range
+1..20 therefore supports the existing exhaustion probability `(19/20)^50`.
+Keep the fixture, statistics, and assertions unchanged.
+
+### Dispute 2: keep the corrected device-id assertions
+
+All three current assertions require `[0-9a-f]{16}`, and the
+single-enumerator test has already been renamed accordingly. This is
+exactly the format required by spec 07, Amendment 2, which supersedes
+Amendment 1's 15-digit format. Keep those tests unchanged.
+
+### Dispute 3, point 1: accepted; preserve the body-position timing check
+
+Amendment 4 explicitly supersedes timestamp expectations for a
+`calculate_here` whose result is a date-time. The old `at_here` fixture
+used `now()` directly, so parsing it as an offset date-time was wrong.
+Change its expression to `format-date-time(now(), '%Y-%m-%dT%H:%M:%S')`
+and its bind type to `string`, and parse the resulting text as a
+`LocalDateTime`. This follows Amendment 4's documented way to preserve
+time as text and retains the assertion that the calculation runs at
+`start()` plus the preceding question's elapsed seconds. Keep the
+`duration()` checks, subsequent clock advance, and answered count.
+
+### Dispute 3, point 2: accepted; assert dates for raw calculations
+
+Keep `last_now` as a direct `now()` calculation and assert its exact
+`YYYY-MM-DD` value equals `end()`'s local date. The same shared fixture
+contains `opened`, calculated as `once(now())`; Amendment 4 applies to
+every date/date-time calculation, so assert that field equals `start()`'s
+local date as well. Neither calculated field should have an offset.
+
+Apply this correction to both tests using that fixture's timestamp
+assertions: `storedTimestampsAndGeneratedAnswersUseConfiguredOffset`
+and `regionOffsetsFollowTheSimulatedDate`. Retain their configured-zone
+and seasonal-offset checks for `started` and `finished`, as well as the
+generated `datetime_answer` and `time_answer` offset checks and exact
+start/end timestamp comparisons. These timestamps are explicitly
+unchanged by Amendment 4. No production source was read or modified.
+
+Validation: `mvnw.cmd -o -q test` reached `testCompile` but failed on
+the cached `commons-io-2.5.jar`; this limitation is recorded in the
+questions file. The existing offline compilation probe successfully
+compiled all 23 FormWalker test/support sources. A JUnit harness ran
+the five disputed test classes: 73 cases started, 62 passed, 11 failed,
+none skipped or aborted, and no container failures. The body-position
+test with formatted text passed, as did the retained retry and device-id
+tests. All 11 failures are in the two time-zone parameterized tests at
+the `opened` date-only assertion: the current XML contains a midnight
+timestamp with an offset instead of `YYYY-MM-DD`. Those cases stop
+before the `last_now` assertion. Retain the date-only expectations:
+spec 03, Amendment 4's clarification explicitly says date storage
+applies whatever the field's declared type, including this fixture's
+`dateTime` binds. Compilation succeeded, but the targeted tests and the
+Maven suite are not green. Logs are
+`.codex-runs/walker-dispute3-maven-test.log`,
+`.codex-runs/walker-dispute3-compile.log`, and
+`.codex-runs/walker-dispute3-junit.log`.
