@@ -101,9 +101,14 @@ class SurveyCtoAmendment4ConditionalTest {
         assertEquals("[1]", value(child(root(session), "result")));
     }
 
-    @Test void predicateCanReferToTheRepeatNodeItself() throws Exception {
-        var session = repeats(conditional("count", "boolean(/data/row[kind = 'odd'])"), THREE).newEntryController();
+    @Test void predicateBelowTheRepeatStepFiltersEachInstance() throws Exception {
+        var session = repeats(conditional("count", "count(/data/row/kind[. = 'odd']) > 0"), THREE).newEntryController();
         assertEquals("[2]", value(child(root(session), "result")));
+    }
+
+    @Test void predicateOnTheRepeatStepSelectsAllMatchingInstancesForEachCondition() throws Exception {
+        var session = repeats(conditional("count", "count(/data/row[kind = 'odd']) = 2"), THREE).newEntryController();
+        assertEquals("[3]", value(child(root(session), "result")));
     }
 
     @Test void numericPredicateValuesAreConvertedSeparatelyForEachInstance() throws Exception {

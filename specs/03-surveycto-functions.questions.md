@@ -202,3 +202,24 @@ Tests are derived from spec 03 and its explicit relationship to spec 01. No repo
   `.codex-runs/03-dispute3-junit.log`. No production source was read or
   changed, and no dependency, Maven repository or build configuration
   was changed.
+
+### Dispute 4 build verification
+
+- **Question:** Can the prescribed offline Maven test build complete
+  after correcting the four newly disputed expectations?
+- **Assumption:** The cached JAR access error is an environment limitation
+  and does not justify changing expectations or build configuration.
+  `.\mvnw.cmd -o -q test` fails at `testCompile`; a diagnostic `-e` retry
+  confirms `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+- **Tests affected:** Full Maven validation remains blocked. The existing
+  diagnostic compilation approach successfully compiles 13 Java sources,
+  including the four changed test classes, against existing compiled
+  production classes and cached dependency bytes with `--release 17`.
+  JUnit executes the four changed classes and the unchanged Amendment 4
+  hash class: 425 tests pass, with no failures, skips, or aborts.
+  Logs: `.codex-runs/03-dispute4-maven-test.log`,
+  `.codex-runs/03-dispute4-maven-detail.log`,
+  `.codex-runs/03-dispute4-compile.log`, and
+  `.codex-runs/03-dispute4-junit.log`. No production source was read or
+  changed. No dependency, repository, or build configuration was changed.

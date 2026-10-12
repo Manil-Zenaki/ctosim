@@ -74,13 +74,11 @@ class SurveyCtoFunctionContractTest {
         return Stream.of(Arguments.of("plug-in-metadata", ""),
                 Arguments.of("username", "simulated"), Arguments.of("duration", 0.0),
                 Arguments.of("phone-call-log", ""), Arguments.of("phone-call-duration", 0.0),
-                Arguments.of("count-if", ""), Arguments.of("sum-if", ""), Arguments.of("join-if", ""),
-                Arguments.of("min-if", ""), Arguments.of("max-if", ""), Arguments.of("rank-index-if", ""),
                 Arguments.of("unknown-spec03-probe", ""));
     }
 
     @ParameterizedTest @MethodSource("unchangedStubs")
-    void originalFixedStubsAndUnimplementedConditionalFunctionsKeepTheirValuesAndInventory(String name, Object expected) throws Exception {
+    void remainingFixedStubsAndUnknownFunctionsKeepTheirValuesAndInventory(String name, Object expected) throws Exception {
         String call = name + "('data', 1, true(), /data/text)";
         var loaded = expressionForm("concat(lower('ABC'), " + call + ")");
         assertEquals(Set.of(name), loaded.stubbedFunctions());

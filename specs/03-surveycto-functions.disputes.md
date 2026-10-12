@@ -353,3 +353,80 @@ contradicts the amended spec.
    assert that the field has no value, and observe `NaN` through the
    expression itself (for example a second calculation
    `string(decimal-time('garbage'))`, which stores `NaN`).
+
+## Adjudication of Dispute 4
+
+**Decision: uphold all four points under the current Amendment 4.**
+The amendment explicitly replaces the earlier hash and conditional-stub
+rules, and its "Two further limits" paragraph qualifies the earlier
+per-instance and numeric-storage expectations. These decisions follow
+the spec itself; implementation claims in the dispute were not used as
+an oracle. No production source was read or changed.
+
+1. **Hash expectations: correct both tests, retaining their coverage.**
+   Amendment 4 specifies lowercase hexadecimal MD5 over UTF-8 string
+   values concatenated without a separator, everywhere. It explicitly
+   replaces SHA-256, and the clarification confirms the multiple-argument
+   rule is normative. Updated every expected input string in `hashes()`
+   to omit inserted U+001F separators and changed both digest oracles to
+   MD5. Renamed the parameterized test to
+   `hashIsLowercaseMd5OfUtf8ValuesConcatenatedWithoutSeparator`.
+   Preserved empty inputs, argument order, Unicode, composed/decomposed
+   text, numeric/boolean/field conversions, expressions, independent
+   sessions, and the 64 distinct arguments in the many-argument test.
+   The dedicated Amendment 4 hash tests remain unchanged.
+
+2. **Conditional functions in the stub inventory: remove the six cases.**
+   Amendment 4 implements `count-if`, `sum-if`, `join-if`, `min-if`,
+   `max-if`, and `rank-index-if`, and excludes them from
+   `stubbedFunctions()`. Expecting an empty-string stub result from a
+   four-argument call is therefore obsolete. Removed only these six
+   entries from `unchangedStubs()` and renamed the test to
+   `remainingFixedStubsAndUnknownFunctionsKeepTheirValuesAndInventory`.
+   All remaining fixed-stub and unknown-function expectations are kept.
+   Existing Amendment 4 tests still check the six functions' real results,
+   exclusion from the inventory, and rejection of unsupported arities.
+
+3. **Predicate on the repeat step: correct the expression.**
+   The explicit engine limit says `/data/row[kind = 'odd']` selects all
+   matching instances rather than the candidate instance. The original
+   expectation cannot be justified by the general per-instance rule.
+   Renamed the test to `predicateBelowTheRepeatStepFiltersEachInstance`
+   and used `count(/data/row/kind[. = 'odd']) > 0`, retaining count 2 and
+   the same three rows. Added a focused check of the specified limit:
+   `count(/data/row[kind = 'odd']) = 2` is true for every candidate, so
+   the enclosing `count-if` returns 3. Both checks use form calculations.
+   This supersedes point 4 of the earlier Dispute 3 adjudication.
+
+4. **NaN expression value versus field storage: test each separately.**
+   Amendment 4 still requires invalid decimal-time inputs to yield NaN,
+   but now explicitly says a NaN calculation stores no value. Kept all
+   seven invalid inputs in a shared parameter source. The existing
+   result test now calculates `string(decimal-time(...))` in the form
+   and expects the string `NaN`. A separate parameterized test,
+   `decimalTimeNaNCalculationsStoreNoValue`, calculates `decimal-time(...)`
+   directly and asserts that the field has no answer data. This preserves
+   both requirements without evaluating an external decimal-time call,
+   whose native behavior is outside the amendment's scope. This supersedes
+   the stored-Double-NaN expectation in point 13 of the Dispute 3 decision.
+
+### Validation of Dispute 4
+
+- Ran `.\mvnw.cmd -o -q test`; it failed at `testCompile`. A diagnostic
+  `-e` retry confirmed `java.nio.file.AccessDeniedException` for the
+  cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+  Logs: `.codex-runs/03-dispute4-maven-test.log` and
+  `.codex-runs/03-dispute4-maven-detail.log`.
+- Adapted the existing diagnostic compiler under `.codex-runs/` to
+  compile 13 Java sources, including all four changed test classes and
+  their support, with `--release 17`. Compilation succeeded using
+  existing compiled production classes and cached dependency bytes.
+  No repository was copied, drive mapped, dependency installed, or build
+  configuration changed. Log: `.codex-runs/03-dispute4-compile.log`.
+- Ran the four changed classes and `SurveyCtoAmendment4HashTest` with
+  JUnit against the existing compiled production classes: **425 tests
+  executed, 425 passed, none failed, skipped, or aborted**. Log:
+  `.codex-runs/03-dispute4-junit.log`. This confirms targeted compilation
+  and execution; it is not a successful full Maven build or full-suite run.
+- `git diff --check` passes. No implementation source or build settings
+  were modified, and no commit was created.

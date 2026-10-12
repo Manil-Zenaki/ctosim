@@ -103,23 +103,23 @@ class SurveyCtoScalarFunctionsTest {
 
     static Stream<Arguments> hashes() {
         return Stream.of(Arguments.of("''", ""), Arguments.of("'abc'", "abc"),
-                Arguments.of("'a', 'b'", "a\u001fb"), Arguments.of("'b', 'a'", "b\u001fa"),
-                Arguments.of("'ab', 'c'", "ab\u001fc"),
-                Arguments.of("'a', 'bc'", "a\u001fbc"),
-                Arguments.of("'', 'a', ''", "\u001fa\u001f"),
-                Arguments.of("'', ''", "\u001f"),
+                Arguments.of("'a', 'b'", "ab"), Arguments.of("'b', 'a'", "ba"),
+                Arguments.of("'ab', 'c'", "abc"),
+                Arguments.of("'a', 'bc'", "abc"),
+                Arguments.of("'', 'a', ''", "a"),
+                Arguments.of("'', ''", ""),
                 Arguments.of("'café 東京 😀'", "café 東京 😀"),
                 Arguments.of("'é'", "é"), Arguments.of("'e\u0301'", "e\u0301"),
-                Arguments.of("42, true(), false(), /data/blank", "42\u001ftrue\u001ffalse\u001f"),
+                Arguments.of("42, true(), false(), /data/blank", "42truefalse"),
                 Arguments.of("/data/text, /data/number, /data/choice, /data/many",
-                        "AbC café 東京\u001f1234.5\u001fa\u001fa b"),
-                Arguments.of("concat('ab', 'c'), upper('d')", "abc\u001fD"));
+                        "AbC café 東京1234.5aa b"),
+                Arguments.of("concat('ab', 'c'), upper('d')", "abcD"));
     }
 
     @ParameterizedTest @MethodSource("hashes")
-    void hashIsLowercaseSha256OfUtf8ValuesSeparatedByUnitSeparator(String arguments, String joined) throws Exception {
+    void hashIsLowercaseMd5OfUtf8ValuesConcatenatedWithoutSeparator(String arguments, String joined) throws Exception {
         String call = "hash(" + arguments + ")";
-        String expected = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+        String expected = HexFormat.of().formatHex(MessageDigest.getInstance("MD5")
                 .digest(joined.getBytes(StandardCharsets.UTF_8)));
         var loaded = expressionForm(call);
         assertValue(expected, evaluate(loaded.newEntryController(), call));
@@ -129,8 +129,8 @@ class SurveyCtoScalarFunctionsTest {
     @Test void hashAcceptsManyArgumentsAndIncludesEveryArgument() throws Exception {
         String[] items = java.util.stream.IntStream.range(0, 64).mapToObj(i -> "v" + i).toArray(String[]::new);
         String call = "hash(" + String.join(",", java.util.Arrays.stream(items).map(s -> "'" + s + "'").toList()) + ")";
-        String expected = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                .digest(String.join("\u001f", items).getBytes(StandardCharsets.UTF_8)));
+        String expected = HexFormat.of().formatHex(MessageDigest.getInstance("MD5")
+                .digest(String.join("", items).getBytes(StandardCharsets.UTF_8)));
         assertEquals(expected, evaluate(expressionForm(call).newEntryController(), call));
     }
 }

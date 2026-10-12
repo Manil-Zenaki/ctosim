@@ -81,10 +81,20 @@ class SurveyCtoAmendment4DateTimeTest {
         } finally { TimeZone.setDefault(old); }
     }
 
-    @ParameterizedTest @ValueSource(strings = {"", "garbage", "2026-01-05", "06:00", "25:00:00", "12:60:00", "-1:00:00"})
+    static Stream<String> invalidDecimalTimes() {
+        return Stream.of("", "garbage", "2026-01-05", "06:00", "25:00:00", "12:60:00", "-1:00:00");
+    }
+
+    @ParameterizedTest @MethodSource("invalidDecimalTimes")
     void decimalTimeReturnsNaNForValuesThatAreNeitherTimesNorDateTimes(String input) throws Exception {
+        var session = calculation("string(decimal-time('" + input + "'))").newEntryController();
+        assertValue("NaN", value(child(root(session), "result")));
+    }
+
+    @ParameterizedTest @MethodSource("invalidDecimalTimes")
+    void decimalTimeNaNCalculationsStoreNoValue(String input) throws Exception {
         var session = calculation("decimal-time('" + input + "')").newEntryController();
-        assertValue(Double.NaN, value(child(root(session), "result")));
+        assertNull(child(root(session), "result").getValue());
     }
 
     @Test void decimalTimeAcceptsAStringFieldAndKeepsNativeTimeFieldSupport() throws Exception {
