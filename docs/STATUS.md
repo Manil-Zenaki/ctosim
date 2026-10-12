@@ -20,7 +20,7 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 
-Suite: 4475 Java tests, 331 Python tests and 35 Stata tests, all green (2026-10-12).
+Suite: 7162 Java tests (5 failing, all disputed: they expect blanks for satisfiable constraints), 331 Python tests, 35 Stata tests (2026-10-12).
 
 ## Next step
 
@@ -52,6 +52,17 @@ constraint is a disjunction (`(. >= 0 and . <= 10) or . = 99`) gives no
 hints, so 50 random draws can still fail and leave it blank (a few per
 hundred submissions in the IPA and migration forms); hints for
 disjunctions would be a spec 09 amendment.
+
+2026-10-12, constraints and realism: spec 09 Amendment 2 (hints from
+`or`, `if()`, `not()`, select rules and prefixes; candidate values),
+spec 05 Amendment 2 and spec 07 Amendment 6 (systematic search for an
+accepted answer before leaving a question blank), spec 04 Amendment 3,
+spec 05 Amendment 3 and spec 07 Amendment 7 (distributions, conditional
+rules `when`, expressions `expr`, household profiles, survey area,
+plausible texts by field name). All implemented. Open: disputes 5 of
+spec 07 and 2 of spec 09 (Codex hit its usage limit; run
+`scripts/codex-tests.ps1 specs/07-form-walker.md -Dispute` and the same
+for spec 09), then republish the Stata package.
 
 The four disputes these amendments raised (specs 03, 06, 07, 08) were
 adjudicated on 2026-10-11: all upheld. Codex had stopped on its usage
