@@ -30,6 +30,11 @@ public final class AnswerGenerator {
         this.specialValues = Set.copyOf(config.specialValues());
     }
 
+    /** Answers to try, level by level, when drawing fails (spec 05, Amendment 2). */
+    public List<List<String>> searchValues(Question question, LocalDate today) {
+        throw new UnsupportedOperationException("spec 05, Amendment 2");
+    }
+
     /** The answer in XForm value format, or {@code null} to leave the question blank. */
     public String generate(Question question, LocalDate today, RandomGenerator random) {
         Objects.requireNonNull(question, "question");

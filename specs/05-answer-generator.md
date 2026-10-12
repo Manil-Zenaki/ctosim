@@ -213,3 +213,40 @@ that day is before the range's minimum, and months are drawn in
 proportion to their days in the range (18); no particular sequence of
 random draws is required (19); a `label` select is blank even when it is
 required or has a fixed value (20).
+
+## Amendment 2: values to search when drawing fails
+
+The walker (spec 07, Amendment 6) needs, for a question whose drawn
+answers and candidates all break its constraint, a finite list of
+answers to try systematically. The generator provides it.
+
+```java
+// added to AnswerGenerator:
+public java.util.List<java.util.List<String>> searchValues(Question question, java.time.LocalDate today);
+```
+
+The result is a list of **levels**, tried in order: first the answers
+the generator would expect, then any answer of the question's kind.
+Values are written as `generate` writes answers of that kind; each
+level is unmodifiable, has no duplicates, and keeps the order below.
+The result depends only on the configuration and the arguments (no
+randomness). The question's fixed value, missing rate and texts
+override do not apply. A kind not listed gives no level.
+
+The **drawing ranges** are the numeric ranges, or date ranges, that
+`generate` would draw from with the question's hints (spec 09): with
+alternatives, one per satisfiable alternative, in order; otherwise one.
+"At most 10 001 values" means: all of them when there are at most
+10 001, otherwise 10 001 values spread evenly from the first to the last
+(both included), rounded to the kind's precision, duplicates dropped.
+
+| Kind | Level 1 | Level 2 |
+|---|---|---|
+| `INTEGER` | for each drawing range, its integers (at most 10 001 values) | every integer from −10 000 to 10 000 |
+| `DECIMAL` | for each drawing range, its integers and its two ends (at most 10 001 values) | every integer from −10 000 to 10 000, then every multiple of 0.01 from −100 to 100 |
+| `DATE` | for each drawing range, its dates (at most 10 001 values) | every date from `today` − 36 524 days to `today` + 3 652 days |
+| `DATETIME` | the dates of level 1 of `DATE`, at `12:00:00` | the dates of level 2 of `DATE`, at `12:00:00` |
+| `TIME` | every whole minute from `00:00:00` to `23:59:00` | every whole second of the day |
+| `SELECT_ONE` | every offered choice | — |
+| `SELECT_MULTIPLE` | every non-empty combination of the offered choices with at most 4 choices, by size then in the order of the choices (at most 20 000 combinations) | — |
+| `TEXT`, `BARCODE` | the hint candidates (spec 09), then, with a prefix, the prefix followed by 1 to 12 zeros | every integer from −10 000 to 10 000, then for n from 1 to 100 the strings of n `a`, of n `0` and of n `1` |

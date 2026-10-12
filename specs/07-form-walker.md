@@ -496,3 +496,42 @@ questions checked after it (37); the five passes include the first one
 (38); constraints made invalid after the check by post-processing are
 not concerned (39); a warning names the field and says that its
 constraint does not hold at the end of the form (41).
+
+## Amendment 6: search before leaving a question blank
+
+A synthetic answer that breaks its constraint, or a blank left only
+because the walker could not find a valid answer, defeats the purpose of
+the simulator: a real enumerator always finds an accepted answer when
+one exists. Hints (spec 09) cover the common constraint shapes, but a
+constraint can be any expression. So, before leaving a question blank
+because no answer was accepted, the walker searches.
+
+When the 50 attempts and the candidates of spec 09 Amendment 2 have all
+been rejected (rule 6 of "Questions", and the end-of-form check of
+Amendment 5), the walker takes the levels of
+`AnswerGenerator.searchValues(question, today)` (spec 05, Amendment 2)
+in order. For a `TEXT` or `BARCODE` question, a first level comes before
+them: the string literals written in the question's constraint, in order
+of appearance, without duplicates (so `contains(., '@')` can be met by
+`@`). For each level, it converts each value as answers are
+converted and keeps those the question's constraint accepts, evaluated
+without changing the instance; values that cannot be converted are
+skipped. When a level has accepted values, the walker gives the engine
+one of them, drawn uniformly from them with the answers' random
+sequence, and stops. Only when no level has an accepted value is the
+question left blank with the warning of rule 6 (or of Amendment 5).
+
+The search does not move the clock and does not count as further
+attempts. `answered()` counts the question as answered when the search
+answers it under rule 6.
+
+Acceptance: for every form of `samples/xforms/` (the coverage-3 form
+with media directory `samples/coverage3`), submissions 1 to 50 walked
+with the default configuration have no warning that a constraint could
+not be satisfied or does not hold at the end of the form; and a form
+whose questions have the constraints `. mod 7 = 3` (integer),
+`int(. * 4) = . * 4 and . > 1000` (decimal), `contains(., '@')` (text),
+`format-date-time(., '%d') = '13'` (date),
+`format-date-time(., '%H') = '07'` (time),
+`count-selected(.) = 3 and not(selected(., 'a'))` (select_multiple of
+six choices) gets a valid answer to each of them in submissions 1 to 20.
