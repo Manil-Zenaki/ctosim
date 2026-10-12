@@ -316,3 +316,12 @@ directory `samples/coverage3`), submissions 1 to 50 walked with the
 default configuration have no warning saying that no answer satisfied a
 constraint, and none saying that a constraint does not hold at the end
 of the form.
+
+Clarification (Amendment 2): assumptions 13–23 of the questions file are
+reviewed one by one and confirmed. In particular, candidates come only
+from the 64 alternatives kept (14); with a length hint, a prefixed answer
+follows the length rule's defaults, and with none it is the prefix and 8
+characters (17); candidates are tried after rejected proposals even when
+those came from a fixed value of the configuration, so that a question
+whose fixed value breaks its constraint still gets a valid answer when
+the constraint names one (20).
