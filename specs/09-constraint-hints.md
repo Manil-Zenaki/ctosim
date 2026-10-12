@@ -185,3 +185,134 @@ Spec 07's rules are unchanged; observing its 50-attempt retry budget
 statistically now requires a constraint that gives no hints, for example
 `. = 1 or . = 1` or `not(. != 1)` (disjunctions and negations give no
 hint, see "Deriving hints").
+
+## Amendment 2: every common constraint shape
+
+The terms above leave the most frequent real constraints without hints:
+answer ranges combined with "don't know" / "refused" codes
+(`(. >= 0 and . <= 10) or . = 99 or . = 88`; 71 of the 131 constraints
+of `samples/xforms/` contain `or`), `if(...)` constraints, select_multiple rules
+(`if(selected(., '-99'), count-selected(.) = 1, count-selected(.) >= 1)`,
+`not(selected(., '-99') and count-selected(.) > 1)`) and fixed prefixes
+(`substr(., 0, 1) = '0'`). A question whose answers are drawn without
+the right hints can exhaust its attempts and stay blank, which a real
+interview never does. This amendment derives hints from the whole
+constraint. Everything not mentioned here is unchanged.
+
+### API changes
+
+```java
+public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, DateBound latest,
+                              Integer minLength, Integer maxLength, String pattern,
+                              String prefix,
+                              java.util.Set<String> excluded,
+                              java.util.Set<String> included,
+                              Integer minSelected, Integer maxSelected,
+                              java.util.List<ConstraintHints> alternatives,
+                              java.util.List<String> candidates) {
+    // the seven-argument constructor of this spec remains: the new components are
+    // null (prefix, minSelected, maxSelected) or empty (the collections)
+}
+```
+
+The collections are never `null`, are unmodifiable copies, and keep
+their order (the sets in order of appearance). `none()` has every new
+component `null` or empty.
+
+### Reading the constraint
+
+The constraint is turned into **alternatives**: conjunctions of terms,
+any one of which makes the constraint hold.
+
+- `A and B`: every alternative of `A` combined with every alternative of
+  `B`; `A or B`: the alternatives of `A`, then those of `B`.
+- `if(C, X, Y)`: when `C` does not reference `.`, `C` is evaluated (in
+  the session, with the question node as context) and the constraint is
+  read as `X` when it is true, as `Y` otherwise; when `C` references `.`,
+  it is read as `(C and X) or (not(C) and Y)`.
+- `not(...)` is moved inward: `not(A and B)` is `not(A) or not(B)`,
+  `not(A or B)` is `not(A) and not(B)`, `not(not(A))` is `A`, and a
+  comparison is negated (`not(. > E)` is `. <= E`, `not(. = E)` is
+  `. != E`, and conversely). `not(selected(., 'v'))` is a term of its
+  own (below). Any other negated term is a term that gives no hint.
+- `true()` is an alternative with no term; `false()` has no alternative.
+- At most 64 alternatives are kept (the first ones in this order).
+
+Each alternative gives one set of hints, computed from its terms as
+before, plus these new terms (`E` does not reference `.` and is
+evaluated as before):
+
+| Term | Hint |
+|---|---|
+| `. != E` or `E != .` | the value of `E` (as XPath `string()` gives it) is **excluded** |
+| `selected(., 'v')` | choice `v` is **included** (a select_multiple answer contains it; a select_one answer is it) |
+| `not(selected(., 'v'))` | choice `v` is **excluded** |
+| `count-selected(.) OP E` (either side) | a minimum and/or maximum number of selected choices, as integers (like lengths) |
+| `substr(., 0, n) = 'p'` with `n` the length of `p`, or `starts-with(., 'p')` | the **prefix** `p` |
+
+An alternative is **unsatisfiable** when its numeric or date interval is
+empty, its length or count interval is empty, a value is both included
+and excluded, its included choices are more than its maximum count, or
+(for a select_one) it includes two different choices.
+
+When there is exactly one alternative, its hints are the record's
+components and `alternatives` is empty. When there are several, the
+record's own bound, length, pattern, prefix and choice components are
+`null` or empty and `alternatives` lists one hint set per alternative, in
+order (each with empty `alternatives` and `candidates`).
+
+**Candidates** are values worth trying when drawing fails: for each
+alternative in order, the value of `E` in each `. = E` term, then, for
+an interval with both sides, its closed lower and upper ends (as for
+`INTEGER`); duplicates are dropped. They are written as XPath `string()`
+writes numbers (`-999`, `2.5`).
+
+### Using alternatives in the generator (amends spec 05)
+
+When `alternatives` is not empty, the generator first chooses one among
+the satisfiable ones. An alternative is **special** when it allows a
+single value: a numeric interval reduced to one value (or an equality),
+or, for a select, included choices equal in number to its maximum count.
+With probability `specialRate` (spec 04) the choice is drawn uniformly
+among the special alternatives, otherwise among the others; when one of
+the two groups is empty, the other is used. When no alternative is
+satisfiable, the alternatives are ignored. The answer is then drawn with
+the chosen alternative's hints exactly as with a single set of hints.
+
+### Using the new hints (amends spec 05 and this spec)
+
+- **Excluded values** (`INTEGER`, `DECIMAL`, `TEXT`): a drawn answer that
+  is excluded is drawn again, up to 20 times.
+- **Prefix** (`TEXT`, when there is no pattern): the answer is the prefix
+  followed by characters drawn as for the length rule, so that the whole
+  answer has a length within the length hints (when there is none, the
+  prefix followed by 8 characters). The characters are decimal digits
+  when the prefix is made of digits or the appearance contains `numbers`
+  or `numbers_phone`, otherwise lowercase letters.
+- **Select one**: excluded choices are not offered; when choices are
+  included, the answer is the included choice. When that leaves no
+  choice, these hints are ignored.
+- **Select multiple**: excluded choices are not offered; included
+  choices are always part of the answer; the number of choices is drawn
+  uniformly between the minimum (at least 1 and at least the number of
+  included choices) and the maximum (at most the number of offered
+  choices; when absent, the larger of 3 and the minimum). Special-value
+  draws of spec 05 apply only when the hints do not constrain the
+  answer. When the hints cannot be met with the offered choices, they
+  are ignored.
+
+### Candidates in the walker (amends spec 07)
+
+When the 50 attempts of rule 6 (and of Amendment 5's end-of-form check)
+are not accepted, the walker gives the engine each candidate of the
+question's hints in order, converted as answers are, before leaving the
+question blank; the first accepted one is the answer. Candidates do not
+move the clock further.
+
+### Acceptance on real forms
+
+For every form of `samples/xforms/` (the coverage-3 form with media
+directory `samples/coverage3`), submissions 1 to 50 walked with the
+default configuration have no warning saying that no answer satisfied a
+constraint, and none saying that a constraint does not hold at the end
+of the form.

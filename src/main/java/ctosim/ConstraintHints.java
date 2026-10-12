@@ -3,6 +3,9 @@ package ctosim;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.Date;
 import java.util.List;
 import org.javarosa.core.model.FormDef;
@@ -32,9 +35,26 @@ import org.javarosa.xpath.expr.XPathUnaryOpExpr;
  * the constraint gives no such hint. See specs/09-constraint-hints.md.
  */
 public record ConstraintHints(Bound lower, Bound upper, DateBound earliest, DateBound latest,
-                              Integer minLength, Integer maxLength, String pattern) {
+                              Integer minLength, Integer maxLength, String pattern,
+                              String prefix, Set<String> excluded, Set<String> included,
+                              Integer minSelected, Integer maxSelected,
+                              List<ConstraintHints> alternatives, List<String> candidates) {
 
     private static final ConstraintHints NONE = new ConstraintHints(null, null, null, null, null, null, null);
+
+    public ConstraintHints {
+        excluded = excluded == null ? Set.of() : Collections.unmodifiableSet(new LinkedHashSet<>(excluded));
+        included = included == null ? Set.of() : Collections.unmodifiableSet(new LinkedHashSet<>(included));
+        alternatives = alternatives == null ? List.of() : List.copyOf(alternatives);
+        candidates = candidates == null ? List.of() : List.copyOf(candidates);
+    }
+
+    /** Hints of spec 09 before Amendment 2: no prefix, choices, alternatives or candidates. */
+    public ConstraintHints(Bound lower, Bound upper, DateBound earliest, DateBound latest,
+                           Integer minLength, Integer maxLength, String pattern) {
+        this(lower, upper, earliest, latest, minLength, maxLength, pattern,
+                null, null, null, null, null, null, null);
+    }
 
     public static ConstraintHints none() {
         return NONE;
