@@ -488,3 +488,11 @@ Acceptance: for each form of `samples/xforms/` (the coverage-3 form with
 media directory `samples/coverage3`), in submissions 1 to 20 walked with
 the default configuration, every question that holds a value satisfies
 its constraint on the final instance.
+
+Clarification (Amendment 5): assumptions 37–44 of the questions file are
+reviewed one by one and confirmed. In particular, "form order" is the
+order of the form's body, and a repair or a clearing is visible to the
+questions checked after it (37); the five passes include the first one
+(38); constraints made invalid after the check by post-processing are
+not concerned (39); a warning names the field and says that its
+constraint does not hold at the end of the form (41).
