@@ -15,7 +15,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static ctosim.SurveyCtoExporterTestSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Only the metadata behavior introduced or changed by spec 08 Amendment 1. */
+/** Metadata behavior introduced by spec 08 Amendment 1, as updated by Amendment 2. */
 class SurveyCtoExporterAmendmentMetadataTest {
     @TempDir Path temp;
 
@@ -134,10 +134,11 @@ class SurveyCtoExporterAmendmentMetadataTest {
     }
 
     @ParameterizedTest @ValueSource(strings = {"", "House 1", "  leading and trailing  ", "\u00e9\u6c34, \"quoted\"\r\nsecond line"})
-    void instanceNameCellPreservesStoredTextAndCsvEscaping(String name) throws Exception {
+    void instanceNameCellRemovesTrailingSpacesAndPreservesOtherTextAndCsvEscaping(String name) throws Exception {
         var s = namedSubmission(1, "uuid:abc", "<instanceName>" + xmlText(name) + "</instanceName>");
+        String expected = name.equals("  leading and trailing  ") ? "  leading and trailing" : name;
         for (String text : mainTexts(namedExporter(), List.of(s))) {
-            assertEquals(name, row(text, 1).get("instanceName"));
+            assertEquals(expected, row(text, 1).get("instanceName"));
         }
     }
 

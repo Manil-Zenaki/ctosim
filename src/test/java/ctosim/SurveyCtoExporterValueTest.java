@@ -64,7 +64,7 @@ class SurveyCtoExporterValueTest {
         assertValueBoth(single(temp, type), value(stored), stored);
     }
 
-    @ParameterizedTest @ValueSource(strings = {"text", "integer", "decimal", "select_one codes", "barcode", "geotrace", "geoshape", "calculate", "calculate_here", "comments", "speed violations limit=5", "sensor_statistic accelerometer", "deviceid", "unknown_extension", "TEXT"})
+    @ParameterizedTest @ValueSource(strings = {"text", "integer", "decimal", "select_one codes", "barcode", "geotrace", "geoshape", "calculate", "calculate_here", "speed violations limit=5", "sensor_statistic accelerometer", "deviceid", "unknown_extension", "TEXT"})
     void otherTypesAreStoredVerbatimIncludingSpecialMultiwordTypes(String type) throws Exception {
         String stored = " 2026-10-15T08:30:27+03:00, é & \"家庭\" \r\n ";
         assertValueBoth(single(temp, type), value(stored), stored);
@@ -204,10 +204,9 @@ class SurveyCtoExporterValueTest {
     }
 
     @ParameterizedTest @ValueSource(strings = {"12 -990 unknown", "2 2", ""})
-    void dummySelectionUsesWholeItemsAndEmptySelectionsHaveEmptyDummies(String stored) throws Exception {
+    void dummySelectionUsesWholeItemsAndPresentEmptySelectionsHaveZeroDummies(String stored) throws Exception {
         var e = select(false);
-        List<String> expected = stored.isEmpty() ? List.of("", "", "", "")
-                : stored.equals("2 2") ? List.of("1", "0", "0", "0") : List.of("0", "0", "0", "0");
+        List<String> expected = stored.equals("2 2") ? List.of("1", "0", "0", "0") : List.of("0", "0", "0", "0");
         for (String text : List.of(e.wide(List.of(value(stored))), e.longFiles(List.of(value(stored))).get("Export.csv"))) {
             assertEquals(stored, csv(text).get(1).get(1));
             assertEquals(expected, csv(text).get(1).subList(2, 6));

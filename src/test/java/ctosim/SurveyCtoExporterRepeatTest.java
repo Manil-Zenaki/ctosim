@@ -101,7 +101,7 @@ class SurveyCtoExporterRepeatTest {
         assertEquals("5", second.get("gps-Latitude_2_1"));
         assertEquals("6", second.get("gps-Longitude_2_1"));
         assertEquals("", second.get("gps-Altitude_2_1"));
-        assertEquals("", second.get("tags_1_2_2"));
+        assertEquals("0", second.get("tags_1_2_2"));
     }
 
     @Test void zeroGlobalRepeatMaximumRetainsCountsButHasNoWideInstanceColumns() throws Exception {
@@ -152,7 +152,7 @@ class SurveyCtoExporterRepeatTest {
         assertEquals(List.of(header,
                 List.of("Only", "-97", "0", "1", "1", "2", "3", "4", "uuid:B/main-member[1]", "uuid:B/main-member[1]/info-job[1]", "uuid:B/main-member[1]/info-job"),
                 List.of("J1", "1 -97", "1", "1", "5", "6", "", "", "uuid:A/main-member[2]", "uuid:A/main-member[2]/info-job[1]", "uuid:A/main-member[2]/info-job"),
-                List.of("J2", "", "", "", "", "", "", "", "uuid:A/main-member[2]", "uuid:A/main-member[2]/info-job[2]", "uuid:A/main-member[2]/info-job")), rows);
+                List.of("J2", "", "0", "0", "", "", "", "", "uuid:A/main-member[2]", "uuid:A/main-member[2]/info-job[2]", "uuid:A/main-member[2]/info-job")), rows);
     }
 
     @Test void uncountedSiblingRepeatHasNoCountColumnAndNumbersRestartPerSubmission() throws Exception {

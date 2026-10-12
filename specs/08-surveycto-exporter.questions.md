@@ -326,3 +326,23 @@ sources successfully. A diagnostic JUnit run of the corrected
 Logs: `.codex-runs/exporter-dispute-compile.log` and
 `.codex-runs/exporter-dispute-junit.log`. The full Maven suite remains
 unverified; the ruling is recorded in `08-surveycto-exporter.disputes.md`.
+
+### Dispute 2 adjudication validation
+
+The current spec's Amendment 2 resolves all three new disputed points;
+the decisions and corrected test names are recorded at the end of
+`08-surveycto-exporter.disputes.md`. Earlier assumptions about blank
+selection dummies, trailing instanceName spaces, and verbatim comments
+are superseded to the extent stated in Amendment 2.
+
+`mvnw.cmd -o -q test` again stopped in `testCompile` with a fatal compiler
+error naming `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+Log: `.codex-runs/exporter-dispute2-maven-test.log`. An independent compiler
+probe successfully compiled all 18 exporter/catalog/factory test and
+support sources with `--release 17`. Diagnostic JUnit execution of the
+four modified classes, the audio-audit class, and the five Amendment 2
+classes passed all 268 tests without skips, aborts, or failed containers.
+Logs: `.codex-runs/exporter-dispute2-compile.log` and
+`.codex-runs/exporter-dispute2-junit.log`. This verifies the selected
+tests, not a successful full Maven build. Temporary probes and logs remain
+under `.codex-runs/`; no production source or build configuration changed.

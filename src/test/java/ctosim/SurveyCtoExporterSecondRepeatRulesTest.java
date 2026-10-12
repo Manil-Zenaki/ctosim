@@ -96,17 +96,18 @@ class SurveyCtoExporterSecondRepeatRulesTest {
         assertEquals("0", r.get("job_days__99_2_2"));
     }
 
-    @Test void blankAbsentAndPaddedNestedSelectsHaveEmptyDummyCells() throws Exception {
+    @Test void blankNestedSelectsHaveZeroDummiesWhileAbsentAndPaddedSelectsHaveEmptyCells() throws Exception {
         var e = exporter();
         String wide = e.wide(jobs());
         String longJobs = e.longFiles(jobs()).get(TITLE + "-job.csv");
         for (String name : List.of("job_days", "job_days_1", "job_days_6", "job_days__99")) {
             var first = row(wide, 1);
-            assertEquals("", first.get(name + "_2_3"), "Present empty selection");
+            String presentEmpty = name.equals("job_days") ? "" : "0";
+            assertEquals(presentEmpty, first.get(name + "_2_3"), "Present empty selection");
             assertEquals("", first.get(name + "_2_4"), "Absent selection in present job");
             assertEquals("", first.get(name + "_1_2"), "Padded job");
             assertEquals("", row(wide, 2).get(name + "_2_1"), "Padded outer member");
-            assertEquals("", row(longJobs, 4).get(name));
+            assertEquals(presentEmpty, row(longJobs, 4).get(name));
             assertEquals("", row(longJobs, 5).get(name));
         }
     }

@@ -78,3 +78,74 @@ configuration, production sources, or published fixtures were changed.
    `comments` fields like media fields (an attachment URL). Requested:
    drop `comments` from that list (`SurveyCtoExporterCommentsAmendment2Test`
    covers it).
+
+## Adjudication of Dispute 2
+
+### Point 1: upheld; present empty selections have zero dummy cells
+
+Amendment 2 explicitly distinguishes an element that is present but empty
+from one that is absent. The former produces `0` in every dummy column;
+the latter produces empty dummy cells, including padded repeat instances.
+The field's own column stays empty in both cases. This supersedes the
+original empty-stored-value rule and the earlier confirmed assumptions
+where they conflict with Amendment 2.
+
+- Updated `SurveyCtoExporterValueTest` to expect four zero dummies for its
+  present empty `<value>` element. Whole-item matching and repeated-item
+  expectations remain. Renamed the method to
+  `dummySelectionUsesWholeItemsAndPresentEmptySelectionsHaveZeroDummies`.
+- Updated `SurveyCtoExporterRepeatTest` in both disputed methods: J2's
+  present `<tags/>` now gives zero dummies in its wide block and long row.
+  Its own tags cell and empty geopoint components remain empty. Existing
+  absent/padded-instance assertions are unchanged.
+- Updated `SurveyCtoExporterSecondRepeatRulesTest` for the present empty
+  `<job_days/>` in both layouts: the own column remains empty, and all
+  three dummies are zero. Kept empty cells for the absent selection in a
+  present job, padded jobs, and padded outer members. Renamed the method to
+  `blankNestedSelectsHaveZeroDummiesWhileAbsentAndPaddedSelectsHaveEmptyCells`.
+
+### Point 2: upheld; instanceName loses trailing spaces only
+
+Amendment 2 explicitly removes trailing spaces from `instanceName` cells.
+The disputed input `  leading and trailing  ` must therefore produce
+`  leading and trailing`, retaining its leading spaces. Updated that
+expected value in `SurveyCtoExporterAmendmentMetadataTest`, and renamed
+the method to
+`instanceNameCellRemovesTrailingSpacesAndPreservesOtherTextAndCsvEscaping`.
+The other inputs and assertions for empty text, Unicode, CSV-special
+characters, and both output layouts remain unchanged. No broader
+whitespace normalization is inferred.
+
+### Point 3: upheld; comments are attachments, not verbatim values
+
+Amendment 2 explicitly makes `comments` use the media-field rule: the
+attachment URL of the stored filename, or an empty cell for an empty
+value. Removed only `comments` from
+`SurveyCtoExporterValueTest.otherTypesAreStoredVerbatimIncludingSpecialMultiwordTypes`.
+Kept `SurveyCtoExporterCommentsAmendment2Test` unchanged: it covers stored
+filenames, empty/absent fields, UTF-8 form encoding, and grouped/repeated
+fields under the amended rule. Other verbatim-type cases are unchanged.
+
+### Earlier Dispute 1: ruling retained
+
+The two obsolete audio-audit cases are already absent from the verbatim
+test. Amendment 2 leaves Amendment 1's audio-audit rule unchanged, so the
+previous ruling and `SurveyCtoExporterAudioAuditAmendmentTest` are retained.
+
+### Validation of this adjudication
+
+- `mvnw.cmd -o -q test` stopped during `testCompile` with a fatal compiler
+  error naming `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+  Log: `.codex-runs/exporter-dispute2-maven-test.log`.
+- The existing independent compiler probe, adapted under `.codex-runs/`,
+  successfully compiled all 18 exporter/catalog/factory test and support
+  sources with `--release 17`, using existing compiled classes and cached
+  dependencies. Log: `.codex-runs/exporter-dispute2-compile.log`.
+- Diagnostic JUnit execution ran the four modified test classes, the
+  unchanged audio-audit class, and all five Amendment 2 test classes:
+  **268 tests passed**, with no skipped/aborted tests or failed containers.
+  Log: `.codex-runs/exporter-dispute2-junit.log`.
+
+These results verify compilation and the selected tests' execution; the
+full Maven suite remains unverified. No production source was read or
+modified, and no build configuration, dependencies, or fixtures changed.
