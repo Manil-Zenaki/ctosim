@@ -493,3 +493,202 @@ Runtime tests were not run; compilation needs rechecking where the existing
 dependency cache and project outputs are accessible.
 
 **Tests:** All four new Amendment 2 test classes and their new helper.
+
+## Amendment 3: realistic data questions and assumptions
+
+This run adds only `AnswerGeneratorRealisticDistributionTest`,
+`AnswerGeneratorRealisticAreaTest`, `AnswerGeneratorRealisticTextTest`,
+`AnswerGeneratorRealisticOverrideTest`, and `AnswerGeneratorRealisticSupport`.
+Existing tests and helpers are unchanged. Questions, configuration JSON and
+hints are constructed inline; no resource fixtures are needed. Expectations
+come from spec 05 Amendment 3 and its references to specs 04 and 09. No
+production sources or implementation bodies were read or changed.
+
+### 29. Does the retry budget include the initial distribution draw?
+
+**Question:** Does "drawn again, up to 100 times" mean 100 attempts in total,
+or an initial draw followed by 100 retries? Must a particular Gaussian random
+API or algorithm be used?
+
+**Assumption:** Neither random-call sequence nor Gaussian algorithm is
+specified. No test intercepts `nextGaussian` or counts calls to primitive
+random methods. The rare-acceptance test allows both 100 and 101 total draws.
+It integrates the normal density independently and checks the observable
+endpoint mass, accounting for accepted draws that round to an endpoint. This
+distinguishes the stated budget from immediate clipping, unlimited rejection,
+or substantially different budgets without choosing an off-by-one convention.
+Almost surely unreachable intervals and singleton intervals must terminate
+and clamp; their tests have a 10-second timeout, not a performance requirement.
+
+**Tests:** `rareAcceptanceHasTheEndpointMassExpectedFromAboutOneHundredAttempts`,
+`unreachableDistributionTerminatesByClampingToTheNearestEnd`,
+`singletonRangeTerminatesEvenWithNonzeroSd`, and both resampling tests.
+
+### 30. How do fractional range endpoints interact with integer rounding?
+
+**Question:** If a distribution is clamped to a fractional bound and then
+rounded half-up, may the resulting integer lie outside the raw interval?
+Does an integer-free range retain the old `Math.round(min)` fallback? What
+should happen if the lognormal exponent overflows?
+
+**Assumption:** These combinations are not sufficiently specified and are
+not tested. Distribution range endpoints for INTEGER are integral. The tests
+do require the stated half-up rounding of positive and negative means,
+including negative half ties, and ordinary decimal half-up formatting from
+the confirmed earlier clarification. They check zero normalization, integers
+beyond 32 bits, zero sd, singleton ranges, configured versus field ranges,
+numeric hints (including exclusive, disjoint, one-sided and contradictory
+intervals), satisfiable alternatives, and excluded answers. No infinities,
+NaNs or overflow-specific policies are introduced.
+
+**Tests:** Zero-sd and negative-mean matrices, configured-range and hint tests
+in `AnswerGeneratorRealisticDistributionTest`.
+
+### 31. Which statistical checks avoid depending on a particular random implementation?
+
+**Question:** How tightly should tests enforce distributions after truncation
+and formatting, without prescribing a fixed seeded output sequence?
+
+**Assumption:** Most statistical checks use 24,000 draws and a fixed seed.
+Pool/choice frequencies use seven binomial standard deviations plus two
+counts. Normal and lognormal moments use wide explicit tolerances (0.5 on
+means and 0.65 on standard deviations of 10), ranges with negligible
+truncation, and CDF checks to reject uniform or discrete substitutes. Decimal
+rounding is allowed for in the CDF tolerance. Truncated distributions have
+separate endpoint-mass checks. Trace steps allow the six-place coordinate
+rounding error. No test requires every consecutive answer to differ.
+
+Phone suffix digits and email suffixes are described as random, not explicitly
+uniform. Tests check format, allowed values and variation, but do not impose
+a digit/suffix frequency distribution or demand observing email suffix 1 or
+99 in a finite sample. Geographic coordinates and first/last name selections
+are checked marginally; independence is not added as a separate requirement.
+
+**Tests:** Statistical tests across the four new classes; deterministic replay,
+freshness and alternative `RandomGenerator` checks in
+`AnswerGeneratorRealisticOverrideTest`.
+
+### 32. How are ambiguous name tokenizations and conflicting name subtypes handled?
+
+**Question:** Are acronym-to-word transitions, punctuation other than `_` and
+`-`, or non-ASCII case transitions additional boundaries? Which subtype wins
+when both `firstname` and `surname` occur? Should camel-case `firstName`
+produce only a first name despite splitting into `first` and `Name`?
+
+**Assumption:** Test only the stated boundaries (underscore, hyphen, digits,
+and lower-to-upper changes) and case-insensitive matching. All table keywords
+are tested, along with whole-word negatives and first-matching-line precedence
+regardless of token order. Conflicting first/last subtypes, acronym transitions,
+other punctuation, non-ASCII token boundaries, and `firstName`/`lastName`
+subtype ambiguity are not asserted. A missing place pool skips that line and
+continues to later matching lines or the original fallback, as explicitly stated.
+
+**Tests:** Keyword, splitting, substring, line-precedence and absent-place tests
+in `AnswerGeneratorRealisticTextTest`.
+
+### 33. Where does plausible text sit relative to decimal appearances and invalid hints?
+
+**Question:** Does a plausible-name match override `numbers_decimal`, or does
+that appearance retain decimal/distribution generation? What if a supported
+pattern and prefix conflict?
+
+**Assumption:** The amendment explicitly places plausible texts before the
+`numbers` rule but does not resolve these other combinations. Distribution
+TEXT questions therefore use the neutral name `answer` and `numbers_decimal`;
+plausible-name tests use ordinary appearance, `numbers`, or `numbers_phone`.
+Tests establish the explicit precedence of fixed values, `texts`, supported
+patterns, prefixes and valid length hints over plausible names. Contradictory
+length hints are ignored per spec 09 and fall through to plausible text.
+Conflicting pattern/prefix hints and plausible names with `numbers_decimal`
+are not tested. Word-substring decimal appearances must not activate distributions.
+
+**Tests:** Text precedence tests, `contradictoryLengthHintsFallThroughToPlausibleText`,
+and `distributionDoesNotDisplaceOrdinaryTextPlausibleTextOrEightDigitAppearances`.
+
+### 34. Can built-in pool sizes and regional coverage be verified through this API?
+
+**Question:** Are the at least 40 entries in each built-in pool guaranteed
+distinct? What measurable property establishes "mixing several regions and
+languages"? What email is produced when an entire pool entry reduces to no
+ASCII letters?
+
+**Assumption:** Exact content, uniqueness, and regional/language membership
+are unspecified. A finite sample cannot prove internal pool length without
+assuming distinct entries. Tests therefore check nonempty, varied built-in
+answers, without a hard-coded vocabulary or an unjustified 40-distinct-values
+assertion. The minimum internal length and cultural coverage remain requirements
+that these black-box tests cannot fully establish. Custom pools with distinct
+entries are checked for exact replacement, uniformity, singleton behavior,
+Unicode/whitespace preservation, and retention of other built-in pools; a
+45-entry replacement also checks that selection is not truncated internally.
+Email normalization uses entries with a nonempty ASCII remainder and verifies
+accent removal and dropping punctuation, spaces, digits and a non-Latin
+character. Empty normalized names and ambiguous transliterations are not tested.
+
+**Tests:** Built-in, custom-pool, full-name and email tests in
+`AnswerGeneratorRealisticTextTest`.
+
+### 35. Does the explicit override replace or merge with the configured field?
+
+**Question:** Are omitted properties inherited from the configured field, and
+do rules or expressions get evaluated by the generator? Do existing argument
+errors and blank/fixed exceptions still apply to the overload?
+
+**Assumption:** "Instead of" means complete replacement. Missing properties
+fall back to global/default behavior, not to the configured field. Null means
+no field override. The unchanged three-argument method has the same output and
+random state as its stated four-argument delegation. Rules and expressions are
+ignored, including true rules and references for which the generator has no
+form context. Existing required-argument null errors, required/optional blank
+behavior, fixed values, and the empty/label select exceptions carry over because
+the overload "generates as" the existing method does. Config-validation errors
+for invalid distributions, pools, areas or expressions belong to spec 04 and
+are not repeated here.
+
+**Tests:** `AnswerGeneratorRealisticOverrideTest`, especially the all-kind
+replacement/null cases, delegation, omitted-property, rules/expressions,
+missing-rate and null-argument tests.
+
+### 36. Are later geometry points restricted by the survey area or geographic limits?
+
+**Question:** Must later trace/shape points stay within the configured rectangle
+or be wrapped/clamped at global latitude/longitude limits?
+
+**Assumption:** The first point obeys the field/global/default area. Later
+points take the original cumulative uniform steps and are explicitly not limited
+to that area. Step-distribution tests use a singleton area well away from global
+limits, avoiding an unspecified wrapping policy. Boundary-area tests assert the
+first point and the required point format/count/shape closure, without imposing
+later global-coordinate limits. Numeric zero is accepted with either sign in
+the coordinate format, as the spec does not settle negative-zero spelling.
+
+**Tests:** `AnswerGeneratorRealisticAreaTest`.
+
+### 37. Amendment 3 compilation verification (2026-10-12)
+
+**Question:** Can the requested offline test compilation be completed in this
+sandbox, and what narrower verification was possible?
+
+**Assumption / result:** The requested `mvnw.cmd -o -q test-compile` fails with
+a fatal compiler error for `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+The `-e` diagnostic identifies `java.nio.file.AccessDeniedException` during
+Windows real-path resolution while closing the JAR filesystem. The diagnostic
+attempt with `-Dmaven.compiler.fork=true` also fails and cannot resolve existing
+project types such as Question, QuestionKind, SimulationConfig and AnswerGenerator.
+These are build failures, not expected runtime assertion failures.
+
+A separate temporary JavaCompiler probe type-checked all five new files using
+Java release 17, the cached JUnit 5.11.4 API/params JARs, and compile-only API
+declarations transcribed from specs 04, 05 and 09. It reported
+`SPEC_ONLY_TYPECHECK=true` with no compiler diagnostics. Closing that probe's
+file manager still reported AccessDeniedException for the cached JUnit API JAR.
+This verifies source syntax and typing against the spec declarations, not
+compatibility with the actual build outputs or successful repository compilation.
+Runtime tests were not run. The required Maven compile remains unverified and
+must be rerun with working access to the dependency cache/project outputs.
+
+Logs and temporary probe files are under `.codex-runs/answer-realistic/`.
+No repositories were copied, drives mapped, dependencies installed, production
+files read/changed, or build configuration changed. No commit was made.
+
+**Tests:** All four new Amendment 3 test classes and their new helper.
