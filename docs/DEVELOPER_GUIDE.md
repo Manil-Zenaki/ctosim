@@ -181,7 +181,53 @@ A JSON file; every key is optional. Full rules: `specs/04-simulation-config.md`.
 | `speedViolationRate` | 0.1 | probability of a speed violation on a field with a minimum time |
 | `repeats` | 1 to 3 | number of instances of repeats without a `repeat_count` |
 | `integerRange`, `decimalRange` | 0–100, 0–1000 | default bounds when a constraint gives none |
-| `fields` | none | per-field *overrides*: fixed `value`, `min`/`max`, choice `weights`, `texts`, own `missingRate` |
+| `fields` | none | per-field *overrides*: fixed `value`, `min`/`max`, choice `weights`, `texts`, own `missingRate`, and the realism keys below |
+| `profiles` | none | household profiles, one drawn per submission in proportion to its weight; `profile()` in rules and expressions |
+| `area` | none | rectangle (`minLatitude`, `maxLatitude`, `minLongitude`, `maxLongitude`) where GPS points are drawn |
+| `textPools` | built-in | replaces the `firstName`, `lastName`, `comment` pools, or adds a `place` pool |
+
+#### Realistic data (spec 04 Amendment 3, spec 05 Amendment 3, spec 07 Amendment 7)
+
+```json
+{
+  "profiles": {"rural": 3, "urban": 1},
+  "area": {"minLatitude": 8.9, "maxLatitude": 9.1, "minLongitude": 38.6, "maxLongitude": 38.9},
+  "textPools": {"place": ["Adama", "Bishoftu", "Mojo"]},
+  "fields": {
+    "age": {"distribution": {"normal": {"mean": 32, "sd": 12}}, "min": 0, "max": 99},
+    "income": {"distribution": {"lognormal": {"mean": 3000, "sd": 2000}}, "min": 0, "max": 100000,
+               "when": [{"if": "profile() = 'urban'",
+                         "distribution": {"lognormal": {"mean": 9000, "sd": 5000}}}]},
+    "school": {"weights": {"0": 1, "1": 2, "2": 3, "3": 3},
+               "when": [{"if": "${age} < 6", "value": "0"},
+                        {"if": "profile() = 'rural'", "weights": {"0": 4, "1": 4, "2": 2}}]},
+    "hh_members": {"expr": "${hh_size} - 1"}
+  }
+}
+```
+
+- `distribution`: `normal` or `lognormal` (mean and standard deviation of
+  the variable itself), kept within `min`/`max` or the default range.
+- `when`: rules tried in order; the first whose `if` (an expression as in
+  the form, with `${field}` and `profile()`) is true replaces the field's
+  settings of the same keys. Rules are evaluated when the question is
+  reached, so they can use any earlier answer.
+- `expr`: the answer is the value of an expression (`${a} + ${b}`,
+  `pulldata(...)`, `profile()`); an empty value leaves the question blank.
+- Without any setting, text questions whose name says what they hold
+  (`resp_name`, `phone_number`, `email`, `village`, `other_specify`, ...)
+  get plausible names, phone numbers, e-mails, places (with a `place`
+  pool) and comments.
+
+#### Constraints
+
+Generated answers always satisfy their question's constraint when the
+constraint can be satisfied: hints are derived from the constraint
+(ranges with "don't know" codes, `if()`, `not()`, `selected()` and
+`count-selected()` rules, lengths, `regex()`, prefixes; spec 09), the
+walker tries the constraint's own values, then searches systematically
+for a value the constraint accepts (spec 07 Amendment 6), and checks
+every answer again at the end of the form (Amendment 5).
 
 ## 4. From XLSForm to simulated data, step by step
 
