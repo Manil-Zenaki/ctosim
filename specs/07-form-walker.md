@@ -587,3 +587,11 @@ every submission, both occur among submissions 1 to 100 (about a quarter
 `value: "x"` and otherwise `value: "y"` holds `x` exactly in the
 submissions whose first question holds `a`. Walking the same submission
 number twice gives the same profile.
+
+Clarification (Amendments 6 and 7): assumptions 45–51 of the questions
+file are reviewed one by one and confirmed. In particular, the search
+also applies when the configuration fixes a value that breaks the
+constraint (45); string literals are those of the parsed constraint
+(46); a search outcome is only what the finite levels of spec 05
+Amendment 2 contain (49). Codex stopped on its usage limit before
+writing questions for Amendment 7; its tests were reviewed and kept.

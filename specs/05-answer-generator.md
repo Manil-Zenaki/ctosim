@@ -314,3 +314,10 @@ Pools are drawn from uniformly. The built-in `firstName`, `lastName` and
 and languages (their exact content is not specified); `textPools`
 replaces a pool. There is no built-in `place` pool. A name matching no
 line keeps the rules of spec 05.
+
+Clarification (Amendments 2 and 3): the assumptions of the questions
+file for these amendments are reviewed one by one and confirmed. In
+particular, repeated values are removed within each level (Amendment 2);
+a distribution replaces the uniform draw entirely, with the range kept;
+only the first point of a trace or shape is held within the area; plausible
+texts come after the hints and before the `numbers` rule (Amendment 3).

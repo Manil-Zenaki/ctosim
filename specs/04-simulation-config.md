@@ -314,3 +314,10 @@ The rules of "Strictness" and "Errors" apply to every new key; an error
 is located at its path (`profiles.rural`, `area.minLatitude`,
 `fields.income.distribution.lognormal.mean`, `textPools.place[2]`).
 `withSeed` and `withSubmissions` keep every setting.
+
+Clarification (Amendment 3): assumptions 22–28 of the questions file are
+reviewed one by one and confirmed. In particular, an absent setting stays
+absent in the accessors (a field's area is not filled from the top-level
+area) (23); expressions that parse are kept exactly as written (24); the
+new keys are reserved only where the schema allows them, not as field or
+profile names (28).
