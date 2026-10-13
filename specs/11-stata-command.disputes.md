@@ -106,3 +106,20 @@ successfully loaded and called both rebuilt support jars. The test PowerShell
 scripts parsed successfully, and `git diff --check` passed. Runner logs are
 under `target/stata-tests/`; the syntax/jar-loading check is
 `.codex-runs/stata-dispute-check/check.log`. No commit was made.
+
+## Dispute 3: an `assert` example written with Stata's prompt
+
+`test_help_use_cases_advanced.do` fails with "Advanced: missing assert
+of an answer's constraint". The help file has the example
+
+```
+{phang2}{cmd:. assert inrange(people_never_respect, 0, 10) | inlist(people_never_respect, 88, 99) if !missing(people_never_respect)}{p_end}
+```
+
+which asserts an answer's constraint, as Amendment 3 asks. Every command
+of the help file is written after Stata's `. ` prompt, as Stata's own
+help files do and as the existing examples of this help file did before
+the amendment. The check finds assertions with `^\s*assert`, which does
+not allow the prompt, while the same file's check for `ctosim using`
+commands allows it (`^\s*\.?\s*ctosim`). Requested: let the assertion
+check allow the optional `. ` prompt, as the command check does.
