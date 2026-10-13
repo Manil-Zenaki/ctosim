@@ -111,28 +111,21 @@ class FormWalkerDistributionTest {
             assertUniformBin(counts[parent][count], draws, 0.25, "parent " + parent + " count " + count);
     }
 
-    @Test void retriesUseFreshDrawsAndApproximateTheFiftyAttemptBudget() throws Exception {
+    @Test void aSearchableIntegerConstraintAlwaysGetsAnAnswerWithoutWarnings() throws Exception {
         // Spec 09 (including Amendment 2) gives no hints or candidates when '.' is inside arithmetic.
-        // Each proposal succeeds with p=1/20. Exhaustion after 50 proposals has probability (19/20)^50.
-        // This checks retry behavior without assuming a particular RNG implementation or seed mixer.
+        // After rejected draws, Amendment 6 searches the range 1..20, which includes the valid answer 1.
+        // Blank frequency can no longer reveal the retry budget.
         FormWalker walker = new FormWalker(single("int", "constraint=\". * 2 = 2\""), config("""
             "seed":395173,"missingRate":0,"integerRange":{"min":1,"max":20}
             """));
-        int draws = 2500, failures = 0;
+        int draws = 2500;
         for (int n = 1; n <= draws; n++) {
             Submission result = walker.walk(n);
             assertElapsed(result, 1);
-            if (result.answered() == 0) {
-                failures++;
-                assertEquals("", value(result, "answer"));
-                assertWarning(result, "answer", "constraint");
-            } else {
-                assertEquals(1, result.answered());
-                assertEquals("1", value(result, "answer"));
-                assertTrue(result.warnings().isEmpty(), "Rejected intermediate proposals are not final warnings");
-            }
+            assertEquals(1, result.answered());
+            assertEquals("1", value(result, "answer"));
+            assertTrue(result.warnings().isEmpty(), "Rejected intermediate proposals are not final warnings");
         }
-        assertUniformBin(failures, draws, Math.pow(19.0 / 20, 50), "Exhausted retry budget");
     }
 
     @Test void fieldMissingRateOverridesGlobalRateDuringWalking() throws Exception {

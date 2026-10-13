@@ -1009,3 +1009,19 @@ modified; existing test helpers are reused through their test APIs.
 - Existing tests and fixtures, production source, build settings and samples
   remain unchanged. No commit was made. Temporary diagnostics remain under
   `.codex-runs/`.
+
+### Dispute 5 build validation (2026-10-12)
+
+- **Question:** Can the prescribed offline Maven test run compile the
+  adjudicated tests in this environment?
+- **Assumption:** No new behavioral assumption is needed. `mvnw.cmd -o -q
+  test` reached `testCompile` and failed on the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, consistent with
+  the previously recorded build limitation. The log is
+  `.codex-runs/walker-dispute5-maven-test.log`. No build configuration or
+  dependencies were changed.
+- **Tests affected:** Maven cannot execute the suite. The existing offline
+  compilation probe successfully compiled all 38 FormWalker test/support
+  files against the project class files and cached APIs; see
+  `.codex-runs/walker-dispute5-compile.log`. Independent JUnit execution is
+  recorded in the disputes file; it is not a successful Maven build.

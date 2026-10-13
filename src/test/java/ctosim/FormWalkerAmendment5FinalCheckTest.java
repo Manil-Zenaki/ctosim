@@ -36,7 +36,7 @@ class FormWalkerAmendment5FinalCheckTest {
 
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void anUnrepairableGeneratedAnswerIsClearedWithoutChangingAnswered(boolean required) throws Exception {
-        Submission result = run(late("", "int", ". <= 5", "required=\"" + required + "()\""),
+        Submission result = run(late("", "int", ". <= 5 and . > 5", "required=\"" + required + "()\""),
                 gateAnd("\"value\":9"));
         assertEquals("", value(result, "answer"));
         assertEquals(2, result.answered(), "Final clearing does not undo a navigation answer");
@@ -122,26 +122,21 @@ class FormWalkerAmendment5FinalCheckTest {
     }
 
     @Test @Timeout(90)
-    void retriesUseFreshDrawsAndApproximatelyFiftyAttemptsBeforeClearing() throws Exception {
+    void aSearchableFinalSelectionConstraintAlwaysGetsAnAnswerWithoutWarnings() throws Exception {
         // Wrapping '.' in concat prevents both hints and post-budget candidates (spec 09 Amendment 2).
+        // Amendment 6 then searches every offered choice, including 'good', before clearing.
         LoadedForm form = amended5("<answer/><gate>0</gate>",
                 bind("answer", "select1", constraint("/data/gate = 0 or concat(., '') = 'good'"))
                 + bind("gate", "int", ""), selectControl("answer", false) + input("gate"));
         FormWalker walker = new FormWalker(form, settings(gateAnd("\"weights\":{\"bad\":49,\"good\":1}")));
-        int blank = 0;
         int draws = 700;
         for (int n = 1; n <= draws; n++) {
             Submission result = walker.walk(n);
-            String answer = value(result, "answer");
-            assertTrue(answer.isEmpty() || answer.equals("good"), "Rejected choice must never survive");
-            if (answer.isEmpty()) {
-                blank++;
-                assertFinalFailure(result, "answer", false);
-            } else assertTrue(result.warnings().isEmpty());
+            assertEquals("good", value(result, "answer"));
+            assertTrue(result.warnings().isEmpty());
             assertEquals(2, result.answered());
+            assertElapsed(result, 2);
         }
-        // One original draw, then at most 50 repair draws. Do not prescribe an RNG algorithm.
-        assertUniformBin(blank, draws, Math.pow(0.98, 51), "Exhausted final repairs");
     }
 
     @ParameterizedTest @ValueSource(booleans = {false, true})

@@ -309,3 +309,94 @@ for a constraint that such a value satisfies:
    repairs the fixed answer 9 (Clarification 45: the search applies also
    to a fixed value). Requested: make the late constraint unsatisfiable
    (for example `. <= 5 and . > 5`) so that the answer is cleared.
+
+## Adjudication after Amendment 6
+
+### Dispute 1: superseded by Amendment 6's search
+
+The 50-attempt rule still applies, but exhausted random proposals no longer
+imply a blank answer. The current arithmetic constraint has a searchable
+answer, so retain the fixture and replace its exhaustion expectation as
+described in Dispute 5, point 1. Neither the original equality nor the
+later disjunction restores a valid statistical test of the retry budget.
+
+### Dispute 2: keep the corrected device-id tests
+
+All three disputed assertions already require `[0-9a-f]{16}`, and the
+single-enumerator test has the corresponding name. These match Amendment
+2. Keep their identity, distribution, username and timestamp checks.
+
+### Dispute 3, points 1 and 2: keep the corrected calculation tests
+
+The body-position test uses `format-date-time(now(), ...)` in a string
+field and compares its local date-time. The time-zone tests expect date
+strings for raw `now()` and `once(now())`, while checking offsets on
+preloaded timestamps and generated date-time/time answers. These are the
+distinctions required by Amendment 4; both corrections remain valid.
+
+### Dispute 4, point 1: keep the constraints, replace exhaustion expectations
+
+Arithmetic and `concat` still avoid the specified hint/candidate shapes,
+but Amendment 6 adds search after those mechanisms fail. The former
+exhaustion probabilities describe rejected draws, not final blanks.
+Apply the two expectation changes in Dispute 5; do not claim these tests
+measure exactly 50 attempts.
+
+### Dispute 4, point 2: keep the corrected final-instance oracle
+
+The oracle already preserves repeat declarations and templates, excludes
+templates from inspection, and avoids reapplying counts or calculations.
+Its focused tests check the second-row age branch and innermost indices
+across nested repeats and parents. This supplies the repeat context
+required by spec 03's `index()` and spec 07 Amendment 5's final-instance
+guarantee. No further change is needed for this point.
+
+### Dispute 5, point 1: accepted; require the searchable integer answer
+
+Spec 05 Amendment 2 includes every integer of the drawing range 1..20
+in search level 1. Exactly 1 satisfies `. * 2 = 2`. Spec 07 Amendment 6
+therefore requires that answer even after all random proposals fail.
+Renamed the test to
+`aSearchableIntegerConstraintAlwaysGetsAnAnswerWithoutWarnings` and
+require value `1`, `answered() == 1`, and no warnings in every submission.
+Retained the fixed seed, 2,500 submissions, constraint and one-handling
+clock assertion. Removed the blank-frequency assertion.
+
+### Dispute 5, point 2: accepted; require the searchable final selection
+
+Spec 05 Amendment 2 lists every offered select-one choice in level 1,
+including `good`. Once the gate becomes 1, `good` satisfies the final
+constraint. Amendment 6 applies expressly to Amendment 5's final check,
+so no submission may remain blank because the repair draws failed.
+Renamed the test to
+`aSearchableFinalSelectionConstraintAlwaysGetsAnAnswerWithoutWarnings`.
+Retained the fixture, weights, fixed seed and 700 submissions; require
+`good` and no warnings each time. Keep `answered() == 2` and check the
+elapsed time for two navigation handlings; final search adds no handling.
+Removed the exhaustion-frequency assertion.
+
+### Dispute 5, point 3: accepted; make final clearing unavoidable
+
+The original `. <= 5` permits searchable integers even when the
+configuration fixes the answer at 9. Amendment 6's confirmed assumption
+45 explicitly applies search to fixed overrides; expecting clearing for
+that fixture is wrong. Changed only its late constraint to
+`. <= 5 and . > 5`. The gate initially allows the navigation answer 9,
+then makes the constraint unsatisfiable at the final check. Keep both
+requiredness cases and all clearing, answered-count, time, warning-order,
+warning-prefix and unmodifiable-list assertions.
+
+No production source was read or modified, and no commit was made.
+
+Validation: `mvnw.cmd -o -q test` reached `testCompile` but failed on
+the cached `commons-io-2.5.jar`; the questions file records this build
+limitation. The existing offline compilation probe compiled all 38
+FormWalker test/support sources successfully. The existing JUnit dispute
+harness ran 214 cases, including both changed classes, the published-form
+final-constraint acceptance tests and oracle checks, the earlier device-id
+and calculation tests, and the two disputed time-zone parameterized tests.
+All 214 passed, with no skipped or aborted tests or container failures.
+This verifies compilation and the selected tests, not a successful Maven
+suite run. Logs: `.codex-runs/walker-dispute5-maven-test.log`,
+`.codex-runs/walker-dispute5-compile.log`, and
+`.codex-runs/walker-dispute5-junit.log`.
