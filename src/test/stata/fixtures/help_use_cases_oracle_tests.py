@@ -102,6 +102,19 @@ class HelpOracleTests(unittest.TestCase):
     def test_foreach_seed_loop_is_also_accepted(self):
         CHECKS['advanced'](Help(SOURCE.replace('forvalues s = 1/3', 'foreach s in 7 19 53')))
 
+    def test_constraint_assertion_accepts_optional_stata_prompt(self):
+        for prefix in ('', '. ', '  .   '):
+            with self.subTest(prefix=prefix):
+                CHECKS['advanced'](Help(SOURCE.replace(
+                    '{cmd:assert ', '{cmd:' + prefix + 'assert ')))
+
+    def test_prompt_does_not_make_non_answer_assertions_valid(self):
+        for command in ('assert _N == 50', 'assert r(N) == 50',
+                        'assert c(N) == 50', 'summarize age'):
+            with self.subTest(command=command):
+                self.rejects('advanced', 'assert inrange(age, 18, 65)',
+                             '. ' + command)
+
     def test_invalid_and_truncated_json_are_rejected(self):
         for old, new in [('"rural": 3', '"rural": 3, "rural": 4'),
                          ('"rural": 3', '"rural": null'), ('"rural": 3', '"rural": NaN'),

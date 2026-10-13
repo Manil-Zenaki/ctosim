@@ -389,7 +389,7 @@ def advanced(doc):
         if len(set(numbers)) >= 2:
             valid_loop = True
     require(valid_loop, "Advanced: loop must simulate several data sets with distinct seeds")
-    assertions = re.findall(r"(?im)^\s*assert\s+([^\n]+)", cmds)
+    assertions = re.findall(r"(?im)^\s*\.?\s*assert\s+([^\n]+)", cmds)
     def answer_predicate(expr):
         answer = re.sub(r"\b[rc]\([^)]*\)|\b_N\b|\b_n\b", "", expr)
         answer = re.sub(r"\b\w+\s*(?=\()", "", answer)
