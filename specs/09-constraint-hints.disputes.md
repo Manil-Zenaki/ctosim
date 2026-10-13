@@ -87,3 +87,43 @@ searches the integers of the drawing range [100, 104] and answers 103.
 Requested: keep the test's intent (candidates rejected, then blank with
 constraint and required warnings) with a constraint no integer
 satisfies, for example `. >= 100 and . <= 104 and . * 2 = 207`.
+
+## Adjudication of Dispute 2
+
+1. **Upheld: the blank-answer expectation needs an impossible integer constraint.**
+   The original constraint admits exactly the integer 103. Spec 07 Amendment 6
+   requires search after the 50 proposals and spec 09's candidates fail, including
+   when a fixed override supplied those proposals (spec 07's confirmed assumption
+   45). Spec 05 Amendment 2's INTEGER search includes 103, so the original
+   blank-answer and warning expectations are wrong.
+
+   The dispute's stated drawing range needs a qualification: this fixture uses
+   the default integer range [0, 100], whose intersection with the hints
+   [100, 104] is [100, 100] under spec 09. Thus 103 is guaranteed by search
+   level 2 (every integer from -10000 to 10000), rather than by a level 1
+   drawing range of [100, 104]. This does not change the decision.
+
+   Changed the unsupported conjunct from `. * 2 = 206` to `. * 2 = 207`.
+   The closed-end candidates remain 100 and 104 and both are rejected;
+   no integer satisfies the full constraint because 207 / 2 is 103.5.
+   All search levels therefore fail as well. The retained assertions require
+   a blank answer, zero answered questions, and both constraint and required
+   warnings, as spec 07 requires after all fallbacks fail. Renamed the test to
+   `impossibleIntegerConstraintLeavesBlankAndProducesConstraintAndRequiredWarningsAfterFallbacks`
+   to reflect that contract. The prior Dispute 1 adjudication is unchanged.
+
+### Dispute 2 verification
+
+- `mvnw.cmd -o -q test` reaches test compilation but fails with
+  `java.nio.file.AccessDeniedException` for the existing
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, confirmed by
+  an offline `-e` retry. Maven did not pass.
+- The existing diagnostic compiler successfully compiled all constraint-hint
+  tests and required helpers against compiled binaries (18 sources including
+  the runner, Java 17 target). No production source was read or changed.
+- JUnit Platform ran `ConstraintHintsExtractionTest`, `ConstraintHintsWalkerTest`,
+  `ConstraintHintsAmendment2ExtractionTest`, and `ConstraintHintsAmendment2WalkerTest`:
+  **209 tests passed**, zero failed, skipped or aborted; all 25 containers passed.
+- Logs: `.codex-runs/09-dispute2-maven-test.log`,
+  `.codex-runs/09-dispute2-maven-detail.log`, `.codex-runs/09-dispute2-compile.log`,
+  and `.codex-runs/09-dispute2-junit.log`.

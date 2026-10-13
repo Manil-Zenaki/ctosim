@@ -236,3 +236,18 @@ expectations; existing test helpers supply form construction and engine navigati
   skipped or aborted. Logs are `.codex-runs/09-dispute-maven-test.log`,
   `.codex-runs/09-dispute-maven-detail.log`, `.codex-runs/09-dispute-compile.log`,
   and `.codex-runs/09-dispute-junit.log`. No new behavioral assumptions were needed.
+
+### Dispute 2 build verification
+
+- `mvnw.cmd -o -q test` reaches test compilation but is blocked by
+  `java.nio.file.AccessDeniedException` for the existing
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, confirmed by an
+  offline `-e` retry. No dependencies or build configuration were changed.
+- The existing diagnostic compiler successfully compiled all constraint-hint
+  test sources and required helpers against compiled binaries (18 sources
+  including the runner, Java 17 target). The four extraction and walker test
+  classes then ran through JUnit Platform: 209 passed, zero failed, skipped or
+  aborted. This is supplementary verification, not a successful Maven build.
+- Logs: `.codex-runs/09-dispute2-maven-test.log`,
+  `.codex-runs/09-dispute2-maven-detail.log`, `.codex-runs/09-dispute2-compile.log`,
+  and `.codex-runs/09-dispute2-junit.log`. No new behavioral assumptions were needed.

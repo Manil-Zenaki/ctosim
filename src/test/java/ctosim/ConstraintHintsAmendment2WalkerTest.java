@@ -59,8 +59,9 @@ class ConstraintHintsAmendment2WalkerTest {
         assertEquals("5", value(s, "answer")); assertEquals(1, s.answered());
     }
 
-    @Test void rejectedCandidatesStillLeaveBlankAndProduceConstraintAndRequiredWarnings() throws Exception {
-        var loaded = single("int", "required=\"true()\" constraint=\"" + attribute(". >= 100 and . <= 104 and . * 2 = 206") + "\"");
+    @Test void impossibleIntegerConstraintLeavesBlankAndProducesConstraintAndRequiredWarningsAfterFallbacks() throws Exception {
+        // Candidates 100 and 104 fail, and no integer can satisfy twice its value being 207.
+        var loaded = single("int", "required=\"true()\" constraint=\"" + attribute(". >= 100 and . <= 104 and . * 2 = 207") + "\"");
         var s = fixed(loaded, "0");
         assertEquals("", value(s, "answer")); assertEquals(0, s.answered());
         assertWarning(s, "answer", "constraint"); assertWarning(s, "answer", "required");
