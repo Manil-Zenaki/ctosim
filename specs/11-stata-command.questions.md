@@ -204,3 +204,63 @@ Zip-only discovery, zip-before-jar precedence (including across directories), al
 Logs: `target/stata-tests/test_converter_name_*/runner.log` and `.codex-runs/stata-converter-name/<test>-<profile>/child.log`. Independent archive-check outputs are under `.codex-runs/stata-converter-name/fixture-check/`.
 
 The full requested command, `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`, completed with **35 do-files, 8 failed** (exit status 1). Besides the new jar-fallback failure, the seven existing `test_amendment_*.do` files fail because their unchanged launcher cannot remove pre-existing `.codex-runs/stata-amendment/.../temp/hsperfdata_manil` directories (access denied). Those existing cleanup failures prevent their command assertions from running in this invocation and are not attributed to Amendment 2. The remaining 27 do-files pass. Existing tests, production files, specs, and build configuration were not modified; only new test/support/fixture files and this questions file were written. No commit was made.
+
+## Amendment 3: help-file use cases
+
+### C1. Automated checks of prose and SMCL presentation
+
+**Question:** How can tests check this amendment's explicit documentation requirements without prescribing the author's exact sentences, paragraph layout, or example filenames?
+
+**Assumption:** The named Examples, Basic examples, Advanced examples and Configuration headings are observable requirements. Tests normalize common SMCL headings, emphasis, paragraphs, character escapes and wrapped commands; examples must actually use `{cmd:}`. A preceding description may wrap physical lines, and consecutive commands may share one description. The tests check the presence of explanatory prose, not sentence length, punctuation, or writing quality. Basic and Advanced must belong to Examples; unrelated sections cannot supply their commands. English vocabulary checks for the constraint guarantee and automatic plausible texts allow several common paraphrases. These are necessarily a partial semantic check: human review is still needed to assess explanation accuracy and prose quality, and equivalent wording or other valid SMCL formatting outside the recognized vocabulary may require adapting the helper. This extends the original question 10 only for Amendment 3; the original smoke test remains unchanged.
+
+**Tests:** All five `test_help_use_cases_*.do`; especially `structure` and `configuration`.
+
+### C2. Running versus displaying the examples
+
+**Question:** Must examples refer to bundled survey forms, import templates, analysis code and writable output directories, so that tests can execute every command literally?
+
+**Assumption:** No. Amendment 3 requires examples in the help, not a collection of executable example projects. Tests inspect the displayed commands and JSON without executing the illustrative `ctosim`, `assert`, `type`, or loop commands. They impose no survey basename, field name, seed, sample size, number of examples, or exact assertion predicate. They require the listed basic options on actual `ctosim using` examples; the plain import example combines `n()`, `seed()` and `clear`, and the template example combines `dofile()` and `replace`. Stored-result/report examples must be command blocks. A loop must use its iterator in `seed()` with multiple distinct numeric seed values (ordinary `forvalues` or `foreach` examples are recognized). An assertion must refer to an answer, not merely `_N` or stored results. Whether that assertion matches the constraint of an unprovided example form remains a review item. Arbitrary Stata macro programs, indirect seed construction and all possible loop syntax are not interpreted.
+
+**Tests:** `test_help_use_cases_basic.do`, `test_help_use_cases_advanced.do`.
+
+### C3. Identifying complete example configurations
+
+**Question:** Where must JSON appear, and how is a displayed object associated with a `config()` filename?
+
+**Assumption:** A full object may appear anywhere in the help, including outside Examples. Its filename may be supplied in adjacent prose or in the adjacent, unambiguous `config()` command. The same displayed configuration may be reused by multiple calls, or explicitly labeled for multiple filenames; no particular caption or SMCL layout is required. Bare external links and ellipses are not full JSON. The helper checks every object shown in Examples and complete root-configuration objects elsewhere. Standalone nested-schema snippets outside Examples are not treated as complete configurations. Complex interleaving of multiple unlabeled objects/filenames is left ambiguous rather than guessing an association.
+
+**Tests:** `test_help_use_cases_json.do`; the advanced feature checks reuse the parsed configurations. The positive fixture and helper checks cover JSON outside Examples and both literal and SMCL-escaped braces.
+
+### C4. Schema scope and realistic-data examples
+
+**Question:** Does "uses only keys of spec 04" include its amendments, nested object keys, and arbitrary question/profile/choice names? Must all realistic features be in one configuration?
+
+**Assumption:** Spec 04 including Amendments 1–3 defines the schema: all 17 top-level keys, all 10 field-override keys, and nested rule `if` are in scope. Unknown and duplicate schema keys, truncated JSON, placeholder values, invalid object shapes, and basic type/range/conflict errors are rejected. Question, profile and choice names remain arbitrary at their documented mapping levels. The helper is independent of production parsing and does not attempt a second XPath engine or timezone database; expression syntax, timezone validity, form compatibility and simulated distributions are not re-tested here. The required fixed value, range, weights, missing rate, profiles, normal/lognormal distribution, when/if, expr, area and text pools may be demonstrated across configurations. No statistical draws or runtime determinism requirements are added to this documentation amendment.
+
+**Tests:** `test_help_use_cases_json.do`, `test_help_use_cases_advanced.do`; schema and omission checks in `fixtures/help_use_cases_oracle_tests.py`.
+
+### C5. Key descriptions and shared keys
+
+**Question:** Must a description occupy exactly one source line, and must keys such as `area` and `missingRate` be repeated separately for global and field scope?
+
+**Assumption:** "One line each on what it does" means an identifiable explanatory entry per key; physical line wrapping is free. Shared keys may have one entry explaining both uses, and paired `min`/`max` may share one entry as they do in spec 04. Merely including a key in JSON or in an unrelated sentence does not supply its reference entry. Automated checks require a named entry with explanatory words; accuracy of each description and complete explanation of both scopes remain review items. The Configuration section must also identify all four example text-question names and state both requested generation guarantees.
+
+**Tests:** `test_help_use_cases_configuration.do`.
+
+### C6. Test infrastructure and preservation of existing tests
+
+**Question:** How can Stata batch tests parse JSON and inspect SMCL without depending on the command implementation or Stata's configured Python?
+
+**Assumption:** A small Java-8-compatible fixture bridge may run the already supplied `.venv/Scripts/python.exe` as an external process. It reads only the public help artifact found by Stata `findfile`; it imports no production modules. This avoids Windows batch `shell` limitations and embedded-Python compatibility issues. The build hook compiles only test support, with outputs under `.codex-runs/stata-support/`. Assertions propagate through a nonzero Java return code to a Stata error; logs are under `.codex-runs/stata-help-use-cases/`. The 30-second helper timeout is a harness safeguard, not a command performance requirement. All five do-files and their helpers/fixtures are new. No existing test, production file, build configuration or specification was changed, and no commit was made.
+
+**Tests:** All five new do-files; `help-use-cases-check.do`, `build-help-use-cases-fixtures.ps1`, and the fixtures alongside the independent checker.
+
+### Amendment 3 validation (2026-10-12)
+
+The requested `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1` completed with **40 do-files, 17 failed** (exit status 1). Stata starts successfully and the new Java bridge compiles. All **five new do-files** reach the documentation assertions and fail with propagated `r(9)`: the Basic/Advanced example parts are missing from Examples, no complete example JSON is shown, and the Configuration reference lacks `area`. These are missing Amendment 3 content, not test startup failures. Assertions after the first missing requirement remain pending on the actual help artifact.
+
+The other **12 failures** are in the unchanged seven `test_amendment_*.do` and five `test_converter_name_*.do` files. Their launchers cannot delete pre-existing `temp/hsperfdata_manil` directories (access denied), preventing their command assertions. The remaining **23 do-files pass**. Existing cleanup code and file permissions were left unchanged.
+
+The independent helper checks pass **14 unittest methods**, including per-feature/key subcases, against a synthetic help fixture and deliberately broken variants. Checks include all basic commands, omitted advanced features in otherwise valid JSON, missing descriptions, malformed/duplicate/unknown JSON keys, missing configurations, constant seeds, row-count-only assertions, and the two generation guarantees. Positive variants cover heading styles, wrapped commands, literal/escaped JSON braces, JSON outside Examples, normal/lognormal choices, and both loop forms. A separate Stata 16 batch probe runs all five new do-files to completion against the valid fixture and verifies that an invalid fixture produces a nonzero Stata error. This establishes both successful execution and failure propagation independently of the missing production documentation.
+
+Logs: `.codex-runs/stata-help-use-cases/full-suite.log`, the five area logs in that directory, `.codex-runs/stata-help-use-cases/oracle-tests.log`, `.codex-runs/stata-help-use-cases/probe/probe.log`, and `target/stata-tests/test_help_use_cases_*/runner.log`. Only new test/support/fixture files and this questions file were written outside the permitted temporary-output locations. Production sources were not inspected; the help artifact was read only by the tests. Existing tests were retained, and no commit was made.
