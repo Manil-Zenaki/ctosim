@@ -199,3 +199,25 @@ Ran `.venv\Scripts\python -m pytest converter/tests -q --tb=no
 **270 passed in 22.15s**, with no import or collection errors. Traceback
 source display was suppressed to avoid reading implementation code.
 Temporary test artifacts were directed under `.codex-runs/`.
+
+## Dispute 5: the companion of a question inside a repeat appears twice in the instance (Amendment 6)
+
+`test_companion_is_immediate_in_the_same_scope_and_catalog_uses_source_row`
+fails for the scopes `repeat` and `nested` (both select kinds) on the
+last line of `_assert_immediate_text_question`:
+`assert instance_paths(result).count("/data/" + path + "_other") == 1`.
+
+An XForm instance holds a repeat twice: its template
+(`<section jr:template="">`) and its first instance. Every field of the
+repeat therefore appears twice in `instance_paths`, the question itself
+included; the failure output shows `/data/section` twice. The converted
+instance is:
+
+```
+<section jr:template=""><q/><q_other/><after/></section>
+<section><q/><q_other/><after/></section>
+```
+
+The amendment asks that `<name>_other` follow the question "in the same
+group or repeat", which this satisfies. The count should be the same as
+the question's own count (or should ignore the template), not 1.

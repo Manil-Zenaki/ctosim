@@ -400,3 +400,30 @@ This verifies compilation and the selected tests, not a successful Maven
 suite run. Logs: `.codex-runs/walker-dispute5-maven-test.log`,
 `.codex-runs/walker-dispute5-compile.log`, and
 `.codex-runs/walker-dispute5-junit.log`.
+
+## Dispute 6: two Amendment 9 tests of behaviour the amendment does not change
+
+Amendment 9 changes only how the walker draws an `INTEGER` count
+question (a question the generator answers as `INTEGER`) whose override
+has no range. Two tests in `FormWalkerAmendment9DependencyTest` fail
+identically with and without the amendment's implementation (checked by
+running them on the code before it):
+
+1. `decimalCountDependencyKeepsItsDecimalRange`: the decimal question is
+   not a count question, and the amendment does not touch it. The
+   generator writes `7` (spec 05: decimals without trailing zeros), but
+   the engine stores a decimal answer as `7.0` in the instance, so
+   `assertCount9` fails on `assertEquals("7", value(...))` with
+   `expected: <7> but was: <7.0>`. How a decimal is serialised in the
+   instance is not part of Amendment 9; the test should compare the
+   number (or accept the engine's decimal text), as its name says it
+   checks the decimal range.
+2. `integerSelectCountStillUsesOfferedChoicesAndWeights`: an integer
+   `select1` is answered as `SELECT_ONE` and is not a count question
+   (assumption 59 says so). Its answer is `7`, as the test wants, but the
+   engine creates no repeat instance from a `jr:count` that points to a
+   select answer (`expected: <7> but was: <0>` on the instance count).
+   That is the engine's handling of counted repeats (Amendment 3), not
+   something Amendment 9 promises; the test should check the answer and
+   its choice weights, which is what it is about, and not the number of
+   repeat instances.
