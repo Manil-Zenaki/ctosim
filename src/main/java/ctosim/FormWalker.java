@@ -6,8 +6,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -32,9 +34,15 @@ import org.javarosa.core.model.instance.TreeReference;
 import org.javarosa.form.api.FormEntryController;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.javarosa.model.xform.XFormSerializingVisitor;
+import org.javarosa.xpath.XPathConditional;
 import org.javarosa.xpath.XPathParseTool;
+import org.javarosa.xpath.expr.XPathBinaryOpExpr;
 import org.javarosa.xpath.expr.XPathExpression;
+import org.javarosa.xpath.expr.XPathFilterExpr;
 import org.javarosa.xpath.expr.XPathFuncExpr;
+import org.javarosa.xpath.expr.XPathPathExpr;
+import org.javarosa.xpath.expr.XPathStep;
+import org.javarosa.xpath.expr.XPathUnaryOpExpr;
 import org.javarosa.xpath.parser.XPathSyntaxException;
 
 /** Fills one form from beginning to end. See specs/07-form-walker.md. */
@@ -166,6 +174,78 @@ public final class FormWalker {
         }
     }
 
+    /**
+     * The node references written in an expression, in the order they appear. Inside predicates only
+     * absolute references are kept: relative ones there designate nodes of the filtered set.
+     */
+    private static void collectReferences(XPathExpression expression, List<TreeReference> out, boolean inPredicate) {
+        if (expression instanceof XPathBinaryOpExpr op) {
+            collectReferences(op.a, out, inPredicate);
+            collectReferences(op.b, out, inPredicate);
+        } else if (expression instanceof XPathUnaryOpExpr op) {
+            collectReferences(op.a, out, inPredicate);
+        } else if (expression instanceof XPathFuncExpr function) {
+            for (XPathExpression arg : function.args) {
+                collectReferences(arg, out, inPredicate);
+            }
+        } else if (expression instanceof XPathFilterExpr filter) {
+            collectReferences(filter.x, out, inPredicate);
+            for (XPathExpression predicate : filter.predicates) {
+                collectReferences(predicate, out, true);
+            }
+        } else if (expression instanceof XPathPathExpr path) {
+            if (path.init_context == XPathPathExpr.INIT_CONTEXT_EXPR) {
+                collectReferences(path.filtExpr, out, inPredicate);
+            } else {
+                try {
+                    TreeReference ref = path.getReference();
+                    if (!inPredicate || ref.isAbsolute()) {
+                        out.add(ref);
+                    }
+                } catch (RuntimeException e) {
+                    // not a plain node reference
+                }
+            }
+            for (XPathStep step : path.steps) {
+                for (XPathExpression predicate : step.predicates) {
+                    collectReferences(predicate, out, true);
+                }
+            }
+        }
+    }
+
+    /**
+     * An XForm expression with each absolute field path written ${name}, as in the XLSForm, without
+     * the space the converter puts on each side of it. Paths inside string literals are left alone.
+     */
+    static String readable(String expression, String root) {
+        char[] masked = expression.toCharArray();
+        char quote = 0;
+        for (int i = 0; i < masked.length; i++) {
+            if (quote == 0) {
+                if (masked[i] == '\'' || masked[i] == '"') {
+                    quote = masked[i];
+                }
+            } else if (masked[i] == quote) {
+                quote = 0;
+            } else {
+                masked[i] = '\u0001';
+            }
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile(" ?/" + java.util.regex.Pattern.quote(root) + "((?:/[\\p{L}\\p{N}_.\\-]+)+) ?")
+                .matcher(new String(masked));
+        StringBuilder out = new StringBuilder();
+        int last = 0;
+        while (m.find()) {
+            String steps = m.group(1);
+            out.append(expression, last, m.start()).append("${").append(steps.substring(steps.lastIndexOf('/') + 1))
+                    .append('}');
+            last = m.end();
+        }
+        return out.append(expression.substring(last)).toString();
+    }
+
     /** Mixes the configuration seed, the submission number and a stream id into one seed. */
     private static long seed(long base, long number, long stream) {
         long h = base * 0x9E3779B97F4A7C15L + number;
@@ -184,6 +264,7 @@ public final class FormWalker {
         private final LocalDateTime start;
         private final FormEntryController session;
         private final List<String> warnings = new ArrayList<>();
+        private final List<UnsatisfiedConstraint> unsatisfied = new ArrayList<>();
         private final Map<String, Integer> repeatTargets = new HashMap<>();
         private final SplittableRandom violationDraws;
         /** The submission's profile (spec 07, Amendment 7); "" without profiles. */
@@ -231,7 +312,7 @@ public final class FormWalker {
             }
             LocalDateTime end = clock.now();
             LocalDateTime submitted = end.plusMinutes(1 + new SplittableRandom(seed(config.seed(), number, 7)).nextInt(240));
-            return new Submission(number, xml, start, end, submitted, answered, warnings);
+            return new Submission(number, xml, start, end, submitted, answered, warnings, unsatisfied);
         }
 
         private int step(int steps) {
@@ -317,6 +398,7 @@ public final class FormWalker {
             clear(ref);
             warn("field '" + name + "' (" + path + "): no answer satisfied its constraint after "
                     + MAX_ATTEMPTS + " attempts; left blank");
+            recordUnsatisfied(ref, name, path, false);
             warnIfRequired(required, name, path);
             handled(ref, minimum);
         }
@@ -405,6 +487,7 @@ public final class FormWalker {
                 if (clearOnly || !answerAgain(prompt, ref, name, path, kind)) {
                     clear(ref);
                     warn("field '" + name + "' (" + path + "): its constraint does not hold at the end of the form; left blank");
+                    recordUnsatisfied(ref, name, path, true);
                     warnIfRequired(prompt.isRequired(), name, path);
                 }
             }
@@ -705,6 +788,47 @@ public final class FormWalker {
                 max = (int) Math.floor(r.max());
             }
             return max <= min ? Math.max(min, 0) : min + repeats.nextInt(max - min + 1);
+        }
+
+        /** Records a question left blank because no answer met its constraint (spec 07, Amendment 8). */
+        private void recordUnsatisfied(TreeReference ref, String name, String path, boolean atEndOfForm) {
+            FormDef def = session.getModel().getForm();
+            TreeElement node = def.getMainInstance().resolveReference(ref);
+            if (node == null || node.getConstraint() == null
+                    || !(node.getConstraint().constraint instanceof XPathConditional conditional)) {
+                return;
+            }
+            List<TreeReference> mentioned = new ArrayList<>();
+            collectReferences(conditional.getExpr(), mentioned, false);
+            TreeReference self = ref.genericize();
+            Map<String, String> references = new LinkedHashMap<>();
+            for (TreeReference mention : mentioned) {
+                TreeReference absolute;
+                try {
+                    absolute = mention.isAbsolute() ? mention : mention.anchor(ref);
+                } catch (RuntimeException e) {
+                    continue; // a reference the engine cannot place
+                }
+                if (absolute == null || absolute.getInstanceName() != null || absolute.genericize().equals(self)
+                        || references.containsKey(absolute.getNameLast())) {
+                    continue; // a secondary instance, the question itself, or a field already listed
+                }
+                List<TreeReference> nodes = new EvaluationContext(def.getMainInstance()).expandReference(absolute.contextualize(ref));
+                if (nodes == null) {
+                    continue;
+                }
+                List<String> values = new ArrayList<>();
+                for (TreeReference r : nodes) {
+                    TreeElement e = def.getMainInstance().resolveReference(r);
+                    IAnswerData v = e == null ? null : e.getValue();
+                    values.add(v == null ? "" : v.uncast().getString());
+                }
+                references.put(absolute.getNameLast(), String.join(" ", values));
+            }
+            String text = conditional.xpath == null ? "" : conditional.xpath;
+            unsatisfied.add(new UnsatisfiedConstraint(number, name, path,
+                    readable(text, def.getMainInstance().getRoot().getName()), atEndOfForm,
+                    Collections.unmodifiableMap(references)));
         }
 
         private void warn(String message) {

@@ -14,9 +14,15 @@ public final class Submission {
     private final LocalDateTime submitted;
     private final int answered;
     private final List<String> warnings;
+    private final List<UnsatisfiedConstraint> unsatisfiedConstraints;
 
     Submission(int number, String instanceXml, LocalDateTime start, LocalDateTime end, LocalDateTime submitted,
                int answered, List<String> warnings) {
+        this(number, instanceXml, start, end, submitted, answered, warnings, List.of());
+    }
+
+    Submission(int number, String instanceXml, LocalDateTime start, LocalDateTime end, LocalDateTime submitted,
+               int answered, List<String> warnings, List<UnsatisfiedConstraint> unsatisfiedConstraints) {
         this.number = number;
         this.instanceXml = instanceXml;
         this.start = start;
@@ -24,6 +30,7 @@ public final class Submission {
         this.submitted = submitted;
         this.answered = answered;
         this.warnings = List.copyOf(warnings);
+        this.unsatisfiedConstraints = List.copyOf(unsatisfiedConstraints);
     }
 
     /** A submission built from an instance written elsewhere. See specs/08-surveycto-exporter.md. */
@@ -83,6 +90,6 @@ public final class Submission {
 
     /** The questions left blank because no answer met their constraint. See specs/07-form-walker.md, Amendment 8. */
     public List<UnsatisfiedConstraint> unsatisfiedConstraints() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return unsatisfiedConstraints;
     }
 }
