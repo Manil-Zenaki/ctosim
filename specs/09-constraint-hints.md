@@ -342,3 +342,11 @@ symbol or punctuation) appears only at a position where no letter,
 digit or space would keep the answer matching. The answer still matches
 the pattern in full, and the choice among the letters, digits and space
 that fit is random.
+
+Clarification (Amendment 3): assumptions 24–28 of the questions file are
+reviewed one by one and confirmed. In particular, the motivating pattern
+`([^a-z]+)` is supported (24); a position is judged by replacing that
+one character while the rest of the answer stays as drawn, and a symbol
+the pattern requires is kept, even `${` (25); letters and digits of any
+script count, the space is U+0020 (26); fixed values and `texts`
+overrides are not changed (28).
