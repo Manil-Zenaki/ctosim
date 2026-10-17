@@ -398,3 +398,21 @@ matches an empty cell). This covers every field of the group except `f_today`,
 `f_now`, `f_date_before_today`, `f_decimal_date_time`, `f_decimal_time`,
 `f_version`, `f_uuid`, `f_random` and `f_format_number` (whose value on
 the phones followed the phone's language).
+
+## Amendment 5: a number as the second argument of `selected()`
+
+Real forms test a multiple answer against a position computed in a
+repeat: `selected(${valid_members}, ${member_index})`, where
+`member_index` is `index()`, a number. SurveyCTO accepts it; the engine's
+native `selected()` stops the session with an error ("The second
+parameter to the selected() function must be in quotes"). Everything not
+mentioned here is unchanged.
+
+In every session, the second argument of `selected(a, b)`, in any
+expression of the form (as for the first argument above), is used
+through its string value, as XPath `string()` gives it: a number `3` is
+`"3"`, `2.5` is `"2.5"`. Consequently `selected('1 3 4', n)` is `true`
+when `n` holds the number 3 and `false` when it holds 2, and a field
+holding no value behaves as the empty string (not selected). Behaviour
+for a second argument that already has a string value is unchanged, and
+calls outside the form's expressions are not affected, as above.
