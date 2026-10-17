@@ -95,7 +95,7 @@ program define ctosim, rclass
     if `"`java'"' == "" {
         file read `fh' line
         while r(eof) == 0 {
-            display as error `"`line'"'
+            display as error `"`macval(line)'"'
             file read `fh' line
         }
         file close `fh'
@@ -163,7 +163,7 @@ program define ctosim, rclass
         file open `fh' using `"`status'"', read text
         file read `fh' line
         file close `fh'
-        local code = real(strtrim(`"`line'"'))
+        local code = real(strtrim(`"`macval(line)'"'))
     }
     _ctosim_show `"`out'"' text
     _ctosim_show `"`err'"' error
@@ -178,18 +178,18 @@ program define ctosim, rclass
     file read `fh' line
     local section ""
     while r(eof) == 0 {
-        if ustrregexm(`"`line'"', "^Form: .* \(([^,]+), version [^)]*\)$") local form_id = ustrregexs(1)
-        else if ustrregexm(`"`line'"', "^Seed: (.+)$") local runseed = ustrregexs(1)
-        else if ustrregexm(`"`line'"', "^Submissions: ([0-9]+)$") local runN = ustrregexs(1)
-        else if `"`line'"' == "Files:" local section files
-        else if ustrregexm(`"`line'"', "^Warnings: ([0-9]+)$") {
+        if ustrregexm(`"`macval(line)'"', "^Form: .* \(([^,]+), version [^)]*\)$") local form_id = ustrregexs(1)
+        else if ustrregexm(`"`macval(line)'"', "^Seed: (.+)$") local runseed = ustrregexs(1)
+        else if ustrregexm(`"`macval(line)'"', "^Submissions: ([0-9]+)$") local runN = ustrregexs(1)
+        else if `"`macval(line)'"' == "Files:" local section files
+        else if ustrregexm(`"`macval(line)'"', "^Warnings: ([0-9]+)$") {
             local warnings = ustrregexs(1)
             local section warnings
             display as text "ctosim: " as result "`warnings'" as text " warnings"
         }
-        else if substr(`"`line'"', 1, 2) == "  " {
-            if "`section'" == "files" & `"`wide'"' == "" local wide = substr(`"`line'"', 3, .)
-            if "`section'" == "warnings" display as text `"`line'"'
+        else if substr(`"`macval(line)'"', 1, 2) == "  " {
+            if "`section'" == "files" & `"`wide'"' == "" local wide = substr(`"`macval(line)'"', 3, .)
+            if "`section'" == "warnings" display as text `"`macval(line)'"'
         }
         file read `fh' line
     }
@@ -240,8 +240,8 @@ program define _ctosim_show
     file open `fh' using `"`file'"', read text
     file read `fh' line
     while r(eof) == 0 {
-        if "`style'" == "error" display as error `"`line'"'
-        else display as text `"`line'"'
+        if "`style'" == "error" display as error `"`macval(line)'"'
+        else display as text `"`macval(line)'"'
         file read `fh' line
     }
     file close `fh'
