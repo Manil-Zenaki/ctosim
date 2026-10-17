@@ -1145,3 +1145,152 @@ modified; the public signatures come from specs 07 and 08.
 - Existing tests, production code, build configuration and other specs
   remain unchanged. No commit was made. Temporary diagnostics stay under
   `.codex-runs/`.
+
+## Amendment 9 questions and assumptions (2026-10-17)
+
+Only new `FormWalkerAmendment9*` classes and the fixture
+`src/test/resources/ctosim/form-walker/amendment9/nested-counts.xml` are
+added. Existing tests and fixtures are retained. Small generated forms use
+the existing test-only XML template and helpers. Production source was not
+opened, searched, or modified; expectations use spec 07 and its referenced
+configuration, generator and constraint-hint contracts.
+
+58. **Question:** Does "depends on" mean expression references or a
+    numerical influence analysis? Which field identity is used?
+    **Assumption:** Follow actual XPath references, resolving relative
+    paths in context. Quoted paths, similarly prefixed names, secondary
+    instance fields, and a different primary field with the same leaf name
+    are not the referenced question. Traverse control-free calculations
+    transitively, irrespective of declaration order or intermediate type;
+    do not traverse unrelated calculations or expressions attached to a
+    field with a control. This follows the explicit definition rather than
+    inferring that any field affecting a repeat is a count question.
+    Cyclic calculations and invalid reference expressions have no new
+    error policy in Amendment 9 and are not tested.
+    **Tests:** Calculation-chain, branched, relative/Unicode, intermediate
+    type, quoted-path, same-leaf-name, secondary-instance, downstream-only,
+    and traversal-stop cases in `FormWalkerAmendment9DependencyTest`.
+
+59. **Question:** Does count classification depend on the repeat currently
+    being relevant, or on the question's data type alone?
+    **Assumption:** The definition is structural and adds no repeat-relevance
+    qualifier. A relevant integer question remains a count question when
+    its repeat is irrelevant. A reference only in repeat relevance does
+    not qualify. Kind still follows the original controls-first mapping:
+    integer and long inputs and integer range controls qualify; decimal,
+    text with `numbers_decimal`, and integer-backed select controls keep
+    their ordinary generation behavior. Irrelevant questions themselves
+    are still skipped.
+    **Tests:** Type/control and relevance cases in
+    `FormWalkerAmendment9DependencyTest`,
+    `irrelevantCountQuestionIsNotAnsweredJustBecauseItControlsARepeat`.
+
+60. **Question:** Are conditional rules resolved before deciding whether
+    bounds already exist? Can a single bound be configured?
+    **Assumption:** Amendment 7 explicitly makes the effective override
+    replace `config.field(name)` for other walker rules, so test the
+    effective settings: an applicable rule's range is preserved, an
+    inherited base range is preserved, and an unmatched range rule does
+    not suppress the small default. The configuration requires `min` and
+    `max` together, including within rules, so no impossible one-bound
+    configuration is fabricated. Date bounds also supply these two keys;
+    they prevent injection but remain ignored for integer generation under
+    spec 05, which then uses `integerRange`.
+    **Tests:** `overrideWithoutBoundsStillReceivesRepeatBounds`,
+    `countRangeIsAppliedToTheEffectiveOverrideAfterConditionalRules`,
+    `nestedConditionalRangesAreReevaluatedInEachParent`,
+    `configuredDateBoundsAreNotReplacedEvenThoughIntegerGenerationIgnoresThem`.
+
+61. **Question:** What happens when adding bounds alongside a fixed value,
+    expression, distribution, missing rate, or irrelevant kind-specific key?
+    **Assumption:** "The configured one ... with min ... and max" preserves
+    every other effective setting and its existing precedence. Fixed and
+    evaluated expression values can exceed the added range; missingness
+    still applies first; distributions use the added range; irrelevant
+    weights/texts still have no effect on integers. The synthesized
+    generator override is not a user JSON object, so JSON restrictions on
+    combining fixed values and ranges do not justify losing the fixed
+    value. No particular internal override representation is prescribed.
+    Neither configuration nor another walker sharing it may be mutated.
+    **Tests:** Fixed/expression, distribution/clamping, missingness,
+    requiredness, conversion, empty-expression and configuration-isolation
+    tests in `FormWalkerAmendment9OverrideTest`.
+
+62. **Question:** Are repeat bounds a hard cap on calculated repeat counts,
+    existing answers, or constraint repairs? Does a repeat-name override
+    change its count question's default range?
+    **Assumption:** They are bounds supplied when generating an answer,
+    not a cap on the resulting repeat expression or existing values.
+    Unoverridden valid defaults and read-only answers are kept; invalid
+    defaults and explicitly overridden values follow the existing question
+    rules. Calculations may produce counts larger than `repeatMax()`.
+    Hints, candidates and broad search may supply valid counts beyond
+    injected or explicitly configured bounds. The amendment names the
+    global `config.repeatMin()`/`repeatMax()`, not the override for the
+    repeat element itself.
+    **Tests:** Calculation-chain and branched-count tests,
+    `repeatElementOverrideDoesNotReplaceTheGlobalRangeForItsCountQuestion`,
+    default/read-only/constraint/retry/hint/search cases in
+    `FormWalkerAmendment9LifecycleTest`.
+
+63. **Question:** What repeat structure is required when a count is blank
+    or changes during the end-of-form constraint check?
+    **Assumption:** Amendment 9 does not define NaN/blank count handling or
+    revisiting newly created instances after final repairs. Blank-count
+    cases check the answer, warnings and handling accounting, without
+    prescribing repeat cardinality. Final repair checks the repaired
+    answer and unchanged accounting, without prescribing repeat resizing.
+    Explicit numeric zero does have a defined empty-repeat result under
+    Amendment 3 and is asserted. Fixtures use `jr:count` references to
+    primary-instance nodes; arithmetic expressions are stored in ordinary
+    calculate binds, as in converted forms, to avoid requiring unsupported
+    inline arithmetic in the engine's repeat-count attribute.
+    **Tests:** Missing/empty-expression/conversion cases,
+    `impossibleCountConstraintStillLeavesBlankAndReportsFailure`,
+    `endOfFormRepairStillSearchesBeyondSmallCountsWithoutExtraAccounting`,
+    `repeatRangeIncludesZeroSingletonAndMaximumAllowedCount`.
+
+64. **Question:** Which distributions, seeded values, and boundary behavior
+    should be required without access to the generator calls?
+    **Assumption:** No RNG algorithm or exact seeded sequence is imposed.
+    The original integer generator's inclusive uniform behavior applies
+    when no distribution is configured. Use 700 fixed-seed submissions
+    over 0..4 and the existing seven-standard-deviations-plus-two tolerance.
+    Singleton tests cover 0, 1 and the maximum allowed 1000. Separate tests
+    compare full submissions across fresh loads and interleaved walk orders,
+    and compare 30-count sequences for seed sensitivity. Zero-SD
+    distributions make retention and clamping observable without sampling
+    noise. Timeouts are generous harness safeguards, not performance claims.
+    **Tests:** Boundary tests, `unconfiguredCountsAreUniformAcrossBothInclusiveEndpoints`,
+    `smallCountsReplayAcrossLoadsAndInterleavedWalkOrderAndRespondToSeed`,
+    and distribution cases in `FormWalkerAmendment9OverrideTest`.
+
+### Amendment 9 build and validation
+
+- **Question:** Can the requested `mvnw.cmd -o -q test-compile` complete?
+- **Assumption:** The recurring cache-access error is environmental, not
+  a Java-source diagnostic. The requested command fails in `testCompile`
+  on `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The offline
+  `-e` diagnostic confirms `java.nio.file.AccessDeniedException` in
+  `WindowsLinkSupport.getRealPath`. No build configuration, dependencies,
+  repositories, installations or drive mappings were changed.
+- **Compilation:** The existing offline compiler probe
+  `.codex-runs/WalkerAmendment5CompileProbe.java` verifies all 47 FormWalker
+  test/support sources, including the four new files, with Java release 17
+  against actual project classes and cached JavaRosa/JUnit APIs. Its
+  in-memory jar file manager bypasses the failing path canonicalization;
+  no replacement production stubs are used. This is independent compilation
+  verification, not a successful Maven build. Logs:
+  `.codex-runs/walker-amendment9-test-compile.log`,
+  `.codex-runs/walker-amendment9-test-compile-detail.log`, and
+  `.codex-runs/walker-amendment9-probe-compile.log`.
+- **Execution:** The new suite has 77 cases: 32 pass and 45 fail with
+  assertions against the current implementation. There are no fixture-load
+  errors, other runtime errors, skipped/aborted cases or failed containers.
+  The Unicode fixture uses an accented Latin name accepted by the engine's
+  XPath parser. The offline launcher log is
+  `.codex-runs/walker-amendment9-junit.log`. Assertions beyond an earlier
+  failure in a test remain unvalidated until the amendment is implemented.
+- Existing tests and fixtures, production source, other specs and build
+  settings remain unchanged. No commit was made; temporary diagnostics
+  stay under `.codex-runs/`.

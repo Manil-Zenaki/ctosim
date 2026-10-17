@@ -1,0 +1,24 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Nested count questions</h:title><model>
+    <instance><data id="amendment9-nested">
+      <households/>
+      <household jr:template=""><members/><member_count/>
+        <member jr:template=""><marker>kept</marker></member>
+      </household>
+    </data></instance>
+    <bind nodeset="/data/households" type="int" required="true()"/>
+    <bind nodeset="/data/household/members" type="int" required="true()"/>
+    <bind nodeset="/data/household/member_count" type="int" calculate="../members"/>
+    <bind nodeset="/data/household/member/marker" type="string" readonly="true()"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/households"><label>Households</label></input>
+    <repeat nodeset="/data/household" jr:count="/data/households">
+      <input ref="/data/household/members"><label>Members</label></input>
+      <repeat nodeset="/data/household/member" jr:count="/data/household/member_count">
+        <input ref="/data/household/member/marker"><label>Member</label></input>
+      </repeat>
+    </repeat>
+  </h:body>
+</h:html>
