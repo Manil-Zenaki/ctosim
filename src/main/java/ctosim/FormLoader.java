@@ -188,6 +188,18 @@ public final class FormLoader {
         return Collections.unmodifiableMap(result);
     }
 
+    /** Every calculate expression of an engine form, by bind nodeset (spec 07, Amendment 9). */
+    static Map<String, String> calculations(byte[] engineXml, String source) throws FormLoadException {
+        Map<String, String> result = new LinkedHashMap<>();
+        Document engineDoc = readXml(engineXml, source);
+        for (Element bind : descendants(engineDoc.getDocumentElement(), XFORMS_NS, "bind")) {
+            if (bind.hasAttribute("calculate") && bind.hasAttribute("nodeset")) {
+                result.put(bind.getAttribute("nodeset").strip(), bind.getAttribute("calculate"));
+            }
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
     /** Every function call in the form's expressions: binds, actions and body references. */
     private static FunctionReferences functionReferences(Document doc, String source) throws FormLoadException {
         FunctionReferences refs = new FunctionReferences();

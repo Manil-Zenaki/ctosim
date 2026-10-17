@@ -5,8 +5,10 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -20,6 +22,9 @@ import java.util.TimeZone;
 import org.javarosa.core.model.Constants;
 import org.javarosa.core.model.FormDef;
 import org.javarosa.core.model.FormIndex;
+import org.javarosa.core.model.GroupDef;
+import org.javarosa.core.model.IFormElement;
+import org.javarosa.core.model.QuestionDef;
 import org.javarosa.core.model.SelectChoice;
 import org.javarosa.core.model.condition.EvaluationContext;
 import org.javarosa.core.model.data.AnswerDataFactory;
@@ -64,6 +69,8 @@ public final class FormWalker {
     private final AnswerGenerator generator;
     private final List<String> configWarnings;
     private final String[] deviceIds;
+    /** Generic paths of the questions that set a repeat count (spec 07, Amendment 9). */
+    private final Set<String> countQuestions;
     /** Generic path of each field name of the form (its first occurrence), for ${name} in expressions. */
     private final Map<String, String> paths = new HashMap<>();
 
@@ -72,6 +79,7 @@ public final class FormWalker {
         this.config = Objects.requireNonNull(config, "config");
         this.generator = new AnswerGenerator(config);
         this.deviceIds = deviceIds(config);
+        this.countQuestions = countQuestions(form);
 
         Set<String> names = new HashSet<>();
         collectNames(form.newEntryController().getModel().getForm().getMainInstance().getRoot(), names);
@@ -171,6 +179,78 @@ public final class FormWalker {
         names.add(element.getName());
         for (int i = 0; i < element.getNumChildren(); i++) {
             collectNames(element.getChildAt(i), names);
+        }
+    }
+
+    /**
+     * The generic paths of the integer questions that a repeat count depends on, directly or
+     * through calculates (spec 07, Amendment 9).
+     */
+    private static Set<String> countQuestions(LoadedForm form) {
+        FormDef def = form.newEntryController().getModel().getForm();
+        Map<String, String> calculations = form.calculations();
+        Map<String, Integer> questions = new HashMap<>(); // generic path -> control type
+        Deque<TreeReference> pending = new ArrayDeque<>();
+        scanForm(def, questions, pending);
+        Set<String> seen = new HashSet<>();
+        Set<String> result = new HashSet<>();
+        while (!pending.isEmpty()) {
+            TreeReference ref = pending.pop().genericize();
+            String path = ref.toString(false);
+            if (!seen.add(path)) {
+                continue;
+            }
+            Integer control = questions.get(path);
+            if (control != null) {
+                TreeElement template = def.getMainInstance().getTemplatePath(ref);
+                int type = template == null ? Constants.DATATYPE_NULL : template.getDataType();
+                if ((control == Constants.CONTROL_INPUT || control == Constants.CONTROL_RANGE)
+                        && (type == Constants.DATATYPE_INTEGER || type == Constants.DATATYPE_LONG)) {
+                    result.add(path);
+                }
+                continue; // the expressions of a field with a control are not followed
+            }
+            String expression = calculations.get(path);
+            if (expression != null) {
+                List<TreeReference> mentioned = new ArrayList<>();
+                try {
+                    collectReferences(XPathParseTool.parseXPath(expression), mentioned, false);
+                } catch (XPathSyntaxException e) {
+                    continue; // reported by the engine when it parses the form
+                }
+                for (TreeReference mention : mentioned) {
+                    try {
+                        TreeReference absolute = mention.isAbsolute() ? mention : mention.anchor(ref);
+                        if (absolute != null && absolute.getInstanceName() == null) {
+                            pending.push(absolute);
+                        }
+                    } catch (RuntimeException e) {
+                        // a reference the engine cannot place
+                    }
+                }
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    /** Collects the questions' generic paths and the count references of counted repeats. */
+    private static void scanForm(IFormElement element, Map<String, Integer> questions, Deque<TreeReference> counts) {
+        if (element instanceof QuestionDef q && q.getBind() != null) {
+            questions.put(((TreeReference) q.getBind().getReference()).genericize().toString(false), q.getControlType());
+        }
+        if (element instanceof GroupDef g && g.getRepeat() && g.getCountReference() != null) {
+            TreeReference count = (TreeReference) g.getCountReference().getReference();
+            TreeReference repeat = g.getBind() == null ? null : (TreeReference) g.getBind().getReference();
+            try {
+                counts.push(count.isAbsolute() || repeat == null ? count : count.anchor(repeat));
+            } catch (RuntimeException e) {
+                // a count the engine cannot place
+            }
+        }
+        if (element.getChildren() != null) {
+            for (IFormElement child : element.getChildren()) {
+                scanForm(child, questions, counts);
+            }
         }
     }
 
@@ -584,7 +664,7 @@ public final class FormWalker {
         private Effective effectiveOverride(String name, String path, TreeReference ref) {
             FieldOverride override = config.field(name).orElse(null);
             if (override == null) {
-                return new Effective(null, false);
+                return new Effective(countRange(null, ref), false);
             }
             FieldOverride base = override;
             OverrideRule applied = null;
@@ -605,7 +685,16 @@ public final class FormWalker {
                 String text = XPathFuncExpr.toString(XPathFuncExpr.unpack(value));
                 return new Effective(override.fixedTo(text), text.isEmpty());
             }
-            return new Effective(override, false);
+            return new Effective(countRange(override, ref), false);
+        }
+
+        /** A count question without a configured range draws from the repeats range (Amendment 9). */
+        private FieldOverride countRange(FieldOverride override, TreeReference ref) {
+            if ((override != null && override.range().isPresent())
+                    || !countQuestions.contains(ref.genericize().toString(false))) {
+                return override;
+            }
+            return FieldOverride.withRange(override, new NumericRange(config.repeatMin(), config.repeatMax()));
         }
 
         /** XPath boolean(): a node-set is true when it is not empty. */

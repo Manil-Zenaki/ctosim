@@ -56,6 +56,15 @@ public final class FieldOverride {
                 List.of());
     }
 
+    /** This override with {@code range} as its range (spec 07, Amendment 9); a new one when null. */
+    static FieldOverride withRange(FieldOverride override, FieldRange range) {
+        if (override == null) {
+            return new FieldOverride(null, range, Map.of(), List.of(), null);
+        }
+        return new FieldOverride(override.value, range, override.weights, override.texts, override.missingRate,
+                override.distribution, override.expression, override.area, override.rules);
+    }
+
     /** This override without its rules. */
     FieldOverride withoutRules() {
         return new FieldOverride(value, range, weights, texts, missingRate, distribution, expression, area, List.of());

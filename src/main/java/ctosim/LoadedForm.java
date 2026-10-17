@@ -35,6 +35,15 @@ public final class LoadedForm {
         this.durationCalculations = durationCalculations;
     }
 
+    /** Every calculate expression, by bind nodeset (engine form). */
+    Map<String, String> calculations() {
+        try {
+            return FormLoader.calculations(xml, sourceName);
+        } catch (FormLoadException e) {
+            throw new IllegalStateException(e); // the form was read once already
+        }
+    }
+
     /** The calculate expressions that call duration(), by bind nodeset (engine form). */
     Map<String, String> durationCalculations() {
         return durationCalculations;
