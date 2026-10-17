@@ -325,3 +325,20 @@ characters (17); candidates are tried after rejected proposals even when
 those came from a fixed value of the configuration, so that a question
 whose fixed value breaks its constraint still gets a valid answer when
 the constraint names one (20).
+
+## Amendment 3: readable answers drawn from a pattern
+
+A pattern often only excludes characters: `regex(., '([^a-z]+)')` asks
+for an answer without lower-case letters. Drawn at random among all the
+strings it matches, the answer is a run of symbols (`74Y*`=(49$6Y-...`)
+that no enumerator would type; and a text holding `${` breaks the
+engine when a label displays it (the engine reads `${` as the start of a
+label argument). Everything not mentioned here is unchanged.
+
+An answer drawn from a pattern (rule 1 of "Text") holds, at each
+position, a letter, a digit or a space whenever one of these keeps the
+whole answer matching the pattern: a character of any other kind (a
+symbol or punctuation) appears only at a position where no letter,
+digit or space would keep the answer matching. The answer still matches
+the pattern in full, and the choice among the letters, digits and space
+that fit is random.
