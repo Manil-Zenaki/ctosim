@@ -98,13 +98,10 @@ final class EngineExpressions {
     /** The form with its expressions rewritten, or {@code original} when nothing changes. */
     static byte[] rewrite(Document doc, byte[] original) throws TransformerException {
         int[] indexCounter = {0};
-        boolean changed = rewriteAttributes(doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "bind"),
-                BIND_EXPRESSIONS, "nodeset", indexCounter);
-        changed |= rewriteAttributes(doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "setvalue"),
-                new String[] {"value"}, "ref", indexCounter);
-        NodeList binds = doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, "bind");
-        for (int i = 0; i < binds.getLength(); i++) {
-            Element bind = (Element) binds.item(i);
+        List<Element> binds = elements(doc, "bind");
+        boolean changed = rewriteAttributes(binds, BIND_EXPRESSIONS, "nodeset", indexCounter);
+        changed |= rewriteAttributes(elements(doc, "setvalue"), new String[] {"value"}, "ref", indexCounter);
+        for (Element bind : binds) {
             if (bind.hasAttributeNS(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE)) {
                 String before = bind.getAttributeNS(FormLoader.CTOSIM_NS, FormLoader.CALCULATE_HERE);
                 String after = store(bind, rewriteExpression(before, indexCounter, contextPath(bind, "nodeset")));
@@ -143,11 +140,23 @@ final class EngineExpressions {
         return out.toString();
     }
 
-    private static boolean rewriteAttributes(NodeList elements, String[] attributes, String contextAttribute,
+    /**
+     * The XForms elements of that name, copied once: the live list getElementsByTagNameNS returns
+     * rescans the document after every change, which made large forms load in quadratic time.
+     */
+    private static List<Element> elements(Document doc, String localName) {
+        NodeList live = doc.getElementsByTagNameNS(FormLoader.XFORMS_NS, localName);
+        List<Element> copy = new ArrayList<>(live.getLength());
+        for (int i = 0; i < live.getLength(); i++) {
+            copy.add((Element) live.item(i));
+        }
+        return copy;
+    }
+
+    private static boolean rewriteAttributes(List<Element> elements, String[] attributes, String contextAttribute,
                                              int[] indexCounter) {
         boolean changed = false;
-        for (int i = 0; i < elements.getLength(); i++) {
-            Element e = (Element) elements.item(i);
+        for (Element e : elements) {
             String context = contextPath(e, contextAttribute);
             for (String attribute : attributes) {
                 if (e.hasAttribute(attribute)) {
