@@ -203,7 +203,9 @@ def _write_sheet(ws, sheet: Sheet) -> list[int]:
     empty and left-out rows are not written. Returns the user's row number of each written row
     (index = row number in the written sheet; 0 for unused positions).
     """
-    _append(ws, sheet.headers)
+    # pyxform reads 'label:French' as a translation only when no header uses '::' (as the
+    # bind:: columns this converter adds do), so translated and media columns are written with '::'.
+    _append(ws, [h if "::" in h or ":" not in h else h.replace(":", "::", 1) for h in sheet.headers])
     user_rows = [0, 1]
     for k, row in enumerate(sheet.rows):
         if is_empty(row):
