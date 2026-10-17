@@ -388,3 +388,72 @@ public stub bodies were read while updating the tests.
   prose remains flexible, and underlying pyxform exceptions retain their cause.
 - **Tests:** `test_errors_after_long_runs_report_the_original_survey_row`,
   `test_unclosed_group_before_a_long_empty_tail_is_still_an_error`.
+
+## 30. Amendment 5: labels on calculate_here itself versus other rows
+
+- **Question:** Does preserving translated columns change Amendment 2's rule
+  discarding the source label and hint of a calculate_here row? Which language
+  receives its generated field-name label when every source label is suffixed?
+- **Assumption:** Amendment 5 guarantees that other rows retain their explicit
+  translated labels, hints, and messages regardless of custom bind features.
+  New fixtures leave calculate_here source labels and hints empty; they do not
+  prescribe its generated label's language placement or a new precedence rule.
+  The earlier open part of point 18 remains unasserted. Both nonempty and empty
+  calculate_here rows must coexist with translated-only ordinary rows.
+- **Tests:** `test_first_note_and_later_question_keep_all_translated_labels`,
+  `test_one_translated_language_is_sufficient_with_custom_binds`,
+  `test_translated_hints_and_message_aliases_keep_their_field_links`, and
+  `test_custom_attributes_on_the_same_row_do_not_erase_other_rows_translations`
+  in `converter/tests/test_converter_translations_with_ctosim.py`.
+
+## 31. Amendment 5: default translation and missing language cells
+
+- **Question:** With only suffixed label columns, must an otherwise empty default
+  translation exist, and how are absent translated cells filled?
+- **Assumption:** Each supplied value must be reachable through its own field's
+  itext reference in the specified language. Tests of translated-only forms do
+  not constrain an empty default translation or missing-cell fallback. Tests
+  explicitly supplying unsuffixed labels, hints, and messages still require the
+  specified default translation and its `default="true()"` marker, for absent,
+  empty, and named default_language settings. Translation order and generated
+  itext ID spelling are not prescribed. Language case and Unicode spelling are
+  preserved; a language named `ctosim` is not the XML namespace prefix.
+- **Tests:** `test_first_note_and_later_question_keep_all_translated_labels`,
+  `test_unsuffixed_default_and_languages_found_only_in_hints_or_messages_survive`,
+  `test_language_case_and_unicode_names_are_not_confused_with_bind_namespaces`,
+  and `test_nested_translations_and_all_custom_binds_keep_their_own_paths`.
+
+## 32. Amendment 5: media representation and language fallback
+
+- **Question:** What XML representation and URI scheme does "kept" require for
+  media:image, media:audio, and media:video? Must an unsuffixed media value be
+  replicated into every language, and are language-suffixed media columns covered?
+- **Assumption:** Following the specified delegation to pyxform, media is an
+  itext value with form=image/audio/video attached to the owning field's label
+  reference. Tests accept the supplied filename or a URI ending in that filename
+  and find it across translations, without prescribing the URI scheme or language
+  fallback. The three media keys must not create languages named image/audio/video.
+  Tests use only the explicitly named unsuffixed media headers. They do not require
+  media files to exist locally, test payload playback, or invent an additional
+  colon syntax for translated media. Two distinct fields and filenames catch
+  dropped or incorrectly associated media values.
+- **Tests:** `test_media_columns_stay_attached_to_their_translated_labels`.
+
+## 33. Amendment 5: scope of unchanged bind, error, and output behavior
+
+- **Question:** Does coexistence with translations alter minimum-time validation,
+  disabled-block removal, catalog paths, warnings, or deterministic conversion?
+- **Assumption:** Amendment 5 changes none of those rules. Tests check each custom
+  feature separately and all features together, including multiple attributes
+  on one row, nested groups/repeats, zero and fractional minima, and an enabled
+  invalid minimum after a translated-only note. Disabled blocks use valid minima
+  and balanced boundaries, leaving the earlier precedence ambiguities untouched.
+  No media-language fallback, performance limit, or new warning is inferred.
+  Workbook fixtures use the existing factory in pytest temporary directories;
+  existing test files are unchanged and production code was not inspected.
+- **Tests:** `test_disabled_custom_rows_do_not_break_surviving_translations`,
+  `test_nested_translations_and_all_custom_binds_keep_their_own_paths`,
+  `test_translated_question_keeps_its_own_minimum_and_its_labels`,
+  `test_custom_attributes_on_the_same_row_do_not_erase_other_rows_translations`,
+  `test_invalid_minimum_in_translated_form_reports_the_timing_row`, and
+  `test_combined_translations_are_deterministic_and_do_not_modify_the_workbook`.
