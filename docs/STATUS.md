@@ -20,7 +20,7 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 
-Suite: 7259 Java tests, 616 Python tests and 47 Stata tests, all green (2026-10-17).
+Suite: 7337 Java tests, 703 Python tests and 47 Stata tests, all green (2026-10-17).
 
 ## Next step
 
@@ -80,7 +80,13 @@ of the command line, in red in Stata, with its XLSForm row, its
 constraint as written, the submissions and the values it referred to;
 `r(unsatisfied)` counts them. In Stata, report lines are now shown through
 a small Mata printer: `display` expanded `${name}` in them, even through
-`macval()` inside the report loop. Next possible step (owner, later):
+`macval()` inside the report loop. Then the six CIV Land forms (also private): all simulate and their
+SurveyCTO import do-files run, after spec 02 Amendment 6 (`or_other`
+gives the choice `other` and a field `<name>_other`, as SurveyCTO does;
+library messages no longer leak into the warnings) and spec 07
+Amendment 9 (an integer that sets a repeat count is drawn from the
+`repeats` range, so nested repeats stay small). Still slow on very
+large forms (about 6 s per submission for a 3 400-row form). Next possible step (owner, later):
 simulating several form versions in one data set, as SurveyCTO exports
 data collected while the form changed.
 
