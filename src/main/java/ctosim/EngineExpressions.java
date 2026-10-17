@@ -329,7 +329,10 @@ final class EngineExpressions {
                             if (k > 0) {
                                 out.append(',');
                             }
-                            out.append(k == 0 && !arg.isBlank() ? "string(" + arg + ")" : arg);
+                            // the list, and the value tested by selected() unless it is a literal,
+                            // are used as strings
+                            boolean asString = k == 0 || (k == 1 && name.equals("selected") && !isLiteral(arg));
+                            out.append(asString && !arg.isBlank() ? "string(" + arg + ")" : arg);
                         }
                         out.append(')');
                         i = close + 1;
@@ -365,6 +368,13 @@ final class EngineExpressions {
         }
         int next = skipSpaces(expr, end);
         return next < expr.length() && expr.charAt(next) == '(' ? name : null;
+    }
+
+    /** Whether an argument is a single string literal ('a' or "a"). */
+    private static boolean isLiteral(String arg) {
+        String a = arg.strip();
+        return a.length() >= 2 && (a.charAt(0) == '\'' || a.charAt(0) == '"')
+                && a.indexOf(a.charAt(0), 1) == a.length() - 1;
     }
 
     /**
