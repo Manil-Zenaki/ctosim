@@ -595,3 +595,60 @@ constraint (45); string literals are those of the parsed constraint
 (46); a search outcome is only what the finite levels of spec 05
 Amendment 2 contain (49). Codex stopped on its usage limit before
 writing questions for Amendment 7; its tests were reviewed and kept.
+
+## Amendment 8: unsatisfied constraints are recorded
+
+A question left blank because no answer met its constraint usually
+points to a problem in the form: a constraint that cannot hold given
+the answers it refers to (for example `. >= ${age} and . <= 60` after
+an age of 90 was accepted). Today the only trace is a warning among
+many others. The walker now also records each such case in a
+structured form, so that the run can report it clearly (spec 10,
+Amendment 1). Everything not mentioned here is unchanged; in
+particular the warnings of rule 6 and Amendment 5 stay as they are.
+
+### API addition
+
+```java
+public record UnsatisfiedConstraint(
+        int submission,                       // the submission number
+        String field,                         // the question's name
+        String path,                          // the question's path, with repeat indices, as in its warning
+        String constraint,                    // the constraint, as described below
+        boolean atEndOfForm,                  // true when cleared by the end-of-form check (Amendment 5)
+        java.util.Map<String, String> references) { }
+
+public final class Submission {
+    public java.util.List<UnsatisfiedConstraint> unsatisfiedConstraints();
+}
+```
+
+### What is recorded
+
+`Submission.unsatisfiedConstraints()` holds one record each time the
+walker leaves a question blank with the warning of rule 6 ("its
+constraint could not be satisfied") or clears it with the warning of
+Amendment 5 ("its constraint does not hold at the end of the form"),
+in the order those warnings occur. It is unmodifiable and may be
+empty. A submission built with `Submission.of` (spec 08) has none.
+Questions left blank for any other reason (the blank rule, a value that
+cannot be converted, an empty choice list) are not recorded.
+
+- `constraint` is the question's constraint as written in the XForm,
+  except that every absolute reference to a field of the primary
+  instance is written `${name}`, `name` being that field's name, and the
+  space that the XLSForm converter puts on each side of such a
+  reference (when it is there) is removed. For a form converted from an XLSForm, this gives back the
+  constraint as written in the XLSForm in usual cases: the XForm
+  constraint `(.>=  /data/age ) and .<= 60` is given as
+  `(.>= ${age}) and .<= 60`.
+- `references` maps the name of each field of the primary instance that
+  the constraint refers to, other than the question itself, to that
+  field's value at the moment the question was left blank or cleared:
+  the value's text as stored in the instance, the empty string when the
+  field has no value, and the texts of all the nodes, separated by one
+  space, when the reference designates several nodes. A reference inside
+  the question's own repeat designates the node of the same repeat
+  instance. Keys follow the order of their first appearance in the
+  constraint; the map is unmodifiable and iterates in that order. It is
+  empty when the constraint refers to no other field.

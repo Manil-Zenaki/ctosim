@@ -158,3 +158,55 @@ through `--python` and `PYTHONPATH` (10); the CLI is checked against the
 public pipeline it composes (11). In addition, `main` writes `out` and
 `err` in UTF-8, so that file names with accents reach a calling program
 intact.
+
+## Amendment 1: unsatisfied constraints in the report and on `out`
+
+A question that no answer could satisfy is almost always a mistake in
+the form, and the user must see it without reading every warning. The
+run now reports these questions in a section of their own, built from
+`Submission.unsatisfiedConstraints()` (spec 07, Amendment 8). Everything
+not mentioned here is unchanged; the warnings still list every case.
+
+### In the run report
+
+When at least one submission has an unsatisfied constraint, the report
+holds a section placed after the `Enumerators:` line and before
+`Files:`:
+
+```
+Unsatisfied constraints: <F>
+  <field>, row <row>: <constraint>
+    submissions (<k> of <N>): <s1>, <s2>, ...
+    in submission <s1>: <name> = <value>; <name> = <value>
+  ...
+```
+
+- The records of all submissions are grouped by question: two records
+  concern the same question when their paths are equal once repeat
+  indices are removed. `<F>` is the number of questions. The questions
+  are listed in the order of their first record (by submission number,
+  then in the order of that submission's records).
+- `<field>` is the question's name. `, row <row>` gives the question's
+  row in the XLSForm, from the field catalog entry whose `xpath` is the
+  question's path without repeat indices; it is left out when the
+  catalog has no such entry. `<constraint>` is the record's
+  `constraint`, from the question's first record.
+- `<k>` is the number of distinct submissions with a record for the
+  question and `<N>` the number of submissions of the run. The
+  submission numbers follow in increasing order, separated by `, `;
+  after the twentieth, the list ends with `, ...`.
+- The `in submission` line gives the `references` of the question's
+  first record, in their order, as `<name> = <value>` separated by `; `,
+  a value being written `(blank)` when it is the empty string. The line
+  is left out when that record has no references.
+- In every line of the section, each line break is replaced by a space.
+
+When no submission has an unsatisfied constraint, the report has no
+such section and is as before.
+
+### On `out`
+
+When the section is present, the run prints a third line on `out`,
+after the two of "What a run does": it gives `<F>`, says that their
+constraints could not be satisfied, names the questions in the order of
+the section, separated by `, `, and names `run-report.txt`.

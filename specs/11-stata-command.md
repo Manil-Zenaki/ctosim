@@ -241,3 +241,22 @@ on what it does, and says that generated answers always satisfy their
 question's constraint when it can be satisfied, and that text questions
 named like `resp_name`, `phone_number`, `email` or `other_specify` get
 plausible answers without any setting.
+
+## Amendment 4: unsatisfied constraints
+
+The run report may now hold a section `Unsatisfied constraints:` (spec
+10, Amendment 1): questions that no answer could satisfy, usually a
+mistake in the form. The command makes it stand out. Everything not
+mentioned here is unchanged.
+
+- Before the warnings of step 3, when the report holds that section,
+  the command shows each line of it (its first line included), one per
+  line, in red (`display as error`), without stopping: the command goes
+  on and loads the data as before.
+- Step 5 also returns `r(unsatisfied)`: the number on the section's
+  first line, or 0 when the report has no such section.
+- The help file documents `r(unsatisfied)` among the stored results and
+  says what the section means: those questions were left blank because
+  no answer met their constraint, which usually means a constraint that
+  cannot hold given the answers it refers to, and the form should be
+  checked.

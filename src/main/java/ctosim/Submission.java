@@ -80,4 +80,9 @@ public final class Submission {
     public List<String> warnings() {
         return warnings;
     }
+
+    /** The questions left blank because no answer met their constraint. See specs/07-form-walker.md, Amendment 8. */
+    public List<UnsatisfiedConstraint> unsatisfiedConstraints() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
 }
