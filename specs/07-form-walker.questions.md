@@ -1294,3 +1294,34 @@ configuration, generator and constraint-hint contracts.
 - Existing tests and fixtures, production source, other specs and build
   settings remain unchanged. No commit was made; temporary diagnostics
   stay under `.codex-runs/`.
+
+### Dispute 6: decimal serialization and select-valued repeat counts
+
+65. **Question:** Must a decimal's serialized value preserve the generator's
+    exact text, and must a `jr:count` referring directly to an integer-backed
+    select create as many instances as the selected value's numeric text?
+    **Assumption:** Spec 07 delegates decimal conversion and serialization
+    to the engine, so compare the stored decimal numerically. Its
+    controls-first mapping makes the select `SELECT_ONE`, outside Amendment
+    9's count-question range injection. No numeric coercion of that select
+    into repeat cardinality is specified; assert its offered choice and
+    weights without requiring either zero or a positive repeat count.
+    **Tests:** `decimalCountDependencyKeepsItsDecimalRange` and
+    `integerSelectCountStillUsesOfferedChoicesAndWeights` in
+    `FormWalkerAmendment9DependencyTest`. The decimal test retains its
+    repeat-cardinality check; the select test covers both weight directions.
+
+### Dispute 6 build and validation
+
+- **Question:** Can the prescribed `mvnw.cmd -o -q test` compile and run?
+- **Observation:** The command fails in the production `compile` phase on
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, before test
+  compilation. No build settings or dependencies were changed.
+- **Independent verification:** The existing offline compilation probe
+  compiled all 47 FormWalker test/support sources against the available
+  project class files. The existing Amendment 9 JUnit probe ran 78 cases:
+  all passed, with none skipped or aborted and no container failures.
+  This does not establish a successful Maven build or a fresh production
+  compilation. Logs are `.codex-runs/walker-dispute6-maven-test.log`,
+  `.codex-runs/walker-dispute6-compile.log`, and
+  `.codex-runs/walker-dispute6-junit.log`.

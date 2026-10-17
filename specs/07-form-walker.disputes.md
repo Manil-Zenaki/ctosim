@@ -427,3 +427,58 @@ running them on the code before it):
    something Amendment 9 promises; the test should check the answer and
    its choice weights, which is what it is about, and not the number of
    repeat instances.
+
+## Adjudication of Dispute 6
+
+### Point 1: accepted; compare the decimal answer numerically
+
+Amendment 9 applies only to `INTEGER` questions. This decimal question
+therefore keeps the singleton `decimalRange` of 7 under spec 05's number
+rules. Spec 05's formatting requirement describes the generator's answer
+text; spec 07's "Converting answers" then uses the engine's own conversion
+for decimals, and "End of the interview" uses the engine's submission
+serialiser. Neither requires the stored decimal to preserve the generator's
+exact spelling. Requiring `"7"` rather than the numerically equal `"7.0"`
+is an unsupported serialization expectation.
+
+Changed `decimalCountDependencyKeepsItsDecimalRange` to compare the stored
+value with 7 using `BigDecimal.compareTo`, so differing scales are accepted
+without a floating-point tolerance. Retained the seven-repeat assertion
+and the no-warning assertion. The shared integer helper `assertCount9`
+and the separate text/appearance test remain unchanged.
+
+### Point 2: accepted; check select choices and weights without cardinality
+
+Spec 07's controls-first mapping explicitly makes an integer select a
+`SELECT_ONE`; it is not an `INTEGER` count question under Amendment 9.
+The offered choices and spec 05's choice weights therefore still govern
+its answer. The original repeat rule delegates counted-repeat creation to
+the engine; Amendment 3 specifies the zero-count case but does not define
+how the engine interprets a select answer as a numeric count. Neither rule
+requires seven repeat instances from this fixture's selected value.
+The reported before/after implementation results are not the basis for
+this decision; the missing specification for that conversion is.
+
+Replaced `assertCount9` in
+`integerSelectCountStillUsesOfferedChoicesAndWeights` with assertions for
+the selected value and no warnings, without prescribing any repeat count
+(including zero). Parameterized the test over 7 and 8, assigning the
+expected choice weight 1 and the other weight 0 in each case. This retains
+the offered-choice check and also detects always choosing the first item
+or ignoring the weights. The repeat declaration and repeat range 2..2
+remain in the fixture. Questions-file point 65 records the unspecified
+select-to-count conversion and decimal spelling.
+
+Validation: `mvnw.cmd -o -q test` failed in the production `compile` phase
+on the cached `commons-io-2.5.jar`, before test compilation or execution.
+The existing offline compiler probe successfully compiled all 47
+FormWalker test/support sources against the available project class files.
+The existing Amendment 9 JUnit probe then ran all three Amendment 9 test
+classes: 78 tests passed, with none failed, skipped or aborted and no
+container failures. This verifies independent compilation and those tests
+against available compiled classes, not a successful Maven build. Logs:
+`.codex-runs/walker-dispute6-maven-test.log`,
+`.codex-runs/walker-dispute6-compile.log`, and
+`.codex-runs/walker-dispute6-junit.log`.
+
+No production source was read or modified, and no commit was made.

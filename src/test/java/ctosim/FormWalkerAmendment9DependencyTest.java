@@ -1,5 +1,7 @@
 package ctosim;
 
+import java.math.BigDecimal;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -191,7 +193,10 @@ class FormWalkerAmendment9DependencyTest {
     @Test void decimalCountDependencyKeepsItsDecimalRange() throws Exception {
         Submission result = run9(direct9("decimal", "", "required=\"true()\"", input("answer")), 2, 2,
                 "\"decimalRange\":{\"min\":7,\"max\":7}");
-        assertCount9(result, 7);
+        assertEquals(0, new BigDecimal(value(result, "answer")).compareTo(BigDecimal.valueOf(7)),
+                "The decimal answer must retain its configured numeric value regardless of serialization scale");
+        assertEquals(7, count(result, "row"), "The generated count must control actual instances");
+        assertTrue(result.warnings().isEmpty(), result.warnings().toString());
     }
 
     @Test void textNumbersDecimalCountDependencyKeepsItsAppearanceRange() throws Exception {
@@ -201,12 +206,16 @@ class FormWalkerAmendment9DependencyTest {
         assertCount9(result, 7);
     }
 
-    @Test void integerSelectCountStillUsesOfferedChoicesAndWeights() throws Exception {
+    @ParameterizedTest @ValueSource(ints = {7, 8})
+    void integerSelectCountStillUsesOfferedChoicesAndWeights(int selected) throws Exception {
         LoadedForm form = direct9("int", "", "required=\"true()\"",
                 "<select1 ref=\"/data/answer\"><label>Count</label>"
                         + "<item><label>Seven</label><value>7</value></item>"
                         + "<item><label>Eight</label><value>8</value></item></select1>");
-        assertCount9(run9(form, 2, 2, field9("\"weights\":{\"7\":1,\"8\":0}")), 7);
+        String weights = "\"weights\":{\"7\":%d,\"8\":%d}".formatted(selected == 7 ? 1 : 0, selected == 8 ? 1 : 0);
+        Submission result = run9(form, 2, 2, field9(weights));
+        assertEquals(Integer.toString(selected), value(result, "answer"));
+        assertTrue(result.warnings().isEmpty(), result.warnings().toString());
     }
 
     @Test void formWithoutCountedRepeatsLeavesOrdinaryIntegersAlone() throws Exception {
