@@ -914,7 +914,8 @@ public final class FormWalker {
                 }
                 references.put(absolute.getNameLast(), String.join(" ", values));
             }
-            String text = conditional.xpath == null ? "" : conditional.xpath;
+            String text = form.constraints().getOrDefault(ref.genericize().toString(false),
+                    conditional.xpath == null ? "" : conditional.xpath);
             unsatisfied.add(new UnsatisfiedConstraint(number, name, path,
                     readable(text, def.getMainInstance().getRoot().getName()), atEndOfForm,
                     Collections.unmodifiableMap(references)));

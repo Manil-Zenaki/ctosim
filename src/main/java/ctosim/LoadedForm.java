@@ -1,10 +1,18 @@
 package ctosim;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
 import org.javarosa.core.model.FormDef;
+import org.javarosa.core.model.CoreModelModule;
 import org.javarosa.core.model.instance.InstanceInitializationFactory;
+import org.javarosa.core.services.PrototypeManager;
+import org.javarosa.core.util.externalizable.DeserializationException;
 import org.javarosa.form.api.FormEntryController;
 import org.javarosa.form.api.FormEntryModel;
 
@@ -35,10 +43,31 @@ public final class LoadedForm {
         this.durationCalculations = durationCalculations;
     }
 
-    /** Every calculate expression, by bind nodeset (engine form). */
-    Map<String, String> calculations() {
+    private Map<String, String> calculations;
+    private Map<String, String> constraints;
+
+    /** Every calculate expression, by bind nodeset (engine form; spec 07, Amendment 9). */
+    synchronized Map<String, String> calculations() {
+        if (calculations == null) {
+            calculations = bindExpressions("calculate");
+        }
+        return calculations;
+    }
+
+    /**
+     * Every constraint as written in the engine form, by bind nodeset (spec 07, Amendment 8): a
+     * definition read back from its serialised copy no longer holds the constraints' text.
+     */
+    synchronized Map<String, String> constraints() {
+        if (constraints == null) {
+            constraints = bindExpressions("constraint");
+        }
+        return constraints;
+    }
+
+    private Map<String, String> bindExpressions(String attribute) {
         try {
-            return FormLoader.calculations(xml, sourceName);
+            return FormLoader.bindExpressions(xml, sourceName, attribute);
         } catch (FormLoadException e) {
             throw new IllegalStateException(e); // the form was read once already
         }
@@ -125,12 +154,69 @@ public final class LoadedForm {
         }
     }
 
+    /** The engine's definition, parsed once and kept serialised; empty when it cannot be serialised. */
+    private byte[] definition;
+
+    /**
+     * A fresh definition of the form. Parsing a large form takes most of a submission's time, so
+     * the first parse is serialised and later sessions read their own copy from it, as ODK Collect
+     * does with its form cache.
+     */
     private FormDef parse() {
+        byte[] bytes;
+        synchronized (this) {
+            if (definition == null) {
+                FormDef def = parseXml();
+                definition = serialise(def);
+                return def;
+            }
+            bytes = definition;
+        }
+        if (bytes.length == 0) {
+            return parseXml();
+        }
+        try {
+            FormDef def = new FormDef();
+            def.readExternal(new DataInputStream(new ByteArrayInputStream(bytes)), PrototypeManager.getDefault());
+            SurveyCtoFunctions.register(def, attachments);
+            return def;
+        } catch (IOException | DeserializationException e) {
+            throw new IllegalStateException(sourceName + ": the form definition could not be read back", e);
+        }
+    }
+
+    private FormDef parseXml() {
         try {
             return FormLoader.parseWithEngine(xml, sourceName, attachments);
         } catch (FormLoadException e) {
             // The same bytes parsed successfully when the form was loaded.
             throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
+    private static boolean prototypesRegistered;
+
+    /** The definition serialised, or an empty array when the engine cannot serialise it. */
+    private static byte[] serialise(FormDef def) {
+        synchronized (LoadedForm.class) {
+            if (!prototypesRegistered) {
+                // the classes JavaRosa's JavaRosaCoreModule, CoreModelModule and XFormsModule register
+                PrototypeManager.registerPrototypes(new String[] {
+                    "org.javarosa.core.services.locale.ResourceFileDataSource",
+                    "org.javarosa.core.services.locale.TableLocaleSource"});
+                PrototypeManager.registerPrototypes(CoreModelModule.classNames);
+                PrototypeManager.registerPrototypes(new String[] {
+                    "org.javarosa.model.xform.XPathReference", "org.javarosa.xpath.XPathConditional"});
+                PrototypeManager.registerPrototypes(org.javarosa.xpath.XPathParseTool.xpathClasses);
+                prototypesRegistered = true;
+            }
+        }
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            def.writeExternal(new DataOutputStream(out));
+            return out.toByteArray();
+        } catch (IOException | RuntimeException e) {
+            return new byte[0];
         }
     }
 

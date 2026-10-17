@@ -188,13 +188,14 @@ public final class FormLoader {
         return Collections.unmodifiableMap(result);
     }
 
-    /** Every calculate expression of an engine form, by bind nodeset (spec 07, Amendment 9). */
-    static Map<String, String> calculations(byte[] engineXml, String source) throws FormLoadException {
+    /** One expression attribute of every bind of an engine form that has it, by bind nodeset. */
+    static Map<String, String> bindExpressions(byte[] engineXml, String source, String attribute)
+            throws FormLoadException {
         Map<String, String> result = new LinkedHashMap<>();
         Document engineDoc = readXml(engineXml, source);
         for (Element bind : descendants(engineDoc.getDocumentElement(), XFORMS_NS, "bind")) {
-            if (bind.hasAttribute("calculate") && bind.hasAttribute("nodeset")) {
-                result.put(bind.getAttribute("nodeset").strip(), bind.getAttribute("calculate"));
+            if (bind.hasAttribute(attribute) && bind.hasAttribute("nodeset")) {
+                result.put(bind.getAttribute("nodeset").strip(), bind.getAttribute(attribute));
             }
         }
         return Collections.unmodifiableMap(result);
