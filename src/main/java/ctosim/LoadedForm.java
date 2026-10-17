@@ -46,6 +46,11 @@ public final class LoadedForm {
     private Map<String, String> calculations;
     private Map<String, String> constraints;
 
+    /** The engine form's XML (spec 12 reads what the form reads from its attached files). */
+    byte[] engineXml() {
+        return xml.clone();
+    }
+
     /** Every calculate expression, by bind nodeset (engine form; spec 07, Amendment 9). */
     synchronized Map<String, String> calculations() {
         if (calculations == null) {

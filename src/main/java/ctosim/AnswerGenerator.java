@@ -621,7 +621,7 @@ public final class AnswerGenerator {
         return java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replaceAll("[^A-Za-z]", "");
     }
 
-    private static final Map<String, List<String>> BUILT_IN_POOLS = Map.of(
+    static final Map<String, List<String>> BUILT_IN_POOLS = Map.of(
             "firstName", List.of("Aisha", "Abebe", "Amina", "Kwame", "Fatou", "Moussa", "Chipo", "Tendai", "Wanjiru", "Kofi",
                     "Mariam", "Ibrahim", "Nadia", "Youssef", "Leila", "Omar", "Priya", "Ravi", "Anjali", "Arjun",
                     "Mei", "Wei", "Nguyen", "Linh", "Siti", "Budi", "Maria", "José", "Ana", "Carlos",
