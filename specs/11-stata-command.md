@@ -286,3 +286,10 @@ fictitious ones. Everything not mentioned here is unchanged.
   available, and that the files are written under `attachments/` in the
   output directory, where they can be read or edited and reused with
   `media()`.
+
+Clarification (Amendment 5): assumptions E1–E5 of the questions file are
+reviewed one by one and confirmed. In particular, `r(fakepreload)` holds
+the names exactly as the report lists them, separated by single spaces,
+and is empty without the line (E1); the line is shown in the text style,
+before the warning count (E2); the option changes nothing else in the
+command's checks, loading or failures (E3).

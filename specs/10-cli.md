@@ -240,7 +240,10 @@ With the option, after loading the form (step 4 of "What a run does"):
    media directory.
 3. Each question of `keyAnswers()` that the configuration does not name
    in `fields` is answered as if the configuration gave it
-   `{"texts": <its keys>}`.
+   `{"texts": <its keys>}`; when its keys are row numbers (`1` to `N`,
+   a key looked up with an `int` field, spec 12), as if it gave it
+   `{"min": 1, "max": N}` instead, since `texts` does not apply to an
+   integer question (spec 05).
 
 The run report then has, after the `Enumerators:` line (and before the
 section of spec 10 Amendment 1, when there is one), the line
@@ -250,3 +253,12 @@ section of spec 10 Amendment 1, when there is one), the line
 `attached file <name>.csv not found` is not given for those files, and
 `out` receives one more line, after the others, naming them and saying
 that their content is invented.
+
+Clarification (Amendment 2): assumptions 18–24 of the questions file are
+reviewed one by one. 18, 19, 20, 22, 23 and 24 are confirmed; in
+particular any entry naming a question in `fields` prevents its key
+answers (22), and a write or copy failure is an output problem, status 1
+(24). Assumption 21 raised a real gap: `texts` has no effect on an
+integer question, so integer keys would never match their rows. Step 3
+now gives such a question the range `1` to `N` of its keys; the test that
+checked the `texts` semantics for integer keys is disputed accordingly.

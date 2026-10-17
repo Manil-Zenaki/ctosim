@@ -141,3 +141,22 @@ keys of the first file in natural order.
 
 The module never throws because of the form's content: a call it cannot
 read adds nothing.
+
+## Clarification
+
+Assumptions 1–15 of the questions file are reviewed one by one and
+confirmed. In particular, key lists follow the rows' order (1); within a
+call or a select, columns follow the order of the arguments, value then
+key, value then label (2); the last line ends with LF (3); a relative
+reference is a single reference, a function around it is not (6); only
+`TEXT` and `INTEGER` questions get key answers, not selects (8); an
+unmapped match or filter column goes straight to rule 6 (10); `of()`
+writes nothing (15).
+
+The tests also read files used only by `search()` as fictitious files,
+which is what this spec means: `missingAttachments()` (spec 03) lists
+only the sources of `pulldata()` calls, so the files of `files()` are
+those the form reads with `pulldata()` or `search()` (as described
+above) whose `<name>.csv` the media directory does not hold, whether or
+not `missingAttachments()` lists them. A `search()` call that spec 07
+cannot read (another number of arguments, an unknown type) reads nothing.
