@@ -189,8 +189,7 @@ program define ctosim, rclass
         }
         else if substr(`"`macval(line)'"', 1, 2) == "  " {
             if "`section'" == "files" & `"`wide'"' == "" local wide = substr(`"`macval(line)'"', 3, .)
-            * Mata shows the line as it is, where display would expand the macro references in it
-            if "`section'" == "warnings" mata: displayas("txt"); display(st_local("line"), 1)
+            if "`section'" == "warnings" mata: _ctosim_line("txt", st_local("line"))
         }
         file read `fh' line
     }
@@ -241,9 +240,22 @@ program define _ctosim_show
     file open `fh' using `"`file'"', read text
     file read `fh' line
     while r(eof) == 0 {
-        if "`style'" == "error" display as error `"`macval(line)'"'
-        else display as text `"`macval(line)'"'
+        if "`style'" == "error" mata: _ctosim_line("err", st_local("line"))
+        else mata: _ctosim_line("txt", st_local("line"))
         file read `fh' line
     }
     file close `fh'
+end
+
+* Shows one line exactly as written, in the given style (txt, err): display would expand the
+* macro references in it, even through macval() inside a loop, and read its braces as SMCL.
+version 16
+mata:
+void _ctosim_line(string scalar style, string scalar text)
+{
+    text = subinstr(text, "{", char(1))
+    text = subinstr(text, "}", "{c )-}")
+    text = subinstr(text, char(1), "{c -(}")
+    printf("{" + style + "}%s\n", text)
+}
 end
