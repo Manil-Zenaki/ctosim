@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -271,15 +272,78 @@ public final class Cli {
             files.add("form.fields.json");
         }
         files.add(REPORT);
-        String report = report(o, form, config, files, warnings);
+        Map<String, List<UnsatisfiedConstraint>> byQuestion = unsatisfiedByQuestion(submissions);
+        List<String> unsatisfied = unsatisfiedSection(byQuestion, catalog, config.submissions());
+        String report = report(o, form, config, files, warnings, unsatisfied);
         try {
             Files.writeString(o.output().resolve(REPORT), report, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RunException(o.output().resolve(REPORT) + ": the run report cannot be written (" + e + ")");
         }
-        return new String[] {
+        String[] lines = {
             "Simulated " + config.submissions() + " submissions of " + form.formId() + " into " + o.output(),
             warnings.size() + " warnings; see " + REPORT};
+        if (unsatisfied.isEmpty()) {
+            return lines;
+        }
+        List<String> fields = new ArrayList<>();
+        for (List<UnsatisfiedConstraint> records : byQuestion.values()) {
+            fields.add(records.get(0).field());
+        }
+        return new String[] {lines[0], lines[1],
+            fields.size() + " questions whose constraints could not be satisfied: "
+                    + String.join(", ", fields) + "; see " + REPORT};
+    }
+
+    /** The unsatisfied constraints of all submissions by question path without repeat indices, in order. */
+    private static Map<String, List<UnsatisfiedConstraint>> unsatisfiedByQuestion(List<Submission> submissions) {
+        Map<String, List<UnsatisfiedConstraint>> byQuestion = new java.util.LinkedHashMap<>();
+        for (Submission s : submissions) {
+            for (UnsatisfiedConstraint u : s.unsatisfiedConstraints()) {
+                byQuestion.computeIfAbsent(u.path().replaceAll("\\[\\d+]", ""), k -> new ArrayList<>()).add(u);
+            }
+        }
+        return byQuestion;
+    }
+
+    /** The "Unsatisfied constraints" section of the report (spec 10, Amendment 1); empty when there is none. */
+    private static List<String> unsatisfiedSection(Map<String, List<UnsatisfiedConstraint>> byQuestion,
+                                                   FieldCatalog catalog, int n) {
+        if (byQuestion.isEmpty()) {
+            return List.of();
+        }
+        Map<String, Integer> rows = new HashMap<>();
+        for (FieldInfo f : catalog.fields()) {
+            rows.putIfAbsent(f.xpath(), f.row());
+        }
+        List<String> section = new ArrayList<>();
+        section.add("Unsatisfied constraints: " + byQuestion.size());
+        for (Map.Entry<String, List<UnsatisfiedConstraint>> e : byQuestion.entrySet()) {
+            UnsatisfiedConstraint first = e.getValue().get(0);
+            Integer row = rows.get(e.getKey());
+            section.add("  " + first.field() + (row == null ? "" : ", row " + row) + ": " + first.constraint());
+            java.util.TreeSet<Integer> numbers = new java.util.TreeSet<>();
+            for (UnsatisfiedConstraint u : e.getValue()) {
+                numbers.add(u.submission());
+            }
+            StringBuilder list = new StringBuilder();
+            int shown = 0;
+            for (int number : numbers) {
+                if (shown == 20) {
+                    list.append(", ...");
+                    break;
+                }
+                list.append(shown++ == 0 ? "" : ", ").append(number);
+            }
+            section.add("    submissions (" + numbers.size() + " of " + n + "): " + list);
+            if (!first.references().isEmpty()) {
+                List<String> values = new ArrayList<>();
+                first.references().forEach((name, value) -> values.add(name + " = " + (value.isEmpty() ? "(blank)" : value)));
+                section.add("    in submission " + first.submission() + ": " + String.join("; ", values));
+            }
+        }
+        section.replaceAll(line -> line.replaceAll("\\R", " "));
+        return section;
     }
 
     /** Runs the Python converter; returns its warnings. */
@@ -317,7 +381,7 @@ public final class Cli {
     }
 
     private static String report(Options o, LoadedForm form, SimulationConfig config, List<String> files,
-                                 List<String> warnings) {
+                                 List<String> warnings, List<String> unsatisfied) {
         StringBuilder r = new StringBuilder();
         line(r, "ctosim run report");
         line(r, "Form: " + form.title() + " (" + form.formId() + ", version "
@@ -329,6 +393,9 @@ public final class Cli {
         line(r, "Fieldwork: " + ISO.format(config.start()) + " for " + config.fieldworkDays()
                 + " days, time zone " + config.timeZone().getId());
         line(r, "Enumerators: " + config.enumerators());
+        for (String text : unsatisfied) {
+            line(r, text);
+        }
         line(r, "Files:");
         for (String file : files) {
             line(r, "  " + file);
