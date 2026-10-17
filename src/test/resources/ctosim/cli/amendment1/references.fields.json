@@ -1,0 +1,6 @@
+{"form_id":"constraint_references","title":"Constraint references","version":null,"fields":[
+  {"name":"zref","type":"calculate","xpath":"/data/zref","row":2},
+  {"name":"aref","type":"calculate","xpath":"/data/aref","row":3},
+  {"name":"mref","type":"calculate","xpath":"/data/mref","row":4},
+  {"name":"answer","type":"select_one choices","xpath":"/data/answer","row":5}
+]}

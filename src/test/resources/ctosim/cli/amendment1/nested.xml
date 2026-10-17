@@ -1,0 +1,18 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Nested constraints</h:title><model>
+    <instance><data id="nested_constraints"><size>2</size><households jr:template=""><members jr:template=""><marker/><same/></members></households><left><same/></left><right><same/></right><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/size" type="int"/>
+    <bind nodeset="/data/households/members/marker" type="int" calculate="position(..)"/>
+    <bind nodeset="/data/households/members/same" type="string" constraint=". = 'never' and (/data/households/members/marker>0)"/>
+    <bind nodeset="/data/left/same" type="string" constraint="false()"/>
+    <bind nodeset="/data/right/same" type="string" constraint=". = 'absent'"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <repeat nodeset="/data/households" jr:count="/data/size"><repeat nodeset="/data/households/members" jr:count="/data/size">
+      <select1 ref="/data/households/members/same"><label>Repeated</label><item><label>Only</label><value>only</value></item></select1>
+    </repeat></repeat>
+    <group ref="/data/left"><label>Left</label><select1 ref="/data/left/same"><label>Same left</label><item><label>Only</label><value>only</value></item></select1></group>
+    <group ref="/data/right"><label>Right</label><select1 ref="/data/right/same"><label>Same right</label><item><label>Only</label><value>only</value></item></select1></group>
+  </h:body>
+</h:html>

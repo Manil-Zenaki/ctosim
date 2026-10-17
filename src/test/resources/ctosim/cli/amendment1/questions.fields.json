@@ -1,0 +1,4 @@
+{"form_id":"constraint_report","title":"Constraint report","version":null,"fields":[
+  {"name":"alpha","type":"select_one choices","xpath":"/data/alpha","row":19},
+  {"name":"zeta","type":"select_one choices","xpath":"/data/zeta","row":7}
+]}

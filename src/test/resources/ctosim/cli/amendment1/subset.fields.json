@@ -1,0 +1,4 @@
+{"form_id":"subset_constraints","title":"Subset constraints","version":null,"fields":[
+  {"name":"gate","type":"select_one choices","xpath":"/data/gate","row":2},
+  {"name":"answer","type":"select_one choices","xpath":"/data/answer","row":3}
+]}

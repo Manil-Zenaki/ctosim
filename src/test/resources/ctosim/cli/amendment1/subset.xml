@@ -1,0 +1,12 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Subset constraints</h:title><model>
+    <instance><data id="subset_constraints"><gate/><answer/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/gate" type="string"/>
+    <bind nodeset="/data/answer" type="string" constraint="(/data/gate='pass')"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/gate"><label>Gate</label><item><label>Pass</label><value>pass</value></item><item><label>Fail</label><value>fail</value></item></select1>
+    <select1 ref="/data/answer"><label>Answer</label><item><label>Only</label><value>only</value></item></select1>
+  </h:body>
+</h:html>

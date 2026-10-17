@@ -174,3 +174,116 @@ No production source was opened, searched, or changed.
   cached binaries and the current fixtures: all passed, with no skipped
   or aborted tests. This includes the revised runaway fixture within the
   unchanged child-process timeout. See `.codex-runs/cli-dispute-junit.log`.
+
+## Amendment 1 questions and test assumptions (2026-10-17)
+
+The additional tests are in `CliAmendment1ReportTest`, with five new
+XML/catalog fixture pairs under `src/test/resources/ctosim/cli/amendment1/`.
+Existing tests and fixtures are unchanged. Only the published specifications,
+existing test support, and public API calls were used; production sources
+were not opened, searched, or modified.
+
+13. **Question:** What exact sentence and singular/plural wording should the
+    third stdout line use?
+    **Assumption:** As in question 1, there is no exact sentence contract.
+    Tests require the question count as a number, ordered names separated by
+    `, `, `run-report.txt`, and wording about unsatisfied constraints. The
+    semantic check accepts `not ... satisf...`, `unsatisf...`, `unable ...
+    satisf...`, or `couldn't ... satisf...`, without fixing punctuation or
+    the rest of the sentence. Other equivalent phrasing can require adjusting
+    this matcher, without changing the report's exact format assertions.
+    **Tests:** `thirdSummaryLineNamesQuestionCountOrderedNamesAndReportAfterTheOriginalTwoLines`,
+    `thirdSummaryCountsQuestionsRatherThanWarningsAndRetainsEqualNamesAtDistinctPaths`,
+    `oneQuestionSummaryIsPresentEvenWhenOnlyOneSubmissionFailed`,
+    `unicodeQuestionNamesArePreservedInTheSectionAndThirdSummaryLine`, and
+    `aQuestionFirstFailingInALaterSubmissionFollowsQuestionsAlreadyRecorded`.
+
+14. **Question:** Does a repeated question count once for every repeat
+    instance, and should distinct questions with equal names be merged or
+    have their names deduplicated on stdout?
+    **Assumption:** The explicit grouping key is the unindexed path, not
+    the leaf name. Four failures across two nested repeat levels are one
+    question and one membership per submission. Equal names at three
+    distinct unindexed paths remain three questions, and stdout lists all
+    three names in section order. Catalog lookup also uses the complete
+    unindexed path; a same-name entry at another path cannot supply its row.
+    **Tests:** `allNestedRepeatIndicesAreRemovedAndEachSubmissionIsCountedOnce`
+    (including 21 submissions, so duplicates cannot consume the 20-item
+    limit), the equal-name summary test, and
+    `catalogEntryWithSameNameAtAnotherPathDoesNotSupplyTheRow`.
+
+15. **Question:** Does "each line break" settle the earlier question about
+    CRLF and unusual Unicode line separators, and can it be tested in names?
+    **Assumption:** Question 6 still applies. The fixture uses isolated CR
+    and LF, encoded as XML character references so XML attribute whitespace
+    normalization cannot erase them. Both must become spaces in constraint
+    text and reference values. Valid XML field names cannot contain those
+    line breaks, so no artificial invalid-name records are injected. Unicode
+    names and values are covered separately. Expressions use unpadded,
+    parenthesized references to avoid guessing about converter whitespace.
+    **Tests:** `isolatedCrAndLfInConstraintAndReferenceValuesEachBecomeOneSpace`,
+    `referencesPreserveExpressionOrderUnicodeAndZeroAndLabelOnlyEmptyValuesBlank`,
+    and the Unicode question-name test.
+
+16. **Question:** How should the first-record rule be tested without a CLI
+    injection API for synthetic submissions, especially if two records for
+    one question had different constraint strings?
+    **Assumption:** Exercise the real public pipeline, as confirmed for
+    question 11. A question has one static constraint in these XForms; the
+    tests assert that exact recorded expression, and do not invent a way
+    to change it between records. Distinct repeat-instance values, changing
+    values across submissions, and a reference overwritten after a failure
+    distinguish the first snapshot from later/final values. An end-of-form
+    failure distinguishes record order from body order. The partial-failure
+    fixture derives membership from exported gate values, not from CLI
+    report text or a hard-coded pseudorandom sequence; seed 1827 is fixed.
+    Its coverage guards require both outcomes, not particular draw numbers.
+    **Tests:** The nested-repeat, first-submission-reference, final-export
+    snapshot, end-of-form ordering, partial-failure, and later-submission
+    ordering tests in `CliAmendment1ReportTest`.
+
+17. **Question:** Does the new section change exit status, existing warnings,
+    the first two stdout lines, or behavior when there are no records?
+    **Assumption:** The amendment expressly leaves everything else unchanged.
+    Successful runs still return 0; warnings retain every repeat instance
+    and required-field warning, and the first two lines retain the original
+    counts. Satisfied, irrelevant, deliberately blank, and unconvertible
+    answers produce no new section. A converter warning merely containing
+    constraint-failure wording does not create a structured record. The
+    converter test double from confirmed question 10 is reused unchanged.
+    **Tests:** `groupingDoesNotDeduplicateTheOriginalWarningCases`,
+    `requiredWarningsDoNotCreateExtraQuestionsOrSubmissionMemberships`, the
+    no-section parameterized test, both converter tests, the summary test,
+    and `repeatedCallsDoNotLeakConstraintGroupsAndOverwriteTheOldSection`.
+
+## Amendment 1 validation
+
+- `mvnw.cmd -o -q test-compile` reaches test compilation but fails on the
+  cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+  The `-e` retry confirms `java.nio.file.AccessDeniedException`, the same
+  environment issue documented above. Logs:
+  `.codex-runs/cli-amendment1-test-compile.log` and
+  `.codex-runs/cli-amendment1-test-compile-detail.log`. No repository was
+  copied, drive mapped, dependency installed, or build configuration changed.
+- Supplementary compilation with the existing in-memory compiler succeeds
+  for all eight CLI/support Java sources, including the new class, against
+  cached binaries and JUnit 5 with `--release 17`. This does not constitute
+  a successful Maven build. Log:
+  `.codex-runs/cli-amendment1-memory-compile.log`.
+- The public FormLoader/FormWalker fixture probe loads and walks all five
+  fixture pairs, confirming the intended warning counts/order, nested repeat
+  failures, and end-of-form failure. Structured record inspection itself
+  is unavailable because `Submission.unsatisfiedConstraints()` currently
+  throws `UnsupportedOperationException`. The warning-only fixture probe log
+  is `.codex-runs/cli-amendment1-fixtures.log`.
+- The final diagnostic JUnit launch executes all **34 new cases** with no
+  skipped/aborted tests or discovery failures: **7 pass, 27 fail**. Every
+  failure is the expected missing section or missing third stdout line;
+  there are no remaining fixture-load or setup failures. Log:
+  `.codex-runs/cli-amendment1-junit.log`. This launch uses cached binaries
+  and the supplementary compiled tests, not a successful Maven build.
+- The final requested `mvnw.cmd -o -q test-compile` retry still fails on
+  the same cached JAR. `git diff --check` passes, and the only tracked-file
+  change is this questions file; the test class and fixture directory are
+  new. Existing tests, production sources, specifications and build files
+  are unchanged.

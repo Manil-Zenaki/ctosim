@@ -1,0 +1,10 @@
+{"form_id":"nested_constraints","title":"Nested constraints","version":null,"fields":[
+  {"name":"right","type":"begin group","xpath":"/data/right","row":11},
+  {"name":"same","type":"select_one choices","xpath":"/data/right/same","row":12},
+  {"name":"left","type":"begin group","xpath":"/data/left","row":8},
+  {"name":"same","type":"select_one choices","xpath":"/data/left/same","row":9},
+  {"name":"households","type":"begin repeat","xpath":"/data/households","row":2},
+  {"name":"members","type":"begin repeat","xpath":"/data/households/members","row":3},
+  {"name":"marker","type":"calculate","xpath":"/data/households/members/marker","row":4},
+  {"name":"same","type":"select_one choices","xpath":"/data/households/members/same","row":5}
+]}

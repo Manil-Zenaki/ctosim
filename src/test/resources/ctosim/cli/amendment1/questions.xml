@@ -1,0 +1,12 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Constraint report</h:title><model>
+    <instance><data id="constraint_report"><zeta/><alpha/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/zeta" type="string" constraint=". = 'never'"/>
+    <bind nodeset="/data/alpha" type="string" constraint="false()"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/zeta"><label>Zeta</label><item><label>Only</label><value>only</value></item></select1>
+    <select1 ref="/data/alpha"><label>Alpha</label><item><label>Only</label><value>only</value></item></select1>
+  </h:body>
+</h:html>

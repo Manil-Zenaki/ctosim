@@ -1,0 +1,5 @@
+{"form_id":"end_check_constraints","title":"End check constraints","version":null,"fields":[
+  {"name":"zeta","type":"select_one choices","xpath":"/data/zeta","row":2},
+  {"name":"alpha","type":"select_one choices","xpath":"/data/alpha","row":3},
+  {"name":"gate","type":"text","xpath":"/data/gate","row":4}
+]}

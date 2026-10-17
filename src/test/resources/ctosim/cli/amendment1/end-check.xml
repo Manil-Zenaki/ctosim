@@ -1,0 +1,14 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>End check constraints</h:title><model>
+    <instance><data id="end_check_constraints"><zeta/><alpha/><gate>open</gate><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/zeta" type="string" constraint="(/data/gate='open')"/>
+    <bind nodeset="/data/alpha" type="string" constraint="false()"/>
+    <bind nodeset="/data/gate" type="string"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/zeta"><label>Zeta initially valid</label><item><label>Only</label><value>only</value></item></select1>
+    <select1 ref="/data/alpha"><label>Alpha immediately impossible</label><item><label>Only</label><value>only</value></item></select1>
+    <input ref="/data/gate"><label>Gate changes later</label></input>
+  </h:body>
+</h:html>
