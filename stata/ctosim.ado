@@ -7,7 +7,7 @@ program define ctosim, rclass
         exit 198
     }
     syntax using/ [, N(string) SEED(string) CONFIG(string) SAVING(string) MEDIA(string) ///
-        SERVER(string) DOFILE(string) REPLACE CLEAR]
+        SERVER(string) DOFILE(string) REPLACE CLEAR FAKEPRELOAD]
 
     local form `"`using'"'
 
@@ -151,6 +151,7 @@ program define ctosim, rclass
     }
     if `"`server'"' != "" local args `"`args' --server "`server'""'
     if `"`python'"' != "" local args `"`args' --python "`python'""'
+    if "`fakepreload'" != "" local args `"`args' --fake-attachments"'
 
     tempfile out err status
     if `"`converter'"' == "" local converter "-"
@@ -174,6 +175,7 @@ program define ctosim, rclass
     local report `"`outdir'/run-report.txt"'
     local warnings 0
     local unsatisfied 0
+    local fakefiles ""
     local wide ""
     file open `fh' using `"`report'"', read text
     file read `fh' line
@@ -183,6 +185,10 @@ program define ctosim, rclass
         else if ustrregexm(`"`macval(line)'"', "^Seed: (.+)$") local runseed = ustrregexs(1)
         else if ustrregexm(`"`macval(line)'"', "^Submissions: ([0-9]+)$") local runN = ustrregexs(1)
         else if `"`macval(line)'"' == "Files:" local section files
+        else if ustrregexm(`"`macval(line)'"', "^Fictitious attachments: (.+)$") {
+            local fakefiles = subinstr(ustrregexs(1), ", ", " ", .)
+            mata: _ctosim_line("txt", st_local("line"))
+        }
         else if ustrregexm(`"`macval(line)'"', "^Unsatisfied constraints: ([0-9]+)$") {
             local unsatisfied = ustrregexs(1)
             local section unsatisfied
@@ -221,6 +227,7 @@ program define ctosim, rclass
     return scalar N = real("`runN'")
     return scalar warnings = real("`warnings'")
     return scalar unsatisfied = real("`unsatisfied'")
+    return local fakepreload `"`fakefiles'"'
     return scalar seed = real("`runseed'")
     return local form_id `"`form_id'"'
     return local outdir `"`outdir'"'

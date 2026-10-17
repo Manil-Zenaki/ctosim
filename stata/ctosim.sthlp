@@ -28,6 +28,7 @@ XForm already converted ({cmd:.xml}) with its {cmd:.fields.json} file beside it.
 {synopt:{opt dofile(filename)}}load the data with this SurveyCTO import do-file{p_end}
 {synopt:{opt replace}}allow writing into an output directory that already holds a run{p_end}
 {synopt:{opt clear}}allow replacing the data in memory{p_end}
+{synopt:{opt fakepreload}}invent the preloaded files the form reads but {opt media()} lacks; see {help ctosim##fakepreload:Fictitious preload}{p_end}
 {synoptline}
 
 
@@ -235,6 +236,7 @@ area and local place names, with {it:realistic.json}:{p_end}
 {synopt:{cmd:r(outdir)}}output directory (absolute path){p_end}
 {synopt:{cmd:r(wide)}}wide CSV file (absolute path){p_end}
 {synopt:{cmd:r(report)}}{cmd:run-report.txt} (absolute path){p_end}
+{synopt:{cmd:r(fakepreload)}}with {opt fakepreload}: the fictitious files, separated by spaces (empty when none was needed){p_end}
 
 
 {pstd}
@@ -247,6 +249,34 @@ This usually means a constraint that cannot hold given the answers it refers
 to (for example {it:. >= ${age} and . <= 60} after an age of 90 was
 accepted): check the form. {cmd:r(unsatisfied)} gives the number of such
 questions.{p_end}
+
+
+{marker fakepreload}{...}
+{title:Fictitious preload}
+
+{pstd}
+Most forms read preloaded data from attached CSV files ({cmd:pulldata()},
+{cmd:search()}). When the real files are not available (they often hold
+personal data), every preloaded value is blank, repeats counted from them are
+empty and the parts of the form that test them are never simulated. With
+{opt fakepreload}, {cmd:ctosim} invents the files that {opt media()} lacks
+from the form's own use of them: the files and columns it reads, the keys it
+looks up, the choice lists it loads with {cmd:search()} and their filters.
+The questions used as keys (a household identifier typed by the enumerator,
+for instance) are answered with keys of the invented files, so that the
+lookups succeed. The values are invented and only follow the form's use of
+the files; they are meant for testing a form or analysis code when the real
+preload is not available, never for analysis. Real files present in
+{opt media()} are used as they are.
+
+{pstd}
+The files are written under {cmd:attachments/} in the output directory, where
+they can be read or edited, then reused with {opt media()}. The run report and
+the Results window list them on a {bf:Fictitious attachments} line, and
+{cmd:r(fakepreload)} returns their names.{p_end}
+
+{phang2}{cmd:. ctosim using "household.xlsx", n(100) fakepreload dofile("import_household.do") replace clear}{p_end}
+{phang2}{cmd:. display "`r(fakepreload)'"}{p_end}
 
 
 {title:Reporting a problem}
