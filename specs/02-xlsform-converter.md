@@ -350,3 +350,35 @@ questions file for these amendments are reviewed one by one and
 confirmed. In particular, the lengths named in Amendment 4 are examples,
 not limits; an error in an enabled row after a long gap still names that
 row; Amendment 5 changes no other column rule.
+
+## Amendment 6: `or_other`, and only the converter's own warnings
+
+SurveyCTO forms often write `select_one LIST or_other` (or
+`select_multiple LIST or_other`): the question offers a last choice
+"Other", and a text question asks to specify it. The data exported by
+SurveyCTO, and the import do-files it generates, then hold a column
+`<name>_other`. Everything not mentioned here is unchanged.
+
+### `or_other`
+
+When the type of a `select_one` or `select_multiple` row is followed by
+the word `or_other` (after the list name, separated by spaces):
+
+- the question offers the choices of its list followed by one more
+  choice, of value `other` and label `Other` (the same label in every
+  language of the form);
+- a `text` question named `<name>_other`, labelled `Specify other.` in
+  every language, follows the question immediately, in the same group or
+  repeat; it is relevant exactly when the question is relevant and its
+  answer includes `other`;
+- the field catalog lists `<name>_other` right after the question, with
+  type `text` and the row of the question.
+
+A row whose type has any other word after the list name is rejected as
+before.
+
+### Warnings
+
+The converter's standard error holds only its own warnings and errors:
+messages that the libraries it uses would print (for example about
+spreadsheet features they do not support) are not written.

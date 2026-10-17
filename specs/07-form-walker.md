@@ -662,3 +662,24 @@ like absolute ones, while only absolute ones are rewritten `${name}`
 (54); references are read when the question is left blank or cleared,
 not on the final instance (55); records match the constraint warnings
 one to one, and required-field warnings add none (57).
+
+## Amendment 9: small counts for questions that set a repeat count
+
+A question whose answer sets how many times a repeat is asked (the
+number of plots, of household members) was drawn like any integer, from
+0 to 100 by default; nested repeats then gave thousands of instances and
+wide exports that statistical software cannot import. Real counts are
+small. Everything not mentioned here is unchanged.
+
+A **count question** is an `INTEGER` question that the `repeat_count` of
+a repeat depends on: the count expression refers to it, or to a field
+without a control (`calculate`) whose expression refers to it, directly
+or through further such fields.
+
+When the walker asks the generator for an answer to a count question
+whose configuration override gives neither `min` nor `max`, it passes an
+override that is the configured one (or none) with `min` set to
+`config.repeatMin()` and `max` set to `config.repeatMax()` (the range of
+`repeats`, spec 04). A configured `min` or `max` for that field, its
+constraint, hints and the search of Amendment 6 apply as for any
+question.
