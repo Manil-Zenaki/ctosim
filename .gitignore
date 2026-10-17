@@ -40,3 +40,6 @@ stata/ctosim_bridge.jar
 # the CSV attachments (text audits, comments) are versioned
 samples/coverage*/media/*
 !samples/coverage*/media/*.csv
+
+# Real survey forms, do-files and attachments of the team's projects: kept locally, never published
+samples/private/
