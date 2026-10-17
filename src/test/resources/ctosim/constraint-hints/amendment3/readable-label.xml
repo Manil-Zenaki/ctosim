@@ -1,0 +1,14 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head>
+    <h:title>Readable pattern answer in a label</h:title>
+    <model>
+      <instance><data id="readable-pattern-label"><answer/><confirm/></data></instance>
+      <bind nodeset="/data/answer" type="string" required="true()" constraint="regex(., '([^a-z]+)')"/>
+      <bind nodeset="/data/confirm" type="int" required="true()" constraint=". = 1"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/answer"><label>Enter an answer without lowercase letters</label></input>
+    <input ref="/data/confirm"><label>Confirm <output value="/data/answer"/></label></input>
+  </h:body>
+</h:html>

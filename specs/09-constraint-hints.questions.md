@@ -251,3 +251,97 @@ expectations; existing test helpers supply form construction and engine navigati
 - Logs: `.codex-runs/09-dispute2-maven-test.log`,
   `.codex-runs/09-dispute2-maven-detail.log`, `.codex-runs/09-dispute2-compile.log`,
   and `.codex-runs/09-dispute2-junit.log`. No new behavioral assumptions were needed.
+## Amendment 3 questions and test assumptions
+
+Only the new `ConstraintHintsAmendment3PatternTest` and
+`ConstraintHintsAmendment3IntegrationTest` classes and the
+`constraint-hints/amendment3/readable-label.xml` fixture are added. Existing
+Java tests and resources are unchanged. No production source was read or edited.
+
+24. **Does the motivating `([^a-z]+)` example have to be supported, given the
+    unchanged allowance for unsupported patterns?**
+    Assumption: the pattern expressly motivating Amendment 3 is supported and
+    produces a nonempty matching answer. Its direct, extracted-hint, alternative,
+    and walker regression tests require that result. Other patterns retain the
+    unsupported-pattern escape hatch: a zero-to-zero length hint makes their
+    documented fallback the empty string, and only generated nonempty matches
+    are checked for readability. Empty and optional patterns also accept empty
+    results. No test mandates support for lookarounds, backreferences, Unicode
+    properties, or any other particular optional regex feature.
+    Tests: `motivatingNegatedClassProducesReadableFullMatches`,
+    `readableChoicesUseFreshRandomCharactersNotOnlyRandomLengths`, all generating
+    tests in `ConstraintHintsAmendment3IntegrationTest`; the parameterized pattern
+    tests implement the fallback allowance.
+
+25. **Does 'at each position ... keeps the whole answer matching' mean replacing
+    one character while holding the rest of the generated answer fixed?**
+    Assumption: yes. The oracle substitutes a readable character at each symbol
+    position and asks Java `Pattern.matcher(...).matches()` about the entire
+    candidate. It does not require finding another branch by changing several
+    positions together. Thus a symbol can be necessary because of a literal,
+    alternation, lookaround, or backreference. Lengths and branch probabilities
+    are not prescribed. Mandatory punctuation, including a literal `${`, is
+    retained when no readable replacement preserves the full match; the amendment
+    does not state a blanket ban on that substring.
+    Tests: `everyGeneratedPositionPrefersReadableCharactersWhenTheWholePatternAllowsIt`,
+    `requiredSymbolsAndWhitespaceArePreservedInsteadOfStrippedOrGloballySanitized`,
+    `motivatingNegatedClassCannotIntroduceALabelArgumentOpener`.
+
+26. **What character universe is meant by 'a letter, a digit or a space'?**
+    Assumption: BMP Unicode letters and decimal digits count, as well as ASCII;
+    'space' here means U+0020. The oracle accepts Unicode letters/digits using
+    `Character.isLetterOrDigit` and uses ASCII plus four explicit BMP witnesses
+    (e-acute, Greek omega, a Chinese letter, Arabic-Indic five) for replacements.
+    A witness demonstrates an invalid symbol; the oracle does not require any
+    particular Unicode sampling distribution or enumerate every code point.
+    Explicit Unicode-only choice classes and a class excluding ASCII letters,
+    digits and space exercise this interpretation. Tabs and line breaks must
+    yield to an available ordinary space but may remain when the pattern requires
+    them. Supplementary characters, combining marks, other separator characters,
+    and the distribution over the full Unicode alphabet are left open.
+    Tests: the parameterized readability and mandatory-punctuation methods,
+    including Unicode classes and whitespace alternatives.
+
+27. **What probability distribution is required by 'the choice ... is random'?**
+    Assumption: the spec does not specify uniform characters, equal character
+    category probabilities, a length distribution, or branch weights. Tests only
+    require diversity with fixed seeds over 512 motivating-example draws and,
+    for supported fixed-length classes, 1,024 draws at each position. Diversity
+    checks are conditional on at least 256 nonempty pattern results for optional
+    regex features. They do not compare exact sequences or demand a numerical
+    rate. Same-state replay, changed seeds, already-advanced states, and locale
+    independence retain spec 05's existing determinism contract.
+    Tests: the two `readableChoices*` methods, the replay/seed tests, and
+    `readableCharacterChoiceDoesNotDependOnTheDefaultLocale`.
+
+28. **Does readability also rewrite fixed values, text overrides, or blanks?**
+    Assumption: no; Amendment 3 explicitly applies to answers drawn from Text
+    rule 1 and leaves everything else unchanged. Fixed/text override strings
+    containing `${!` remain exact, even though they match the example pattern.
+    The blank rule still runs first. Pattern hints still take priority over
+    conflicting length/appearance hints, including inside an alternative.
+    Tests: fixed/text override, missing-rule, precedence and alternative methods
+    in `ConstraintHintsAmendment3IntegrationTest`.
+
+### Amendment 3 build verification
+
+- The requested `mvnw.cmd -o -q test-compile` was attempted offline. It fails
+  during Maven's `compile` phase before test compilation. The offline `-e`
+  retry confirms `java.nio.file.AccessDeniedException` on the existing
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. No dependencies,
+  production source, or build configuration were changed, copied or downloaded.
+  Logs: `.codex-runs/09-amendment3-test-compile.log` and
+  `.codex-runs/09-amendment3-test-compile-detail.log`.
+- The existing diagnostic in-memory binary-classpath compiler approach compiles
+  both new test classes, their four existing helper sources and a JUnit runner
+  successfully (7 sources, Java 17 target). This establishes supplementary test
+  compilation against the available binaries, not a successful Maven build.
+  Log: `.codex-runs/09-amendment3-memory-compile.log`.
+- The final diagnostic JUnit run discovers and executes 64 cases: 22 pass and
+  42 fail. All failures are assertion failures demonstrating replaceable symbols
+  or `${` in generated answers. No cases or containers are skipped/aborted, and
+  no containers fail. The form fixture loads and executes successfully before
+  its readability assertion fails. Log: `.codex-runs/09-amendment3-junit.log`.
+- `git diff --check` passes. Existing tests and resources remain unchanged; only
+  the two new test classes, one new fixture, and this appended questions section
+  are deliverable changes. Temporary diagnostics remain under `.codex-runs/`.
