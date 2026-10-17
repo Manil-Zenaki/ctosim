@@ -268,3 +268,21 @@ each section line is shown once, in report order, in the error style,
 before the warning count (D2); loading and a failing do-file behave as
 before (D3); the help file is checked for its content, not an exact
 sentence (D4).
+
+## Amendment 5: option `fakepreload`
+
+The option `fakepreload` runs the simulator with `--fake-attachments`
+(spec 10, Amendment 2): missing preloaded files are replaced by
+fictitious ones. Everything not mentioned here is unchanged.
+
+- Without the option, the command is as before.
+- With it, the command also returns `r(fakepreload)`: the file names of
+  the report's `Fictitious attachments:` line, separated by spaces (an
+  empty macro when the line is absent), and shows that line before the
+  warnings.
+- The help file documents the option: what it does, that the values are
+  invented and only follow the form's own use of the files, that it is
+  meant for testing a form or analysis code when the real preload is not
+  available, and that the files are written under `attachments/` in the
+  output directory, where they can be read or edited and reused with
+  `media()`.

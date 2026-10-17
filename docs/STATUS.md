@@ -19,6 +19,7 @@ what was learnt along the way.
 | 09 | Constraint hints | done |
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
+| 12 | Fictitious attachments (`fakepreload`) | spec written 2026-10-17; tests and code to come |
 
 Suite: 7536 Java tests, 703 Python tests and 47 Stata tests, all green (2026-10-17).
 

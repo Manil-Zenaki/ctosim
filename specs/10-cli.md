@@ -218,3 +218,35 @@ grouped by their path without repeat indices, so equal names at
 different paths stay distinct, and the catalog row is looked up by that
 full path (14); isolated CR and LF both become spaces (15); a run
 without records is unchanged in every respect (17).
+
+## Amendment 2: fictitious attached files (`--fake-attachments`)
+
+A run can replace the attached files the form reads but the media
+directory lacks by fictitious ones (spec 12). Everything not mentioned
+here is unchanged; without the option, a run is as before.
+
+| Option | Value | Meaning |
+|---|---|---|
+| `--fake-attachments` | none | Build fictitious files for the attached files that are missing. |
+
+With the option, after loading the form (step 4 of "What a run does"):
+
+1. `FakeAttachments.of(form, seed)` is built with the run's seed.
+2. When its `files()` is not empty, each file is written as
+   `<output>/attachments/<name>.csv`, the CSV files of the media
+   directory are copied there too (a file of the same name is not
+   overwritten by a fictitious one, since only missing files are
+   built), and the form is loaded again with that directory as its
+   media directory.
+3. Each question of `keyAnswers()` that the configuration does not name
+   in `fields` is answered as if the configuration gave it
+   `{"texts": <its keys>}`.
+
+The run report then has, after the `Enumerators:` line (and before the
+section of spec 10 Amendment 1, when there is one), the line
+`Fictitious attachments: <name>.csv, <name>.csv` listing the files of
+`files()` in their order, and the `Files:` list includes
+`attachments/<name>.csv` for each, after the long files. The warning
+`attached file <name>.csv not found` is not given for those files, and
+`out` receives one more line, after the others, naming them and saying
+that their content is invented.
