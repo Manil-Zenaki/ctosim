@@ -287,3 +287,135 @@ were not opened, searched, or modified.
   change is this questions file; the test class and fixture directory are
   new. Existing tests, production sources, specifications and build files
   are unchanged.
+
+## Amendment 2 questions and test assumptions (2026-10-17)
+
+New tests are isolated in `CliAmendment2PipelineTest`,
+`CliAmendment2ReportTest`, and `CliAmendment2LifecycleTest`, with new
+`CliAmendment2Support` helpers and fixtures under
+`src/test/resources/ctosim/cli/amendment2/`. Existing tests and resources
+are unchanged. Production sources were not opened, searched, or modified.
+
+18. **Question:** When `files()` is empty, must the report/stdout omit the
+    fictitious-attachment line, or print an empty line/list?
+    **Assumption:** The amendment does not specify the empty-list presentation
+    clearly enough to choose one. No assertion constrains that presentation.
+    Step 2 explicitly applies only to a nonempty map: with no missing files,
+    the existing exports/warnings remain the same and the attachments path
+    must not be written or required to be a directory.
+    **Tests:** `noMissingFilesLeavesExportsUnchangedAndDoesNotTouchAnAttachmentsPath`
+    and `formWithNoAttachmentReferencesAlsoNeedsNoAttachmentsDirectory`.
+
+19. **Question:** Must copied real CSVs also appear in the report's `Files:`
+    list, and where would they appear relative to generated files?
+    **Assumption:** The amendment mandates entries for generated files but
+    does not specify copied-file entries. Mixed-media tests check the ordered
+    projection of all mandatory entries and the final `run-report.txt`,
+    allowing copied-file entries in between. The search fixture has no copied
+    files and therefore asserts the complete exact list. Only generated files
+    belong in `Fictitious attachments:`; that line uses the map's natural order,
+    not expression discovery order.
+    **Tests:** `generatedPathsFollowEveryLongExportAndPrecedeTheReport`,
+    `xlsformConversionPrecedesGenerationAndItsWarningsAndFileOrderArePreserved`,
+    `singleUnicodeAttachmentKeepsUtf8LfAndRelativeReportPaths`, and
+    `fictitiousNamesUseFilesMapOrderImmediatelyAfterEnumerators`.
+
+20. **Question:** What precise wording and filename ordering does the additional
+    stdout line require?
+    **Assumption:** There is no prescribed sentence or filename order on stdout.
+    The tests require every generated basename including `.csv`, the line's
+    position after all other summaries, and disclosure that the content is
+    invented. The semantic matcher accepts wording containing `invent`,
+    `fictiti`, `fabricat`, or `synthetic`, case-insensitively; other equivalent
+    wording may require adjusting this matcher. Report wording/order is exact.
+    **Tests:** The stdout assertions in `CliAmendment2ReportTest`, through
+    `CliAmendment2Support.inventedSummary`.
+
+21. **Question:** How should suggestions for integer key questions behave?
+    Spec 12 includes INTEGER questions in `keyAnswers()`, spec 10 explicitly
+    applies suggestions as `texts`, and spec 05 explicitly ignores `texts`
+    for integer questions.
+    **Assumption:** Follow the precise orchestration instruction: apply
+    `texts`, without silently introducing a numeric-range, fixed-value, or
+    integer-sampling rule. Test equivalence with the published pipeline
+    configured with those same `texts`, rather than requiring integer lookups
+    to succeed. The core lookup-success fixture uses two TEXT key questions.
+    Clarification is needed if integer keys are intended to match generated rows.
+    **Tests:** `integerKeySuggestionsHaveExactlyTheSpecifiedTextsOverrideSemantics`
+    and the public pipeline helper. The integer fixture is an isolated temporary
+    variant of the resource XForm; no production inputs are changed.
+
+22. **Question:** Does an existing `fields` entry block suggested keys even if
+    it contains only `missingRate`, and do injected keys bypass global blanking?
+    **Assumption:** The stated condition is whether configuration names the
+    question, not whether it provides an explicit answer. Any existing entry
+    prevents injection. An injected `texts` entry otherwise behaves exactly
+    like user-supplied `texts`, including replacing an existing instance
+    default, respecting global missing rate, and leaving required-field rules
+    unchanged. Fixed values, texts, expressions, and conditional rules retain
+    their normal precedence. Suppressing a suggestion does not suppress file
+    creation.
+    **Tests:** The explicit-override parameterized test,
+    `merelyNamingAFieldInConfigurationSuppressesSuggestedTexts`,
+    `suggestedTextsStillObeyGlobalMissingRateForOptionalQuestions`, and
+    `generatedKeysReplaceAnUnconfiguredInstanceDefaultAndReloadedCalculationsMatchRows`.
+
+23. **Question:** How can byte output, seed forwarding, and configuration
+    preservation be checked without inspecting implementation or fixing an
+    unspecified pseudorandom algorithm?
+    **Assumption:** Continue confirmed assumption 11: independently load the
+    original input/media, call the published `FakeAttachments.of(form, seed)`,
+    persist its output in a separate oracle directory, add only absent field
+    entries to independently parsed JSON, reload, walk, and export through
+    public APIs. Independently check CSV key/value joins, activated branches,
+    repeat row counts, real-file bytes, exact report sections, and search codes
+    so orchestration assertions are not only API-to-API equality. Determinism
+    snapshots recurse into attachments; child JVMs change actual working
+    directories and time zones. All temporary files stay under `.codex-runs`.
+    **Tests:** `CliAmendment2PipelineTest` and the determinism/rerun tests in
+    `CliAmendment2LifecycleTest`. The converter test reuses the existing,
+    explicitly approved process double without changing it.
+
+24. **Question:** What happens to an existing destination CSV on a rerun, and
+    are copying failures ordinary output failures?
+    **Assumption:** The unchanged base rules apply: files the run writes replace
+    existing files, unrelated files remain, and a write/copy failure returns 1,
+    prints no success output, and writes no fresh report. Missing-file detection
+    uses the selected source media directory, not stale output files. Real
+    source CSVs are copied byte-for-byte, including unread CSVs. The tests do
+    not specify `.CSV` case handling, recursive media copying, symlinks, or
+    source-media/output-directory aliasing, which the amendment leaves open.
+    **Tests:** `rerunReplacesGeneratedAndCopiedFilesButPreservesUnrelatedOutputAndInputs`,
+    `allRealCsvFilesAreCopiedByteForByteAndRemainReadableAfterReload`,
+    `anExistingFileWinsOverInventionWhileTheOtherMissingFileIsStillBuilt`,
+    and `attachmentWriteOrCopyFailureReturnsOneWithNoSuccessOutputOrReport`.
+
+## Amendment 2 validation
+
+- `mvnw.cmd -o -q test-compile` reaches test compilation but cannot complete:
+  the cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` raises
+  `java.nio.file.AccessDeniedException`. The `-e` retry confirms the same
+  existing Windows file-access issue recorded for previous test batches.
+  Logs: `.codex-runs/cli-amendment2-test-compile.log` and
+  `.codex-runs/cli-amendment2-test-compile-detail.log`. No dependency was
+  installed, repository copied, drive mapped, or build configuration changed.
+- The repository's existing in-memory diagnostic compiler successfully
+  compiles all **12 CLI/support sources**, including the four new Amendment 2
+  sources, against cached binary APIs and JUnit 5 with `--release 17`.
+  Log: `.codex-runs/cli-amendment2-memory-compile.log`. This is supplementary
+  compilation evidence, not a successful Maven build.
+- The public-API fixture probe loads both new XForms and their catalogs, then
+  walks and exports them with controlled media. It verifies that the fixture
+  can activate a preload-dependent branch, create two counted repeat rows,
+  produce the intended impossible-constraint warning, and resolve cascading
+  search choices/labels. The repeat count references a calculated node, as
+  required by the XForm engine. Log: `.codex-runs/cli-amendment2-fixtures.log`.
+- A diagnostic JUnit run executes all **48 new cases**, with no skipped or
+  aborted tests and no discovery/container failures: **4 pass, 44 fail**.
+  Every failure is due to the current CLI rejecting `--fake-attachments` as
+  an unknown option, either directly or instead of the expected downstream
+  diagnostic. Log: `.codex-runs/cli-amendment2-junit.log`. Consequently the
+  successful fake-attachment paths cannot yet be validated end to end.
+- `git diff --check` passes. Only this questions file is modified; all Java
+  and resource additions are new files. Existing tests/resources, production
+  code, specifications, and build files are unchanged. No commit was made.

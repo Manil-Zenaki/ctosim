@@ -1,0 +1,27 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Fake CLI</h:title><model>
+    <instance><data id="fake_cli" version="2"><qkey>OLD-KEY</qkey><otherkey/><person/><age/><child_count/><repeat_total/><real_value/><followup/><fail>no</fail><impossible/><children jr:template=""><item/></children><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/qkey" type="string"/>
+    <bind nodeset="/data/otherkey" type="string" required="true()"/>
+    <bind nodeset="/data/person" type="string" calculate="pulldata('z_people','full_name','id',/data/qkey)"/>
+    <bind nodeset="/data/age" type="int" calculate="pulldata('a_ages','age','code',/data/otherkey)"/>
+    <bind nodeset="/data/child_count" type="int" calculate="pulldata('z_people','count','id',/data/qkey)"/>
+    <bind nodeset="/data/repeat_total" type="int" calculate="if(string-length(/data/child_count) &gt; 0, /data/child_count, 0)"/>
+    <bind nodeset="/data/real_value" type="string" calculate="pulldata('real','label','id','R1')"/>
+    <bind nodeset="/data/followup" type="string" relevant="string-length(/data/person) &gt; 0" required="true()"/>
+    <bind nodeset="/data/fail" type="string"/>
+    <bind nodeset="/data/impossible" type="int" relevant="/data/fail = 'yes'" constraint=". &lt; 0 and . &gt; 0"/>
+    <bind nodeset="/data/children/item" type="string" required="true()"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/qkey"><label>Lookup key</label></input>
+    <input ref="/data/otherkey"><label>Other key</label></input>
+    <input ref="/data/followup"><label>Preload branch</label></input>
+    <input ref="/data/fail"><label>Enable impossible question</label></input>
+    <input ref="/data/impossible"><label>Impossible</label></input>
+    <repeat nodeset="/data/children" jr:count="/data/repeat_total">
+      <input ref="/data/children/item"><label>Item</label></input>
+    </repeat>
+  </h:body>
+</h:html>

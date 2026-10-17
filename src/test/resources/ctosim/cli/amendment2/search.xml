@@ -1,0 +1,13 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Search CLI</h:title><model>
+    <instance><data id="search_cli"><region/><village/><label/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/region" type="string" required="true()"/>
+    <bind nodeset="/data/village" type="string" required="true()"/>
+    <bind nodeset="/data/label" type="string" calculate="pulldata('lieuxé','LIBELLÉ','village',/data/village)"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/region" appearance="search('lieuxé')"><label>Region</label><item><label>REGION</label><value>region</value></item></select1>
+    <select1 ref="/data/village" appearance="search('lieuxé','matches','region',/data/region)"><label>Village</label><item><label>LIBELLÉ</label><value>village</value></item></select1>
+  </h:body>
+</h:html>

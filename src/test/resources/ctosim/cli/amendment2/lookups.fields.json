@@ -1,0 +1,13 @@
+{"form_id":"fake_cli","title":"Fake CLI","version":"2","fields":[
+  {"name":"qkey","type":"text","xpath":"/data/qkey","row":2},
+  {"name":"otherkey","type":"text","xpath":"/data/otherkey","row":3},
+  {"name":"person","type":"calculate","xpath":"/data/person","row":4},
+  {"name":"age","type":"calculate","xpath":"/data/age","row":5},
+  {"name":"child_count","type":"calculate","xpath":"/data/child_count","row":6},
+  {"name":"real_value","type":"calculate","xpath":"/data/real_value","row":7},
+  {"name":"followup","type":"text","xpath":"/data/followup","row":8},
+  {"name":"fail","type":"text","xpath":"/data/fail","row":9},
+  {"name":"impossible","type":"integer","xpath":"/data/impossible","row":10},
+  {"name":"children","type":"begin repeat","xpath":"/data/children","row":11},
+  {"name":"item","type":"text","xpath":"/data/children/item","row":12}
+]}

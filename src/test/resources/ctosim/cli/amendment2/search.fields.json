@@ -1,0 +1,5 @@
+{"form_id":"search_cli","title":"Search CLI","version":null,"fields":[
+  {"name":"region","type":"select_one regions","xpath":"/data/region","row":2},
+  {"name":"village","type":"select_one villages","xpath":"/data/village","row":3},
+  {"name":"label","type":"calculate","xpath":"/data/label","row":4}
+]}
