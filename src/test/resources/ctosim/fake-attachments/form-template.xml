@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms"
+        xmlns:h="http://www.w3.org/1999/xhtml"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head>
+    <h:title>Fictitious attachments contract fixture</h:title>
+    <model>
+      <instance><data id="fake_attachments">__INSTANCE__</data></instance>
+      __EXTRA__
+      __BINDS__
+      __ACTIONS__
+    </model>
+  </h:head>
+  <h:body>__BODY__</h:body>
+</h:html>
