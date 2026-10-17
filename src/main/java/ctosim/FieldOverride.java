@@ -65,6 +65,11 @@ public final class FieldOverride {
                 override.distribution, override.expression, override.area, override.rules);
     }
 
+    /** An override that answers with one of {@code texts} (spec 10, Amendment 2). */
+    static FieldOverride ofTexts(List<String> texts) {
+        return new FieldOverride(null, null, Map.of(), texts, null);
+    }
+
     /** This override without its rules. */
     FieldOverride withoutRules() {
         return new FieldOverride(value, range, weights, texts, missingRate, distribution, expression, area, List.of());

@@ -197,6 +197,18 @@ public final class SimulationConfig {
         return speedViolationRate;
     }
 
+    /** This configuration with {@code override} for a field it does not name (spec 10, Amendment 2). */
+    SimulationConfig withFieldIfAbsent(String name, FieldOverride override) {
+        if (fields.containsKey(name)) {
+            return this;
+        }
+        Map<String, FieldOverride> more = new java.util.LinkedHashMap<>(fields);
+        more.put(name, override);
+        return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
+                specialValues, repeatMin, repeatMax, integerRange, decimalRange, more,
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools);
+    }
+
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,

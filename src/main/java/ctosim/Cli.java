@@ -31,6 +31,7 @@ public final class Cli {
             "  -m, --media DIR         attached files (default: FORM's directory)",
             "      --server NAME       server name in attachment URLs (default: example)",
             "      --python EXE        Python used to convert an XLSForm (default: $CTOSIM_PYTHON or python)",
+            "      --fake-attachments  invent the attached files (preload) the form reads but the media lacks",
             "  -h, --help              show this help");
 
     static final String REPORT = "run-report.txt";
@@ -57,7 +58,10 @@ public final class Cli {
     }
 
     private record Options(Path form, boolean xlsx, Path config, Integer submissions, Long seed, Path output,
-                           Path media, String server, String python) { }
+                           Path media, String server, String python, boolean fakeAttachments) { }
+
+    /** Where fictitious attached files are written, in the output directory (spec 10, Amendment 2). */
+    static final String FAKE_DIRECTORY = "attachments";
 
     public static int run(String[] args, PrintStream out, PrintStream err) {
         Objects.requireNonNull(args, "args");
@@ -111,8 +115,13 @@ public final class Cli {
         String media = null;
         String server = "example";
         String python = null;
+        boolean fake = false;
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
+            if (arg.equals("--fake-attachments")) {
+                fake = true;
+                continue;
+            }
             if (arg.startsWith("-") && arg.length() > 1) {
                 if (!OPTIONS.contains(arg)) {
                     throw new UsageException("unknown option " + arg);
@@ -175,7 +184,8 @@ public final class Cli {
             String env = System.getenv("CTOSIM_PYTHON");
             python = env == null || env.isEmpty() ? "python" : env;
         }
-        return new Options(formPath, xlsx, config == null ? null : Path.of(config), n, s, out, mediaDir, server, python);
+        return new Options(formPath, xlsx, config == null ? null : Path.of(config), n, s, out, mediaDir, server, python,
+                fake);
     }
 
     // ---- the run ----
@@ -227,6 +237,16 @@ public final class Cli {
         } catch (FormLoadException e) {
             throw new RunException(e.getMessage());
         }
+        FakeAttachments fake = null;
+        if (o.fakeAttachments()) {
+            fake = FakeAttachments.of(form, config.seed());
+            if (!fake.files().isEmpty()) {
+                form = withFakeAttachments(o, xform, fake);
+                for (Map.Entry<String, List<String>> key : fake.keyAnswers().entrySet()) {
+                    config = config.withFieldIfAbsent(key.getKey(), FieldOverride.ofTexts(key.getValue()));
+                }
+            }
+        }
         try {
             catalog = FieldCatalog.load(catalogPath);
         } catch (IOException e) {
@@ -271,10 +291,17 @@ public final class Cli {
             files.add("form.xml");
             files.add("form.fields.json");
         }
+        List<String> fakeNames = new ArrayList<>();
+        if (fake != null) {
+            for (String name : fake.files().keySet()) {
+                fakeNames.add(name + ".csv");
+                files.add(FAKE_DIRECTORY + "/" + name + ".csv");
+            }
+        }
         files.add(REPORT);
         Map<String, List<UnsatisfiedConstraint>> byQuestion = unsatisfiedByQuestion(submissions);
         List<String> unsatisfied = unsatisfiedSection(byQuestion, catalog, config.submissions());
-        String report = report(o, form, config, files, warnings, unsatisfied);
+        String report = report(o, form, config, files, warnings, fakeNames, unsatisfied);
         try {
             Files.writeString(o.output().resolve(REPORT), report, StandardCharsets.UTF_8);
         } catch (IOException e) {
@@ -283,16 +310,51 @@ public final class Cli {
         String[] lines = {
             "Simulated " + config.submissions() + " submissions of " + form.formId() + " into " + o.output(),
             warnings.size() + " warnings; see " + REPORT};
-        if (unsatisfied.isEmpty()) {
-            return lines;
+        List<String> all = new ArrayList<>(List.of(lines));
+        if (!unsatisfied.isEmpty()) {
+            List<String> fields = new ArrayList<>();
+            for (List<UnsatisfiedConstraint> records : byQuestion.values()) {
+                fields.add(records.get(0).field());
+            }
+            all.add(fields.size() + " questions whose constraints could not be satisfied: "
+                    + String.join(", ", fields) + "; see " + REPORT);
         }
-        List<String> fields = new ArrayList<>();
-        for (List<UnsatisfiedConstraint> records : byQuestion.values()) {
-            fields.add(records.get(0).field());
+        if (!fakeNames.isEmpty()) {
+            all.add("Fictitious attachments, with invented content: " + String.join(", ", fakeNames)
+                    + " (in " + FAKE_DIRECTORY + "/)");
         }
-        return new String[] {lines[0], lines[1],
-            fields.size() + " questions whose constraints could not be satisfied: "
-                    + String.join(", ", fields) + "; see " + REPORT};
+        return all.toArray(new String[0]);
+    }
+
+    /**
+     * Writes the fictitious files and copies of the media directory's CSV files to the output's
+     * attachments directory, and loads the form again with it (spec 10, Amendment 2).
+     */
+    private static LoadedForm withFakeAttachments(Options o, Path xform, FakeAttachments fake) throws RunException {
+        Path dir = o.output().resolve(FAKE_DIRECTORY);
+        try {
+            Files.createDirectories(dir);
+            if (o.media() != null && Files.isDirectory(o.media())) {
+                try (var listing = Files.list(o.media())) {
+                    for (Path csv : (Iterable<Path>) listing::iterator) {
+                        String name = csv.getFileName().toString();
+                        if (Files.isRegularFile(csv) && name.toLowerCase(Locale.ROOT).endsWith(".csv")) {
+                            Files.copy(csv, dir.resolve(name), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    }
+                }
+            }
+            for (Map.Entry<String, String> file : fake.files().entrySet()) {
+                Files.writeString(dir.resolve(file.getKey() + ".csv"), file.getValue(), StandardCharsets.UTF_8);
+            }
+        } catch (IOException e) {
+            throw new RunException(dir + ": the fictitious attachments cannot be written (" + e + ")");
+        }
+        try {
+            return FormLoader.load(xform, dir);
+        } catch (FormLoadException e) {
+            throw new RunException(e.getMessage());
+        }
     }
 
     /** The unsatisfied constraints of all submissions by question path without repeat indices, in order. */
@@ -381,7 +443,7 @@ public final class Cli {
     }
 
     private static String report(Options o, LoadedForm form, SimulationConfig config, List<String> files,
-                                 List<String> warnings, List<String> unsatisfied) {
+                                 List<String> warnings, List<String> fakeNames, List<String> unsatisfied) {
         StringBuilder r = new StringBuilder();
         line(r, "ctosim run report");
         line(r, "Form: " + form.title() + " (" + form.formId() + ", version "
@@ -393,6 +455,9 @@ public final class Cli {
         line(r, "Fieldwork: " + ISO.format(config.start()) + " for " + config.fieldworkDays()
                 + " days, time zone " + config.timeZone().getId());
         line(r, "Enumerators: " + config.enumerators());
+        if (!fakeNames.isEmpty()) {
+            line(r, "Fictitious attachments: " + String.join(", ", fakeNames));
+        }
         for (String text : unsatisfied) {
             line(r, text);
         }
