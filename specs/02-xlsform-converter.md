@@ -344,3 +344,9 @@ written `column:Language` (and `media:image`, `media:audio`,
 rows the form has**, including `calculate_here` fields (Amendment 2),
 minimum times and speed-violation fields (Amendment 3): such a form
 converts, and each translation holds its labels.
+
+Clarification (Amendments 4 and 5): the assumptions recorded in the
+questions file for these amendments are reviewed one by one and
+confirmed. In particular, the lengths named in Amendment 4 are examples,
+not limits; an error in an enabled row after a long gap still names that
+row; Amendment 5 changes no other column rule.
