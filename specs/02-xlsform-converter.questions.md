@@ -457,3 +457,121 @@ public stub bodies were read while updating the tests.
   `test_custom_attributes_on_the_same_row_do_not_erase_other_rows_translations`,
   `test_invalid_minimum_in_translated_form_reports_the_timing_row`, and
   `test_combined_translations_are_deterministic_and_do_not_modify_the_workbook`.
+
+## 34. Amendment 6: appended choice representation and shared lists
+
+- **Question:** Must the extra Other choice live in the original secondary
+  instance, a new instance, or an inline item? May adding it change an ordinary
+  select that uses the same list?
+- **Assumption:** No augmented-instance ID or storage strategy is prescribed.
+  Tests follow each select's actual itemset and accept an appended inline item
+  as well. Each opted-in question offers all original entries, including
+  duplicates in order, followed by exactly one Other. Ordinary questions using
+  the same list retain their original choices: the amendment says everything
+  else is unchanged. Reusing a list for multiple opted-in questions must not
+  append Other repeatedly. These fixtures have no choice filters.
+- **Tests:** `test_or_other_appends_exactly_one_choice_after_every_original_choice`,
+  `test_shared_list_has_one_other_per_opted_in_question_and_none_for_plain_selects`,
+  and `test_disabled_or_other_adds_neither_companion_nor_choice_to_surviving_list`
+  in `converter/tests/test_converter_or_other.py`.
+
+## 35. Amendment 6: collisions, filters, and inherited question properties
+
+- **Question:** What happens when the source list already contains value
+  `other`, or a survey row already uses the generated `<name>_other` name?
+  Should Other bypass a choice filter? Does the companion inherit required,
+  constraint, default, appearance, minimum_seconds, or other source columns?
+- **Assumption:** These cases are not specified and no collision-resolution,
+  filtering, or inheritance policy is invented. The specified name suffix is
+  literal even when the source name itself ends in `_other`. Original question
+  timing remains attached to that original question; tests do not assert whether
+  it is copied to the companion. Empty or missing source lists are not made
+  valid by inference: the explicitly specified missing-list error is retained,
+  while an existing but empty list is left untested.
+- **Tests:** `test_source_name_ending_in_other_still_gets_the_literal_other_suffix`,
+  `test_generated_field_does_not_shift_later_catalog_rows_or_conversion_warnings`,
+  and `test_or_other_does_not_make_a_missing_choice_list_valid`. Collision and
+  choice-filter cases, and companion property inheritance, remain coverage gaps
+  pending clarification.
+
+## 36. Amendment 6: relevance semantics versus XPath spelling
+
+- **Question:** Is a particular relevance expression required, and does
+  "the question is relevant" include inherited group/repeat relevance?
+- **Assumption:** Effective relevance includes enabled ancestors. The companion
+  must be relevant exactly when the source question is relevant and its answer
+  contains the token `other`; a substring such as `another` or `otherness` is
+  insufficient. No literal whitespace, parentheses, or conjunction order is
+  required. Small truth tables cover no condition, a comparison, and a
+  disjunction (to catch precedence errors), with empty/single/multiple answers
+  and all parent relevance states. Separate questions must use their own answers.
+  A test-only restricted AST interpreter handles selected(), boolean operations,
+  comparisons, absolute and parent-relative paths, and the equivalent
+  contains/concat/normalize-space token idiom. It fails explicitly on other
+  XPath syntax; an equivalent spelling beyond this subset would require extending
+  the test helper, not changing the production expression to match the test.
+  Values absent from the list are used only in these expression truth tables,
+  not submitted as form responses.
+- **Tests:** `test_companion_relevance_is_question_relevance_and_token_membership`
+  and `test_each_companion_depends_on_its_own_question`.
+
+## 37. Amendment 6: generated labels and translated-only forms
+
+- **Question:** Does "every language" include languages introduced only by
+  hints/messages and an otherwise empty default translation? Should generated
+  text be translated into the language or stay the specified English string?
+- **Assumption:** The explicit labels are exactly `Other` and `Specify other.`
+  in every emitted form language, including languages introduced only by a hint.
+  A literal label shared across languages is also acceptable. For translated-only
+  forms no empty default translation is required, consistent with point 31;
+  however, any emitted translation must supply the generated labels. Source
+  choices retain their supplied translations. Language order and itext ID
+  spelling are not prescribed. Translated-only forms also exercise coexistence
+  with calculate_here without assigning a new policy to its own generated label.
+- **Tests:** `test_generated_labels_are_english_in_every_form_language` and
+  `test_translated_only_form_with_calculate_here_keeps_generated_labels`.
+
+## 38. Amendment 6: catalog rows, disabled inputs, and warnings
+
+- **Question:** Does the generated field shift subsequent physical row numbers,
+  add a conversion warning, or survive a disabled source question/block?
+- **Assumption:** The generated entry has type `text`, the source question's
+  physical row, its own absolute path, and immediately follows the source in the
+  catalog. Its input control immediately follows the select in the same body
+  container. It does not renumber later rows. No new warning is described for
+  or_other, so existing conversion/disabled warnings remain the only ones.
+  Disabled sources produce neither a companion nor an extra choice for a
+  surviving ordinary select. Existing type whitespace normalization, Unicode
+  labels, duplicate choices, deterministic output, input immutability, writing,
+  and CLI behavior remain applicable. Unknown trailing words are still errors;
+  that includes `OR_OTHER`, since case-insensitivity is not specified for types.
+- **Tests:** `test_companion_is_immediate_in_the_same_scope_and_catalog_uses_source_row`,
+  `test_type_whitespace_is_normalized_before_recognizing_or_other`,
+  `test_generated_field_does_not_shift_later_catalog_rows_or_conversion_warnings`,
+  `test_disabled_or_other_adds_neither_companion_nor_choice_to_surviving_list`,
+  `test_unrecognized_trailing_words_raise_conversion_error_with_physical_row`,
+  `test_or_other_is_deterministic_does_not_modify_workbook_and_adds_no_warning`,
+  and `test_cli_and_write_include_generated_companion_in_xml_and_json`.
+
+## 39. Amendment 6: scope and mechanisms of stderr suppression
+
+- **Question:** Is library suppression limited to the CLI or Python warnings,
+  and should diagnostics instead appear in ConversionResult.warnings? Does
+  suppression persist after conversion or swallow the converter's own errors?
+- **Assumption:** Library diagnostics must not reach stderr during either API
+  or CLI conversion, whether emitted through Python warnings, stderr printing,
+  or a logging handler. Only the already specified converter messages belong
+  in the result's warnings tuple. The spec does not require the API to print
+  its own warnings, so tests allow silence or lines from its own warnings;
+  the CLI must print each warning exactly once in order. ConversionError and
+  its CLI diagnostic remain observable. Suppression ends on both successful
+  and exceptional exits, so later caller prints/warnings remain visible.
+  No stdout format or policy for external subprocess/native diagnostics is
+  inferred.
+- **Tests:** All tests in `converter/tests/test_converter_library_stderr.py`.
+  The real XLSX fixture adds an unsupported worksheet extension and independently
+  checks that openpyxl warns when loading it. Additional tests inject warning,
+  print, and logging messages at the standard-library ZipFile.open boundary for
+  the input workbook, asserting that the injection actually ran; they neither
+  patch nor inspect converter internals. All generated fixtures are temporary;
+  no existing tests or production files were changed.
