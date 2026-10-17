@@ -138,7 +138,7 @@ def _run_pyxform(norm, form_id: str, title: str, version: str | None, source: st
         workbook_path = Path(tmp) / "form.xlsx"
         rows = _write_odk_workbook(norm, form_id, title, version, workbook_path)
         try:
-            with warnings.catch_warnings():
+            with warnings.catch_warnings(), _repeats_compared_by_identity():
                 warnings.simplefilter("ignore")
                 result = convert(xlsform=str(workbook_path), validate=False, pretty_print=True,
                                  warnings=[])
@@ -147,6 +147,29 @@ def _run_pyxform(norm, form_id: str, title: str, version: str | None, source: st
         except Exception as e:
             raise ConversionError(f"{source}: the form could not be converted ({e})") from e
     return _exact_version_attribute(result.xform, version)
+
+
+@contextlib.contextmanager
+def _repeats_compared_by_identity():
+    """
+    pyxform 4.5 compares repeat sections with ==, which serialises both whole sections each time:
+    a form with many questions in repeats took minutes. The comparison there asks whether two
+    sections are the same one, so it is made by identity while pyxform runs; the XForm is unchanged.
+    """
+    from pyxform.section import RepeatingSection
+
+    had_eq, had_hash = "__eq__" in RepeatingSection.__dict__, "__hash__" in RepeatingSection.__dict__
+    old_eq, old_hash = RepeatingSection.__dict__.get("__eq__"), RepeatingSection.__dict__.get("__hash__")
+    RepeatingSection.__eq__ = lambda self, other: self is other
+    RepeatingSection.__hash__ = object.__hash__
+    try:
+        yield
+    finally:
+        for name, had, old in (("__eq__", had_eq, old_eq), ("__hash__", had_hash, old_hash)):
+            if had:
+                setattr(RepeatingSection, name, old)
+            else:
+                delattr(RepeatingSection, name)
 
 
 def _exact_version_attribute(xform: str, version: str | None) -> str:
