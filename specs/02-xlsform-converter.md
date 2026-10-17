@@ -321,3 +321,15 @@ Clarification (Amendment 3): the assumptions recorded for Amendment 3 in
 the questions file are reviewed one by one and confirmed: every enabled
 row with a minimum time gets the attribute, whatever its type; only
 ordinary numbers ≥ 0 are accepted; disabled rows keep none.
+
+## Amendment 4: long runs of empty or disabled rows
+
+A real form (a follow-up survey with 1 448 rows) disables a group of
+136 rows. The converter then lost every row after that group and
+reported its enclosing group as unmatched. Completely empty rows and
+rows left out (disabled rows and the contents of disabled groups) are
+ignored **wherever they are and however many follow each other**: a
+form converts the same with any number of consecutive empty or
+left-out rows (100, 1 000) as without them. Row numbers in error
+messages and warnings remain those of the user's `survey` sheet.
+Everything else is unchanged.
