@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
+import logging
 import os
 import re
 import tempfile
@@ -55,7 +58,8 @@ def convert_xlsform(path: str | os.PathLike) -> ConversionResult:
     path = Path(os.fspath(path))
     source = path.name
 
-    survey, choices, settings = _read_workbook(path)
+    with _quiet_libraries():
+        survey, choices, settings = _read_workbook(path)
     if survey is None:
         raise ConversionError(f"{source}: the workbook has no 'survey' sheet")
     try:
@@ -67,7 +71,8 @@ def convert_xlsform(path: str | os.PathLike) -> ConversionResult:
     title = text(norm.settings.get("form_title")).strip() or form_id
     version = _version(norm.settings.get("version"))
 
-    xform = _run_pyxform(norm, form_id, title, version, source)
+    with _quiet_libraries():
+        xform = _run_pyxform(norm, form_id, title, version, source)
     return ConversionResult(
         xform=xform,
         form_id=form_id,
@@ -76,6 +81,20 @@ def convert_xlsform(path: str | os.PathLike) -> ConversionResult:
         fields=tuple(FieldInfo(*f) for f in norm.fields),
         warnings=tuple(norm.warnings),
     )
+
+
+@contextlib.contextmanager
+def _quiet_libraries():
+    """Keeps the messages of the libraries the converter uses off stderr: only the converter's own
+    warnings are written (spec 02, Amendment 6)."""
+    previous = logging.root.manager.disable
+    logging.disable(logging.CRITICAL)
+    try:
+        with warnings.catch_warnings(), contextlib.redirect_stderr(io.StringIO()):
+            warnings.simplefilter("ignore")
+            yield
+    finally:
+        logging.disable(previous)
 
 
 def _read_workbook(path: Path) -> tuple[Sheet | None, Sheet | None, Sheet | None]:
@@ -212,6 +231,9 @@ def _write_sheet(ws, sheet: Sheet) -> list[int]:
             continue
         _append(ws, row)
         user_rows.append(k + 2)
+        for added in sheet.added_after.get(k, ()):
+            _append(ws, added)
+            user_rows.append(k + 2)
     return user_rows
 
 

@@ -51,6 +51,8 @@ class NormalizationError(Exception):
 class Sheet:
     headers: list[str]
     rows: list[list[Any]]  # rows[k] is sheet row k + 2; empty rows are kept (as all-None)
+    # rows the converter adds after rows[k], written with the user's row number k + 2
+    added_after: dict[int, list[list[Any]]] = field(default_factory=dict)
 
     def column(self, name: str) -> int | None:
         return self.headers.index(name) if name in self.headers else None
@@ -64,6 +66,7 @@ class Normalized:
     fields: list[tuple[str, str, str, int]] = field(default_factory=list)  # name, type, xpath, row
     warnings: list[str] = field(default_factory=list)
     uses_ctosim_namespace: bool = False
+    or_other_lists: dict[str, str] = field(default_factory=dict)  # list name -> its copy with 'other'
 
 
 def read_sheet(worksheet) -> Sheet:
@@ -177,6 +180,9 @@ def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> N
             out.warnings.append(f"row {number}: field '{name}' of SurveyCTO type '{type_text}' becomes {target}")
 
         out.fields.append((name, type_text, _xpath(stack, name), number))
+        if select and type_text.split()[2:] == ["or_other"]:
+            _or_other(out, k, row, select.group(1), select.group(2), name, list_names)
+            out.fields.append((f"{name}_other", "text", _xpath(stack, f"{name}_other"), number))
 
     if stack:
         kind, number, name = stack[-1]
@@ -205,6 +211,86 @@ def _renamed_survey(survey: Sheet) -> Sheet:
         keep.append(i)
         headers.append(COLUMN_RENAMES.get(base, base) + (":" + lang if sep else ""))
     return Sheet(headers, [[r[i] for i in keep] for r in survey.rows])
+
+
+def _languages(*sheets: Sheet | None) -> set[str]:
+    """The languages named by translated columns ('label::French', 'hint:French', ...)."""
+    found = set()
+    for sheet in sheets:
+        for h in sheet.headers if sheet is not None else ():
+            base, sep, rest = h.partition(":")
+            if sep and base not in ("media", "bind", "body", "instance") and rest.lstrip(":"):
+                found.add(rest.lstrip(":"))
+    return found
+
+
+def _label_columns(sheet: Sheet, languages: set[str]) -> list[int]:
+    """The label columns of a sheet, adding one for each language that has none."""
+    have = {}
+    for i, h in enumerate(sheet.headers):
+        base, sep, rest = h.partition(":")
+        if base == "label":
+            have[rest.lstrip(":") if sep else ""] = i
+    for language in sorted(languages - set(have)):
+        sheet.headers.append(f"label::{language}")
+        for r in sheet.rows:
+            r.append(None)
+        for added in sheet.added_after.values():
+            for r in added:
+                r.append(None)
+        have[language] = len(sheet.headers) - 1
+    return list(have.values())
+
+
+def _or_other(out: Normalized, k: int, row: list[Any], kind: str, list_name: str, name: str,
+              list_names: set[str]) -> None:
+    """
+    SurveyCTO's or_other: the question offers its list followed by the choice 'other' (label
+    'Other'), and a text question <name>_other follows it (spec 02, Amendment 6).
+    """
+    s, choices = out.survey, out.choices
+    languages = _languages(s, choices)
+    copy_name = f"{list_name}_or_other"
+    while copy_name in list_names and not out.or_other_lists.get(list_name) == copy_name:
+        copy_name += "_"
+    if list_name not in out.or_other_lists:
+        out.or_other_lists[list_name] = copy_name
+        list_names.add(copy_name)
+        out.choices = choices = Sheet(list(choices.headers), [list(r) for r in choices.rows], dict(choices.added_after))
+        l_col = choices.column("list_name")
+        v_col = choices.column("name") if choices.column("name") is not None else choices.column("value")
+        labels = _label_columns(choices, languages)
+        copied = []
+        for r in choices.rows:
+            if not is_empty(r) and text(r[l_col]).strip() == list_name:
+                c = list(r)
+                c[l_col] = copy_name
+                copied.append(c)
+        other = [None] * len(choices.headers)
+        other[l_col], other[v_col] = copy_name, "other"
+        for i in labels:
+            other[i] = "Other"
+        choices.rows.extend(copied + [other])
+    row[s.column("type")] = f"{kind} {out.or_other_lists[list_name]}"
+
+    labels = _label_columns(s, languages)
+    companion = [None] * len(s.headers)
+    companion[s.column("type")], companion[s.column("name")] = "text", f"{name}_other"
+    for i in labels:
+        companion[i] = "Specify other."
+    if s.column("relevant") is None:
+        s.headers.append("relevant")
+        for r in s.rows:
+            r.append(None)
+        for added in s.added_after.values():
+            for r in added:
+                r.append(None)
+        companion.append(None)
+    r_col = s.column("relevant")
+    own = text(row[r_col]).strip()
+    selected = f"selected(${{{name}}}, 'other')"
+    companion[r_col] = f"({own}) and {selected}" if own else selected
+    s.added_after.setdefault(k, []).append(companion)
 
 
 def _settings(settings: Sheet | None) -> dict[str, Any]:
