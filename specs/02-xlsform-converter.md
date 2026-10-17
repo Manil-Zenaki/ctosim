@@ -382,3 +382,15 @@ before.
 The converter's standard error holds only its own warnings and errors:
 messages that the libraries it uses would print (for example about
 spreadsheet features they do not support) are not written.
+
+Clarification (Amendment 6): assumptions 34–39 of the questions file are
+reviewed one by one and confirmed. In particular, a question with
+`or_other` offers its list followed by one `other`, while plain
+questions using the same list keep their choices (34); collisions with
+an existing `other` value or `<name>_other` field are not specified (35);
+the companion is relevant when the question is relevant and its answer
+holds the token `other` (36); `Other` and `Specify other.` are given in
+every language of the form, including one introduced only by a hint
+(37); the catalog entry has the question's row, and no warning is added
+(38); library messages are kept off stderr whether they come as Python
+warnings, printing or logging, and only during a conversion (39).

@@ -683,3 +683,13 @@ override that is the configured one (or none) with `min` set to
 `repeats`, spec 04). A configured `min` or `max` for that field, its
 constraint, hints and the search of Amendment 6 apply as for any
 question.
+
+Clarification (Amendment 9): assumptions 58–64 of the questions file are
+reviewed one by one and confirmed. In particular, dependence follows the
+references of the count expression and of control-free fields, not the
+expressions of a field with a control (58); only questions answered as
+`INTEGER` (integer or long inputs and ranges) are count questions, an
+integer select is not (59); the effective override after conditional
+rules decides whether a range is configured (60); the added range keeps
+every other setting of the override (61); it bounds the generated answer
+only, not calculations, kept values or the search (62).
