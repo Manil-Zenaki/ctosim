@@ -656,11 +656,42 @@ public final class AnswerGenerator {
     /** A random string matching the whole pattern, or null when none can be produced. */
     private static String matching(String pattern, RandomGenerator random) {
         try {
+            Pattern compiled = Pattern.compile(pattern);
             String s = RgxGen.parse(pattern).generate(random);
-            return s != null && Pattern.compile(pattern).matcher(s).matches() ? s : null;
+            return s != null && compiled.matcher(s).matches() ? readable(s, compiled, random) : null;
         } catch (RuntimeException | StackOverflowError e) {
             return null; // unsupported or unsatisfiable pattern
         }
+    }
+
+    /** Letters, digits and the space tried in place of a symbol: ASCII first, then other scripts. */
+    private static final int[][] READABLE = {
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ".codePoints().toArray(),
+        "\u00e9\u00e8\u00e0\u00e7\u00c9\u03c9\u03a9\u4e2d\u6587\u0665\u0661".codePoints().toArray()};
+
+    /**
+     * The answer with each symbol replaced, at random, by a letter, digit or space that keeps it
+     * matching the pattern; symbols stay only where none fits (spec 09, Amendment 3).
+     */
+    private static String readable(String s, Pattern pattern, RandomGenerator random) {
+        int[] cps = s.codePoints().toArray();
+        for (int i = 0; i < cps.length; i++) {
+            if (Character.isLetterOrDigit(cps[i]) || cps[i] == ' ') {
+                continue;
+            }
+            int original = cps[i];
+            List<Integer> fits = new ArrayList<>();
+            for (int k = 0; k < READABLE.length && fits.isEmpty(); k++) {
+                for (int c : READABLE[k]) {
+                    cps[i] = c;
+                    if (pattern.matcher(new String(cps, 0, cps.length)).matches()) {
+                        fits.add(c);
+                    }
+                }
+            }
+            cps[i] = fits.isEmpty() ? original : fits.get(random.nextInt(fits.size()));
+        }
+        return new String(cps, 0, cps.length);
     }
 
     // --- Constraint hints (spec 09) -------------------------------------------------
