@@ -1,0 +1,20 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Amendment 8 nested reference context</h:title><model>
+    <instance><data id="amendment8-nested"><size>2</size><family jr:template="">
+      <parent/><member jr:template=""><target/><answer/></member>
+    </family></data></instance>
+    <bind nodeset="/data/size" type="int"/>
+    <bind nodeset="/data/family/parent" type="int" calculate="position(..)"/>
+    <bind nodeset="/data/family/member/target" type="int" calculate="70 + position(..)"/>
+    <bind nodeset="/data/family/member/answer" type="int"
+          constraint="(/data/family/parent &gt; 0) and (.&gt;=/data/family/member/target) and (.&lt;=60)"/>
+  </model></h:head>
+  <h:body>
+    <repeat nodeset="/data/family" jr:count="/data/size">
+      <repeat nodeset="/data/family/member" jr:count="/data/size">
+        <input ref="/data/family/member/answer"><label>Nested answer</label></input>
+      </repeat>
+    </repeat>
+  </h:body>
+</h:html>

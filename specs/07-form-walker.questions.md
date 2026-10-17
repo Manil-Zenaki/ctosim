@@ -1025,3 +1025,123 @@ modified; existing test helpers are reused through their test APIs.
   files against the project class files and cached APIs; see
   `.codex-runs/walker-dispute5-compile.log`. Independent JUnit execution is
   recorded in the disputes file; it is not a successful Maven build.
+
+## Amendment 8 questions and assumptions (2026-10-17)
+
+Only new `FormWalkerAmendment8*` test/support classes and fixtures under
+`src/test/resources/ctosim/form-walker/amendment8/` are added. Existing tests
+and fixtures are preserved. No production source was opened, searched, or
+modified; the public signatures come from specs 07 and 08.
+
+52. **Question:** What exact path spelling and warning prose are required?
+    Earlier assumption 41 did not require paths in final-failure warnings.
+    **Assumption:** Amendment 8 now explicitly requires the record's path,
+    including repeat indices, to agree with its warning. Tests require a
+    nonblank path containing the question name and occurring in the
+    corresponding warning; repeated steps must include their one-based
+    indices. They do not prescribe root/group multiplicity notation,
+    punctuation, or a complete English sentence. The new path requirement
+    supersedes the earlier weaker assumption only in the new tests.
+    **Tests:** `assertRecordsMatchWarnings` and its callers,
+    `eachRepeatedFailureHasItsOwnIndexedPathAndSameInstanceAbsoluteReference`,
+    `nestedRepeatsDisambiguateBothIndicesAndCaptureTheSameParentAndChild`,
+    `aGroupedUnicodeQuestionRecordsItsLeafNameAndWarningPath`.
+
+53. **Question:** How much whitespace, quoting, and formatting may the
+    diagnostic constraint change, especially for hand-authored XForms?
+    **Assumption:** It is the decoded XForm attribute text, with the
+    stated reference substitutions and converter-padding removal, not a
+    pretty-printed or canonicalized XPath. The exact padding assertion
+    uses the amendment's own example; other exact substitutions use paths
+    directly adjoining punctuation, where there is no padding ambiguity.
+    Unrelated spaces and string-literal quote styles remain intact. Tests
+    do not impose additional rules for tabs, newlines, arbitrary runs of
+    whitespace adjacent to paths, wildcard paths, or predicate rewriting.
+    **Tests:** Constraint-format tests in `FormWalkerAmendment8ReferencesTest`
+    and the exact unpadded constraints in `FormWalkerAmendment8RepeatsTest`.
+
+54. **Question:** Do relative, repeated, self, secondary-instance, quoted,
+    and short-circuited references all count alike?
+    **Assumption:** The map concerns actual references to primary-instance
+    fields, whether relative or absolute; only absolute references are
+    rewritten in the displayed constraint. Quoted path text is a literal,
+    and a secondary-instance field remains excluded even when a primary
+    field has the same name. A primary field mentioned in a short-circuited
+    branch still occurs in the constraint. Repeated mentions give one key
+    at its first occurrence; the question itself is excluded. Repeated
+    references use the same contextual parent/child instance, while a
+    reference outside a repeat joins its node texts in document order.
+    **Tests:** Reference classification/order tests in
+    `FormWalkerAmendment8ReferencesTest`; absolute/relative contextual,
+    aggregate, and nested tests in `FormWalkerAmendment8RepeatsTest`.
+
+55. **Question:** What if distinct primary fields share a leaf name, or a
+    multi-node reference includes empty nodes? When clearing changes a
+    calculated reference immediately, is its pre- or post-clear value used?
+    **Assumption:** The name-keyed map cannot unambiguously represent
+    collisions, and the exact joining of empty repeated values and atomic
+    ordering of dependent recalculation are not fully specified. No tests
+    constrain those cases. Snapshot tests use references unchanged by the
+    same clearing, then changed by a later answer or clearing. They require
+    the values at that failure, not the final XML's values. A scalar empty
+    value is explicitly tested as an empty string; nonempty multi-node
+    values are joined with exactly one space. Stored typed values are
+    compared with serialized instance text, avoiding numeric reformatting
+    assumptions.
+    **Tests:** Navigation/final snapshot and stored-text tests in
+    `FormWalkerAmendment8ReferencesTest`,
+    `aFailureWhoseReferenceWasClearedOnThePreviousPassIsRecordedOnlyOnce`,
+    `aReferenceFromOutsideARepeatJoinsAllNodeTextsInDocumentOrder`.
+
+56. **Question:** Does the record's public constructor impose defensive-copy,
+    null-validation, or additional argument-validation requirements?
+    **Assumption:** None are stated, so no such requirements are invented.
+    Immutability is tested on lists and maps returned by actual submissions,
+    including entry mutation and collection views. Record equality is used
+    to compare complete results on replay. `Submission.of` is checked for
+    an immutable empty list even for unchecked XML, as spec 08 permits.
+    **Tests:** List/map immutability tests, replay and prior-result stability,
+    `submissionsBuiltWithOfHaveAnUnmodifiableEmptyFailureList`.
+
+57. **Question:** Which failures create a record, and can intermediate
+    rejected candidates or repeated final passes create extra entries?
+    **Assumption:** Records correspond one-to-one to final constraint-failure
+    warnings, in their occurrence order. Requiredness warnings add no record.
+    Both ordinary exhaustion and clearing after five passes qualify; successful
+    retries/search/repairs do not. Deliberate missingness, empty expression
+    answers, conversion failures, empty offered choices and skipped fields
+    do not qualify even when their constraints are impossible. All assertions
+    concern the new record API; the pre-existing lifecycle rules only arrange
+    and check the situations that exercise it.
+    **Tests:** `FormWalkerAmendment8RecordingTest`,
+    `FormWalkerAmendment8ExclusionsTest`, and repeat boundary/relevance tests.
+
+### Amendment 8 build and validation
+
+- **Question:** Can the requested `mvnw.cmd -o -q test-compile` complete?
+- **Assumption:** Dependency-cache access failures are environmental, not
+  Java-source diagnostics. The exact command fails in `testCompile` on
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`; an offline `-e`
+  diagnostic confirms `java.nio.file.AccessDeniedException` in
+  `WindowsLinkSupport.getRealPath`. No dependencies, build settings or
+  repositories were changed, installed, copied or remapped.
+- **Compilation:** The existing offline diagnostic compiler,
+  `.codex-runs/WalkerAmendment5CompileProbe.java`, compiles all 43 FormWalker
+  test/support sources with Java release 17 against actual project class
+  files and cached JavaRosa/JUnit APIs. Its in-memory jar file manager
+  bypasses the failing Windows path canonicalization without substitute
+  production stubs. This verifies source/API compilation independently;
+  it is not a successful Maven invocation. Logs:
+  `.codex-runs/walker-amendment8-test-compile.log`,
+  `.codex-runs/walker-amendment8-test-compile-detail.log`, and
+  `.codex-runs/walker-amendment8-probe-compile.log`.
+- **Execution:** The new suite has 63 cases. The offline JUnit launcher
+  runs them against the real project classes; they fail at the pending
+  `Submission.unsatisfiedConstraints()` accessor with
+  `UnsupportedOperationException`. No fixture-loading failures, skipped
+  tests, aborted tests or failed containers occur. This validates loading
+  and setup, not the record assertions beyond the unimplemented accessor.
+  Log: `.codex-runs/walker-amendment8-junit.log`.
+- Existing tests, production code, build configuration and other specs
+  remain unchanged. No commit was made. Temporary diagnostics stay under
+  `.codex-runs/`.

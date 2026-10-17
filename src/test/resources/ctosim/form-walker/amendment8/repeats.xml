@@ -1,0 +1,19 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Amendment 8 repeated references</h:title><model>
+    <instance><data id="amendment8-repeats">
+      <size>__SIZE__</size><gate>0</gate><row jr:template=""><target/><answer/></row>
+    </data></instance>
+    <bind nodeset="/data/size" type="int"/>
+    <bind nodeset="/data/gate" type="int"/>
+    <bind nodeset="/data/row/target" type="int" calculate="70 + position(..)"/>
+    <bind nodeset="/data/row/answer" type="int" __CONSTRAINT__/>
+  </model></h:head>
+  <h:body>
+    __BEFORE__
+    <repeat nodeset="/data/row" jr:count="/data/size">
+      <input ref="/data/row/answer"><label>Answer</label></input>
+    </repeat>
+    __AFTER__
+  </h:body>
+</h:html>

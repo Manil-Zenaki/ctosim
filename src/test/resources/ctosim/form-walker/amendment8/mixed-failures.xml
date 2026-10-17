@@ -1,0 +1,22 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Amendment 8 warning order</h:title><model>
+    <instance><data id="amendment8-order">
+      <lateA>4</lateA><second/><conversion/><lateB>5</lateB><first/><gate>0</gate>
+    </data></instance>
+    <bind nodeset="/data/lateA" type="int" constraint="/data/gate = 0"/>
+    <bind nodeset="/data/lateB" type="int" constraint="/data/gate = 0" required="true()"/>
+    <bind nodeset="/data/second" type="int" constraint="false()"/>
+    <bind nodeset="/data/first" type="int" constraint="false()" required="true()"/>
+    <bind nodeset="/data/conversion" type="int" constraint="false()"/>
+    <bind nodeset="/data/gate" type="int"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/lateB"><label>Late B</label></input>
+    <input ref="/data/first"><label>First</label></input>
+    <input ref="/data/conversion"><label>Conversion</label></input>
+    <input ref="/data/second"><label>Second</label></input>
+    <input ref="/data/lateA"><label>Late A</label></input>
+    <input ref="/data/gate"><label>Gate</label></input>
+  </h:body>
+</h:html>
