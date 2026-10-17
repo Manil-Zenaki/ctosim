@@ -50,3 +50,25 @@ were skipped or aborted, including the disputed test with the unchanged
 `cli-dispute-maven.log`, `cli-dispute-compile.log`, and
 `cli-dispute-junit.log`. The diagnostic run is supplementary validation,
 not a successful Maven build.
+
+## Dispute 5: fictitious files read with the export parser; integer keys (Amendment 2)
+
+1. Ten tests of `CliAmendment2PipelineTest` and `CliAmendment2ReportTest`
+   (for example `generatedFilesAreWrittenExactlyWithTheDefaultSeed`,
+   `anExistingFileWinsOverInventionWhileTheOtherMissingFileIsStillBuilt`,
+   the four `anyExplicitAnswerOverrideTakesPrecedenceOverSuggestedKeys`
+   cases) read `attachments/<name>.csv` through
+   `SurveyCtoExporterTestSupport.csv`, which asserts "CSV must not have a
+   final line feed". That rule belongs to SurveyCTO exports (spec 08).
+   The fictitious files follow spec 12, "Content of a file": "lines end
+   with LF", confirmed by assumption 3 of `12-fake-attachments.questions.md`
+   ("the final CSV record is terminated by LF"), and the spec 12 tests
+   require that final LF. The CLI tests should read these files with a
+   parser that accepts the final LF, as spec 12 requires them to have it.
+2. `integerKeySuggestionsHaveExactlyTheSpecifiedTextsOverrideSemantics`:
+   assumption 21 of `10-cli.questions.md` pointed out that `texts` has no
+   effect on an integer question, so integer keys could never match. The
+   amendment's step 3 is now amended: a question whose keys are row
+   numbers `1` to `N` is answered as if the configuration gave it
+   `{"min": 1, "max": N}`. The test should check that semantics (answers
+   within 1 to N, lookups succeeding).

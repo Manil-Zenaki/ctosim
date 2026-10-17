@@ -183,3 +183,18 @@ Per-do-file runner logs are under `target/stata-tests/`.
 
 `git diff --check` passed. No production implementation was read or modified,
 and no commit was made.
+
+## Dispute 4: the fixture's standard output is not UTF-8 (Amendment 5)
+
+`test_fakepreload_display.do` (case `many`) and
+`test_fakepreload_template_failure.do` fail in the fixture's own check,
+`FakepreloadFixture.checkLog`, with `java.nio.charset.MalformedInputException`
+while reading the Stata log as UTF-8. The log holds the fixture's stdout
+line `Invented content for Zebra.csv, alpha.csv, ménages.csv`, which the
+fixture prints with `System.out` in the platform encoding (é as the single
+byte 0xE9 on Windows), next to the report line that the command shows in
+UTF-8. The real simulator writes its output in UTF-8 (spec 10,
+Clarifications: "main writes out and err in UTF-8"), so a faithful test
+double should print UTF-8 too (for example through a `PrintStream` with
+`StandardCharsets.UTF_8`); the command shows the simulator's lines as it
+receives them.
