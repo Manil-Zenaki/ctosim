@@ -173,6 +173,7 @@ program define ctosim, rclass
     * ---- the run report ----
     local report `"`outdir'/run-report.txt"'
     local warnings 0
+    local unsatisfied 0
     local wide ""
     file open `fh' using `"`report'"', read text
     file read `fh' line
@@ -182,6 +183,11 @@ program define ctosim, rclass
         else if ustrregexm(`"`macval(line)'"', "^Seed: (.+)$") local runseed = ustrregexs(1)
         else if ustrregexm(`"`macval(line)'"', "^Submissions: ([0-9]+)$") local runN = ustrregexs(1)
         else if `"`macval(line)'"' == "Files:" local section files
+        else if ustrregexm(`"`macval(line)'"', "^Unsatisfied constraints: ([0-9]+)$") {
+            local unsatisfied = ustrregexs(1)
+            local section unsatisfied
+            mata: _ctosim_line("err", st_local("line"))
+        }
         else if ustrregexm(`"`macval(line)'"', "^Warnings: ([0-9]+)$") {
             local warnings = ustrregexs(1)
             local section warnings
@@ -190,6 +196,7 @@ program define ctosim, rclass
         else if substr(`"`macval(line)'"', 1, 2) == "  " {
             if "`section'" == "files" & `"`wide'"' == "" local wide = substr(`"`macval(line)'"', 3, .)
             if "`section'" == "warnings" mata: _ctosim_line("txt", st_local("line"))
+            if "`section'" == "unsatisfied" mata: _ctosim_line("err", st_local("line"))
         }
         file read `fh' line
     }
@@ -213,6 +220,7 @@ program define ctosim, rclass
 
     return scalar N = real("`runN'")
     return scalar warnings = real("`warnings'")
+    return scalar unsatisfied = real("`unsatisfied'")
     return scalar seed = real("`runseed'")
     return local form_id `"`form_id'"'
     return local outdir `"`outdir'"'

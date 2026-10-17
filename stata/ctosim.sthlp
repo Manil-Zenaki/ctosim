@@ -155,7 +155,7 @@ that they arrive exactly as the real data will (dates, labels):{p_end}
 {pstd}Read the stored results and look at the warnings of the run:{p_end}
 {phang2}{cmd:. ctosim using "household.xlsx", n(100) clear}{p_end}
 {phang2}{cmd:. return list}{p_end}
-{phang2}{cmd:. display r(N) " submissions, " r(warnings) " warnings"}{p_end}
+{phang2}{cmd:. display r(N) " submissions, " r(warnings) " warnings, " r(unsatisfied) " unsatisfied constraints"}{p_end}
 {phang2}{cmd:. type "`r(report)'"}{p_end}
 
 {pstd}{bf:Advanced examples}{p_end}
@@ -227,6 +227,7 @@ area and local place names, with {it:realistic.json}:{p_end}
 {p2col 5 16 20 2: Scalars}{p_end}
 {synopt:{cmd:r(N)}}number of submissions simulated{p_end}
 {synopt:{cmd:r(warnings)}}number of warnings in the run report{p_end}
+{synopt:{cmd:r(unsatisfied)}}number of questions whose constraint no answer could satisfy (0 when none){p_end}
 
 {p2col 5 16 20 2: Macros}{p_end}
 {synopt:{cmd:r(seed)}}seed used{p_end}
@@ -234,6 +235,18 @@ area and local place names, with {it:realistic.json}:{p_end}
 {synopt:{cmd:r(outdir)}}output directory (absolute path){p_end}
 {synopt:{cmd:r(wide)}}wide CSV file (absolute path){p_end}
 {synopt:{cmd:r(report)}}{cmd:run-report.txt} (absolute path){p_end}
+
+
+{pstd}
+{bf:Unsatisfied constraints.} When no answer met a question's constraint,
+{cmd:ctosim} leaves the question blank and lists it, in red, under
+{bf:Unsatisfied constraints} in the Results window and in the run report: the
+question's name, its row in the XLSForm, its constraint, the submissions
+concerned and the values of the fields the constraint refers to.
+This usually means a constraint that cannot hold given the answers it refers
+to (for example {it:. >= ${age} and . <= 60} after an age of 90 was
+accepted): check the form. {cmd:r(unsatisfied)} gives the number of such
+questions.{p_end}
 
 
 {title:Reporting a problem}
