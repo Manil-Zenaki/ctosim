@@ -264,3 +264,45 @@ The other **12 failures** are in the unchanged seven `test_amendment_*.do` and f
 The independent helper checks pass **14 unittest methods**, including per-feature/key subcases, against a synthetic help fixture and deliberately broken variants. Checks include all basic commands, omitted advanced features in otherwise valid JSON, missing descriptions, malformed/duplicate/unknown JSON keys, missing configurations, constant seeds, row-count-only assertions, and the two generation guarantees. Positive variants cover heading styles, wrapped commands, literal/escaped JSON braces, JSON outside Examples, normal/lognormal choices, and both loop forms. A separate Stata 16 batch probe runs all five new do-files to completion against the valid fixture and verifies that an invalid fixture produces a nonzero Stata error. This establishes both successful execution and failure propagation independently of the missing production documentation.
 
 Logs: `.codex-runs/stata-help-use-cases/full-suite.log`, the five area logs in that directory, `.codex-runs/stata-help-use-cases/oracle-tests.log`, `.codex-runs/stata-help-use-cases/probe/probe.log`, and `target/stata-tests/test_help_use_cases_*/runner.log`. Only new test/support/fixture files and this questions file were written outside the permitted temporary-output locations. Production sources were not inspected; the help artifact was read only by the tests. Existing tests were retained, and no commit was made.
+
+## Amendment 4: additional questions and assumptions
+
+### D1. Valid reports and the meaning of the count
+
+**Question:** Should an empty, malformed, duplicated, or zero-count section be accepted, and is the count questions or occurrences?
+
+**Assumption:** Spec 10 Amendment 1 defines only a positive-count section, omitted when there are no unsatisfied constraints. Tests use that format and do not invent malformed-report behavior. `r(unsatisfied)` is the first-line question count, independent of submissions, warning count, number of section lines, and repeated occurrences. Fixtures cover 1, 3, and 12 questions; 25 submissions; optional row/reference lines; a 20-item truncated submission list; blank references; Unicode; and literal XPath `${limit}`. No statistical simulation expectations are added.
+
+**Tests:** `test_unsatisfied_results.do`, `test_unsatisfied_display.do`, `test_unsatisfied_absent.do`.
+
+### D2. Display color, layout, and ordering
+
+**Question:** Must original indentation be retained, and does “before the warnings” also apply to the simulator's own stdout summary?
+
+**Assumption:** Indentation and diagnostic prefixes are free. Each complete section line must occur once, in report order, on its own display line, with error styling, before step 3's warning count and individual warnings. The earlier simulator stdout count is allowed, as required by the unchanged execution step. SMCL logs expose `display as error` as error-style markup; the oracle tracks persistent error/text/result/input styles rather than requiring a color directive on every line. It does not prescribe terminal RGB values. Fixture lines fit Stata's 255-column test log, avoiding unspecified wrapping behavior. A report with no section must not fabricate one, and must return scalar zero even after a previous nonzero run.
+
+**Tests:** `test_unsatisfied_display.do`, `test_unsatisfied_absent.do`, `test_unsatisfied_template.do`, `test_unsatisfied_template_failure.do`; `UnsatisfiedFixture.log`.
+
+### D3. Loading and failed templates
+
+**Question:** Does an unsatisfied section alter loading semantics, and must `r(unsatisfied)` be available after a template error?
+
+**Assumption:** Both loading modes and all existing successful stored results remain unchanged. Plain import is compared with the specified native `import delimited` command, including blank cells and Unicode. A successful template may alter the dataset, cwd and `r()`; the command must still restore cwd and return report values. A failed template must retain its partial data and original error code after the section is shown. No stored results are asserted on an unsuccessful command, because the spec does not promise them.
+
+**Tests:** `test_unsatisfied_plain_import.do`, `test_unsatisfied_template.do`, `test_unsatisfied_template_failure.do`.
+
+### D4. Help prose
+
+**Question:** How should automated checks recognize the explanation without prescribing its wording?
+
+**Assumption:** The help test checks the stored-result name and broad English concepts: unsatisfied constraints, blank answers, impossibility, dependence on referenced answers, and checking the form. Equivalent wording may require extending the vocabulary. These are documentation smoke checks; they cannot prove the causal explanation or the “usually” qualification is correct. Semantic review remains necessary, consistent with the original question 10. No exact sentence or SMCL layout is required.
+
+**Tests:** `test_unsatisfied_help.do`; `UnsatisfiedFixture.help`.
+
+### D5. Independent fixtures and unchanged existing tests
+
+**Question:** Can Amendment 4 reuse the existing process-isolation harness without modifying committed tests?
+
+**Assumption:** Yes. The existing launcher creates a disposable simulator jar per child; a new helper replaces only that private copy with the new process fixture. The fixture writes a controlled spec-10 report and CSV and does not import or inspect production code. The new build hook compiles Java 8 compatible support into `.codex-runs/stata-support/`. The existing runner's own logs remain under its prescribed `target/stata-tests/`; all additional generated artifacts stay under `.codex-runs/`. New do-files are independent and propagate assertion/Java failures as nonzero Stata errors. Existing tests and helpers are preserved.
+
+**Tests:** All seven `test_unsatisfied_*.do` files, `unsatisfied-helpers.do`, `build-unsatisfied-fixtures.ps1`, and new fixtures under `src/test/stata/fixtures/`.
