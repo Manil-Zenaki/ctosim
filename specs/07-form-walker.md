@@ -652,3 +652,13 @@ cannot be converted, an empty choice list) are not recorded.
   instance. Keys follow the order of their first appearance in the
   constraint; the map is unmodifiable and iterates in that order. It is
   empty when the constraint refers to no other field.
+
+Clarification (Amendment 8): assumptions 52–57 of the questions file are
+reviewed one by one and confirmed. In particular, a record's path is the
+one its warning names, with repeat indices (52); the constraint is the
+XForm text with only the stated substitutions, and a path inside a
+string literal is not a reference (53, 54); relative references count
+like absolute ones, while only absolute ones are rewritten `${name}`
+(54); references are read when the question is left blank or cleared,
+not on the final instance (55); records match the constraint warnings
+one to one, and required-field warnings add none (57).

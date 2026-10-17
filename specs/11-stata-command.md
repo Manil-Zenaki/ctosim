@@ -260,3 +260,11 @@ mentioned here is unchanged.
   no answer met their constraint, which usually means a constraint that
   cannot hold given the answers it refers to, and the form should be
   checked.
+
+Clarification (Amendment 4): assumptions D1–D5 of the questions file are
+reviewed one by one and confirmed. In particular, `r(unsatisfied)` counts
+questions, as the section's first line does (D1); indentation is free,
+each section line is shown once, in report order, in the error style,
+before the warning count (D2); loading and a failing do-file behave as
+before (D3); the help file is checked for its content, not an exact
+sentence (D4).

@@ -210,3 +210,11 @@ When the section is present, the run prints a third line on `out`,
 after the two of "What a run does": it gives `<F>`, says that their
 constraints could not be satisfied, names the questions in the order of
 the section, separated by `, `, and names `run-report.txt`.
+
+Clarification (Amendment 1): assumptions 13–17 of the questions file are
+reviewed one by one and confirmed. In particular, the third line on `out`
+has no exact sentence, only the stated content (13); questions are
+grouped by their path without repeat indices, so equal names at
+different paths stay distinct, and the catalog row is looked up by that
+full path (14); isolated CR and LF both become spaces (15); a run
+without records is unchanged in every respect (17).
