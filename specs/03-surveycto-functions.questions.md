@@ -223,3 +223,97 @@ Tests are derived from spec 03 and its explicit relationship to spec 01. No repo
   `.codex-runs/03-dispute4-compile.log`, and
   `.codex-runs/03-dispute4-junit.log`. No production source was read or
   changed. No dependency, repository, or build configuration was changed.
+
+## Amendment 5: the second argument of selected
+
+38. **Which expression sites and session APIs does this amendment cover?**
+    Assumption: "as for the first argument above" inherits Amendment 2's
+    confirmed scope (question 15): calculate, relevant, constraint, required,
+    readonly, and setvalue values. Tests include first-load model actions and
+    value-changed body actions. No new requirement is inferred for body
+    ref/nodeset predicates, output labels, or calculate_here. "Every session"
+    includes ordinary sessions and both simulated-session overloads. Existing
+    tests and fixtures remain untouched; the new fixtures are specific to
+    Amendment 5.
+    Tests: `SurveyCtoAmendment5CalculationTest`,
+    `SurveyCtoAmendment5BindingTest`, `SurveyCtoAmendment5ScopeTest`.
+
+39. **Which argument conversions and unchanged matching rules are asserted?**
+    Assumption: XPath string conversion applies to finite integer/decimal
+    literals, typed field values, arithmetic, nested calls, and boolean results.
+    Whole numbers have no decimal suffix, and decimals do not retain insignificant
+    trailing zeros. Matching remains exact and token-based: 3 does not match 03,
+    3.0, or a substring of 13. Already-string arguments retain leading zeros,
+    case, and Unicode. Amendment 2 still converts the first argument when both
+    arguments are numbers. There are no new assertions for dates, nonfinite
+    numbers, multi-node references outside repeat context, unusual whitespace,
+    invalid arity, random distributions, or performance. The result remains an
+    XPath Boolean; bracketed calculate/action results avoid answer-storage
+    conversion affecting assertions.
+    Tests: `SurveyCtoAmendment5CalculationTest.selections`, its calculate and
+    setvalue consumers, and
+    `SurveyCtoAmendment5BindingTest.storedSelectedExpressionStillReturnsAnXpathBoolean`.
+
+40. **What if both the answer list and the second argument are empty?**
+    Assumption: no new expectation is imposed on this combination. The amendment
+    says an empty field is not selected, but also preserves existing string
+    behavior; native JavaRosa evaluates `selected('', '')` as true. Requiring
+    false for that string call would conflict with the unchanged-behavior clause.
+    The tests therefore omit both `selected('', '')` and `selected('', blank)`.
+    An empty second argument with the nonempty list `1 3 4` must be false, and
+    filling/clearing an integer field must distinguish empty from numeric zero.
+    Tests: `SurveyCtoAmendment5CalculationTest.selections`,
+    `fillingAndClearingSecondArgumentDistinguishesZeroFromEmpty`, and the
+    clearing checks in `SurveyCtoAmendment5BindingTest` and
+    `SurveyCtoAmendment5RepeatTest`.
+
+41. **What context and recalculation guarantees are required?**
+    Assumption: existing context and dependency rules remain in force. Relative
+    and absolute references to a repeated numeric field resolve to the current
+    instance, nested index values restart in each parent, and engine-created
+    repeats evaluate their own numeric index. Tests use engine answer/repeat
+    APIs, not direct mutation of instance nodes. Both argument dependencies are
+    exercised, along with candidate-value constraints and session isolation.
+    First-load action inputs use typed defaults or literal expressions, avoiding
+    assumptions about ordering relative to calculates. No additional recalculation
+    scheduling, repeat-deletion, or random-seed behavior is specified.
+    Tests: `SurveyCtoAmendment5RepeatTest`, the update tests in
+    `SurveyCtoAmendment5CalculationTest`, and `SurveyCtoAmendment5BindingTest`.
+
+42. **How is the unchanged external-expression behavior checked?**
+    Assumption: the confirmed approach of question 19 still applies. A freshly
+    parsed external expression is evaluated in both the session context and a
+    fresh native JavaRosa context over the same instance; the value and type,
+    or exception class, must agree. The fixture contains a numeric selected
+    call in a constraint, which does not need evaluation during initialization,
+    so these tests remain independent of unimplemented calculate coercion.
+    Exception message wording is not asserted. All positive coercion assertions
+    elsewhere evaluate stored form expressions.
+    Tests: `SurveyCtoAmendment5ScopeTest` (ordinary and both simulated APIs).
+
+### Amendment 5 build verification
+
+- **Question:** Can the requested offline Maven test compilation complete?
+- **Assumption:** The cached-dependency access failure is an environment
+  limitation, not grounds to change tests or build configuration.
+  `.\mvnw.cmd -o -q test-compile` reaches `testCompile` but fails; a diagnostic
+  `-e` retry confirms `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+- **Tests affected:** Full Maven validation remains blocked. Independent
+  diagnostic compilation with `--release 17` succeeds for all five new Java
+  files and unchanged support dependencies, using existing compiled classes and
+  cached dependency bytes. No production source was opened, searched, or changed;
+  no dependency or Maven repository was copied or modified.
+- The targeted JUnit run discovers and executes all 135 new cases: 28 pass and
+  107 fail against the pre-Amendment-5 implementation, with no skipped or aborted
+  cases. Failures report the native numeric-second-argument type mismatch.
+  These failures cannot validate every downstream assertion before implementation.
+  A separate temporary diagnostic uses explicit XPath `string()` wrappers in
+  the repeat fixture and passes all ten repeat checks, verifying fixture shape,
+  repeat creation, context, and update mechanics. It is not a substitute for
+  the unchanged numeric-argument contract tests.
+- Logs: `.codex-runs/03-amendment5-test-compile.log`,
+  `.codex-runs/03-amendment5-test-compile-detail.log`,
+  `.codex-runs/03-amendment5-memory-compile.log`,
+  `.codex-runs/03-amendment5-junit.log`, and
+  `.codex-runs/03-amendment5-fixture-probe.log`.

@@ -1,0 +1,31 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head><h:title>Selected second argument</h:title><model>
+    <instance><data id="amendment5-selected"><number>3</number><decimal>2.5</decimal><blank/><calculated/><text>03</text><many>1 3 4</many><single>3</single><result/><target/></data></instance>
+    <bind nodeset="/data/number" type="int"/>
+    <bind nodeset="/data/decimal" type="decimal"/>
+    <bind nodeset="/data/blank" type="int"/>
+    <bind nodeset="/data/calculated" type="string" calculate="/data/number"/>
+    <bind nodeset="/data/text" type="string"/>
+    <bind nodeset="/data/many" type="select"/>
+    <bind nodeset="/data/single" type="select1"/>
+    <bind nodeset="/data/result" type="string" __RESULT_BIND__/>
+    <bind nodeset="/data/target" type="int" __TARGET_BIND__/>
+    __ACTION__
+  </model></h:head>
+  <h:body>
+    <input ref="/data/number"><label>Number</label>__BODY_ACTION__</input>
+    <input ref="/data/decimal"><label>Decimal</label></input>
+    <input ref="/data/blank"><label>Blank</label></input>
+    <input ref="/data/text"><label>Text</label></input>
+    <select ref="/data/many"><label>Members</label>
+      <item><label>One</label><value>1</value></item>
+      <item><label>Three</label><value>3</value></item>
+      <item><label>Four</label><value>4</value></item>
+    </select>
+    <select1 ref="/data/single"><label>Single</label>
+      <item><label>Three</label><value>3</value></item>
+      <item><label>Two</label><value>2</value></item>
+    </select1>
+    <input ref="/data/target"><label>Target</label></input>
+  </h:body>
+</h:html>

@@ -1,0 +1,34 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Member index as selected argument</h:title><model>
+    <instance><data id="amendment5-repeats">
+      <valid_members>1 3 4</valid_members>
+      <row jr:template=""><member_index/><number>3</number><result/><direct/><by_number/><visible/>
+        <inner jr:template=""><member_index/><result/></inner>
+      </row>
+      <row><member_index/><number>3</number><result/><direct/><by_number/><visible/>
+        <inner><member_index/><result/></inner><inner><member_index/><result/></inner>
+      </row>
+      <row><member_index/><number>2</number><result/><direct/><by_number/><visible/>
+        <inner><member_index/><result/></inner>
+      </row>
+      <row><member_index/><number>4</number><result/><direct/><by_number/><visible/></row>
+    </data></instance>
+    <bind nodeset="/data/valid_members" type="string"/>
+    <bind nodeset="/data/row/member_index" type="string" calculate="index()"/>
+    <bind nodeset="/data/row/number" type="int"/>
+    <bind nodeset="/data/row/result" type="string" calculate="concat('[', selected(/data/valid_members, __ROW_INDEX__), ']')"/>
+    <bind nodeset="/data/row/direct" type="string" calculate="concat('[', selected(/data/valid_members, index()), ']')"/>
+    <bind nodeset="/data/row/by_number" type="string" calculate="concat('[', selected(/data/valid_members, __ROW_NUMBER__), ']')"/>
+    <bind nodeset="/data/row/visible" type="string" relevant="selected(/data/valid_members, __ROW_INDEX__)"/>
+    <bind nodeset="/data/row/inner/member_index" type="string" calculate="index()"/>
+    <bind nodeset="/data/row/inner/result" type="string" calculate="concat('[', selected(/data/valid_members, __INNER_INDEX__), ']')"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/valid_members"><label>Members</label></input>
+    <repeat nodeset="/data/row">
+      <input ref="/data/row/number"><label>Number</label></input>
+      <input ref="/data/row/visible"><label>Selected member</label></input>
+      <repeat nodeset="/data/row/inner"><input ref="/data/row/inner/member_index"><label>Index</label></input></repeat>
+    </repeat>
+  </h:body>
+</h:html>
