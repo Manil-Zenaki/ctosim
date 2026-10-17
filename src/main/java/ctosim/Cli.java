@@ -243,7 +243,7 @@ public final class Cli {
             if (!fake.files().isEmpty()) {
                 form = withFakeAttachments(o, xform, fake);
                 for (Map.Entry<String, List<String>> key : fake.keyAnswers().entrySet()) {
-                    config = config.withFieldIfAbsent(key.getKey(), FieldOverride.ofTexts(key.getValue()));
+                    config = config.withFieldIfAbsent(key.getKey(), keyOverride(key.getValue()));
                 }
             }
         }
@@ -324,6 +324,19 @@ public final class Cli {
                     + " (in " + FAKE_DIRECTORY + "/)");
         }
         return all.toArray(new String[0]);
+    }
+
+    /**
+     * How a key question is answered: among its keys, or within 1 to N when the keys are row
+     * numbers, since texts do not apply to integer questions (spec 10, Amendment 2).
+     */
+    private static FieldOverride keyOverride(List<String> keys) {
+        for (int i = 0; i < keys.size(); i++) {
+            if (!keys.get(i).equals(Integer.toString(i + 1))) {
+                return FieldOverride.ofTexts(keys);
+            }
+        }
+        return FieldOverride.withRange(null, new NumericRange(1, keys.size()));
     }
 
     /**
