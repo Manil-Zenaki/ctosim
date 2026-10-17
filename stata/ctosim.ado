@@ -189,7 +189,8 @@ program define ctosim, rclass
         }
         else if substr(`"`macval(line)'"', 1, 2) == "  " {
             if "`section'" == "files" & `"`wide'"' == "" local wide = substr(`"`macval(line)'"', 3, .)
-            if "`section'" == "warnings" display as text `"`macval(line)'"'
+            * Mata shows the line as it is, where display would expand the macro references in it
+            if "`section'" == "warnings" mata: displayas("txt"); display(st_local("line"), 1)
         }
         file read `fh' line
     }
