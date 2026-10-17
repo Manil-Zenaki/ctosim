@@ -333,3 +333,14 @@ form converts the same with any number of consecutive empty or
 left-out rows (100, 1 000) as without them. Row numbers in error
 messages and warnings remain those of the user's `survey` sheet.
 Everything else is unchanged.
+
+## Amendment 5: translations together with ctosim's bind columns
+
+The same form has labels only in translated columns (`label:French`,
+`label:Haousa`, `label:Zarma`) and `calculate_here` fields. Its first
+note was rejected as having "no label or hint". Translated columns
+written `column:Language` (and `media:image`, `media:audio`,
+`media:video`) are kept as stated in "Column names" **whatever other
+rows the form has**, including `calculate_here` fields (Amendment 2),
+minimum times and speed-violation fields (Amendment 3): such a form
+converts, and each translation holds its labels.
