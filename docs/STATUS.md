@@ -20,7 +20,7 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 
-Suite: 7337 Java tests, 703 Python tests and 47 Stata tests, all green (2026-10-17).
+Suite: 7536 Java tests, 703 Python tests and 47 Stata tests, all green (2026-10-17).
 
 ## Next step
 
@@ -85,8 +85,16 @@ SurveyCTO import do-files run, after spec 02 Amendment 6 (`or_other`
 gives the choice `other` and a field `<name>_other`, as SurveyCTO does;
 library messages no longer leak into the warnings) and spec 07
 Amendment 9 (an integer that sets a repeat count is drawn from the
-`repeats` range, so nested repeats stay small). Still slow on very
-large forms (about 6 s per submission for a 3 400-row form). Next possible step (owner, later):
+`repeats` range, so nested repeats stay small). With fictitious attachments for
+them (kept with the forms), two more fixes: spec 03 Amendment 5 (a number
+as the second argument of `selected()`) and spec 09 Amendment 3 (answers
+drawn from a `regex()` pattern use letters, digits and spaces; a `${` in
+a generated text broke the engine's labels). Performance, on the
+3 400-row CIV form: conversion 215 s to 21 s (pyxform compared repeat
+sections by serialising them; compared by identity while it runs), load
+8.9 s to 6 s (live DOM lists), 0.9 s to 0.35 s per submission (the
+parsed form is serialised once and each session reads its own copy, as
+ODK Collect does; constraint texts then come from the binds). Next possible step (owner, later):
 simulating several form versions in one data set, as SurveyCTO exports
 data collected while the form changed.
 
