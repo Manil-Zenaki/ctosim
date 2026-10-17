@@ -221,3 +221,71 @@ instance is:
 The amendment asks that `<name>_other` follow the question "in the same
 group or repeat", which this satisfies. The count should be the same as
 the question's own count (or should ignore the template), not 1.
+
+## Follow-up adjudication (2026-10-17)
+
+Decisions below use only the current spec and the disputed tests. No
+implementation source or public stub bodies were read; no production files
+were changed.
+
+### Dispute 1: keep the corrected choice tests
+
+Amendment 1 requires ordered items in secondary instances and itemset
+references from select controls. All seven disputed cases now use
+`assert_choice_list`, which checks that representation, including values,
+labels, order, and the absence of inline items. These tests are correct and
+remain unchanged.
+
+### Dispute 2: keep the corrected expression tests
+
+The five disputed repeat-count cases use `selected(...)` expressions.
+Amendment 1 requires their calculations on the generated `target_count`
+bind and the repeat's count reference to that node. The tests check both,
+plus the node's presence in the primary instance and absence from the
+catalog. These tests are correct and remain unchanged.
+
+### Dispute 3: keep the corrected body-position test
+
+Amendment 2 requires the question at its survey position inside its group
+or repeat. The current test looks up the checkpoint within the already
+parsed parent and compares its reference path; it no longer compares
+element identities across parses. Its containment, ordering, and catalog
+checks are justified and remain unchanged.
+
+### Dispute 4: keep both corrected repeat-count tests
+
+The generated sibling-node test now uses `${size} + 1`, while the separate
+single-reference test uses `${size}` and expects a direct reference to
+the size field with no generated node. Both exclude generated count nodes
+from the catalog. This matches the corrected Amendment 1; keep both tests.
+
+### Dispute 5: upheld; fix the companion's instance-path count
+
+Amendment 6 requires a text companion immediately after the question in
+the same group or repeat, and one catalog entry immediately after its
+source question with the source row number. It does not require its
+absolute path to occur exactly once across the XML primary instance.
+The Output section also describes repeat field paths without positional
+predicates, using the repeated template node's path. Counting that path
+globally as exactly one imposes an unsupported representation constraint.
+
+`instance_paths` traverses all primary-instance nodes without distinguishing
+repeat templates from initial instances. The helper
+`_assert_immediate_text_question` now requires the source question to exist
+and the companion's path to occur as many times as the question's path.
+This permits template and initial-instance copies without accepting a
+missing companion or an unequal number of companions. It does not impose
+a fixed number of repeat copies. Existing checks for immediate body
+adjacency in the same parent, text type, editability, label, catalog order,
+path, and source row are retained. The correction applies to both select
+types in all four existing scopes (root, group, repeat, and nested).
+
+### Validation for this adjudication
+
+Ran `.venv\Scripts\python -m pytest converter/tests -q --tb=no
+-o cache_dir=.codex-runs/pytest-cache
+--basetemp=.codex-runs/pytest-dispute-02-20261017` with
+`PYTHONDONTWRITEBYTECODE=1`: **703 passed in 86.88s**, with no import or
+collection errors. Traceback source display was suppressed, and temporary
+test artifacts were directed under `.codex-runs/`. `git diff --check`
+passed. No implementation code was read or changed, and no commit was made.

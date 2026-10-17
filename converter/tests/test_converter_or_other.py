@@ -106,7 +106,12 @@ def _assert_immediate_text_question(result, path, kind):
     assert binding.get("type", "").split(":")[-1] == "string"
     assert "calculate" not in binding.attrib
     assert binding.get("readonly", "false()").strip() != "true()"
-    assert instance_paths(result).count("/data/" + path + "_other") == 1
+    paths = instance_paths(result)
+    question_count = paths.count("/data/" + path)
+    assert question_count > 0
+    # Repeat templates and initial instances can share the same absolute path.
+    # The companion must occur as often as its source question.
+    assert paths.count("/data/" + path + "_other") == question_count
 
 
 @pytest.mark.parametrize("kind", SELECT_TYPES)
