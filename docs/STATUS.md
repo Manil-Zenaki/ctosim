@@ -1,6 +1,6 @@
 # Project status and hand-over notes
 
-Last updated: 2026-10-11. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
+Last updated: 2026-10-17. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
 `docs/ARCHITECTURE.md` first; this file records where the work stands and
 what was learnt along the way.
 
@@ -20,7 +20,7 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 
-Suite: 7162 Java tests, 331 Python tests and 40 Stata tests, all green (2026-10-12).
+Suite: 7259 Java tests, 616 Python tests and 47 Stata tests, all green (2026-10-17).
 
 ## Next step
 
@@ -70,6 +70,20 @@ tests were committed by hand). Two engine limits are written in spec 03
 Amendment 4: a predicate on the repeat's own step inside a condition is
 not restricted to the instance, and a `NaN` result stores no value.
 
+2026-10-17, validation on a real form (the team's own forms stay in
+`samples/private/`, ignored by git): converter Amendments 4 and 5 (long
+runs of empty rows, translations with ctosim's bind columns), then
+**unsatisfied constraints** (spec 07 Amendment 8, spec 10 Amendment 1,
+spec 11 Amendment 4): a question that no answer could satisfy, usually a
+mistake in the form, is listed in its own section of the run report and
+of the command line, in red in Stata, with its XLSForm row, its
+constraint as written, the submissions and the values it referred to;
+`r(unsatisfied)` counts them. In Stata, report lines are now shown through
+a small Mata printer: `display` expanded `${name}` in them, even through
+`macval()` inside the report loop. Next possible step (owner, later):
+simulating several form versions in one data set, as SurveyCTO exports
+data collected while the form changed.
+
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
 correctness): web submissions (`deviceid` `(web)`, no audio audit,
@@ -103,6 +117,10 @@ to simulated data, workflow, glossary). Keep it in step with the specs.
   committed with a failing test).
 - Python: `.venv/Scripts/python -m pytest converter/tests -q`; the package is
   installed editable (`pip install -e "converter[test]"`).
+- Run Stata and the scripts from PowerShell: Git Bash rewrites Stata's
+  `/e /q` switches into paths, and Windows PowerShell 5.1 turns native
+  stderr redirected with `2>&1` (or `2>$null`) into a terminating error
+  under `$ErrorActionPreference = 'Stop'`, so do not redirect it.
 - Codex: `scripts/codex-tests.ps1 specs/NN-x.md` (fresh session; commits
   with `Test-Author: codex`), `-Dispute` to adjudicate, `-Focus "<section>"`
   for an amendment. The tree must be clean; do not edit the repository
