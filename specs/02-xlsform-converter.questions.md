@@ -332,3 +332,59 @@ public stub bodies were read while updating the tests.
   `test_cli_invalid_minimum_seconds_preserves_existing_outputs`, and the
   `invalid_minimum` case of
   `test_cli_conversion_error_prints_message_exits_one_and_writes_no_file`.
+
+## 26. Amendment 4: equivalence after inserting skipped rows
+
+- **Question:** Does "converts the same" require identical result objects when
+  inserting empty or disabled rows changes physical row numbers and warnings?
+- **Assumption:** With the same filename and settings, the XForm text and form
+  metadata stay identical. The catalog retains the same names, types, paths,
+  and order, but its row numbers refer to the padded sheet. Each independently
+  disabled row or outer disabled block adds its specified warning; empty rows
+  add none. Warning wording is not prescribed. Nested disabled descendants
+  produce no additional warnings, consistent with confirmed point 2.
+- **Tests:** `test_long_row_runs_anywhere_preserve_the_complete_form`,
+  `test_long_omitted_blocks_anywhere_leave_later_fields_intact`,
+  `test_long_runs_preserve_enclosing_container_and_sibling_paths`,
+  `test_long_disabled_block_skips_nested_blocks_until_its_own_closing_row`,
+  `test_multiple_long_runs_preserve_warning_order_and_physical_rows` in the new
+  `converter/tests/test_converter_long_row_runs.py`.
+
+## 27. Amendment 4: size examples and the reported real form
+
+- **Question:** Are 100 and 1,000 limits, and does the reported 1,448-row form
+  count the header? Does a 136-row disabled group include its boundaries?
+- **Assumption:** The stated lengths are examples, not limits or performance
+  guarantees. Tests exercise 99/100/101 and 999/1,000/1,001 single-row omissions,
+  plus one-row controls, and 100/136/1,000-row block and mixed gaps. The synthetic
+  reproduction has 1,448 physical rows including its header and a 136-row
+  disabled group including its opener and closer. No claim is made to reproduce
+  the unavailable real workbook's exact layout. No timing threshold is imposed.
+- **Tests:** The first three parameterized tests named in point 26 and
+  `test_1448_row_survey_with_136_row_disabled_group_keeps_every_later_row`.
+
+## 28. Amendment 4: empty cells and other sheets
+
+- **Question:** Does the amendment cover empty choice rows and formula-only
+  rows, and may it change the special rule for settings row 2?
+- **Assumption:** The existing input rules still apply: uncached formulas count
+  as empty cells, and completely empty rows on the choices sheet are ignored.
+  Long runs therefore cannot truncate later survey fields or choice entries.
+  No new interpretation of whitespace-only cells, partially populated rows,
+  or disabled flags on choices is introduced. Settings still come from physical
+  row 2, as confirmed in point 19; there is no new settings behavior to test.
+- **Tests:** `test_long_run_of_uncached_formula_rows_counts_as_empty`,
+  `test_long_empty_choice_runs_do_not_truncate_choices_or_drop_duplicates`.
+
+## 29. Amendment 4: errors beyond gaps and disabled validation precedence
+
+- **Question:** Does ignoring arbitrarily long gaps hide later errors, or settle
+  validation precedence for malformed or invalid disabled content?
+- **Assumption:** Enabled errors beyond a gap still raise ConversionError naming
+  the original survey row and input filename. An unclosed enabled group before
+  a long blank tail still fails. Existing ambiguities about malformed disabled
+  structures and invalid disabled timing values (points 3 and 23) remain open;
+  new disabled blocks are balanced and do not contain invalid minima. Diagnostic
+  prose remains flexible, and underlying pyxform exceptions retain their cause.
+- **Tests:** `test_errors_after_long_runs_report_the_original_survey_row`,
+  `test_unclosed_group_before_a_long_empty_tail_is_still_an_error`.
