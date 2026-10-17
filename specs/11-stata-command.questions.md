@@ -306,3 +306,45 @@ Logs: `.codex-runs/stata-help-use-cases/full-suite.log`, the five area logs in t
 **Assumption:** Yes. The existing launcher creates a disposable simulator jar per child; a new helper replaces only that private copy with the new process fixture. The fixture writes a controlled spec-10 report and CSV and does not import or inspect production code. The new build hook compiles Java 8 compatible support into `.codex-runs/stata-support/`. The existing runner's own logs remain under its prescribed `target/stata-tests/`; all additional generated artifacts stay under `.codex-runs/`. New do-files are independent and propagate assertion/Java failures as nonzero Stata errors. Existing tests and helpers are preserved.
 
 **Tests:** All seven `test_unsatisfied_*.do` files, `unsatisfied-helpers.do`, `build-unsatisfied-fixtures.ps1`, and new fixtures under `src/test/stata/fixtures/`.
+
+## Amendment 5: additional questions and assumptions
+
+### E1. Report names and empty results
+
+**Question:** What separates filenames, what happens when the line is absent, and are spaces inside names or malformed report lines supported?
+
+**Assumption:** The fixture follows spec 10 Amendment 2: one `Fictitious attachments:` line with comma-space-separated CSV filenames, omitted when no fictitious files were made. The returned macro preserves filename order, Unicode, and `.csv` suffixes, replacing the separators with single spaces and adding no directory prefixes. Cases cover zero, one and several names; the mixed-case names follow spec 12's natural string ordering (`Zebra`, `alpha`, `ménages`), which differs from case-insensitive alphabetic order. No behavior is invented for malformed/duplicated lines, internal spaces or commas in filenames, or unspecified size limits. The macro must come from the report, not the output directory (which also contains copied real media and stale files after `replace`). No assertion is made about `r(fakepreload)` when the option is omitted or the command fails; the amendment only promises it with the option on successful runs.
+
+**Tests:** `test_fakepreload_results.do`, `test_fakepreload_opt_in.do`, `test_fakepreload_forwarding.do`, `test_fakepreload_real_media.do`.
+
+### E2. Display order and styling
+
+**Question:** Does "before the warnings" include the simulator's own warning summary, and what styling or ordering relative to unsatisfied constraints is required?
+
+**Assumption:** As for confirmed D2, it means before step 3's count and warning details; step 2 still shows the simulator's own messages first. The report line is shown intact once, allowing indentation/prefixes, and no line is fabricated when absent. No color is required for this new line, and no relative order between this line and the unsatisfied section is imposed: both must precede warnings. All names fit within the test session's 255-column log setting. An independent text-log checker verifies report-derived content and ordering; its build-time positive/negative checks cover omission, duplication, misplaced/missing counts, reordered/missing warnings and invented lines for an absent report entry.
+
+**Tests:** `test_fakepreload_display.do`, `test_fakepreload_opt_in.do`, `test_fakepreload_template.do`, `test_fakepreload_template_failure.do`; `FakepreloadFixture.log` and its self-checks.
+
+### E3. Unchanged behavior with the option enabled
+
+**Question:** Does permission to invent missing preload bypass other validation, alter loading, or change simulator/import failure handling?
+
+**Assumption:** No, under "Everything not mentioned here is unchanged." Both XML and XLSX calls receive one valueless `--fake-attachments` argument; other simulator options retain their documented argument boundaries. Subsequent calls without `fakepreload` do not inherit it. Dirty-memory and existing-output protections, missing FORM/config/do-file checks, simulator status mappings, native CSV import, template execution/suppression, cwd restoration and partial data after template failure retain their existing contracts. Successful report results remain authoritative even when command options or the import template suggest different N/seed values. These are Amendment 5 interaction tests, not a rewrite of the existing regression suite.
+
+**Tests:** `test_fakepreload_forwarding.do`, `test_fakepreload_opt_in.do`, `test_fakepreload_preflight.do`, `test_fakepreload_simulator_failures.do`, `test_fakepreload_plain_import.do`, `test_fakepreload_template.do`, `test_fakepreload_template_failure.do`.
+
+### E4. Real simulation and reuse
+
+**Question:** Which invented values should command-level integration tests expect, and how much of spec 12 belongs here?
+
+**Assumption:** Do not prescribe invented strings, distributions, or the internal generation algorithm. A minimal existing pulldata form needs `people.csv`; enabling the option must create that file under output `attachments/`, report it, and suppress its missing-file warning. Identical options and seed must produce identical files and data. The generated directory can be edited and supplied to `media()`, with or without `fakepreload`; an existing real file must supply its actual value and must not be reported as fictitious. Different seeds need not change every invented file, so no unsupported differing-seed assertion is added. Full fake-file generation rules remain spec 12's responsibility.
+
+**Tests:** `test_fakepreload_real_media.do`.
+
+### E5. Help semantics and independent test infrastructure
+
+**Question:** How can automated tests establish free-form help completeness without imposing exact wording, and can the existing isolation harness be reused?
+
+**Assumption:** The help checker tests the option name and broad English vocabulary for unavailable preload, invented values, inference from form usage, testing, output `attachments/`, reading/editing and reuse through `media()`. These are smoke checks: semantic review is still needed to establish the "only follow the form's own use" limitation and that the concepts are causally connected. Synonyms may need extending; no exact sentence or SMCL layout is required. The help artifact is read only by the test, never inspected to derive expectations. The existing child launcher may be reused unchanged, replacing only its disposable simulator jar with a new independent fixture. All new build outputs and extra logs are under `.codex-runs/`; the prescribed unchanged runner itself writes under `target/stata-tests/`. All eleven do-files and their fixture/helper sources are new; committed tests and helpers are preserved, and production code is neither read nor changed.
+
+**Tests:** `test_fakepreload_help.do`, all new `test_fakepreload_*.do`, `fakepreload-helpers.do`, `build-fakepreload-fixtures.ps1`, `fixtures/FakepreloadFixture.java`, `fixtures/fakepreload_import.do`.
