@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 from xml.sax.saxutils import escape
 
-from ._normalize import CTOSIM_NAMESPACE, PASSED_SETTINGS, NormalizationError, Sheet, normalize, read_sheet, text
+from ._normalize import CTOSIM_NAMESPACE, PASSED_SETTINGS, NormalizationError, Sheet, is_empty, normalize, read_sheet, text
 
 
 class ConversionError(Exception):
@@ -117,14 +117,14 @@ def _run_pyxform(norm, form_id: str, title: str, version: str | None, source: st
 
     with tempfile.TemporaryDirectory(prefix="ctosim-") as tmp:
         workbook_path = Path(tmp) / "form.xlsx"
-        _write_odk_workbook(norm, form_id, title, version, workbook_path)
+        rows = _write_odk_workbook(norm, form_id, title, version, workbook_path)
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 result = convert(xlsform=str(workbook_path), validate=False, pretty_print=True,
                                  warnings=[])
         except PyXFormError as e:
-            raise ConversionError(f"{source}: {_with_row(str(e), norm)}") from e
+            raise ConversionError(f"{source}: {_with_row(_user_rows(str(e), rows), norm)}") from e
         except Exception as e:
             raise ConversionError(f"{source}: the form could not be converted ({e})") from e
     return _exact_version_attribute(result.xform, version)
@@ -142,6 +142,18 @@ def _exact_version_attribute(xform: str, version: str | None) -> str:
     return xform[: root.start()] + fixed + xform[root.end():]
 
 
+def _user_rows(message: str, rows: dict[str, list[int]]) -> str:
+    """pyxform numbers the rows of the workbook it reads, which has no empty rows: give the user's."""
+    sheet_rows = rows["choices"] if re.search(r"\bchoices\b", message, re.IGNORECASE) and "choices" in rows \
+        else rows["survey"]
+
+    def user(m: re.Match) -> str:
+        n = int(m.group(2))
+        return m.group(1) + str(sheet_rows[n] if 0 <= n < len(sheet_rows) and sheet_rows[n] else n)
+
+    return re.sub(r"(\brow\s*:?\s*)(\d+)", user, message, flags=re.IGNORECASE)
+
+
 def _with_row(message: str, norm) -> str:
     """Adds the survey row to a pyxform message that names a type or field but no row."""
     if re.search(r"\brow\b", message, re.IGNORECASE):
@@ -154,14 +166,15 @@ def _with_row(message: str, norm) -> str:
     return message
 
 
-def _write_odk_workbook(norm, form_id: str, title: str, version: str | None, out: Path) -> None:
+def _write_odk_workbook(norm, form_id: str, title: str, version: str | None, out: Path) -> dict[str, list[int]]:
+    """Writes the workbook pyxform reads; returns, per sheet, the user's row number of each written row."""
     import openpyxl
 
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
-    _write_sheet(wb.create_sheet("survey"), norm.survey)
+    rows = {"survey": _write_sheet(wb.create_sheet("survey"), norm.survey)}
     if norm.choices is not None:
-        _write_sheet(wb.create_sheet("choices"), norm.choices)
+        rows["choices"] = _write_sheet(wb.create_sheet("choices"), norm.choices)
 
     settings = wb.create_sheet("settings")
     headers = ["form_id", "form_title", "allow_choice_duplicates"]
@@ -181,13 +194,23 @@ def _write_odk_workbook(norm, form_id: str, title: str, version: str | None, out
     _append(settings, headers)
     _append(settings, values)
     wb.save(out)
+    return rows
 
 
-def _write_sheet(ws, sheet: Sheet) -> None:
-    # Every row keeps its position, so row numbers in pyxform's messages are the user's.
+def _write_sheet(ws, sheet: Sheet) -> list[int]:
+    """
+    Writes the header and the non-empty rows: pyxform stops reading after a run of empty rows, so
+    empty and left-out rows are not written. Returns the user's row number of each written row
+    (index = row number in the written sheet; 0 for unused positions).
+    """
     _append(ws, sheet.headers)
-    for row in sheet.rows:
+    user_rows = [0, 1]
+    for k, row in enumerate(sheet.rows):
+        if is_empty(row):
+            continue
         _append(ws, row)
+        user_rows.append(k + 2)
+    return user_rows
 
 
 def _append(ws, values: list[Any]) -> None:
