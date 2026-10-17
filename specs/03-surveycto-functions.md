@@ -416,3 +416,10 @@ when `n` holds the number 3 and `false` when it holds 2, and a field
 holding no value behaves as the empty string (not selected). Behaviour
 for a second argument that already has a string value is unchanged, and
 calls outside the form's expressions are not affected, as above.
+
+Clarification (Amendment 5): assumptions 38–42 of the questions file are
+reviewed one by one and confirmed. In particular, the amendment covers
+the same expressions as the first-argument rule (38); matching stays
+exact and token-based, so `3` does not match `03` or `13` (39); the case
+where both the list and the second argument are empty keeps the engine's
+behaviour (40).
