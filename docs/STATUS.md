@@ -20,6 +20,7 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 | 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17: `--fake-attachments`, Stata `fakepreload`; disputes adjudicated |
+| 13 | Fieldwork plan (`Fieldwork`) | in progress: core done 2026-10-18; Amendment 1, CLI and Stata to come |
 
 Suite (2026-10-18): 1083 Python, 7919 Java and 66 Stata tests, all green.
 
@@ -117,6 +118,24 @@ Dispute 5 (`r()` read after `log close`, which clears it) were both
 accepted. GIL bench: the last 4 forms (Centers_takeup x3, Mauritania
 epoux) now simulate and import; Centers_takeup shows its two form errors
 (rows 42 and 300). Then: package republish and push (owner).
+
+2026-10-18 evening, realism step 3 (data-quality checks), phase 1: a
+coherent fieldwork plan, the default from now on (owner's choice), so
+that `ipacheck` and custom checks find only problems put there on
+purpose. Spec 13 (each enumerator's interviews follow one another within
+working hours, in one village a day; distinct survey ids) and spec 04
+Amendment 4 (`id`) are implemented and green. Checked with ipacheck
+4.3.1 on the IPA household form (scratchpad probe): 0 overlap and 0
+impossible trip, against 4-16 per 100 interviews before. That check led
+to spec 13 Amendment 1 and spec 04 Amendment 5 (`interviewsPerDay`, 4 by
+default, instead of a quota derived from `fieldworkDays`; ids from a
+`search()` list), specs and stub committed. **Next** (Codex): tests for
+13 A1 and 04 A5, a dispute for the spec 13 tests of the old quota, spec
+10 Amendment 4 again (Codex's partial tests, which do not compile, are in
+`git stash` "codex partial: spec 10 Amendment 4 tests"; drop the stash
+once Codex has rewritten them) and spec 11 Amendment 7; then the code,
+and the ipacheck check again. Phase 2 (injected problems with an answer
+key) follows.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
