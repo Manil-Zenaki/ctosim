@@ -109,9 +109,9 @@ def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> N
     c_col = s.column("calculation")
 
     list_names = _choice_list_names(choices)
-    stack: list[tuple[str, int, str]] = []  # (kind, row number, name)
-    skip_until_depth: int | None = None
-    disabled_depth = 0
+    # (kind, row number, name, disabled): a disabled group stays on the stack so that its end row is
+    # matched, but it is not part of the form and its name is not in the XPaths (Amendment 8)
+    stack: list[tuple[str, int, str, bool]] = []
 
     for k, row in enumerate(s.rows):
         number = k + 2
@@ -121,18 +121,13 @@ def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> N
         name = text(row[n_col]).strip()
         structure = _STRUCTURE.fullmatch(type_text)
 
-        if skip_until_depth is not None:
+        is_end = bool(structure) and structure.group(1) == "end"
+        if not is_end and disabled_col is not None and text(survey.rows[k][disabled_col]).strip().lower() == "yes":
             if structure:
-                disabled_depth += 1 if structure.group(1) == "begin" else -1
-            _blank(row)
-            if disabled_depth == 0:
-                skip_until_depth = None
-            continue
-
-        if disabled_col is not None and text(survey.rows[k][disabled_col]).strip().lower() == "yes":
-            if structure and structure.group(1) == "begin":
-                out.warnings.append(f"row {number}: disabled {structure.group(2)} '{name}' and its contents are left out")
-                skip_until_depth, disabled_depth = len(stack), 1
+                kind = structure.group(2)
+                out.warnings.append(f"row {number}: disabled {kind} '{name}' is left out; "
+                                    f"the rows it holds are kept unless they are disabled themselves")
+                stack.append((kind, number, name, True))
             else:
                 out.warnings.append(f"row {number}: disabled field '{name}' is left out")
             _blank(row)
@@ -143,14 +138,16 @@ def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> N
             kind = structure.group(2)
             if structure.group(1) == "begin":
                 out.fields.append((name, type_text, _xpath(stack, name), number))
-                stack.append((kind, number, name))
+                stack.append((kind, number, name, False))
             else:
                 if not stack:
                     raise NormalizationError(f"row {number}: 'end {kind}' has no matching 'begin {kind}' (groups are not balanced)")
-                open_kind, open_row, open_name = stack.pop()
+                open_kind, open_row, open_name, open_disabled = stack.pop()
                 if open_kind != kind:
                     raise NormalizationError(f"row {number}: 'end {kind}' does not match 'begin {open_kind}' "
                                              f"'{open_name}' on row {open_row} (groups and repeats are not balanced)")
+                if open_disabled:
+                    _blank(row)  # the end row of a disabled group goes with it
             continue
 
         select = _SELECT.match(type_text)
@@ -187,7 +184,7 @@ def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> N
             out.fields.append((f"{name}_other", "text", _xpath(stack, f"{name}_other"), number))
 
     if stack:
-        kind, number, name = stack[-1]
+        kind, number, name, _ = stack[-1]
         raise NormalizationError(f"row {number}: 'begin {kind}' '{name}' is never closed by an 'end {kind}' "
                                  f"(groups and repeats are not balanced)")
 
@@ -380,8 +377,8 @@ def _calculate_here(s: Sheet, row: list[Any], name: str) -> None:
             row[i] = None
 
 
-def _xpath(stack: list[tuple[str, int, str]], name: str) -> str:
-    return "/data/" + "/".join([entry[2] for entry in stack] + [name])
+def _xpath(stack: list[tuple[str, int, str, bool]], name: str) -> str:
+    return "/data/" + "/".join([entry[2] for entry in stack if not entry[3]] + [name])
 
 
 def _blank(row: list[Any]) -> None:
