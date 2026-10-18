@@ -287,16 +287,16 @@ public final class Cli {
         List<String> files = new ArrayList<>();
         files.add(exporter.wideFileName());
         files.addAll(longFiles.keySet());
-        if (o.xlsx()) {
-            files.add("form.xml");
-            files.add("form.fields.json");
-        }
         List<String> fakeNames = new ArrayList<>();
         if (fake != null) {
             for (String name : fake.files().keySet()) {
                 fakeNames.add(name + ".csv");
-                files.add(FAKE_DIRECTORY + "/" + name + ".csv");
+                files.add(FAKE_DIRECTORY + "/" + name + ".csv"); // after the long files (spec 10, Amendment 2)
             }
+        }
+        if (o.xlsx()) {
+            files.add("form.xml");
+            files.add("form.fields.json");
         }
         files.add(REPORT);
         Map<String, List<UnsatisfiedConstraint>> byQuestion = unsatisfiedByQuestion(submissions);
