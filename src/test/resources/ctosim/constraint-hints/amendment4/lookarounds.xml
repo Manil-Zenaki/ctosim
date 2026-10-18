@@ -1,0 +1,18 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head>
+    <h:title>Lookaround constraint hints</h:title>
+    <model>
+      <instance><data id="lookaround-hints"><answer/><ahead/><behind/><notbehind/></data></instance>
+      <bind nodeset="/data/answer" type="string" required="true()" constraint="regex(., '^(?![0-9]+$)[A-Z0-9 ]{5,100}$')"/>
+      <bind nodeset="/data/ahead" type="string" required="true()" constraint="regex(., '^(?=AB)AB[CD]{3}$')"/>
+      <bind nodeset="/data/behind" type="string" required="true()" constraint="regex(., '^[CD]{3}AB(?&lt;=AB)$')"/>
+      <bind nodeset="/data/notbehind" type="string" required="true()" constraint="regex(., '^[CD]{3}AB(?&lt;!ZZ)$')"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/data/answer"><label>Capitals, digits and spaces, but not only digits</label></input>
+    <input ref="/data/ahead"><label>Positive lookahead</label></input>
+    <input ref="/data/behind"><label>Positive lookbehind</label></input>
+    <input ref="/data/notbehind"><label>Negative lookbehind</label></input>
+  </h:body>
+</h:html>

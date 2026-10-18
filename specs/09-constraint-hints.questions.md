@@ -345,3 +345,108 @@ Java tests and resources are unchanged. No production source was read or edited.
 - `git diff --check` passes. Existing tests and resources remain unchanged; only
   the two new test classes, one new fixture, and this appended questions section
   are deliverable changes. Temporary diagnostics remain under `.codex-runs/`.
+
+## Amendment 4 questions and test assumptions
+
+This run adds only `ConstraintHintsAmendment4PatternTest`,
+`ConstraintHintsAmendment4FallbackTest`, `ConstraintHintsAmendment4IntegrationTest`
+and `constraint-hints/amendment4/lookarounds.xml`. All previously committed tests
+and fixtures are retained unchanged. No production source was read or edited.
+
+29. **Which patterns must become usable, given the retained unsupported-pattern
+    fallback?**
+    Assumption: the amendment's motivating pattern and patterns whose consuming
+    part consists of literals, ordinary character classes, grouping, alternation,
+    anchors and bounded/optional repetition must work after assertions are
+    removed. Assertions themselves may contain nested groups, character classes,
+    escaped parentheses and nested assertions. Removal means removing complete
+    assertion groups, preserving consuming tokens, ordinary groups and literal
+    assertion-like text. Tests cover each of the four assertion kinds, combinations,
+    nesting, assertions inside alternative branches, and lengths 0, 1 and 100.
+    They do not prescribe a parser or require the fallback path when native drawing
+    already succeeds. Java quoted literals (`\Q...\E`) retain the unsupported
+    escape hatch: success is required only when the corresponding consuming-only
+    control produces a string. No new support for backreferences or arbitrary
+    other regex features is assumed.
+    Tests: `allFourAssertionsNestedGroupsEscapesAndNonassertionGroupsRemainUsable`,
+    `quotedAssertionLikeTextIsPreservedWhenTheConsumingPatternIsSupported`,
+    `aSuccessfulEmptyMatchIsNotMistakenForFailedPatternGeneration`, and the
+    motivating-pattern/extracted-hint/walker tests.
+
+30. **Can a satisfiable pattern still fall back after 50 rejected proposals, and
+    what sampling distribution should tests require?**
+    Assumption: yes; finite rejection sampling does not guarantee success.
+    Tests for restrictive assertions accept the explicit empty-string length
+    fallback, reject every other nonmatching answer, and require at least one
+    success across 256 fixed-seed calls on simple patterns allowing one quarter
+    or more of their ordinary consuming strings. No uniform character, length,
+    branch or accepted-answer distribution is asserted. Tests whose assertions
+    accept every consuming string require success on every call. The motivating
+    example is required to succeed on the fixed-seed regression draws (its only
+    rejected consuming strings are all-digit strings). Fresh calls/seeds must
+    provide diversity for a pattern with many equally readable valid answers.
+    Tests: `rejectedStrippedDrawsNeverEscapeAsAnswersAndLaterDrawsCanSucceed`,
+    `motivatingRealFormPatternProducesCapitalsDigitsAndSpacesButNotOnlyDigits`,
+    and `acceptedLookaroundAnswersRemainRandomAcrossCallsAndSeeds`.
+
+31. **How can the exact 50-proposal limit be observed through the public API?**
+    Assumption: a pattern proposal is not a RandomGenerator call; the spec
+    deliberately leaves random consumption and native pattern support open.
+    There is no public proposal hook, so the tests do not count PRNG calls,
+    reflect into internals, or assert an implementation-specific random sequence.
+    Impossible assertions on singleton consuming patterns check termination and
+    fallback; 20-second test timeouts guard against unbounded rejection loops,
+    not a contractual performance requirement. This does not distinguish 49,
+    50 or 51 internal proposals. A proposal-observer API would be needed for a
+    direct, implementation-independent off-by-one test. Same-state replay checks
+    both answers and the remaining random state, including failed attempts.
+    Tests: `impossibleOrMalformedPatternsTerminateAndUseTheLengthFallback`,
+    `sameAlreadyAdvancedRandomStateReplaysSuccessRejectionAndExhaustion`.
+
+32. **Does Amendment 3 readability use the original or stripped expression?**
+    Assumption: the original expression is authoritative for a returned pattern
+    answer. The existing Amendment 3 full-match replacement oracle is reused,
+    including BMP letters/digits, ordinary space, replaceable tabs and required
+    punctuation (even a required `${`). If only an assertion requires punctuation,
+    bounded-retry fallback is allowed; any nonempty pattern result must preserve
+    the original assertion and contain no individually replaceable symbol.
+    No success rate is demanded for this interaction.
+    Tests: `readableSubstitutionsAndRequiredPunctuationUseTheWholeOriginalPattern`,
+    `punctuationRequiredOnlyByAnAssertionIsNotReturnedAsAnInvalidReadableReplacement`.
+
+33. **What happens after the lookaround retry path fails, or when an earlier
+    generation rule applies?**
+    Assumption: 'ignored as before' resumes the existing prefix, length and
+    ordinary-text rules; it never returns the last rejected proposal. Existing
+    blank/fixed/text-override precedence remains in force, and successful pattern
+    generation still takes priority over appearance and conflicting length hints.
+    Failure on one pattern must not disable other patterns in the same generator.
+    The same behavior applies to extracted hints and chosen alternatives. The
+    four-question fixture is a small regression for this amendment, not a new
+    all-real-forms acceptance requirement.
+    Tests: all of `ConstraintHintsAmendment4FallbackTest`, and precedence,
+    alternatives and walker tests in `ConstraintHintsAmendment4IntegrationTest`.
+
+### Amendment 4 build verification
+
+- The requested `mvnw.cmd -o -q test-compile` was run offline after adding the
+  tests. Maven fails in `testCompile` with `java.nio.file.AccessDeniedException`
+  on `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, confirmed by an
+  offline `-e` retry. The targeted Maven test run encounters the same blocker.
+  An initial invocation before adding the tests exited successfully, but did
+  not establish compilation of these new sources. No Maven repository, drive
+  mapping, dependencies or build configuration were changed.
+  Logs: `.codex-runs/09-amendment4-test-compile.log`,
+  `.codex-runs/09-amendment4-test-compile-detail.log`,
+  `.codex-runs/09-amendment4-tests.log`.
+- Supplementary compilation uses the existing diagnostic in-memory binary
+  classpath approach against available compiled classes and dependencies. All
+  three new classes, the existing readability oracle, four helper sources and
+  the diagnostic JUnit runner compile successfully (9 sources, Java 17 target).
+  This is not a successful Maven build.
+  Log: `.codex-runs/09-amendment4-memory-compile.log`.
+- The diagnostic JUnit run executes 73 new cases: 22 pass and 51 fail. All
+  failures are assertions about the missing lookaround behavior; no tests or
+  containers are skipped or aborted, and no containers fail. The new XForm
+  loads and walks before the expected missing-answer assertion fails.
+  Log: `.codex-runs/09-amendment4-junit.log`.
