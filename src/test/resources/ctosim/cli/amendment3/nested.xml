@@ -1,0 +1,19 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Nested form errors</h:title><model>
+    <instance><data id="nested_form_errors"><two>2</two><outer jr:template=""><inner jr:template=""><same/></inner></outer><left><same/></left><right><same/></right><after/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/two" type="int"/>
+    <bind nodeset="/data/outer/inner/same" type="string" constraint="regex(., '[')"/>
+    <bind nodeset="/data/left/same" type="string" constraint="regex(., '(')"/>
+    <bind nodeset="/data/right/same" type="string" constraint="regex(., '*')"/>
+    <bind nodeset="/data/after" type="string"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <repeat nodeset="/data/outer" jr:count="/data/two"><repeat nodeset="/data/outer/inner" jr:count="/data/two">
+      <input ref="/data/outer/inner/same"><label>Nested error</label></input>
+    </repeat></repeat>
+    <group ref="/data/left"><label>Left</label><input ref="/data/left/same"><label>Left error</label></input></group>
+    <group ref="/data/right"><label>Right</label><input ref="/data/right/same"><label>Right error</label></input></group>
+    <input ref="/data/after"><label>Continued</label></input>
+  </h:body>
+</h:html>

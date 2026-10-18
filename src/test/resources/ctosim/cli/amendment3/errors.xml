@@ -1,0 +1,19 @@
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Form errors</h:title><model>
+    <instance><data id="form_errors"><two>2</two><source jr:template=""><phone/></source><source><phone>11</phone></source><source><phone>22</phone></source><gate/><alpha/><zeta/><after/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/two" type="int"/>
+    <bind nodeset="/data/source/phone" type="string"/>
+    <bind nodeset="/data/gate" type="string"/>
+    <bind nodeset="/data/alpha" type="string" constraint=". != string(/data/source/phone)"/>
+    <bind nodeset="/data/zeta" type="string" constraint="regex(., '[')"/>
+    <bind nodeset="/data/after" type="string"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <repeat nodeset="/data/source" jr:count="/data/two"><input ref="/data/source/phone"><label>Phone</label></input></repeat>
+    <input ref="/data/gate"><label>Gate</label></input>
+    <input ref="/data/zeta"><label>First error</label></input>
+    <input ref="/data/alpha"><label>Second error</label></input>
+    <input ref="/data/after"><label>Continued</label></input>
+  </h:body>
+</h:html>

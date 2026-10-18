@@ -1,0 +1,10 @@
+{"form_id":"nested_form_errors","title":"Nested form errors","version":null,"fields":[
+  {"name":"right","type":"begin group","xpath":"/data/right","row":11},
+  {"name":"same","type":"text","xpath":"/data/right/same","row":12},
+  {"name":"left","type":"begin group","xpath":"/data/left","row":8},
+  {"name":"same","type":"text","xpath":"/data/left/same","row":9},
+  {"name":"outer","type":"begin repeat","xpath":"/data/outer","row":2},
+  {"name":"inner","type":"begin repeat","xpath":"/data/outer/inner","row":3},
+  {"name":"same","type":"text","xpath":"/data/outer/inner/same","row":5},
+  {"name":"after","type":"text","xpath":"/data/after","row":14}
+]}

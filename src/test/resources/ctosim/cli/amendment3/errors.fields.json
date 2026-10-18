@@ -1,0 +1,8 @@
+{"form_id":"form_errors","title":"Form errors","version":null,"fields":[
+  {"name":"source","type":"begin repeat","xpath":"/data/source","row":2},
+  {"name":"phone","type":"text","xpath":"/data/source/phone","row":3},
+  {"name":"gate","type":"text","xpath":"/data/gate","row":5},
+  {"name":"alpha","type":"text","xpath":"/data/alpha","row":19},
+  {"name":"zeta","type":"text","xpath":"/data/zeta","row":7},
+  {"name":"after","type":"text","xpath":"/data/after","row":20}
+]}

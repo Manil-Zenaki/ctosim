@@ -436,3 +436,102 @@ are unchanged. Production sources were not opened, searched, or modified.
 - This is supplementary verification against cached binaries, not a
   successful Maven build. No production sources or build files were read
   or changed, and no dependencies were installed or copied.
+
+## Amendment 3 questions and test assumptions (2026-10-18)
+
+New tests are in `CliAmendment3ReportTest` and `CliAmendment3LifecycleTest`,
+with a new `CliAmendment3Support` helper and two XML/catalog fixture pairs
+under `src/test/resources/ctosim/cli/amendment3/`. Existing tests and fixtures
+are unchanged. Production sources were not opened, searched, or modified.
+
+25. **Question:** What exact sentence must follow `FORM ERRORS:` on stdout?
+    **Assumption:** Only the prefix and specified content are fixed. Tests
+    require the field count as a standalone number, ordered names separated
+    by `, `, `run-report.txt`, and the words/stems `block` and `enumerator`
+    case-insensitively. The fixed prefix already names form errors. Other
+    equivalent phrasing may require adjusting this semantic matcher. The
+    alert occurs once and is the final line; report text is checked exactly.
+    **Tests:** `CliAmendment3Support.summary` and its report/lifecycle callers.
+
+26. **Question:** How are engine-dependent messages and record grouping tested
+    without injecting synthetic submissions into the CLI?
+    **Assumption:** Continue confirmed assumption 11: independently load the
+    same input and configuration and walk submissions through the public API.
+    The CLI must reproduce the first `FormError.message()` verbatim. Expected
+    sections group those records by unindexed path in insertion order, use
+    independently specified catalog rows, and sort distinct submission numbers.
+    Independent assertions check known field order, six records per nested
+    submission, three distinct paths with the same leaf name, row omission,
+    output counts, exports, and warning retention. Invalid regexes and a scalar
+    reference to two repeat values exercise expression errors covered by spec
+    07 Amendment 10. These tests depend on that amendment's recovery API.
+    **Tests:** All `expected(...)` comparisons; the exact-section, nested,
+    missing-catalog, export, warning, and converted-form tests.
+
+27. **Question:** Can records for one field have different messages, and which
+    one supplies the displayed message?
+    **Assumption:** The explicit first-record rule applies across both repeat
+    instances and submissions. An invalid regex containing the current gate
+    value or repeat position produces distinguishable engine messages. Coverage
+    guards require different messages before asserting the first one is used.
+    Engine diagnostic wording itself is not hard-coded. Spec 07 already
+    normalizes message line breaks; the CLI preserves the resulting text.
+    The Unicode fixture includes isolated CR and LF in the erroneous regex,
+    and verifies a five-line section and UTF-8/LF report framing. No new rule
+    for CRLF or Unicode line separators is inferred.
+    **Tests:** `messageComesFromTheFirstRecordEvenWhenLaterSubmissionsHaveDifferentMessages`,
+    `messageComesFromFirstRepeatInstanceInsteadOfTheLast`, and
+    `unicodeFieldsAndMessagesSurviveUtf8AndEveryReportEntryStaysOnOneLine`.
+
+28. **Question:** How should sparse memberships and first occurrence in a
+    later submission be checked without prescribing a random algorithm?
+    **Assumption:** A fixed-seed gate drawn from two texts controls relevance.
+    Expected membership comes independently from the exported gate column.
+    Coverage guards require both outcomes, numbers above nine, and more than
+    twenty failures in the 80-submission case. The later-first-occurrence test
+    selects the gate value opposite the first submission's gate in an initial
+    run, then reruns with that relevance condition; it explicitly checks that
+    the first submission has only alpha's error and later submissions add zeta.
+    No particular pseudorandom draw sequence is asserted.
+    **Tests:** `onlySubmissionsWithRecordsAreListedAndNumbersAreSortedNumerically`
+    and `aFieldFirstFailingInALaterSubmissionIsAppendedAfterPreviouslyRecordedFields`.
+
+29. **Question:** Does the new report section affect unsatisfied constraints,
+    fictitious attachments, warnings, successful exports, or a later clean run?
+    **Assumption:** Everything not mentioned remains unchanged. The form-error
+    section immediately follows Enumerators and precedes either or both older
+    optional sections; the stdout alert follows all existing lines, including
+    the invented-attachment summary. A false constraint, config warning, or
+    converter warning resembling an error does not invent a structured form
+    error. Successful error-bearing runs still export data and return zero;
+    reruns replace old counts/groups and remove the section when healthy.
+    Existing process-double and determinism assumptions 8 and 10 still apply.
+    **Tests:** The optional-section and no-section parameterized tests,
+    converter-warning test, rerun tests, original-summary/export test, and
+    determinism tests in the new classes.
+
+## Amendment 3 validation
+
+- `mvnw.cmd -o -q test-compile` reached test compilation but failed on the
+  cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. An `-e`
+  retry confirms `java.nio.file.AccessDeniedException`, the same environment
+  blocker recorded above. Logs: `.codex-runs/cli-amendment3-test-compile.log`
+  and `.codex-runs/cli-amendment3-test-compile-detail.log`. No dependency was
+  installed, repository copied, drive mapped, or build configuration changed.
+- The existing in-memory diagnostic compiler compiled all 15 CLI/support
+  Java sources, including all three new sources, with `--release 17` against
+  cached binary APIs and JUnit 5. Log:
+  `.codex-runs/cli-amendment3-memory-compile.log`. This is supplementary
+  evidence of compilation, not a successful Maven build.
+- The diagnostic JUnit launch executed all **33 new cases**, with no skipped,
+  aborted, discovery, or container failures: **1 passed, 32 failed**. Of the
+  failures, 28 stop because the CLI returns status 1 for the intended form
+  expression error instead of recovering, and four encounter the unimplemented
+  `Submission.formErrors()` accessor. The converter-warning-only case passes.
+  Log: `.codex-runs/cli-amendment3-junit.log`. These are expected missing-feature
+  failures against cached binaries; downstream section assertions and fixture
+  coverage guards cannot yet be fully exercised. The runs reach the intended
+  invalid-regex/repeated-reference errors without fixture load failures.
+- A final retry of the requested Maven command has the same cached-JAR access
+  failure. `git diff --check` passes. Only this questions file is modified;
+  Java and fixture additions are all new files. No commit was made.
