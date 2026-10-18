@@ -88,6 +88,11 @@ public final class Submission {
         return warnings;
     }
 
+    /** The form's expressions the engine could not evaluate. See specs/07-form-walker.md, Amendment 10. */
+    public List<FormError> formErrors() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** The questions left blank because no answer met their constraint. See specs/07-form-walker.md, Amendment 8. */
     public List<UnsatisfiedConstraint> unsatisfiedConstraints() {
         return unsatisfiedConstraints;

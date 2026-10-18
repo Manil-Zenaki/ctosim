@@ -293,3 +293,24 @@ the names exactly as the report lists them, separated by single spaces,
 and is empty without the line (E1); the line is shown in the text style,
 before the warning count (E2); the option changes nothing else in the
 command's checks, loading or failures (E3).
+
+## Amendment 6: form problems shown last, in red
+
+Form errors (spec 10, Amendment 3) and unsatisfied constraints
+(Amendment 4) are problems of the form, and the user must not miss them
+among the other messages. Everything not mentioned here is unchanged.
+
+- When the report has the `FORM ERRORS` section, the command shows each
+  of its lines in red (`display as error`) before the warnings, as for
+  the unsatisfied constraints, and returns `r(formerrors)`, the number
+  on the section's first line (0 when the section is absent).
+- **After the data are loaded** (and after the do-file has run, with
+  `dofile()`), when `r(formerrors)` or `r(unsatisfied)` is not 0, the
+  command shows a final message in red, as the last output of the
+  command: it says that the form has problems, gives the number of form
+  errors (that would block an enumerator) and of unsatisfied
+  constraints, and gives the run report's absolute path. When the
+  do-file fails, the message is shown before the command stops with the
+  do-file's error.
+- The help file documents `r(formerrors)`, the section and the final
+  message.

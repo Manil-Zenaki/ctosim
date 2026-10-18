@@ -262,3 +262,37 @@ answers (22), and a write or copy failure is an output problem, status 1
 integer question, so integer keys would never match their rows. Step 3
 now gives such a question the range `1` to `N` of its keys; the test that
 checked the `texts` semantics for integer keys is disputed accordingly.
+
+## Amendment 3: form errors, made impossible to miss
+
+Form errors (spec 07, Amendment 10) are mistakes in the form that would
+block an enumerator. The run must make them obvious, so that the user
+opens the report. Everything not mentioned here is unchanged.
+
+### In the run report
+
+When at least one submission has a form error, the report holds, right
+after the `Enumerators:` line and before every other optional section
+(Amendments 1 and 2), a section:
+
+```
+FORM ERRORS (an enumerator would be blocked): <F>
+  <field>, row <row>: <message>
+    submissions (<k> of <N>): <s1>, <s2>, ...
+  ...
+```
+
+built as the section of Amendment 1: records grouped by the field's path
+without repeat indices, `<F>` the number of fields, in the order of their
+first record; `, row <row>` from the field catalog, left out when the
+catalog has no entry; `<message>` the first record's message; the
+submission list as in Amendment 1 (twenty numbers, then `, ...`).
+
+### On `out`
+
+When the section is present, `out` receives, after every other line, a
+line starting with `FORM ERRORS:` that gives `<F>`, says that the form has
+errors that would block an enumerator, names the fields in the order of
+the section, separated by `, `, and names `run-report.txt`.
+
+The exit status is still 0: the data are written.

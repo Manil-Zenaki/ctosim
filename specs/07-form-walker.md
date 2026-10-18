@@ -693,3 +693,54 @@ integer select is not (59); the effective override after conditional
 rules decides whether a range is configured (60); the added range keeps
 every other setting of the override (61); it bounds the generated answer
 only, not calculations, kept values or the search (62).
+
+## Amendment 10: form errors do not stop the walk
+
+A form can hold an expression that the engine cannot evaluate in some
+situations, for example a constraint that compares an answer with a
+field of a repeat from outside that repeat (`. != ${phone_in_repeat}`):
+with two instances of the repeat, the reference designates two values
+and the engine stops with "This field is repeated". An enumerator using
+SurveyCTO Collect would be blocked at that question. Until now such an
+error stopped the whole run. The walker now records it and goes on, so
+that one run shows every problem of the form. Everything not mentioned
+here is unchanged.
+
+### API addition
+
+```java
+public record FormError(
+        int submission,      // the submission number
+        String field,        // the name of the field whose expression failed
+        String path,         // that field's path, with repeat indices
+        String message) { }  // the engine's message, line breaks replaced by spaces
+
+public final class Submission {
+    public java.util.List<FormError> formErrors();
+}
+```
+
+### Behaviour
+
+A **form error** is an error the engine raises while evaluating one of
+the form's expressions (a calculation, relevance, constraint, required
+or read-only condition, choice filter, repeat count or `setvalue`)
+during a walk. Errors of the simulator itself (for example the limit of
+"Limits") are not form errors and still stop the walk.
+
+- When a form error occurs while the walker gives an answer, re-checks
+  a constraint (Amendment 5) or moves to the next question, the walk does
+  not stop: the question being handled is left without a value, one
+  `FormError` is recorded, a warning names the field and quotes the
+  engine's message, and the walk goes on from the next question.
+- The field of the record is the one the engine names as the field whose
+  expression failed, when its message names one; otherwise the question
+  being handled.
+- When the walk cannot get past a point (a form error occurs again at
+  the same question after the walker moved on), the submission ends
+  there: its remaining questions are left unanswered, the end of the
+  interview (End of the interview, Amendments 1, 2 and 5) is done as
+  usual, and a warning says that the submission was cut short.
+- `Submission.formErrors()` lists the records in the order they occurred;
+  it is unmodifiable and may be empty. A submission built with
+  `Submission.of` (spec 08) has none.
