@@ -72,3 +72,71 @@ not a successful Maven build.
    numbers `1` to `N` is answered as if the configuration gave it
    `{"min": 1, "max": N}`. The test should check that semantics (answers
    within 1 to N, lookups succeeding).
+
+## Adjudication of Dispute 5 (2026-10-17)
+
+### Point 1: accept; use the fictitious-file CSV contract
+
+Spec 10 Amendment 2 writes the content supplied by spec 12. Spec 12's
+"Content of a file" and its clarification explicitly require a final LF.
+The export helper's prohibition on a final LF therefore imposed the wrong
+contract on these attachments.
+
+Added `CliAmendment2Support.fictitiousCsv`: it requires the final LF,
+removes just that record terminator, and delegates cell parsing to the
+existing independent CSV reader. BOM, quoting, embedded cell line breaks,
+and row-width checks remain intact. Both `lookup` (used by the pipeline
+and report tests) and the direct attachment row-count assertion now use
+this adapter. Export parsing remains unchanged, and attachment bytes are
+still compared exactly against `FakeAttachments.files()`.
+
+### Point 2: accept; replace the superseded integer-text expectation
+
+Amendment 2 step 3 now expressly gives integer row-number keys a field
+range of `min: 1, max: N`; its clarification rejects the former assumption
+21. Renamed the test to
+`integerKeySuggestionsUseOneThroughNRangeAndLookupsSucceed`. It checks
+that the no-level attachment has 50 data rows, every exported integer key
+is in `1..N`, and each calculated lookup matches its generated CSV row.
+The global integer range remains fixed at 700, outside the generated keys,
+so ignoring the injected range cannot satisfy these assertions.
+
+The public-pipeline oracle now accepts the fixture's integer key question
+names and supplies the numeric range for those questions, retaining
+`texts` for text questions and preserving any existing field entry. The
+test still compares all export bytes against that public pipeline. Updated
+question 21 to record the amended contract instead of the obsolete assumption.
+
+### Previously adjudicated Dispute 1: retain the current test and fixture
+
+The current runaway fixture already contains 10001 repeat instances with
+ten read-only questions each, as the earlier adjudication requested. Its
+status-1, error-step, empty-stdout and absent-report assertions follow
+spec 10's failure rules. No further change is needed; the 45-second timeout
+remains a harness safeguard rather than a specification requirement.
+
+### Validation
+
+- `mvnw.cmd -o -q test` stopped during test compilation. A diagnostic
+  `-e` retry confirms `AccessDeniedException` for the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs are
+  `.codex-runs/cli-dispute5-maven.log` and
+  `.codex-runs/cli-dispute5-maven-detail.log`.
+- The existing diagnostic compiler successfully compiled all 12 CLI and
+  support sources with `--release 17` against cached binary dependencies.
+  Log: `.codex-runs/cli-dispute5-compile.log`.
+- The existing diagnostic JUnit launcher executed all 48 Amendment 2 cases:
+  47 passed, one failed, none skipped or aborted, and no container failures.
+  The corrected integer-key test passed. Log:
+  `.codex-runs/cli-dispute5-junit.log`.
+- The remaining failure is
+  `xlsformConversionPrecedesGenerationAndItsWarningsAndFileOrderArePreserved`:
+  the report lists `form.xml` and `form.fields.json` before the generated
+  attachment paths. Keep this assertion: Amendment 2 inserts the generated
+  attachment entries after the long exports, ahead of the converted-form
+  entries in the otherwise unchanged base order. The CSV fix lets this test
+  reach that independent ordering assertion.
+
+The diagnostic compilation and execution are supplementary validation,
+not a successful Maven build. No production source was read or modified,
+no dependency or build configuration was changed, and no commit was made.

@@ -332,18 +332,17 @@ are unchanged. Production sources were not opened, searched, or modified.
     `CliAmendment2Support.inventedSummary`.
 
 21. **Question:** How should suggestions for integer key questions behave?
-    Spec 12 includes INTEGER questions in `keyAnswers()`, spec 10 explicitly
-    applies suggestions as `texts`, and spec 05 explicitly ignores `texts`
-    for integer questions.
-    **Assumption:** Follow the precise orchestration instruction: apply
-    `texts`, without silently introducing a numeric-range, fixed-value, or
-    integer-sampling rule. Test equivalence with the published pipeline
-    configured with those same `texts`, rather than requiring integer lookups
-    to succeed. The core lookup-success fixture uses two TEXT key questions.
-    Clarification is needed if integer keys are intended to match generated rows.
-    **Tests:** `integerKeySuggestionsHaveExactlyTheSpecifiedTextsOverrideSemantics`
-    and the public pipeline helper. The integer fixture is an isolated temporary
-    variant of the resource XForm; no production inputs are changed.
+    **Resolution (Dispute 5):** Amendment 2 step 3 now explicitly applies
+    `{"min":1,"max":N}` when an integer question's keys are row numbers
+    `1` through `N`. This supersedes the original `texts` assumption, which
+    the clarification rejected. Tests require answers in that range and
+    successful lookups, plus equivalence with the public pipeline configured
+    with the numeric range. The global integer range is fixed at 700 to
+    distinguish the required override from ordinary integer generation.
+    **Tests:** `integerKeySuggestionsUseOneThroughNRangeAndLookupsSucceed`
+    and the public pipeline helper, whose integer question names are supplied
+    by the fixture. The integer fixture is an isolated temporary variant of
+    the resource XForm; no production inputs are changed.
 
 22. **Question:** Does an existing `fields` entry block suggested keys even if
     it contains only `missingRate`, and do injected keys bypass global blanking?
@@ -419,3 +418,21 @@ are unchanged. Production sources were not opened, searched, or modified.
 - `git diff --check` passes. Only this questions file is modified; all Java
   and resource additions are new files. Existing tests/resources, production
   code, specifications, and build files are unchanged. No commit was made.
+
+## Dispute 5 validation (2026-10-17)
+
+- The requested `mvnw.cmd -o -q test` stopped during test compilation;
+  an `-e` retry confirms `AccessDeniedException` for the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs:
+  `.codex-runs/cli-dispute5-maven.log` and
+  `.codex-runs/cli-dispute5-maven-detail.log`.
+- The existing diagnostic compiler compiled all 12 CLI/support sources
+  successfully with `--release 17`; the diagnostic JUnit launcher ran
+  all 48 Amendment 2 cases: 47 passed, one failed, none skipped or aborted.
+  The remaining failure is the report file order in the XLSForm test;
+  its assertion is retained for the reasons recorded in the disputes file.
+  Logs: `.codex-runs/cli-dispute5-compile.log` and
+  `.codex-runs/cli-dispute5-junit.log`.
+- This is supplementary verification against cached binaries, not a
+  successful Maven build. No production sources or build files were read
+  or changed, and no dependencies were installed or copied.

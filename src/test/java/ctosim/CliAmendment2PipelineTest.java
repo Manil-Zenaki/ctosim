@@ -24,7 +24,7 @@ class CliAmendment2PipelineTest {
         FakeAttachments generated = expected(input, input.form().getParent(), 1);
         assertEquals(INVENTED, List.copyOf(generated.files().keySet()), "Fixture must exercise two missing files");
         assertAttachmentBytes(generated, output);
-        for (String name : INVENTED) assertEquals(51, csv(output.resolve("attachments/" + name + ".csv")).size());
+        for (String name : INVENTED) assertEquals(51, fictitiousCsv(output.resolve("attachments/" + name + ".csv")).size());
     }
 
     @ParameterizedTest @ValueSource(strings = {"-9223372036854775808", "9223372036854775807", "0", "-81"})
@@ -155,7 +155,7 @@ class CliAmendment2PipelineTest {
         assertLookupColumn(output, "otherkey", "age", "a_ages", "code", "age");
     }
 
-    @Test void integerKeySuggestionsHaveExactlyTheSpecifiedTextsOverrideSemantics() throws Exception {
+    @Test void integerKeySuggestionsUseOneThroughNRangeAndLookupsSucceed() throws Exception {
         Input input = lookups(temp.resolve("input"));
         write(input.form(), Files.readString(input.form()).replace(
                 "nodeset=\"/data/otherkey\" type=\"string\"", "nodeset=\"/data/otherkey\" type=\"int\""));
@@ -164,7 +164,16 @@ class CliAmendment2PipelineTest {
         String json = "{\"missingRate\":0,\"integerRange\":{\"min\":700,\"max\":700}}";
         Path output = temp.resolve("output");
         success(fake(input, output, config(temp, json)));
-        assertPublicPipeline(input, input.form().getParent(), output, temp.resolve("oracle"), json, 1, 8);
+        int rowCount = fictitiousCsv(output.resolve("attachments/a_ages.csv")).size() - 1;
+        assertEquals(50, rowCount, "Spec 12 gives files without search levels 50 rows");
+        var answers = column(output.resolve(WIDE_FILE), "otherkey");
+        assertEquals(8, answers.size());
+        for (String answer : answers) {
+            int key = Integer.parseInt(answer);
+            assertTrue(key >= 1 && key <= rowCount, "Integer key must be in 1..N: " + answer);
+        }
+        assertLookupColumn(output, "otherkey", "age", "a_ages", "code", "age");
+        assertPublicPipeline(input, input.form().getParent(), output, temp.resolve("oracle"), json, 1, 8, "otherkey");
     }
 
     @Test void searchOnlyKeysNeedNoTextOverridesAndReloadProducesCascadingChoices() throws Exception {

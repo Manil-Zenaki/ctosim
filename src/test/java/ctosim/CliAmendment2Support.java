@@ -54,8 +54,15 @@ final class CliAmendment2Support {
         return result;
     }
 
+    static List<List<String>> fictitiousCsv(Path path) throws Exception {
+        String text = Files.readString(path, StandardCharsets.UTF_8);
+        assertTrue(text.endsWith("\n"), "Spec 12 requires a final LF in fictitious attachments");
+        // Remove only the required record terminator; preserve quoted cells and all other bytes.
+        return SurveyCtoExporterTestSupport.csv(text.substring(0, text.length() - 1));
+    }
+
     static Map<String, String> lookup(Path csvFile, String key, String value) throws Exception {
-        var rows = csv(csvFile);
+        var rows = fictitiousCsv(csvFile);
         int k = rows.get(0).indexOf(key), v = rows.get(0).indexOf(value);
         assertTrue(k >= 0 && v >= 0, rows.get(0).toString());
         Map<String, String> lookup = new LinkedHashMap<>();
@@ -76,7 +83,8 @@ final class CliAmendment2Support {
     }
 
     static void assertPublicPipeline(Input input, Path originalMedia, Path output, Path oracleDirectory,
-                                     String configJson, long seed, int count) throws Exception {
+                                     String configJson, long seed, int count,
+                                     String... integerKeyQuestions) throws Exception {
         FakeAttachments generated = expected(input, originalMedia, seed);
         Path media = Files.createDirectories(oracleDirectory.resolve("media"));
         try (var sources = Files.list(originalMedia)) {
@@ -89,7 +97,15 @@ final class CliAmendment2Support {
         ObjectNode settings = (ObjectNode) JSON.readTree(configJson);
         ObjectNode fields = settings.with("fields");
         generated.keyAnswers().forEach((name, keys) -> {
-            if (!fields.has(name)) fields.putObject(name).set("texts", JSON.valueToTree(keys));
+            if (fields.has(name)) return;
+            // The test fixture declares which key questions are integers.
+            if (List.of(integerKeyQuestions).contains(name)) {
+                assertEquals(java.util.stream.IntStream.rangeClosed(1, keys.size())
+                        .mapToObj(Integer::toString).toList(), keys, "Integer keys are row numbers");
+                fields.putObject(name).put("min", 1).put("max", keys.size());
+            } else {
+                fields.putObject(name).set("texts", JSON.valueToTree(keys));
+            }
         });
         SimulationConfig config = SimulationConfig.parse(settings.toString(), "oracle.json")
                 .withSeed(seed).withSubmissions(count);
