@@ -482,3 +482,34 @@ against available compiled classes, not a successful Maven build. Logs:
 `.codex-runs/walker-dispute6-junit.log`.
 
 No production source was read or modified, and no commit was made.
+
+## Dispute 7: Amendment 10 tests that count kept answers in a counted repeat
+
+Four cases of the Amendment 10 tests check `answered()` on forms built by
+`FormWalkerAmendment10Support.errorForm`, whose `source` repeat has a count
+(`jr:count="/data/two"`) and two instances written in the primary
+instance with phones `11` and `22`:
+
+- `FormWalkerAmendment10RecoveryTest.repeatedReferenceConstraintLeavesBlankRecordsEngineMessageAndContinues`
+  (`expected: <1> but was: <3>`);
+- `FormWalkerAmendment10RecoveryTest.severalIndependentErrorsAreAllReportedInBodyOrder`
+  (`expected: <2> but was: <4>`);
+- `FormWalkerAmendment10PhasesTest.aConstraintThatStartsThrowingOnlyAtFinalCheckIsClearedAndRecorded`,
+  both parameters (`expected: <3> but was: <5>`, `expected: <2> but was: <4>`).
+
+The expected counts assume that the two written phones are kept, so that
+only `answer`, `gate` and `after` are answered. Spec 07 Amendment 3 says
+otherwise: the instances of a counted repeat are those its count creates
+(a count of 0 leaves none), so the instances written in the form are not
+used and the two instances the count creates start empty, as in any form
+converted from an XLSForm. The walker then answers both phones (two
+more answers), which is the original spec's rule for empty questions.
+Each case's form-error assertions (one record, its field, its message,
+blank question, the next question answered, no cut) pass; only the
+`answered()` counts fail, by exactly the two phones. Amendment 10 does not
+change how a counted repeat is filled, and assumption 68 of the questions
+file already leaves answer accounting around a form error unprescribed.
+
+Requested: count the phones in the expected values (or drop the
+`answered()` assertions that only depend on them), keeping the other
+assertions of these cases.
