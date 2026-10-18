@@ -65,6 +65,15 @@ public final class FieldOverride {
                 override.distribution, override.expression, override.area, override.rules);
     }
 
+    /** This override with {@code area} as its area (spec 13); a new one when null. */
+    static FieldOverride withArea(FieldOverride override, Area area) {
+        if (override == null) {
+            return new FieldOverride(null, null, Map.of(), List.of(), null, null, null, area, List.of());
+        }
+        return new FieldOverride(override.value, override.range, override.weights, override.texts, override.missingRate,
+                override.distribution, override.expression, area, override.rules);
+    }
+
     /** An override that answers with one of {@code texts} (spec 10, Amendment 2). */
     static FieldOverride ofTexts(List<String> texts) {
         return new FieldOverride(null, null, Map.of(), texts, null);

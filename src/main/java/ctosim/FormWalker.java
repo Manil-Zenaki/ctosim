@@ -122,7 +122,7 @@ public final class FormWalker {
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone(config.timeZone()));
         try {
-            return new Walk(number).run();
+            return new Walk(number, null).run();
         } finally {
             TimeZone.setDefault(previous);
         }
@@ -130,7 +130,28 @@ public final class FormWalker {
 
     /** Fills the form for one visit of the fieldwork plan. See specs/13-fieldwork-plan.md. */
     public Submission walk(int number, Visit visit) {
-        throw new UnsupportedOperationException("not implemented yet");
+        Objects.requireNonNull(visit, "visit");
+        Objects.requireNonNull(visit.start(), "visit.start");
+        if (number < 1) {
+            throw new IllegalArgumentException("submission numbers start at 1: " + number);
+        }
+        if (visit.enumerator() < 1 || visit.enumerator() > config.enumerators()) {
+            throw new IllegalArgumentException("the enumerator must be between 1 and " + config.enumerators() + ": "
+                    + visit.enumerator());
+        }
+        if (!(visit.latitude() >= -90 && visit.latitude() <= 90)) {
+            throw new IllegalArgumentException("the latitude must be between -90 and 90: " + visit.latitude());
+        }
+        if (!(visit.longitude() >= -180 && visit.longitude() <= 180)) {
+            throw new IllegalArgumentException("the longitude must be between -180 and 180: " + visit.longitude());
+        }
+        TimeZone previous = TimeZone.getDefault();
+        TimeZone.setDefault(TimeZone.getTimeZone(config.timeZone()));
+        try {
+            return new Walk(number, visit).run();
+        } finally {
+            TimeZone.setDefault(previous);
+        }
     }
 
     /**
@@ -367,8 +388,21 @@ public final class FormWalker {
         return null;
     }
 
+    /** Half the side of the square where a visit's GPS answers are drawn: its corners are within 30 m (spec 13). */
+    static final double HOUSEHOLD_METRES = 20;
+    static final double EARTH_RADIUS_METRES = 6_371_000;
+
+    /** The square of half-side {@code metres} around a point, in degrees. */
+    static Area around(double latitude, double longitude, double metres) {
+        double dLat = Math.toDegrees(metres / EARTH_RADIUS_METRES);
+        double cos = Math.max(Math.cos(Math.toRadians(latitude)), 1e-6);
+        double dLon = Math.min(180, dLat / cos);
+        return new Area(Math.max(-90, latitude - dLat), Math.min(90, latitude + dLat),
+                Math.max(-180, longitude - dLon), Math.min(180, longitude + dLon));
+    }
+
     /** Mixes the configuration seed, the submission number and a stream id into one seed. */
-    private static long seed(long base, long number, long stream) {
+    static long seed(long base, long number, long stream) {
         long h = base * 0x9E3779B97F4A7C15L + number;
         h = (h ^ (h >>> 31)) * 0xBF58476D1CE4E5B9L + stream;
         h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
@@ -393,20 +427,28 @@ public final class FormWalker {
         private final String profile;
         private final List<String> violations = new ArrayList<>();
         private int answered;
+        /** The visit of the fieldwork plan (spec 13), or null. */
+        private final Visit visit;
+        /** Where GPS answers are drawn for the visit: a square of {@link #HOUSEHOLD_METRES} around it. */
+        private final Area household;
 
-        Walk(int number) {
+        Walk(int number, Visit visit) {
+            this.visit = visit;
             this.number = number;
             long base = config.seed();
             this.answers = new SplittableRandom(seed(base, number, 2));
             this.timing = new SplittableRandom(seed(base, number, 3));
             this.repeats = new SplittableRandom(seed(base, number, 4));
-            this.start = config.start()
+            LocalDateTime drawn = config.start()
                     .plusDays(timing.nextInt(config.fieldworkDays()))
                     .plusMinutes(timing.nextInt(START_MINUTES + 1));
+            this.start = visit == null ? drawn : visit.start(); // the draws are made either way
+            this.household = visit == null ? null : around(visit.latitude(), visit.longitude(), HOUSEHOLD_METRES);
             this.violationDraws = new SplittableRandom(seed(base, number, 8));
             this.profile = drawProfile(new SplittableRandom(seed(base, number, 9)));
             this.clock = new SimulatedClock(start);
-            int enumerator = 1 + new SplittableRandom(seed(base, number, 5)).nextInt(config.enumerators());
+            int drawnEnumerator = 1 + new SplittableRandom(seed(base, number, 5)).nextInt(config.enumerators());
+            int enumerator = visit == null ? drawnEnumerator : visit.enumerator();
             this.session = form.newSimulatedSession(clock, seed(base, number, 1), Map.of(
                     "username", username(enumerator, config.enumerators()),
                     "deviceid", deviceIds[enumerator - 1]));
@@ -538,6 +580,10 @@ public final class FormWalker {
             if (prompt.isReadOnly()) {
                 return;
             }
+            if (visit != null && visit.id() != null && config.id().isPresent() && config.id().get().equals(name)
+                    && giveId(prompt, ref, name, path)) {
+                return;
+            }
             boolean overridden = config.field(name).isPresent();
             if (prompt.getAnswerValue() != null && !overridden && satisfiesConstraint(ref, prompt)) {
                 return; // keep a default or a value set by a calculation or an action
@@ -553,7 +599,7 @@ public final class FormWalker {
             boolean required = question.required();
             double minimum = minimumSeconds(prompt);
             Effective effective = effectiveOverride(name, path, ref);
-            FieldOverride override = effective.override();
+            FieldOverride override = nearHousehold(effective.override(), kind);
             if (effective.blank()) {
                 clear(ref); // an expression whose value is empty leaves the question blank
                 handled(ref, minimum);
@@ -592,6 +638,33 @@ public final class FormWalker {
             recordUnsatisfied(ref, name, path, false);
             warnIfRequired(required, name, path);
             handled(ref, minimum);
+        }
+
+        /** Answers the visit's survey id (spec 13); false, with a warning, when the engine does not accept it. */
+        private boolean giveId(FormEntryPrompt prompt, TreeReference ref, String name, String path) {
+            QuestionKind kind = kind(prompt);
+            IAnswerData data = null;
+            if (kind != null) {
+                List<String> loaded = prepare(prompt, ref, name, path, kind, false).loaded();
+                data = loaded == null ? convert(prompt, visit.id()) : convertLoaded(kind, visit.id(), loaded);
+            }
+            if (data != null && session.answerQuestion(data, true) == FormEntryController.ANSWER_OK) {
+                answered++;
+                handled(ref, minimumSeconds(prompt));
+                return true;
+            }
+            warn("field '" + name + "' (" + path + "): the survey id '" + visit.id()
+                    + "' is not accepted by this question; answered as usual");
+            return false;
+        }
+
+        /** GPS answers of a visit are drawn around its household, unless the field has its own area (spec 13). */
+        private FieldOverride nearHousehold(FieldOverride override, QuestionKind kind) {
+            if (household == null || (override != null && override.area().isPresent())
+                    || (kind != QuestionKind.GEOPOINT && kind != QuestionKind.GEOTRACE && kind != QuestionKind.GEOSHAPE)) {
+                return override;
+            }
+            return FieldOverride.withArea(override, household);
         }
 
         /** The generator's question for the current prompt, with its search() choices when it has any. */
