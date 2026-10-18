@@ -28,6 +28,7 @@ XForm already converted ({cmd:.xml}) with its {cmd:.fields.json} file beside it.
 {synopt:{opt dofile(filename)}}load the data with this SurveyCTO import do-file{p_end}
 {synopt:{opt replace}}allow writing into an output directory that already holds a run{p_end}
 {synopt:{opt clear}}allow replacing the data in memory{p_end}
+{synopt:{opt fakepreload}}invent the preloaded files the form reads but {opt media()} lacks; see {help ctosim##fakepreload:Fictitious preload}{p_end}
 {synoptline}
 
 
@@ -228,6 +229,7 @@ area and local place names, with {it:realistic.json}:{p_end}
 {synopt:{cmd:r(N)}}number of submissions simulated{p_end}
 {synopt:{cmd:r(warnings)}}number of warnings in the run report{p_end}
 {synopt:{cmd:r(unsatisfied)}}number of questions whose constraint no answer could satisfy (0 when none){p_end}
+{synopt:{cmd:r(formerrors)}}number of fields with form errors, which would block an enumerator (0 when none){p_end}
 
 {p2col 5 16 20 2: Macros}{p_end}
 {synopt:{cmd:r(seed)}}seed used{p_end}
@@ -235,6 +237,7 @@ area and local place names, with {it:realistic.json}:{p_end}
 {synopt:{cmd:r(outdir)}}output directory (absolute path){p_end}
 {synopt:{cmd:r(wide)}}wide CSV file (absolute path){p_end}
 {synopt:{cmd:r(report)}}{cmd:run-report.txt} (absolute path){p_end}
+{synopt:{cmd:r(fakepreload)}}with {opt fakepreload}: the fictitious files, separated by spaces (empty when none was needed){p_end}
 
 
 {pstd}
@@ -247,6 +250,56 @@ This usually means a constraint that cannot hold given the answers it refers
 to (for example {it:. >= ${age} and . <= 60} after an age of 90 was
 accepted): check the form. {cmd:r(unsatisfied)} gives the number of such
 questions.{p_end}
+
+{pstd}
+{bf:Form errors.} Some expressions of a form cannot be evaluated in some
+situations, for example a constraint comparing an answer with a field of a
+repeat from outside that repeat ({it:. != ${phone}}, where {it:phone} is
+repeated): SurveyCTO Collect would stop with an error there and the
+enumerator would be blocked. {cmd:ctosim} leaves the question blank and goes
+on, so that one run shows every such problem; when the walk cannot get past
+a point, the submission is cut short there. The fields concerned are listed,
+in red, under {bf:FORM ERRORS} in the Results window and at the top of the
+run report: the field's name, its row in the XLSForm, the engine's message
+and the submissions concerned. {cmd:r(formerrors)} gives the number of such
+fields.{p_end}
+
+{pstd}
+{bf:Final message.} When the form has form errors or unsatisfied
+constraints, {cmd:ctosim} ends with a message in red, shown last, after the
+data are loaded (and after the do-file of {opt dofile()} has run, or before
+its error when it fails): it gives the number of form errors (that would
+block an enumerator) and of unsatisfied constraints, and the absolute path of
+the run report {cmd:run-report.txt}. Fix the form before using it in the
+field.{p_end}
+
+
+{marker fakepreload}{...}
+{title:Fictitious preload}
+
+{pstd}
+Most forms read preloaded data from attached CSV files ({cmd:pulldata()},
+{cmd:search()}). When the real files are not available (they often hold
+personal data), every preloaded value is blank, repeats counted from them are
+empty and the parts of the form that test them are never simulated. With
+{opt fakepreload}, {cmd:ctosim} invents the files that {opt media()} lacks
+from the form's own use of them: the files and columns it reads, the keys it
+looks up, the choice lists it loads with {cmd:search()} and their filters.
+The questions used as keys (a household identifier typed by the enumerator,
+for instance) are answered with keys of the invented files, so that the
+lookups succeed. The values are invented and only follow the form's use of
+the files; they are meant for testing a form or analysis code when the real
+preload is not available, never for analysis. Real files present in
+{opt media()} are used as they are.
+
+{pstd}
+The files are written under {cmd:attachments/} in the output directory, where
+they can be read or edited, then reused with {opt media()}. The run report and
+the Results window list them on a {bf:Fictitious attachments} line, and
+{cmd:r(fakepreload)} returns their names.{p_end}
+
+{phang2}{cmd:. ctosim using "household.xlsx", n(100) fakepreload dofile("import_household.do") replace clear}{p_end}
+{phang2}{cmd:. display "`r(fakepreload)'"}{p_end}
 
 
 {title:Reporting a problem}
