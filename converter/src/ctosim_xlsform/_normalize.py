@@ -179,6 +179,8 @@ def normalize(survey: Sheet, choices: Sheet | None, settings: Sheet | None) -> N
             target = "a hidden calculate" if new_type == "calculate" else "a text question"
             out.warnings.append(f"row {number}: field '{name}' of SurveyCTO type '{type_text}' becomes {target}")
 
+        if row[t_col] == "calculate":
+            _drop_texts(s, row)
         out.fields.append((name, type_text, _xpath(stack, name), number))
         if select and type_text.split()[2:] == ["or_other"]:
             _or_other(out, k, row, select.group(1), select.group(2), name, list_names)
@@ -211,6 +213,13 @@ def _renamed_survey(survey: Sheet) -> Sheet:
         keep.append(i)
         headers.append(COLUMN_RENAMES.get(base, base) + (":" + lang if sep else ""))
     return Sheet(headers, [[r[i] for i in keep] for r in survey.rows])
+
+
+def _drop_texts(s: Sheet, row: list[Any]) -> None:
+    """A calculate is never displayed: its labels and hints, in every language, are left out."""
+    for i, h in enumerate(s.headers):
+        if h.partition(":")[0] in ("label", "hint"):
+            row[i] = None
 
 
 def _languages(*sheets: Sheet | None) -> set[str]:

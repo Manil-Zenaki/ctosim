@@ -138,7 +138,7 @@ def _run_pyxform(norm, form_id: str, title: str, version: str | None, source: st
         workbook_path = Path(tmp) / "form.xlsx"
         rows = _write_odk_workbook(norm, form_id, title, version, workbook_path)
         try:
-            with warnings.catch_warnings(), _repeats_compared_by_identity():
+            with warnings.catch_warnings(), _repeats_compared_by_identity(), _typographic_quotes_kept():
                 warnings.simplefilter("ignore")
                 result = convert(xlsform=str(workbook_path), validate=False, pretty_print=True,
                                  warnings=[])
@@ -170,6 +170,22 @@ def _repeats_compared_by_identity():
                 setattr(RepeatingSection, name, old)
             else:
                 delattr(RepeatingSection, name)
+
+
+@contextlib.contextmanager
+def _typographic_quotes_kept():
+    """
+    pyxform replaces typographic quotes with straight ones in every cell, which ends a string
+    literal early in 'l’argent'; SurveyCTO keeps them as written (spec 02, Amendment 7).
+    """
+    from pyxform.parsing import sheet_headers
+
+    old = sheet_headers.RE_SMART_QUOTES
+    sheet_headers.RE_SMART_QUOTES = re.compile(r"(?!)")  # matches nothing
+    try:
+        yield
+    finally:
+        sheet_headers.RE_SMART_QUOTES = old
 
 
 def _exact_version_attribute(xform: str, version: str | None) -> str:
