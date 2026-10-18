@@ -394,3 +394,25 @@ every language of the form, including one introduced only by a hint
 (37); the catalog entry has the question's row, and no warning is added
 (38); library messages are kept off stderr whether they come as Python
 warnings, printing or logging, and only during a conversion (39).
+
+## Amendment 7: typographic quotes, and texts of hidden calculates
+
+Two kinds of real forms that SurveyCTO accepts failed to convert.
+Everything not mentioned here is unchanged.
+
+### Typographic quotes
+
+Typographic quotes (`‘` U+2018, `’` U+2019, `“` U+201C, `”` U+201D)
+are kept as written in every cell, expressions included: SurveyCTO does
+not replace them, and in an expression they are ordinary characters, so
+`if(${x}=1, 'l’argent', '')` is a string holding `l’argent`. The
+converted XForm and the field catalog hold them unchanged.
+
+### Labels and hints of `calculate` rows
+
+A `calculate` row (and a row converted to a hidden calculate, spec 02)
+is never displayed, so its label and hint columns, in every language,
+are not part of the converted form: a reference such as `${emiscode}`
+written there does not have to name a field, and the form converts as
+if those cells were empty. Other columns of the row (the calculation,
+relevance, ...) are converted as before.
