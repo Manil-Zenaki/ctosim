@@ -321,3 +321,24 @@ absent in the accessors (a field's area is not filled from the top-level
 area) (23); expressions that parse are kept exactly as written (24); the
 new keys are reserved only where the schema allows them, not as field or
 profile names (28).
+
+## Amendment 4: survey id
+
+One top-level key is added for the fieldwork plan (spec 13); everything
+else is unchanged.
+
+| Key | Type | Default | Constraint | Meaning (used by spec 13) |
+|---|---|---|---|---|
+| `id` | string | none | non-empty, without leading or trailing white space | Name of the question holding the survey id (household, respondent): each submission gets its own value. |
+
+Accessor added to `SimulationConfig`:
+
+```java
+public java.util.Optional<String> id();   // empty when not set
+```
+
+- `defaults()` has an empty `id()`.
+- An `id` that is not a string, is empty or has leading or trailing white
+  space is an error of the configuration (`ConfigException`, as for the
+  other keys). A name that the form does not hold is not an error here:
+  the plan warns about it (spec 13).

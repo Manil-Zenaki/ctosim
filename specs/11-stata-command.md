@@ -325,3 +325,22 @@ absolute path, and only Stata's error trailer may follow it (F3); it is
 shown after a do-file that ran, or failed, and never after a simulator
 failure (F4); the help is checked for `r(formerrors)`, the section and the
 final message (F5).
+
+## Amendment 7: the fieldwork plan, and option `id()`
+
+The simulator now plans the fieldwork (spec 13, spec 10 Amendment 4):
+each enumerator works days of interviews one after the other, in one
+village a day, so that data-quality checks such as `ipacheck` find no
+overlap, impossible travel or interview outside working hours that was
+not put there. Everything not mentioned here is unchanged.
+
+- Option `id(name)` names the question holding the survey id; the command
+  runs the simulator with `--id name`, so that each submission gets its
+  own value of that question. `name` is a single word; anything else is
+  an error of the command (status 198) before the simulator runs.
+- Without `id()`, the configuration's `id`, if any, applies.
+- The help file documents the option, and says what the plan guarantees
+  (no overlap between an enumerator's interviews, interviews started
+  within working hours, one village a day per enumerator, distinct survey
+  ids when `id()` is given) and that the fieldwork may last longer than
+  `fieldworkDays` when the interviews do not fit, with a warning.

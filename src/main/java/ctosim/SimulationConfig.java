@@ -188,6 +188,11 @@ public final class SimulationConfig {
         return java.util.Optional.ofNullable(area);
     }
 
+    /** The question holding the survey id. See specs/04-simulation-config.md, Amendment 4. */
+    public java.util.Optional<String> id() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** Text pools in file order; empty when not set. */
     public java.util.Map<String, java.util.List<String>> textPools() {
         return textPools;

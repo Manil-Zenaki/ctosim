@@ -307,3 +307,25 @@ occurrence (26, 27); the submission lists hold only submissions with a
 record, sorted numerically (28); the other sections, warnings, exports
 and the exit status are unchanged, and a rerun without errors has no
 section (29).
+
+## Amendment 4: the fieldwork plan, and `--id`
+
+A run now simulates its submissions through the fieldwork plan
+(spec 13): step "Walk" of "What a run does" builds
+`new Fieldwork(form, config)` and calls `walkAll()`, instead of calling
+`FormWalker.walk(k)` for each `k`. The configuration warnings of the run
+are those of `Fieldwork.configWarnings()`, and the plan's `warnings()`
+are added after the submissions' own warnings. Everything else is
+unchanged: the exports, the report and `out` are built from the
+returned submissions as before.
+
+| Option | Value | Meaning |
+|---|---|---|
+| `--id` | a question name | The question holding the survey id; replaces the configuration's `id` (spec 04, Amendment 4). |
+
+- `--id` takes a non-empty name without leading or trailing white space;
+  otherwise, or without a value, it is a usage error (status 2), as for
+  the other options. Given twice, it is a usage error too.
+- With `--fake-attachments`, the key answers (Amendment 2) are set before
+  the plan is built, so that a key question named by the id takes its
+  possible values from them (spec 13, "Survey ids").

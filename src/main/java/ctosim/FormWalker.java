@@ -128,6 +128,11 @@ public final class FormWalker {
         }
     }
 
+    /** Fills the form for one visit of the fieldwork plan. See specs/13-fieldwork-plan.md. */
+    public Submission walk(int number, Visit visit) {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /**
      * One 16-character hexadecimal device id (like an Android id) per enumerator, drawn in enumerator order from the seed alone, so
      * an enumerator keeps its device whatever the number of enumerators.
