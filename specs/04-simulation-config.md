@@ -342,3 +342,12 @@ public java.util.Optional<String> id();   // empty when not set
   space is an error of the configuration (`ConfigException`, as for the
   other keys). A name that the form does not hold is not an error here:
   the plan warns about it (spec 13).
+
+Clarification (Amendment 4): assumptions 29–33 of the questions file are
+reviewed one by one and confirmed: the name is kept exactly as decoded,
+with no other grammar or length limit (29); space, tab, CR, LF and form
+feed count as white space at either edge, and are rejected, not trimmed
+(30); only the top-level key is new, and it does not interact with field
+overrides in the configuration itself (31); the existing diagnostics and
+input rules apply (32); copies keep `id()`, and uniqueness of the
+generated ids belongs to spec 13 (33).

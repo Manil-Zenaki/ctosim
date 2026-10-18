@@ -166,3 +166,36 @@ submission number order. `warnings()` holds the plan's warnings (not the submiss
 last call of `walkAll()`, in the order given above; it is empty before
 the first call, and so is `visits()`. Lists returned by this class are
 unmodifiable.
+
+## Clarification
+
+Assumptions 1–13 of the questions file are reviewed one by one. They are
+confirmed, with these decisions on the points left open:
+
+- **The survey id is never left blank** (1): a household always has one,
+  so the visit's id is given whatever the missing rate of the question
+  (`missingRate` does not apply to it); a required or optional question
+  is treated the same way.
+- **K counts distinct values** (2): a value listed twice in `texts` is a
+  possible value once; an empty string is not a possible value.
+- **No overlap across days** (9): when an interview ends so late that the
+  next day's start of work plus the drawn minutes is not at least ten
+  minutes after it, the next interview is the first of the first later
+  day for which it is. A day is counted from `config.start()` (day `j`
+  begins `j` days after it), whatever the calendar date.
+
+Also confirmed: the possible values follow the stated precedence, and a
+weight of 0 does not remove a choice (3); a range gives the integers from
+`min` rounded up to `max` rounded down, none when that is empty (4);
+`texts` apply to any question kind, and special values are removed only
+from a choice list (5); behaviour for elements that are not questions,
+read-only or irrelevant questions and filtered choices is not prescribed,
+and repeat instances of the id question all get the visit's id (6); any
+refusal by the engine (conversion, choice, constraint) leads to the usual
+answer and a warning (7); a visit is checked by `walk`, NaN is not
+prescribed (8); the minutes of a submission depend on the seed and its
+number only, locations do not depend on the answers, and the id order
+does not depend on `N` (10); villages are observed through their
+consequences only (11); lists are unmodifiable, with no promise on the
+lifetime of earlier lists (12); the days taken are the last day index
+used plus one, and the overflow warning comes before the id warning (13).
