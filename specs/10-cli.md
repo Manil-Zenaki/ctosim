@@ -296,3 +296,14 @@ errors that would block an enumerator, names the fields in the order of
 the section, separated by `, `, and names `run-report.txt`.
 
 The exit status is still 0: the data are written.
+
+Clarification (Amendment 3): assumptions 25–29 of the questions file are
+reviewed one by one and confirmed. In particular, the `FORM ERRORS:` line
+is checked for its prefix, the standalone count, the field names in
+order, `run-report.txt` and the words "block" and "enumerator", and is
+the last line of `out` (25); the report reproduces the first record's
+message verbatim, records grouped by unindexed path in order of first
+occurrence (26, 27); the submission lists hold only submissions with a
+record, sorted numerically (28); the other sections, warnings, exports
+and the exit status are unchanged, and a rerun without errors has no
+section (29).

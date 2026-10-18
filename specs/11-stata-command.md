@@ -314,3 +314,14 @@ among the other messages. Everything not mentioned here is unchanged.
   do-file's error.
 - The help file documents `r(formerrors)`, the section and the final
   message.
+
+Clarification (Amendment 6): assumptions F1–F5 of the questions file are
+reviewed one by one and confirmed. In particular, `r(formerrors)` is the
+section's field count, 0 without the section, and no result is promised
+after a failure (F1); the two red sections keep their own line order and
+precede the warning count, without an order between them (F2); the final
+message has no prescribed wording, names both counts and the report's
+absolute path, and only Stata's error trailer may follow it (F3); it is
+shown after a do-file that ran, or failed, and never after a simulator
+failure (F4); the help is checked for `r(formerrors)`, the section and the
+final message (F5).

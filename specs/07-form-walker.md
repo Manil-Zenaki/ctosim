@@ -744,3 +744,19 @@ during a walk. Errors of the simulator itself (for example the limit of
 - `Submission.formErrors()` lists the records in the order they occurred;
   it is unmodifiable and may be empty. A submission built with
   `Submission.of` (spec 08) has none.
+
+Clarification (Amendment 10): assumptions 66–73 of the questions file are
+reviewed one by one and confirmed. In particular, recovery covers giving
+answers, re-checking constraints and moving forward, not loading the form
+(66); the field is the one the engine names as failing, else the question
+being handled, and the message is the engine's own, each line break
+(CRLF counted as one) replaced by a space, nothing else changed (67);
+answered counts, the clock and required-field warnings are not
+prescribed for a form error (68); a point is a question with its repeat
+indices, and records follow the order of occurrence (69); every
+occurrence is recorded, including the one that cuts a submission short
+(70); an engine error is not an unsatisfied constraint, and errors raised
+by functions of the engine (an invalid regular expression) are form
+errors too (71); records compare as values and do not change after later
+walks (72); a failing repeat count is a calculated field referred to by
+`jr:count` (73).
