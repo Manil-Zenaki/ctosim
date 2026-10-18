@@ -431,3 +431,96 @@ tests were inspected; no production source was read.
   was copied, no drive was mapped, and no dependencies were installed.
   **Dependent tests:** Repository compilation and runtime execution of all
   Amendment 3 test classes remain unverified. Existing tests are unchanged.
+
+## Amendment 4: survey id
+
+Existing tests, fixtures, and questions are preserved, including the committed
+`FieldworkIdConfigTest`. New coverage is in `SimulationConfigSurveyIdTest`,
+`SimulationConfigSurveyIdIoTest`, and `SimulationConfigSurveyIdCopiesTest`, with
+the minimal UTF-8 fixture `amendment-survey-id.json`. Expectations come only from
+spec 04. No production source was opened, read, searched, or changed.
+
+29. **Does the id name have an identifier grammar, normalization rule, or size
+    limit beyond the three stated constraints?**
+    - **Assumption:** No additional constraint is inferred. A nonempty string
+      without edge whitespace is preserved exactly after JSON decoding,
+      including case, internal spaces, punctuation, non-ASCII characters,
+      supplementary Unicode characters, and distinct composed/decomposed
+      spellings. It need not appear in `fields`, and parsing does not create
+      a field override. No undocumented maximum length is tested.
+    - **Dependent tests:** `acceptedNames` and its parse/load consumers,
+      `escapedKeyAndEscapedValueAreDecodedBeforeBeingExposed`,
+      `loadDecodesEscapesInTheKeyAndValue`, and
+      `independentParsesCannotChangePreviouslyReturnedIdsOrDefaults`.
+
+30. **What counts as leading or trailing white space?**
+    - **Assumption:** Space, tab, CR, LF, and form feed are whitespace and are
+      rejected at either edge, including whitespace-only strings. They must
+      be rejected rather than silently trimmed. Escaped whitespace is checked
+      after JSON decoding; the test inputs contain valid JSON escapes.
+    - **Unresolved:** The specification does not define Unicode whitespace
+      classification (such as nonbreaking spaces) or handling of other
+      control characters. No assertions depend on those cases. Internal
+      ordinary spaces are covered, but internal control characters are not.
+    - **Dependent tests:** `invalidValues` and its parse/load consumers;
+      `rejectsAnEscapedEdgeSpaceAfterDecodingTheString`.
+
+31. **Does id become a reserved name elsewhere or interact with field
+    overrides for the named question?**
+    - **Assumption:** Only the top-level schema gains the key. The spelling is
+      case-sensitive after JSON escape decoding. It remains unknown inside
+      closed nested schemas, and remains legal in arbitrary field, profile,
+      and choice-name mappings. An override for the named question is retained
+      without a new conflict rule. An override named `id` does not supply the
+      top-level setting when that setting is omitted. These tests check storage
+      only, not the precedence of id generation over an answer override.
+    - **Dependent tests:** `unknownKeys` and its parse/load consumers,
+      `idRemainsALegalArbitraryFieldProfileAndChoiceName`,
+      `omittedIdStaysAbsentEvenWithAFieldOverrideNamedId`, and
+      `idDoesNotConflictWithOrReplaceAnOverrideForTheSameName`.
+
+32. **Do existing diagnostics and I/O conventions apply to id?**
+    - **Assumption:** Yes, under "everything else is unchanged". Invalid id
+      values require `ConfigException`, the source, the `id` key, and a reason;
+      no exact wording or validation-cause type is required. Duplicate keys
+      retain question 2's confirmed syntax/schema flexibility. Malformed JSON
+      retains its underlying cause and names the failing line. The UTF-8/BOM
+      contract applies to the new setting as it does to existing settings.
+    - **Dependent tests:** `assertIdDiagnostic`, duplicate-key tests, and the
+      syntax/UTF-8/BOM/root-shape tests in `SimulationConfigSurveyIdIoTest`.
+
+33. **Must copying preserve id, including absence, and does configuration
+    testing need to verify generated survey-id uniqueness?**
+    - **Assumption:** The existing immutable-copy contract preserves id and
+      every other setting, including copies with unchanged seed/count. Adding
+      id does not reset defaults or previously configured settings. Independent
+      configurations and loaded snapshots cannot change one another's ids.
+      Generated values, uniqueness, form existence checks, and plan warnings
+      belong to spec 13 and are not tested in this module.
+    - **Dependent tests:** All `SimulationConfigSurveyIdCopiesTest` methods;
+      `loadedIdAndItsCopiesRemainUnchangedAfterTheFileIsReplaced`.
+
+### Amendment 4 build verification (2026-10-18)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile`, then repeated with `-e`
+  to diagnose the failure. Both reached
+  `maven-compiler-plugin:3.15.0:testCompile` and failed with
+  `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac closed
+  its archive file manager. Logs are
+  `.codex-runs/04-survey-id-test-compile.log` and
+  `.codex-runs/04-survey-id-test-compile-detail.log`.
+- As an independent compilation check, all three new test classes and the
+  two existing support classes they use **compiled successfully with Java
+  release 17 against the actual `target/classes` binaries and cached JUnit
+  5.11.4 API**. The temporary compiler probe reads dependency class entries
+  in memory to avoid the archive-close failure, without copying repositories,
+  changing permissions, or inspecting production implementation. It is saved
+  at `.codex-runs/SurveyIdCompileProbe.java`; the result is
+  `.codex-runs/04-survey-id-probe-compile.log` (`compiled=true`). This confirms
+  compilation of the new sources, but does not claim the Maven command passed.
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** The access error is an
+  environment blocker; production code, Maven configuration, and dependencies
+  should remain unchanged. **Dependent tests:** Full Maven test compilation
+  remains unverified. Runtime tests were not requested and were not run.
