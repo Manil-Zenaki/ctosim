@@ -301,7 +301,9 @@ public final class Cli {
         files.add(REPORT);
         Map<String, List<UnsatisfiedConstraint>> byQuestion = unsatisfiedByQuestion(submissions);
         List<String> unsatisfied = unsatisfiedSection(byQuestion, catalog, config.submissions());
-        String report = report(o, form, config, files, warnings, fakeNames, unsatisfied);
+        Map<String, List<FormError>> byField = formErrorsByField(submissions);
+        List<String> formErrors = formErrorsSection(byField, catalog, config.submissions());
+        String report = report(o, form, config, files, warnings, fakeNames, formErrors, unsatisfied);
         try {
             Files.writeString(o.output().resolve(REPORT), report, StandardCharsets.UTF_8);
         } catch (IOException e) {
@@ -322,6 +324,14 @@ public final class Cli {
         if (!fakeNames.isEmpty()) {
             all.add("Fictitious attachments, with invented content: " + String.join(", ", fakeNames)
                     + " (in " + FAKE_DIRECTORY + "/)");
+        }
+        if (!formErrors.isEmpty()) {
+            List<String> fields = new ArrayList<>();
+            for (List<FormError> records : byField.values()) {
+                fields.add(records.get(0).field());
+            }
+            all.add("FORM ERRORS: " + fields.size() + " fields of the form have errors that would block an enumerator: "
+                    + String.join(", ", fields) + "; see " + REPORT);
         }
         return all.toArray(new String[0]);
     }
@@ -370,6 +380,61 @@ public final class Cli {
         }
     }
 
+    /** The form errors of all submissions by field path without repeat indices, in order (spec 10, Amendment 3). */
+    private static Map<String, List<FormError>> formErrorsByField(List<Submission> submissions) {
+        Map<String, List<FormError>> byField = new java.util.LinkedHashMap<>();
+        for (Submission s : submissions) {
+            for (FormError e : s.formErrors()) {
+                byField.computeIfAbsent(e.path().replaceAll("\\[\\d+]", ""), k -> new ArrayList<>()).add(e);
+            }
+        }
+        return byField;
+    }
+
+    /** The "FORM ERRORS" section of the report (spec 10, Amendment 3); empty when there is none. */
+    private static List<String> formErrorsSection(Map<String, List<FormError>> byField, FieldCatalog catalog, int n) {
+        if (byField.isEmpty()) {
+            return List.of();
+        }
+        Map<String, Integer> rows = rows(catalog);
+        List<String> section = new ArrayList<>();
+        section.add("FORM ERRORS (an enumerator would be blocked): " + byField.size());
+        for (Map.Entry<String, List<FormError>> e : byField.entrySet()) {
+            FormError first = e.getValue().get(0);
+            Integer row = rows.get(e.getKey());
+            section.add("  " + first.field() + (row == null ? "" : ", row " + row) + ": " + first.message());
+            java.util.TreeSet<Integer> numbers = new java.util.TreeSet<>();
+            for (FormError error : e.getValue()) {
+                numbers.add(error.submission());
+            }
+            section.add("    submissions (" + numbers.size() + " of " + n + "): " + submissionList(numbers));
+        }
+        section.replaceAll(line -> line.replaceAll("\\R", " "));
+        return section;
+    }
+
+    private static Map<String, Integer> rows(FieldCatalog catalog) {
+        Map<String, Integer> rows = new HashMap<>();
+        for (FieldInfo f : catalog.fields()) {
+            rows.putIfAbsent(f.xpath(), f.row());
+        }
+        return rows;
+    }
+
+    /** Submission numbers in order, the first twenty then ", ..." (spec 10, Amendment 1). */
+    private static String submissionList(java.util.SortedSet<Integer> numbers) {
+        StringBuilder list = new StringBuilder();
+        int shown = 0;
+        for (int number : numbers) {
+            if (shown == 20) {
+                list.append(", ...");
+                break;
+            }
+            list.append(shown++ == 0 ? "" : ", ").append(number);
+        }
+        return list.toString();
+    }
+
     /** The unsatisfied constraints of all submissions by question path without repeat indices, in order. */
     private static Map<String, List<UnsatisfiedConstraint>> unsatisfiedByQuestion(List<Submission> submissions) {
         Map<String, List<UnsatisfiedConstraint>> byQuestion = new java.util.LinkedHashMap<>();
@@ -387,10 +452,7 @@ public final class Cli {
         if (byQuestion.isEmpty()) {
             return List.of();
         }
-        Map<String, Integer> rows = new HashMap<>();
-        for (FieldInfo f : catalog.fields()) {
-            rows.putIfAbsent(f.xpath(), f.row());
-        }
+        Map<String, Integer> rows = rows(catalog);
         List<String> section = new ArrayList<>();
         section.add("Unsatisfied constraints: " + byQuestion.size());
         for (Map.Entry<String, List<UnsatisfiedConstraint>> e : byQuestion.entrySet()) {
@@ -401,16 +463,7 @@ public final class Cli {
             for (UnsatisfiedConstraint u : e.getValue()) {
                 numbers.add(u.submission());
             }
-            StringBuilder list = new StringBuilder();
-            int shown = 0;
-            for (int number : numbers) {
-                if (shown == 20) {
-                    list.append(", ...");
-                    break;
-                }
-                list.append(shown++ == 0 ? "" : ", ").append(number);
-            }
-            section.add("    submissions (" + numbers.size() + " of " + n + "): " + list);
+            section.add("    submissions (" + numbers.size() + " of " + n + "): " + submissionList(numbers));
             if (!first.references().isEmpty()) {
                 List<String> values = new ArrayList<>();
                 first.references().forEach((name, value) -> values.add(name + " = " + (value.isEmpty() ? "(blank)" : value)));
@@ -456,7 +509,8 @@ public final class Cli {
     }
 
     private static String report(Options o, LoadedForm form, SimulationConfig config, List<String> files,
-                                 List<String> warnings, List<String> fakeNames, List<String> unsatisfied) {
+                                 List<String> warnings, List<String> fakeNames, List<String> formErrors,
+                                 List<String> unsatisfied) {
         StringBuilder r = new StringBuilder();
         line(r, "ctosim run report");
         line(r, "Form: " + form.title() + " (" + form.formId() + ", version "
@@ -468,6 +522,9 @@ public final class Cli {
         line(r, "Fieldwork: " + ISO.format(config.start()) + " for " + config.fieldworkDays()
                 + " days, time zone " + config.timeZone().getId());
         line(r, "Enumerators: " + config.enumerators());
+        for (String text : formErrors) {
+            line(r, text);
+        }
         if (!fakeNames.isEmpty()) {
             line(r, "Fictitious attachments: " + String.join(", ", fakeNames));
         }
