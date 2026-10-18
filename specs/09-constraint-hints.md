@@ -350,3 +350,20 @@ one character while the rest of the answer stays as drawn, and a symbol
 the pattern requires is kept, even `${` (25); letters and digits of any
 script count, the space is U+0020 (26); fixed values and `texts`
 overrides are not changed (28).
+
+## Amendment 4: patterns with lookaround assertions
+
+Real forms write patterns such as `^(?![0-9]+$)[A-Z0-9 ]{5,100}$`
+(capitals, digits and spaces, but not only digits). The engine's
+`regex()` accepts lookahead and lookbehind assertions (Java syntax), but
+the drawing of rule 1 of "Text" did not produce any string for them, so
+the pattern was ignored and the question was left blank. Everything not
+mentioned here is unchanged.
+
+When the pattern holds lookaround assertions (`(?=...)`, `(?!...)`,
+`(?<=...)`, `(?<!...)`) and no string can be drawn from it as it is, the
+answer is drawn from the pattern with those assertions removed, then
+kept only if it matches the whole original pattern; up to 50 such draws
+are made before the pattern is ignored as before. Answers drawn this way
+follow Amendment 3 like any answer drawn from a pattern, and still match
+the original pattern in full.
