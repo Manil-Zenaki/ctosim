@@ -17,9 +17,9 @@ foreach scenario in errors constraints both clean {
     quietly log using "template-`scenario'.smcl", smcl replace name(a6)
     ctosim using "input files/survey.xml", saving("template `scenario'") ///
         dofile("input files/template.do") fakepreload clear
+    a6_results `e' `u' 2 "template `scenario'" "people.csv villages.csv"
     quietly log close a6
     quietly log close a6tail
-    a6_results `e' `u' 2 "template `scenario'" "people.csv villages.csv"
     assert `"`c(pwd)'"' == `"`original'"'
     assert _N == 2
     assert id == _n

@@ -13,8 +13,8 @@ foreach scenario in errors constraints both {
     ct_memory
     quietly log using "plain-`scenario'.smcl", smcl replace name(a6)
     ctosim using "input files/survey.xml", saving("plain `scenario'") clear
-    quietly log close a6
     a6_results `e' `u' 2 "plain `scenario'"
+    quietly log close a6
     assert _N == 25
     assert id == _n
     assert missing(answer)

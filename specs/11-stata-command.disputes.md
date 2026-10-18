@@ -299,3 +299,80 @@ read `r()` before closing their logs (or open none), pass.
 Requested: in these three tests, read the results (`a6_results`, or a copy
 of `r()` into locals) before `quietly log close`, keeping the other
 assertions, and the log checks, unchanged.
+
+## Adjudication (2026-10-18)
+
+### Dispute 1 - prior correction retained
+
+The spec derives default output paths from form basenames and requires error
+602 for an existing report without `replace`. The current options-paths test
+uses distinct numeric suffixes, avoiding case-only collisions. Keep it.
+
+### Dispute 2 - prior correction retained
+
+Amendment 1 replaces unconditional use of Stata's Java with ordered selection
+of an eligible Java 17 or newer. The runtime-selection test already omits the
+obsolete Java assertion and retains its specified Python checks. Keep it.
+
+### Dispute 3 (compiled support jars) - prior correction retained
+
+This is an infrastructure concern, not a disputed command expectation: the
+spec requires executable batch tests, not committed build output. Both support
+jars remain absent from the fixture directory; the runner's build hooks compile
+them under `.codex-runs/stata-support/`. No further change is needed.
+
+### Dispute 3 (prompt-prefixed assert example) - prior correction retained
+
+Amendment 3 requires an answer-constraint assertion in a command example, but
+does not forbid Stata's displayed prompt. The existing matcher accepts an
+optional prompt while retaining its answer-predicate check. Keep it.
+
+### Dispute 4 - prior correction retained
+
+The simulator fixture already sets stdout and stderr to UTF-8 explicitly,
+matching the referenced simulator contract and preserving the Unicode and
+strict-decoding assertions. No further change is needed.
+
+### Dispute 5 - accepted; check returned results before closing logs
+
+Step 5 and Amendment 6 promise report-derived results when `ctosim` returns
+successfully. They do not promise those results after a subsequent command
+replaces `r()`. Closing a log before reading the results therefore makes the
+test measure the wrong command's returned state. The confirmed F1 assumption
+about results surviving the import template applies inside `ctosim`, before
+it returns; it does not extend the lifetime of results across caller commands.
+
+Moved `a6_results` immediately after the successful `ctosim` call at all five
+disputed sites: one in `test_form_problems_final_plain.do`, one in
+`test_form_problems_template.do`, and three in `test_form_problems_absent.do`.
+The helper snapshots every checked result before making its own assertions.
+Logs are still closed before `a6_log` reads them. All count, path, data,
+directory-restoration, styling, ordering, final-message, and absence checks
+are retained unchanged. The results and display tests need no correction.
+
+### Validation for this adjudication
+
+A standalone batch-mode Stata probe returned `r(x) = 5`, captured it while
+the named log was open, closed the log, and confirmed that `r(x)` was then
+missing. Both assertions passed. Its do-file and log are under
+`.codex-runs/stata-dispute5/`.
+
+Ran `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`.
+All test-support fixtures compiled, and all 40 Amendment 6 output-oracle
+self-checks passed. All three corrected do-files passed, including their
+unchanged log checks; all eight `test_form_problems_*.do` files passed.
+The previously disputed path-options, runtime-selection, advanced help,
+fake-preload display, and fake-preload template-failure tests also passed.
+
+Full-suite result: **66 do-files, 54 passed, 12 failed** (runner exit status 1).
+The seven `test_amendment_*.do` and five `test_converter_name_*.do` failures
+remain launcher cleanup failures: access is denied while removing pre-existing
+`temp/hsperfdata_manil` directories, before child assertions run. The launcher
+logs under `.codex-runs/stata-amendment/` and
+`.codex-runs/stata-converter-name/` confirm the same environmental cause as
+the prior adjudications. No cleanup logic, directory permissions, or unrelated
+expectations were changed. Runner logs are under `target/stata-tests/`.
+
+`git diff --check` passed. Only the three disputed do-files and this disputes
+file were changed. No production implementation was read or modified, and
+no commit was made.
