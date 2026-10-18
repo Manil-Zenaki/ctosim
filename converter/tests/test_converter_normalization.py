@@ -6,6 +6,7 @@ import pytest
 
 from ctosim_xlsform import FieldInfo, convert_xlsform
 from xform_assertions import assert_choice_list, assert_row_mentioned, bind_for, elements, instance_paths
+from test_converter_disabled_rows_amendment8 import assert_warnings
 
 
 EMPTY_CALCULATE_TYPES = [
@@ -98,17 +99,20 @@ def test_only_yes_disables_a_row(workbook_factory, disabled):
 
 @pytest.mark.parametrize("outer, inner", [("group", "group"), ("group", "repeat"),
                                          ("repeat", "group"), ("repeat", "repeat")])
-def test_disabled_block_skips_through_its_matching_end(workbook_factory, outer, inner):
+def test_disabled_nested_boundaries_keep_independently_enabled_children(workbook_factory, outer, inner):
     result = convert_xlsform(workbook_factory(survey=[["type", "name", "label", "disabled"],
         [f"begin {outer}", "omitted", "Omitted", "YES"],
         [f"begin {inner}", "nested", "Nested", "yes"], ["caseid", "nested_case"],
         [f"end {inner}"], ["text", "still_omitted", "Gone"], [f"end {outer}"],
         ["text", "kept", "Kept"]]))
-    assert result.fields == (FieldInfo("kept", "text", "/data/kept", 8),)
+    assert result.fields == (
+        FieldInfo("nested_case", "caseid", "/data/nested_case", 4),
+        FieldInfo("still_omitted", "text", "/data/still_omitted", 6),
+        FieldInfo("kept", "text", "/data/kept", 8))
     assert all(path not in instance_paths(result) for path in ["/data/omitted", "/data/omitted/nested"])
-    assert len(result.warnings) == 1
-    assert "omitted" in result.warnings[0]
-    assert_row_mentioned(result.warnings[0], 2)
+    assert bind_for(result, "nested_case").get("calculate") == "''"
+    assert_warnings(result, [(2, "omitted", None), (3, "nested", None),
+                             (4, "nested_case", "caseid")], optional_closers=(5, 7))
 
 
 def test_disabled_inner_group_does_not_remove_parent_or_following_sibling(workbook_factory):
@@ -116,7 +120,11 @@ def test_disabled_inner_group_does_not_remove_parent_or_following_sibling(workbo
         ["begin group", "parent", "Parent"], ["begin group", "gone", "Gone", "yes"],
         ["text", "hidden", "Hidden"], ["end group"], ["text", "sibling", "Sibling"],
         ["end group"], ["text", "after", "After"]]))
-    assert [field.xpath for field in result.fields] == ["/data/parent", "/data/parent/sibling", "/data/after"]
+    assert result.fields == (
+        FieldInfo("parent", "begin group", "/data/parent", 2),
+        FieldInfo("hidden", "text", "/data/parent/hidden", 4),
+        FieldInfo("sibling", "text", "/data/parent/sibling", 6),
+        FieldInfo("after", "text", "/data/after", 8))
 
 
 def test_disabled_invalid_type_is_excluded_before_pyxform_conversion(workbook_factory):
@@ -133,13 +141,9 @@ def test_converted_and_disabled_warnings_follow_sheet_order(workbook_factory):
         ["text", "q", "Q"]]))
     expected = [(2, "first_case", "caseid"), (3, "removed_text", None),
                 (4, "interviewer", "enumerator"), (5, "removed_group", None),
+                (6, "inside", "audio audit"),
                 (8, "last_comments", "comments")]
-    assert len(result.warnings) == len(expected)
-    for warning, (row, name, field_type) in zip(result.warnings, expected):
-        assert_row_mentioned(warning, row)
-        assert name in warning
-        if field_type:
-            assert field_type in warning
+    assert_warnings(result, expected, optional_closers=(7,))
 
 
 @pytest.mark.parametrize("column", ["note", "response_note", "publishable",

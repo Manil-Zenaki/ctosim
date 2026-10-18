@@ -317,3 +317,116 @@ passed. No implementation code was read or changed, and no commit was made.
    `test_converter_disabled_rows_amendment8_boundaries.py`). The warning
    names exactly one field; the helper should match the quoted name
    (`'omitted_1'`) rather than a substring.
+
+## Follow-up adjudication (2026-10-18)
+
+The current spec, including Amendment 8, is the sole authority. Decisions
+were made from the spec and test code; no implementation source or public
+stub bodies were read, and no production files were changed.
+
+### Dispute 1: keep the corrected choice tests
+
+The seven cases already check ordered secondary-instance items with `name`
+and `label` children, plus the select's itemset reference and absence of
+inline items. This is exactly the representation prescribed by Amendment 1.
+Keep these assertions unchanged.
+
+### Dispute 2: keep the corrected expression tests
+
+The five `selected(...)` repeat-count expressions are checked on the
+generated `target_count` bind, with the repeat referencing that node and
+the catalog excluding it. These are expressions rather than single field
+references, so the corrected Amendment 1 requires these expectations.
+
+### Dispute 3: keep the corrected body-position test
+
+The current test finds the checkpoint by its reference in the already-parsed
+parent. It checks containment and survey order without comparing identities
+across XML parses. Amendment 2 requires that position; no change is needed.
+
+### Dispute 4: keep both corrected repeat-count tests
+
+The sibling-node test uses `${size} + 1`, and the separate single-reference
+test uses `${size}` with a direct count reference and no generated node.
+Both match the corrected Amendment 1 and remain unchanged.
+
+### Dispute 5: keep the corrected companion helper
+
+The helper requires the companion path to occur as often as the source
+question's path, with a nonzero source count. It also checks immediate
+adjacency in the same body parent. Amendment 6 requires the companion in
+that scope; it does not impose a single occurrence across repeat templates
+and initial instances. Keep the existing correction.
+
+### Dispute 6, point 1: upheld; replace superseded block-removal expectations
+
+Amendment 8 explicitly replaces whole-block removal. A disabled container
+loses its boundaries and properties, while independently enabled children
+remain in the nearest enabled enclosing scope. Earlier block-removal
+assumptions cannot override that amendment. The fixtures retain their
+enabled children; expectations are corrected rather than making those
+children disabled to preserve the old assertions.
+
+- `test_converter_long_row_runs.py` (70 disputed cases): expect enabled
+  children in sheet order at flattened paths and their original physical
+  row numbers. Compare against a control form that retains those children
+  and removes only empty/disabled rows and disabled boundaries. Keep the
+  leading/between/trailing placements, enclosing group/repeat cases, the
+  1,448-row fixture, and later-row checks. The nested case retains its
+  enabled repeat, caseid children and enumerator tail, including their
+  conversion warnings. Mixed runs still omit independently disabled rows.
+- `test_converter_normalization.py` (six cases): nested disabled boundaries
+  disappear but their caseid and text children survive; a disabled inner
+  group keeps its child in the parent; a surviving audio-audit row still
+  contributes its conversion warning in physical sheet order.
+- `test_converter_translations_with_ctosim.py` (six cases): keep enabled
+  custom children, their flattened catalog entries, custom bind features,
+  conversion warnings and French texts. Compare the XForm against the same
+  translated form with only the disabled boundaries removed. Requiring all
+  custom attributes to disappear was incorrect.
+- `test_converter_or_other.py` (four disputed container cases): retain the
+  enabled select and its immediately following text companion at the form
+  root, with the source row in both catalog entries and the extra Other
+  choice. The separate ordinary select retains its original choices. The
+  two independently disabled source-row cases still require no companion.
+- `test_converter_speed_violations.py` (two disputed container cases): retain
+  the timed question and both hidden speed calculates, their custom bind
+  attributes and namespace, catalog rows and conversion warnings. The
+  removed container's minimum time is not inherited. The independently
+  disabled speed-field case still requires no custom attributes/namespace.
+
+Warning checks now include every independently omitted row and every
+surviving converted row, in sheet order. They retain the existing treatment
+of automatically removed closing-row warnings recorded in question 45:
+such a warning is allowed only at the known closer's physical row, without
+settling that separate ambiguity in this dispute. No tests were skipped,
+removed, or marked xfail.
+
+### Dispute 6, point 2: upheld; match complete field identifiers
+
+Substring matching can incorrectly identify `omitted_16` as `omitted_1` and
+then mistake the remaining `6` for a physical row number. The spec requires
+the warning to name its field and row; it does not permit this test-helper
+ambiguity. `assert_warnings` now matches complete identifiers and removes
+only a complete matched identifier before looking for the row number.
+
+The requested quoted-name match would fix the reported example, but the
+spec does not prescribe quote characters for every ordinary-field or
+conversion warning. Identifier boundaries therefore accept single-quoted,
+double-quoted and unquoted names without accepting longer names. Seven
+focused helper regression cases cover those formats and rejection of a
+wrong name, wrong row, missing warning or duplicate warning. Existing
+warning-count, ordering and original-type checks remain in place. The
+eight boundary-test failures use this corrected helper; their expectations
+that enabled children survive are already correct and remain unchanged.
+
+### Validation for this adjudication
+
+Ran `.venv\Scripts\python -m pytest converter/tests -q --tb=no
+-o cache_dir=.codex-runs/pytest-cache
+--basetemp=.codex-runs/pytest-dispute-02-20261018` with
+`PYTHONDONTWRITEBYTECODE=1`: **1,083 passed in 237.28s**, with no import or
+collection errors. Traceback source display was suppressed, and temporary
+artifacts were directed under `.codex-runs/`. `git diff --check` passed.
+Only the six affected test files and this dispute record were changed.
+No implementation source was read or changed, and no commit was made.

@@ -12,6 +12,7 @@ from xform_assertions import (
     assert_row_mentioned, bind_for, elements, instance_paths, local_name,
 )
 from test_converter_output import assert_catalog, assert_xml_written, run_cli
+from test_converter_disabled_rows_amendment8 import assert_warnings
 
 
 SELECT_TYPES = ("select_one", "select_multiple")
@@ -352,7 +353,7 @@ def test_companion_relevance_is_question_relevance_and_token_membership(
 
 @pytest.mark.parametrize("kind", SELECT_TYPES)
 @pytest.mark.parametrize("disabled_scope", ["row", "group", "repeat"])
-def test_disabled_or_other_adds_neither_companion_nor_choice_to_surviving_list(
+def test_or_other_is_disabled_only_by_its_own_row_and_plain_list_stays_unchanged(
         workbook_factory, kind, disabled_scope):
     rows = [_question(kind, "gone", disabled=" YeS ")]
     warning_name = "gone"
@@ -362,12 +363,22 @@ def test_disabled_or_other_adds_neither_companion_nor_choice_to_surviving_list(
         warning_name = "omitted"
     rows.append(_question(kind, "kept", type=f"{kind} items"))
     result = convert_xlsform(_make(workbook_factory, rows))
-    assert result.fields == (FieldInfo("kept", f"{kind} items", "/data/kept", len(rows) + 1),)
-    assert not any(path.endswith(("/gone", "/gone_other")) for path in instance_paths(result))
+    expected = []
+    if disabled_scope == "row":
+        assert not any(path.endswith(("/gone", "/gone_other")) for path in instance_paths(result))
+    else:
+        expected += [FieldInfo("gone", f"{kind} items or_other", "/data/gone", 3),
+                     FieldInfo("gone_other", "text", "/data/gone_other", 3)]
+        _assert_immediate_text_question(result, "gone", kind)
+        assert _label(result, _control(result, "gone_other", "input")) == "Specify other."
+        assert [(value, _label(result, node)) for value, node in _choice_nodes(result, "gone", kind)] == [
+            ("a", "Alpha"), ("b", "Beta"), ("other", "Other")]
+        assert "/data/omitted" not in instance_paths(result)
+    expected.append(FieldInfo("kept", f"{kind} items", "/data/kept", len(rows) + 1))
+    assert result.fields == tuple(expected)
     assert [value for value, _ in _choice_nodes(result, "kept", kind)] == ["a", "b"]
-    assert len(result.warnings) == 1
-    assert warning_name in result.warnings[0]
-    assert_row_mentioned(result.warnings[0], 2)
+    assert_warnings(result, [(2, warning_name, None)],
+                    optional_closers=() if disabled_scope == "row" else (4,))
 
 
 @pytest.mark.parametrize("kind", SELECT_TYPES)

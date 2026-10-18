@@ -12,6 +12,7 @@ import pytest
 
 from ctosim_xlsform import ConversionError, FieldInfo, convert_xlsform
 from xform_assertions import assert_row_mentioned, bind_for, elements
+from test_converter_disabled_rows_amendment8 import assert_warnings
 
 
 CTOSIM = "urn:ctosim:xforms"
@@ -258,7 +259,7 @@ def test_nested_translations_and_all_custom_binds_keep_their_own_paths(workbook_
 
 
 @pytest.mark.parametrize("feature", FEATURES)
-def test_disabled_custom_rows_do_not_break_surviving_translations(workbook_factory, feature):
+def test_custom_children_of_disabled_group_keep_features_and_translations(workbook_factory, feature):
     rows = [
         {"type": "note", "name": "intro", "label:French": "Avant"},
         {"type": "begin group", "name": "omitted", "disabled": "yes", "label:French": "Omis"},
@@ -269,13 +270,20 @@ def test_disabled_custom_rows_do_not_break_surviving_translations(workbook_facto
     result = convert_xlsform(_make(workbook_factory, rows))
     _assert_text(result, "intro", "French", "Avant")
     _assert_text(result, "after", "French", "Après")
+    children = _feature_rows(feature)
     assert result.fields == (FieldInfo("intro", "note", "/data/intro", 2),
-                             FieldInfo("after", "text", "/data/after", len(rows) + 1))
-    assert not [key for node in ET.fromstring(result.xform).iter()
-                for key in node.attrib if key.startswith(f"{{{CTOSIM}}}")]
-    assert len(result.warnings) == 1
-    assert "omitted" in result.warnings[0]
-    assert_row_mentioned(result.warnings[0], 3)
+        *(FieldInfo(child["name"], child["type"], "/data/" + child["name"], index + 4)
+          for index, child in enumerate(children)),
+        FieldInfo("after", "text", "/data/after", len(rows) + 1))
+    _assert_feature(result, feature)
+    if feature in ("minimum", "all"):
+        _assert_text(result, "timed", "French", "Question chronométrée")
+    baseline = convert_xlsform(_make(workbook_factory, [rows[0], *children, rows[-1]]))
+    assert result.xform == baseline.xform
+    expected = [(3, "omitted", None)] + [
+        (index + 4, child["name"], child["type"])
+        for index, child in enumerate(children) if child["type"] != "text"]
+    assert_warnings(result, expected, optional_closers=(len(rows),))
 
 
 def test_combined_translations_are_deterministic_and_do_not_modify_the_workbook(workbook_factory):

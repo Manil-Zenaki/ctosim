@@ -6,6 +6,7 @@ import pytest
 
 from ctosim_xlsform import ConversionError, FieldInfo, convert_xlsform
 from xform_assertions import assert_choice_list, assert_row_mentioned, instance_paths
+from test_converter_disabled_rows_amendment8 import assert_warnings
 
 
 HEADERS = ["type", "name", "label", "disabled", "minimum_seconds"]
@@ -33,7 +34,7 @@ def _gap(kind, length):
         return rows, [(0, "omitted_block")]
     assert kind == "mixed"
     # Each five-row unit mixes empty rows, a disabled question and a block
-    # whose child is enabled but is still omitted with its parent.
+    # whose enabled child survives the removal of its parent's boundaries.
     rows, omissions = [], []
     while len(rows) + 5 <= length:
         offset = len(rows)
@@ -46,12 +47,20 @@ def _gap(kind, length):
     return rows, omissions
 
 
-def _assert_omission_warnings(result, omissions, first_row):
-    assert len(result.warnings) == len(omissions)
-    for message, (offset, name) in zip(result.warnings, omissions):
-        assert name in message
-        # Digits in generated names must not satisfy the row-number check.
-        assert_row_mentioned(message.replace(name, ""), first_row + offset)
+def _gap_offsets(kind, length):
+    """Explicit retained-child and removed-closer offsets for _gap fixtures."""
+    if kind in ("group", "repeat"):
+        return list(range(1, length - 1)), [length - 1]
+    if kind == "mixed":
+        return ([offset + 3 for offset in range(0, length - 4, 5)],
+                [offset + 4 for offset in range(0, length - 4, 5)])
+    return [], []
+
+
+def _assert_omission_warnings(result, omissions, first_row, closers=()):
+    assert_warnings(result, [(first_row + offset, name, None)
+                             for offset, name in omissions],
+                    optional_closers=tuple(first_row + offset for offset in closers))
 
 
 def _assert_same_form(actual, baseline):
@@ -85,21 +94,27 @@ def test_long_row_runs_anywhere_preserve_the_complete_form(
 @pytest.mark.parametrize("length", [100, 136, 1000])
 @pytest.mark.parametrize("kind", ["group", "repeat", "mixed"])
 @pytest.mark.parametrize("position", ["leading", "between", "trailing"])
-def test_long_omitted_blocks_anywhere_leave_later_fields_intact(
+def test_long_disabled_containers_anywhere_keep_enabled_children_and_later_fields(
         workbook_factory, length, kind, position):
     rows = [HEADERS, ["text", "first", "First"], ["integer", "last", "Last"]]
-    baseline = convert_xlsform(workbook_factory(survey=rows, settings=SETTINGS))
     insertion = {"leading": 1, "between": 2, "trailing": 3}[position]
     gap, omissions = _gap(kind, length)
+    survivors, closers = _gap_offsets(kind, length)
+    baseline = convert_xlsform(workbook_factory(
+        survey=rows[:insertion] + [gap[i] for i in survivors] + rows[insertion:],
+        settings=SETTINGS))
     result = convert_xlsform(workbook_factory(
         survey=rows[:insertion] + gap + rows[insertion:], settings=SETTINGS))
 
     _assert_same_form(result, baseline)
-    assert result.fields == tuple(
+    expected = [
         replace(field, row=field.row + length) if field.row > insertion else field
         for field in (FieldInfo("first", "text", "/data/first", 2),
-                      FieldInfo("last", "integer", "/data/last", 3)))
-    _assert_omission_warnings(result, omissions, insertion + 1)
+                      FieldInfo("last", "integer", "/data/last", 3))]
+    expected += [FieldInfo(gap[i][1], "text", "/data/" + gap[i][1], insertion + i + 1)
+                 for i in survivors]
+    assert result.fields == tuple(sorted(expected, key=lambda field: field.row))
+    _assert_omission_warnings(result, omissions, insertion + 1, closers)
 
 
 @pytest.mark.parametrize("length", [100, 1000])
@@ -111,8 +126,11 @@ def test_long_runs_preserve_enclosing_container_and_sibling_paths(
     rows = [HEADERS, [f"begin {container}", "outer", "Outer"],
             ["text", "child", "Child"], [f"end {container}"],
             ["integer", "after", "After"]]
-    baseline = convert_xlsform(workbook_factory(survey=rows, settings=SETTINGS))
     gap, omissions = _gap(kind, length)
+    survivors, closers = _gap_offsets(kind, length)
+    baseline = convert_xlsform(workbook_factory(
+        survey=rows[:insertion] + [gap[i] for i in survivors] + rows[insertion:],
+        settings=SETTINGS))
     result = convert_xlsform(workbook_factory(
         survey=rows[:insertion] + gap + rows[insertion:], settings=SETTINGS))
 
@@ -120,21 +138,25 @@ def test_long_runs_preserve_enclosing_container_and_sibling_paths(
     expected = [FieldInfo("outer", f"begin {container}", "/data/outer", 2),
                 FieldInfo("child", "text", "/data/outer/child", 3),
                 FieldInfo("after", "integer", "/data/after", 5)]
-    assert result.fields == tuple(
+    expected = [
         replace(field, row=field.row + length) if field.row > insertion else field
-        for field in expected)
-    _assert_omission_warnings(result, omissions, insertion + 1)
+        for field in expected]
+    prefix = "/data/outer/" if insertion < 4 else "/data/"
+    expected += [FieldInfo(gap[i][1], "text", prefix + gap[i][1], insertion + i + 1)
+                 for i in survivors]
+    assert result.fields == tuple(sorted(expected, key=lambda field: field.row))
+    _assert_omission_warnings(result, omissions, insertion + 1, closers)
 
 
 @pytest.mark.parametrize("kind", ["group", "repeat"])
 @pytest.mark.parametrize("length", [100, 1000])
-def test_long_disabled_block_skips_nested_blocks_until_its_own_closing_row(
+def test_long_disabled_container_keeps_enabled_nested_repeat_and_conversions(
         workbook_factory, kind, length):
     rows = [HEADERS, ["begin group", "outer", "Outer"],
             ["text", "before", "Before"],
             [f"begin {kind}", "discard", "Discard", "yes"]]
-    # Both kinds are nested inside either disabled container; a nested close
-    # must not prematurely resume emitting fields or conversion warnings.
+    # The disabled nested group disappears, but the enabled repeat and every
+    # independently enabled conversion survive at their nearest retained scope.
     rows += [["begin group", "nested_group", "Nested", "yes"],
              ["begin repeat", "nested_repeat", "Nested"]]
     rows += [["caseid", f"hidden_{i}"] for i in range(length)]
@@ -146,6 +168,9 @@ def test_long_disabled_block_skips_nested_blocks_until_its_own_closing_row(
     result = convert_xlsform(workbook_factory(survey=rows, settings=SETTINGS))
     baseline = convert_xlsform(workbook_factory(survey=[HEADERS,
         ["begin group", "outer", "Outer"], ["text", "before", "Before"],
+        ["begin repeat", "nested_repeat", "Nested"],
+        *[["caseid", f"hidden_{i}"] for i in range(length)], ["end repeat"],
+        ["enumerator", "hidden_tail", "Hidden"],
         ["text", "after", "After"], ["end group"],
         ["integer", "outside", "Outside"]], settings=SETTINGS))
 
@@ -153,21 +178,30 @@ def test_long_disabled_block_skips_nested_blocks_until_its_own_closing_row(
     assert result.fields == (
         FieldInfo("outer", "begin group", "/data/outer", 2),
         FieldInfo("before", "text", "/data/outer/before", 3),
+        FieldInfo("nested_repeat", "begin repeat", "/data/outer/nested_repeat", 6),
+        *(FieldInfo(f"hidden_{i}", "caseid", f"/data/outer/nested_repeat/hidden_{i}", 7 + i)
+          for i in range(length)),
+        FieldInfo("hidden_tail", "enumerator", "/data/outer/hidden_tail", length + 9),
         FieldInfo("after", "text", "/data/outer/after", after_row),
         FieldInfo("outside", "integer", "/data/outside", after_row + 2))
-    _assert_omission_warnings(result, [(0, "discard")], 4)
+    assert_warnings(result, [(4, "discard", None), (5, "nested_group", None),
+        *[(7 + i, f"hidden_{i}", "caseid") for i in range(length)],
+        (length + 9, "hidden_tail", "enumerator")],
+        optional_closers=(length + 8, length + 10))
 
 
 def test_1448_row_survey_with_136_row_disabled_group_keeps_every_later_row(workbook_factory):
     prefix = [HEADERS, ["begin group", "outer", "Outer"],
               ["text", "before", "Before"]]
     gap, omissions = _gap("group", 136)
+    survivors, closers = _gap_offsets("group", 136)
     # 1,448 physical rows, including the header and both outer boundaries.
     suffix = [["text", f"later_{i}", f"Later {i}"] for i in range(1307)]
     suffix += [["end group"], ["integer", "outside", "Outside"]]
     rows = prefix + gap + suffix
     assert len(rows) == 1448
-    baseline = convert_xlsform(workbook_factory(survey=prefix + suffix, settings=SETTINGS))
+    baseline = convert_xlsform(workbook_factory(
+        survey=prefix + [gap[i] for i in survivors] + suffix, settings=SETTINGS))
     path = workbook_factory(survey=rows, settings=SETTINGS)
     before_bytes = path.read_bytes()
     result = convert_xlsform(path)
@@ -175,11 +209,13 @@ def test_1448_row_survey_with_136_row_disabled_group_keeps_every_later_row(workb
     _assert_same_form(result, baseline)
     expected = [FieldInfo("outer", "begin group", "/data/outer", 2),
                 FieldInfo("before", "text", "/data/outer/before", 3)]
+    expected += [FieldInfo(f"hidden_{i}", "text", f"/data/outer/hidden_{i}", 5 + i)
+                 for i in range(134)]
     expected += [FieldInfo(f"later_{i}", "text", f"/data/outer/later_{i}", 140 + i)
                  for i in range(1307)]
     expected += [FieldInfo("outside", "integer", "/data/outside", 1448)]
     assert result.fields == tuple(expected)
-    _assert_omission_warnings(result, omissions, 4)
+    _assert_omission_warnings(result, omissions, 4, closers)
     assert convert_xlsform(path) == result
     assert path.read_bytes() == before_bytes
 
@@ -201,18 +237,15 @@ def test_multiple_long_runs_preserve_warning_order_and_physical_rows(workbook_fa
 
     assert result.fields == (
         FieldInfo("first_case", "caseid", "/data/first_case", 2),
+        *(FieldInfo(f"hidden_{i}", "text", f"/data/hidden_{i}", first_block_row + 1 + i)
+          for i in range(length - 2)),
         FieldInfo("last_enum", "enumerator", "/data/last_enum", last_field_row),
         FieldInfo("tail", "text", "/data/tail", last_omission_row + 1))
     expected = [(2, "first_case", "caseid"),
                 (first_block_row, "omitted_block", None),
                 (last_field_row, "last_enum", "enumerator"),
                 (last_omission_row, "last_omission", None)]
-    assert len(result.warnings) == len(expected)
-    for message, (row, name, original_type) in zip(result.warnings, expected):
-        assert name in message
-        assert_row_mentioned(message, row)
-        if original_type:
-            assert original_type in message
+    assert_warnings(result, expected, optional_closers=(first_block_row + length - 1,))
 
 
 @pytest.mark.parametrize("length", [100, 1000])

@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from ctosim_xlsform import ConversionError, FieldInfo, convert_xlsform
+from test_converter_disabled_rows_amendment8 import assert_warnings
 from xform_assertions import (
     assert_row_mentioned, bind_for, elements, instance_paths, local_name,
     primary_root,
@@ -174,7 +175,7 @@ def test_invalid_cached_minimum_seconds_is_rejected(workbook_factory, set_formul
 
 
 @pytest.mark.parametrize("container", [None, "group", "repeat"])
-def test_disabled_timing_and_speed_fields_leave_no_custom_attributes(workbook_factory, container):
+def test_timing_and_speed_fields_survive_unless_their_own_row_is_disabled(workbook_factory, container):
     rows = [["type", "name", "label", "minimum_seconds", "disabled"]]
     if container:
         rows.extend([
@@ -188,12 +189,31 @@ def test_disabled_timing_and_speed_fields_leave_no_custom_attributes(workbook_fa
         rows.append(["speed violations count", "omitted", None, 10, "yes"])
     rows.append(["text", "kept", "Kept"])
     result = convert_xlsform(workbook_factory(survey=rows))
-    assert result.fields == (FieldInfo("kept", "text", "/data/kept", len(rows)),)
-    assert not custom_attributes(result)
-    assert "ctosim" not in root_namespaces(result.xform)
-    assert len(result.warnings) == 1
-    assert "omitted" in result.warnings[0]
-    assert_row_mentioned(result.warnings[0], 2)
+    expected = []
+    warnings = [(2, "omitted", None)]
+    if container:
+        expected += [FieldInfo("timed", "text", "/data/timed", 3),
+                     FieldInfo("speed_count", "speed violations count", "/data/speed_count", 4),
+                     FieldInfo("speed_list", "speed violations list", "/data/speed_list", 5)]
+        assert bind_for(result, "timed").get(MINIMUM) == "2.5"
+        for name, kind in [("speed_count", "count"), ("speed_list", "list")]:
+            binding = bind_for(result, name)
+            assert binding.get(SPEED) == kind
+            assert binding.get("calculate") == "''"
+            assert MINIMUM not in binding.attrib
+            assert not [node for node in elements(result.xform, "input")
+                        if node.get("ref") == "/data/" + name]
+        assert root_namespaces(result.xform)["ctosim"] == NAMESPACE
+        assert len(custom_attributes(result)) == 3
+        warnings += [(4, "speed_count", "speed violations count"),
+                     (5, "speed_list", "speed violations list")]
+    else:
+        assert not custom_attributes(result)
+        assert "ctosim" not in root_namespaces(result.xform)
+    expected.append(FieldInfo("kept", "text", "/data/kept", len(rows)))
+    assert result.fields == tuple(expected)
+    assert "/data/omitted" not in instance_paths(result)
+    assert_warnings(result, warnings, optional_closers=(6,) if container else ())
 
 
 @pytest.mark.parametrize("kind", ["count", "list"])

@@ -6,6 +6,7 @@ are generated in pytest temporary directories; no implementation is inspected.
 
 import re
 from dataclasses import replace
+from types import SimpleNamespace
 
 import pytest
 
@@ -57,10 +58,15 @@ def assert_warnings(result, expected, *, optional_closers=()):
     """
     messages = []
     previous_row = 0
+    patterns = [(number, re.compile(rf"(?<![\w.-]){re.escape(name)}(?![\w.-])"),
+                 re.compile(rf"(?<!\d){number}(?!\d)"))
+                for number, name, _ in expected]
     for message in result.warnings:
-        candidates = [number for number, name, _ in expected
-                      if name in message and re.search(
-                          rf"(?<!\d){number}(?!\d)", message.replace(name, ""))]
+        candidates = []
+        for number, name_pattern, row_pattern in patterns:
+            # Match the whole identifier, without prescribing warning quoting.
+            if name_pattern.search(message) and row_pattern.search(name_pattern.sub("", message)):
+                candidates.append(number)
         candidates += [number for number in optional_closers if re.search(
             rf"(?i)\brow\s+{number}\b", message)]
         assert len(candidates) == 1, message
@@ -75,6 +81,25 @@ def assert_warnings(result, expected, *, optional_closers=()):
         assert_row_mentioned(message.replace(name, ""), number)
         if original_type:
             assert original_type in message
+
+
+@pytest.mark.parametrize("quote", ["'", '"', ""])
+def test_warning_helper_distinguishes_complete_names_from_numeric_suffixes(quote):
+    result = SimpleNamespace(warnings=tuple(
+        f"row {number}: disabled field {quote}{name}{quote} is left out"
+        for number, name in [(6, "omitted_1"), (21, "omitted_16")]))
+    assert_warnings(result, [(6, "omitted_1", None), (21, "omitted_16", None)])
+
+
+@pytest.mark.parametrize("messages", [
+    ("row 6: disabled field 'omitted_16' is left out",),
+    ("row 21: disabled field 'omitted_1' is left out",),
+    (),
+    ("row 6: disabled field 'omitted_1' is left out",) * 2,
+])
+def test_warning_helper_still_rejects_wrong_name_row_missing_or_duplicate(messages):
+    with pytest.raises(AssertionError):
+        assert_warnings(SimpleNamespace(warnings=messages), [(6, "omitted_1", None)])
 
 
 @pytest.mark.parametrize("kind", ["group", "repeat"])
