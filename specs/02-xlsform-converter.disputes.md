@@ -289,3 +289,31 @@ Ran `.venv\Scripts\python -m pytest converter/tests -q --tb=no
 collection errors. Traceback source display was suppressed, and temporary
 test artifacts were directed under `.codex-runs/`. `git diff --check`
 passed. No implementation code was read or changed, and no commit was made.
+
+## Dispute 6: tests superseded by Amendment 8, and a name-matching helper
+
+1. **Tests of the old rule.** Amendment 8 replaces the rule that left out
+   the whole content of a disabled group: SurveyCTO keeps the rows a
+   disabled group holds unless they are disabled themselves (test form
+   of 2026-10-17, described in the amendment). 88 earlier tests assert
+   the old rule and now fail: `test_converter_long_row_runs.py` (70),
+   `test_converter_normalization.py` (6),
+   `test_converter_translations_with_ctosim.py` (6),
+   `test_converter_or_other.py` (4,
+   `test_disabled_or_other_adds_neither_companion_nor_choice_to_surviving_list`
+   in a `group` or `repeat`) and `test_converter_speed_violations.py` (2,
+   `test_disabled_timing_and_speed_fields_leave_no_custom_attributes`).
+   They expect the enabled rows inside a disabled group (`hidden_N`,
+   timing or `or_other` rows) to be absent, and the old single warning
+   per block. They should follow Amendment 8: those rows are kept (in
+   the enclosing group), and only rows disabled themselves are left out.
+2. **`assert_warnings` in `test_converter_disabled_rows_amendment8.py`.**
+   It finds the row a warning names by testing `name in message`, then
+   looks for the row number in the message with that name removed. With
+   fields `omitted_1` ... `omitted_16`, the warning
+   `row 21: disabled field 'omitted_16' is left out` matches `omitted_1`
+   too: removing `omitted_1` leaves `'6'`, which looks like row 6, so
+   the helper finds two candidates and fails (all 8 failures of
+   `test_converter_disabled_rows_amendment8_boundaries.py`). The warning
+   names exactly one field; the helper should match the quoted name
+   (`'omitted_1'`) rather than a substring.
