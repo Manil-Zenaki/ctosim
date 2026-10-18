@@ -367,3 +367,10 @@ kept only if it matches the whole original pattern; up to 50 such draws
 are made before the pattern is ignored as before. Answers drawn this way
 follow Amendment 3 like any answer drawn from a pattern, and still match
 the original pattern in full.
+
+Clarification (Amendment 4): assumptions 29–33 of the questions file are
+reviewed one by one and confirmed. In particular, a satisfiable pattern
+can still be ignored after 50 rejected draws (30); Amendment 3 judges
+each position against the original pattern, not the one drawn from
+(32); when the retry fails, the pattern is ignored and the other text
+rules apply as before (33).
