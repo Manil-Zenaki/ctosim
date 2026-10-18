@@ -1,3 +1,4 @@
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
@@ -15,6 +16,9 @@ public final class FakepreloadFixture {
         if (!condition) throw new AssertionError(message);
     }
     public static void main(String[] args) throws Exception {
+        // Spec 10's process boundary uses UTF-8, including on Windows.
+        System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8.name()));
+        System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8.name()));
         if (args.length == 2 && args[0].equals("--check-oracle")) {
             selfCheck(Paths.get(args[1]));
             return;

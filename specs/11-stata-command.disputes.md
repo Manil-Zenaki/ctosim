@@ -198,3 +198,80 @@ Clarifications: "main writes out and err in UTF-8"), so a faithful test
 double should print UTF-8 too (for example through a `PrintStream` with
 `StandardCharsets.UTF_8`); the command shows the simulator's lines as it
 receives them.
+
+## Adjudication (2026-10-17)
+
+### Dispute 1 - prior correction retained
+
+The current `test_options_paths.do` uses distinct numeric suffixes, so its
+default output directories do not collide on a case-insensitive filesystem.
+This matches the basename rule and preserves the required error 602 for an
+existing run without `replace`. No further change is needed.
+
+### Dispute 2 - prior correction retained
+
+The current `test_runtime_selection.do` no longer requires Stata's Java
+unconditionally. Amendment 1's ordered selection of an eligible Java replaces
+that original rule; configured-Python assertions remain valid. Keep the test.
+
+### Dispute 3 (compiled support jars) - prior correction retained
+
+The support jars are absent from the fixture directory and are built from
+source under `.codex-runs/stata-support/` by the runner's build hooks. The
+spec requires runnable batch tests, not checked-in compiled fixtures. No
+behavioral assertion or further infrastructure change is warranted.
+
+### Dispute 3 (prompt-prefixed assert example) - prior correction retained
+
+Amendment 3 requires an answer-constraint assertion in a command example,
+without forbidding Stata's displayed prompt. The current assertion matcher
+already accepts the optional prompt while retaining the answer-predicate
+check. Keep that correction.
+
+### Dispute 4 - accepted; correct the simulator fixture's output encoding
+
+Spec 11 invokes the spec 10 simulator and displays its messages. Spec 10's
+Clarifications explicitly require `main` to write both stdout and stderr in
+UTF-8 so accented filenames reach calling programs intact. Amendment 5 does
+not replace that contract. The fixture's platform-default `System.out`
+encoding therefore supplies invalid simulator output on Windows; the command
+is not required to repair that output or guess its encoding.
+
+`FakepreloadFixture.main` now wraps stdout and stderr in explicitly UTF-8,
+auto-flushing `PrintStream`s before emitting any messages. The constructor
+uses the charset name to preserve the fixture's Java 8 compatibility.
+`test_fakepreload_display.do`, `test_fakepreload_template_failure.do`, their
+Unicode filenames, and the strict UTF-8 log reader remain unchanged. Their
+report-content, ordering, error-code, cwd, and partial-data assertions are
+supported by the spec and are retained.
+
+### Validation for this adjudication
+
+A process-level probe compiled both the original and corrected fixture with
+`javac --release 8`, then ran their `many` case with Windows-1252 default
+file/stdout/stderr encodings. The original emitted single-byte `E9` in
+`ménages.csv`; the corrected fixture emitted UTF-8 `C3 A9` for its `é`.
+Strict UTF-8 decoding and the exact accented-filename assertion passed for
+the corrected output. Probe artifacts are under
+`.codex-runs/stata-dispute4-encoding/`.
+
+The prescribed `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`
+rebuilt all test support successfully, including the fixture's display-oracle
+self-checks. Both disputed do-files passed in Stata, as did all eleven
+`test_fakepreload_*.do` files and the five help-use-case do-files. The separate
+`help_use_cases_oracle_tests.py` run passed all 16 tests.
+
+Full-suite result: **58 do-files, 46 passed, 12 failed** (runner exit status 1).
+The earlier disputed `test_options_paths.do` and `test_runtime_selection.do`
+also passed. The seven `test_amendment_*.do` and five
+`test_converter_name_*.do` failures occur in launcher cleanup: removing
+pre-existing `temp/hsperfdata_manil` directories is denied before the child
+command assertions run. The launcher logs under `.codex-runs/stata-amendment/`
+and `.codex-runs/stata-converter-name/` confirm this cause. These are the same
+environmental failures recorded in the previous adjudication; no unrelated
+cleanup logic, permissions, or assertions were changed. Per-do-file runner
+logs are under `target/stata-tests/`.
+
+`git diff --check` passed. Only this disputes file and the test fixture source
+were changed. No production implementation was read or modified, and no commit
+was made.
