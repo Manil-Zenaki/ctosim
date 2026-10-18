@@ -140,3 +140,14 @@ It reported unresolved existing test dependencies such as `Question` and
 `.\mvnw.cmd -o -q '-Dtest=FakeAttachments*Test' test` likewise stopped during
 compilation. Consequently compilation success and runtime/fixture execution
 could not be verified in this sandbox; no passing build is claimed.
+
+### Dispute adjudication verification
+
+After moving the four malformed `pulldata` fixtures from calculations to an
+input question's constraint, `.\mvnw.cmd -o -q test` and a diagnostic retry
+with `-e` both stopped at `testCompile`. The diagnostic again reports
+`java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. No tests executed;
+the revised fixtures' compilation and runtime behavior could not be verified.
+Logs: `.codex-runs/fake-attachments-adjudication-test.log` and
+`.codex-runs/fake-attachments-adjudication-diagnostic.log`.

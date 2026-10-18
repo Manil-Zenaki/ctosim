@@ -83,8 +83,10 @@ class FakeAttachmentsDiscoveryTest extends FakeAttachmentsTestSupport {
 
     @ParameterizedTest @ValueSource(strings = {"pulldata()", "pulldata('good')", "pulldata('good','bad_value','bad_key')", "pulldata('good','bad_value','bad_key','x','extra')"})
     void unreadablePulldataCallsDoNotThrowOrLoseOtherReadableCalls(String bad) throws Exception {
-        var form = form("<key/><a/><b/>", bind("key", "string", "") + calc("a", bad)
-                + calc("b", pull("good", "age", "id", "/data/key")), input("key"));
+        // Constraints are scanned by spec 12 but are not evaluated during form loading.
+        var form = form("<key/><a/><b/>", bind("key", "string", "")
+                + bind("a", "string", "constraint=\"" + attr(bad + " = '1'") + "\"")
+                + calc("b", pull("good", "age", "id", "/data/key")), input("key") + input("a"));
         var fake = assertDoesNotThrow(() -> FakeAttachments.of(form, SEED));
         assertEquals(List.of("age", "id"), table(fake, "good").header());
     }
