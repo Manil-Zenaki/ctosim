@@ -46,6 +46,7 @@ public final class SimulationConfig {
     private final Map<String, Double> profiles;
     private final Area area;
     private final Map<String, List<String>> textPools;
+    private final String id;
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
@@ -60,6 +61,17 @@ public final class SimulationConfig {
                      NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
                      ZoneId timeZone, int enumerators, double speedViolationRate,
                      Map<String, Double> profiles, Area area, Map<String, List<String>> textPools) {
+        this(seed, submissions, start, fieldworkDays, missingRate, specialRate, specialValues, repeatMin, repeatMax,
+                integerRange, decimalRange, fields, timeZone, enumerators, speedViolationRate, profiles, area, textPools,
+                null);
+    }
+
+    SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
+                     double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
+                     NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
+                     ZoneId timeZone, int enumerators, double speedViolationRate,
+                     Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id) {
+        this.id = id;
         this.profiles = Collections.unmodifiableMap(new java.util.LinkedHashMap<>(profiles));
         this.area = area;
         java.util.Map<String, List<String>> pools = new java.util.LinkedHashMap<>();
@@ -190,7 +202,14 @@ public final class SimulationConfig {
 
     /** The question holding the survey id. See specs/04-simulation-config.md, Amendment 4. */
     public java.util.Optional<String> id() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return java.util.Optional.ofNullable(id);
+    }
+
+    /** This configuration with {@code id} as its survey id question (spec 10, Amendment 4). */
+    SimulationConfig withId(String id) {
+        return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
+                specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id);
     }
 
     /** Text pools in file order; empty when not set. */
@@ -211,13 +230,13 @@ public final class SimulationConfig {
         more.put(name, override);
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, more,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id);
     }
 
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
@@ -226,6 +245,6 @@ public final class SimulationConfig {
         }
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id);
     }
 }

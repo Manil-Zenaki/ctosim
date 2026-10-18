@@ -40,7 +40,7 @@ final class ConfigParser {
 
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
             "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
-            "enumerators", "speedViolationRate", "profiles", "area", "textPools");
+            "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
             "distribution", "expr", "area", "when");
@@ -111,13 +111,28 @@ final class ConfigParser {
         Map<String, Double> profiles = root.has("profiles") ? profiles(root.get("profiles")) : Map.of();
         Area area = root.has("area") ? area(root.get("area"), "area") : null;
         Map<String, List<String>> pools = root.has("textPools") ? textPools(root.get("textPools")) : Map.of();
+        String id = root.has("id") ? surveyId(root.get("id")) : null;
 
         return new SimulationConfig(seed, submissions, start, days, missing, special, specialValues,
                 repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations,
-                profiles, area, pools);
+                profiles, area, pools, id);
     }
 
     // --- Sections -------------------------------------------------------------------
+
+    /** The survey id question (spec 04, Amendment 4): a name without white space at its edges. */
+    private String surveyId(JsonNode node) throws ConfigException {
+        String name = string(node, "id");
+        if (name.isEmpty()) {
+            throw error("id", "must not be empty");
+        }
+        if (EDGE_SPACE.matcher(name).find()) {
+            throw error("id", "must not start or end with white space: \"" + name + "\"");
+        }
+        return name;
+    }
+
+    private static final java.util.regex.Pattern EDGE_SPACE = java.util.regex.Pattern.compile("^[ \t\r\n\f]|[ \t\r\n\f]$");
 
     private ZoneId zone(JsonNode node) throws ConfigException {
         String id = string(node, "timeZone");
