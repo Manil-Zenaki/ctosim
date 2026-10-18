@@ -21,7 +21,7 @@ what was learnt along the way.
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 | 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17: `--fake-attachments`, Stata `fakepreload`; disputes adjudicated |
 
-Suite: 7770 Java tests, 703 Python tests and 58 Stata tests, all green (2026-10-17).
+Suite (2026-10-18): 7843 Java tests and 58 Stata tests green; Python 847 pass and 96 fail on purpose until spec 02 Dispute 6 is adjudicated (tests of the old `disabled` rule, superseded by Amendment 8).
 
 ## Next step
 
@@ -98,6 +98,16 @@ parsed form is serialised once and each session reads its own copy, as
 ODK Collect does; constraint texts then come from the binds). Next possible step (owner, later):
 simulating several form versions in one data set, as SurveyCTO exports
 data collected while the form changed.
+
+2026-10-17 night, GIL forms (33 real forms of 8 projects, private): with
+`fakepreload`, all simulate after spec 02 Amendment 7 (typographic quotes
+kept; labels and hints of hidden calculates ignored), spec 09 Amendment 4
+(patterns with lookaround assertions) and spec 02 Amendment 8 (`disabled`
+applies row by row, as a test form on SurveyCTO showed), except forms
+whose own expressions fail in the engine. **In progress**: spec 07
+Amendment 10, spec 10 Amendment 3, spec 11 Amendment 6 (form errors no
+longer stop a run and are made impossible to miss): specs and stubs
+committed, Codex tests and code to come; then spec 02 Dispute 6.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
