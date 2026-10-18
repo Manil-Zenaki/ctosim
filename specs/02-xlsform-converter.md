@@ -424,3 +424,33 @@ the dropped texts is treated as if those cells were empty (41); the
 hidden rows are ordinary calculates and the types converted to hidden
 calculates, not `calculate_here` or `enumerator`, which are displayed
 (42).
+
+## Amendment 8: `disabled` applies row by row
+
+A test form uploaded to SurveyCTO (2026-10-17) settled how SurveyCTO
+reads `disabled` on a group: in a group whose `begin group` row is
+disabled, a `calculate` and a `text` field whose own `disabled` cell is
+`no` were in the deployed form and in its export (the text field was
+asked and answered, the calculate computed), and a field whose own cell
+is `yes` was not. The rule of "Disabled rows" that leaves out the whole
+content of a disabled group is replaced by the following; everything
+not mentioned here is unchanged.
+
+- A `survey` row whose `disabled` cell is `yes` is left out, whatever
+  its type.
+- When that row is a `begin group` or `begin repeat`, the group itself
+  is left out: its `begin` row and its matching `end group` /
+  `end repeat` row (matched by nesting, whatever the `end` row's own
+  `disabled` cell holds), and therefore its label, relevance,
+  appearance and repeat settings. The rows between them are **not** left
+  out because of it: each is kept or left out according to its own
+  `disabled` cell, and the kept ones belong to the enclosing group or
+  repeat (or to the form's top level), as if the disabled group's
+  `begin` and `end` rows were not there. Their XPaths in the XForm and
+  in the field catalog do not include the disabled group's name.
+- Each row left out produces one warning naming its row and its `name`
+  (a disabled group: `row N: disabled group 'g' is left out; the rows it
+  holds are kept unless they are disabled themselves`, or the same with
+  `repeat`).
+- Amendment 4 (long runs of rows left out) and the other rules about
+  rows left out apply to the rows left out under this rule.
