@@ -21,7 +21,7 @@ what was learnt along the way.
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 | 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17: `--fake-attachments`, Stata `fakepreload`; disputes adjudicated |
 
-Suite (2026-10-18): Python 1083 green; Java 7919 tests, 4 failing on purpose until spec 07 Dispute 7 is adjudicated; Stata 66 tests, 3 failing on purpose until spec 11 Dispute 5 is adjudicated (see below).
+Suite (2026-10-18): 1083 Python, 7919 Java and 66 Stata tests, all green.
 
 ## Next step
 
@@ -112,11 +112,9 @@ implemented: an expression the engine cannot evaluate leaves the question
 blank, is recorded and reported first (`FORM ERRORS` section, last line
 on the command line, red sections and a final red message in Stata,
 `r(formerrors)`); a submission whose walk cannot get past a point is cut
-short. Two disputes wait for Codex: spec 07 Dispute 7 (four tests count
-answers written in a counted repeat's instances, which Amendment 3
-discards) and spec 11 Dispute 5 (three tests read `r()` after
-`log close`, which clears it); a patched copy of the three Stata tests
-passes. GIL bench: the last 4 forms (Centers_takeup x3, Mauritania
+short. Spec 07 Dispute 7 (answer counts around a form error) and spec 11
+Dispute 5 (`r()` read after `log close`, which clears it) were both
+accepted. GIL bench: the last 4 forms (Centers_takeup x3, Mauritania
 epoux) now simulate and import; Centers_takeup shows its two form errors
 (rows 42 and 300). Then: package republish and push (owner).
 
