@@ -21,7 +21,7 @@ what was learnt along the way.
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 | 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17: `--fake-attachments`, Stata `fakepreload`; disputes adjudicated |
 
-Suite (2026-10-18): 7843 Java tests and 58 Stata tests green; Python 847 pass and 96 fail on purpose until spec 02 Dispute 6 is adjudicated (tests of the old `disabled` rule, superseded by Amendment 8).
+Suite (2026-10-18): Python 1083 green; Java 7919 tests, 4 failing on purpose until spec 07 Dispute 7 is adjudicated; Stata 66 tests, 3 failing on purpose until spec 11 Dispute 5 is adjudicated (see below).
 
 ## Next step
 
@@ -104,10 +104,21 @@ data collected while the form changed.
 kept; labels and hints of hidden calculates ignored), spec 09 Amendment 4
 (patterns with lookaround assertions) and spec 02 Amendment 8 (`disabled`
 applies row by row, as a test form on SurveyCTO showed), except forms
-whose own expressions fail in the engine. **In progress**: spec 07
-Amendment 10, spec 10 Amendment 3, spec 11 Amendment 6 (form errors no
-longer stop a run and are made impossible to miss): specs and stubs
-committed, Codex tests and code to come; then spec 02 Dispute 6.
+whose own expressions fail in the engine.
+
+2026-10-18, form errors: spec 02 Dispute 6 adjudicated (Python green).
+Spec 07 Amendment 10, spec 10 Amendment 3 and spec 11 Amendment 6 are
+implemented: an expression the engine cannot evaluate leaves the question
+blank, is recorded and reported first (`FORM ERRORS` section, last line
+on the command line, red sections and a final red message in Stata,
+`r(formerrors)`); a submission whose walk cannot get past a point is cut
+short. Two disputes wait for Codex: spec 07 Dispute 7 (four tests count
+answers written in a counted repeat's instances, which Amendment 3
+discards) and spec 11 Dispute 5 (three tests read `r()` after
+`log close`, which clears it); a patched copy of the three Stata tests
+passes. GIL bench: the last 4 forms (Centers_takeup x3, Mauritania
+epoux) now simulate and import; Centers_takeup shows its two form errors
+(rows 42 and 300). Then: package republish and push (owner).
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
