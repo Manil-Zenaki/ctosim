@@ -655,13 +655,115 @@ public final class AnswerGenerator {
 
     /** A random string matching the whole pattern, or null when none can be produced. */
     private static String matching(String pattern, RandomGenerator random) {
+        Pattern compiled;
         try {
-            Pattern compiled = Pattern.compile(pattern);
+            compiled = Pattern.compile(pattern);
+        } catch (RuntimeException e) {
+            return null;
+        }
+        try {
             String s = RgxGen.parse(pattern).generate(random);
-            return s != null && compiled.matcher(s).matches() ? readable(s, compiled, random) : null;
+            if (s != null && compiled.matcher(s).matches()) {
+                return readable(s, compiled, random);
+            }
         } catch (RuntimeException | StackOverflowError e) {
+            // unsupported as written: lookarounds are tried below
+        }
+        String withoutLookarounds = withoutLookarounds(pattern);
+        if (withoutLookarounds.equals(pattern)) {
             return null; // unsupported or unsatisfiable pattern
         }
+        try {
+            RgxGen generator = RgxGen.parse(withoutLookarounds);
+            for (int attempt = 0; attempt < 50; attempt++) {
+                String s = generator.generate(random);
+                if (s != null && compiled.matcher(s).matches()) {
+                    return readable(s, compiled, random);
+                }
+            }
+        } catch (RuntimeException | StackOverflowError e) {
+            // still unsupported
+        }
+        return null;
+    }
+
+    /**
+     * The pattern without its lookahead and lookbehind groups, for drawing only (spec 09,
+     * Amendment 4): quoted text and character classes are kept as written, and the escapes of
+     * tab, line feed and carriage return are written as those characters.
+     */
+    static String withoutLookarounds(String pattern) {
+        StringBuilder out = new StringBuilder(pattern.length());
+        boolean inClass = false;
+        int i = 0;
+        while (i < pattern.length()) {
+            char c = pattern.charAt(i);
+            if (pattern.startsWith("\\Q", i)) { // quoted: copied up to BSE
+                int end = pattern.indexOf("\\E", i + 2);
+                end = end < 0 ? pattern.length() : end + 2;
+                out.append(pattern, i, end);
+                i = end;
+                continue;
+            }
+            if (c == '\\' && i + 1 < pattern.length()) {
+                char next = pattern.charAt(i + 1);
+                switch (next) {
+                    case 't' -> out.append('\t');
+                    case 'n' -> out.append('\n');
+                    case 'r' -> out.append('\r');
+                    default -> out.append(c).append(next);
+                }
+                i += 2;
+                continue;
+            }
+            if (inClass) {
+                inClass = c != ']';
+                out.append(c);
+                i++;
+                continue;
+            }
+            if (c == '[') {
+                inClass = true;
+                out.append(c);
+                i++;
+                continue;
+            }
+            if (c == '(' && (pattern.startsWith("(?=", i) || pattern.startsWith("(?!", i)
+                    || pattern.startsWith("(?<=", i) || pattern.startsWith("(?<!", i))) {
+                i = closing(pattern, i) + 1;
+                continue;
+            }
+            out.append(c);
+            i++;
+        }
+        return out.toString();
+    }
+
+    /** The position of the parenthesis closing the group opened at {@code open}. */
+    private static int closing(String pattern, int open) {
+        int depth = 0;
+        boolean inClass = false;
+        for (int j = open; j < pattern.length(); j++) {
+            char d = pattern.charAt(j);
+            if (pattern.startsWith("\\Q", j)) {
+                int end = pattern.indexOf("\\E", j + 2);
+                if (end < 0) {
+                    return pattern.length() - 1;
+                }
+                j = end + 1;
+            } else if (d == '\\') {
+                j++;
+            } else if (inClass) {
+                inClass = d != ']';
+            } else if (d == '[') {
+                inClass = true;
+            } else if (d == '(') {
+                depth++;
+            } else if (d == ')' && --depth == 0) {
+                return j;
+            }
+        }
+        return pattern.length() - 1;
     }
 
     /** Letters, digits and the space tried in place of a symbol: ASCII first, then other scripts. */
