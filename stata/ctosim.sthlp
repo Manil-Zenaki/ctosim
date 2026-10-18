@@ -229,6 +229,7 @@ area and local place names, with {it:realistic.json}:{p_end}
 {synopt:{cmd:r(N)}}number of submissions simulated{p_end}
 {synopt:{cmd:r(warnings)}}number of warnings in the run report{p_end}
 {synopt:{cmd:r(unsatisfied)}}number of questions whose constraint no answer could satisfy (0 when none){p_end}
+{synopt:{cmd:r(formerrors)}}number of fields with form errors, which would block an enumerator (0 when none){p_end}
 
 {p2col 5 16 20 2: Macros}{p_end}
 {synopt:{cmd:r(seed)}}seed used{p_end}
@@ -249,6 +250,28 @@ This usually means a constraint that cannot hold given the answers it refers
 to (for example {it:. >= ${age} and . <= 60} after an age of 90 was
 accepted): check the form. {cmd:r(unsatisfied)} gives the number of such
 questions.{p_end}
+
+{pstd}
+{bf:Form errors.} Some expressions of a form cannot be evaluated in some
+situations, for example a constraint comparing an answer with a field of a
+repeat from outside that repeat ({it:. != ${phone}}, where {it:phone} is
+repeated): SurveyCTO Collect would stop with an error there and the
+enumerator would be blocked. {cmd:ctosim} leaves the question blank and goes
+on, so that one run shows every such problem; when the walk cannot get past
+a point, the submission is cut short there. The fields concerned are listed,
+in red, under {bf:FORM ERRORS} in the Results window and at the top of the
+run report: the field's name, its row in the XLSForm, the engine's message
+and the submissions concerned. {cmd:r(formerrors)} gives the number of such
+fields.{p_end}
+
+{pstd}
+{bf:Final message.} When the form has form errors or unsatisfied
+constraints, {cmd:ctosim} ends with a message in red, shown last, after the
+data are loaded (and after the do-file of {opt dofile()} has run, or before
+its error when it fails): it gives the number of form errors (that would
+block an enumerator) and of unsatisfied constraints, and the absolute path of
+the run report {cmd:run-report.txt}. Fix the form before using it in the
+field.{p_end}
 
 
 {marker fakepreload}{...}

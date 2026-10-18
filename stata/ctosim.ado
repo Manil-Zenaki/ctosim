@@ -175,6 +175,7 @@ program define ctosim, rclass
     local report `"`outdir'/run-report.txt"'
     local warnings 0
     local unsatisfied 0
+    local formerrors 0
     local fakefiles ""
     local wide ""
     file open `fh' using `"`report'"', read text
@@ -189,6 +190,11 @@ program define ctosim, rclass
             local fakefiles = subinstr(ustrregexs(1), ", ", " ", .)
             mata: _ctosim_line("txt", st_local("line"))
         }
+        else if ustrregexm(`"`macval(line)'"', "^FORM ERRORS \(an enumerator would be blocked\): ([0-9]+)$") {
+            local formerrors = ustrregexs(1)
+            local section formerrors
+            mata: _ctosim_line("err", st_local("line"))
+        }
         else if ustrregexm(`"`macval(line)'"', "^Unsatisfied constraints: ([0-9]+)$") {
             local unsatisfied = ustrregexs(1)
             local section unsatisfied
@@ -202,7 +208,7 @@ program define ctosim, rclass
         else if substr(`"`macval(line)'"', 1, 2) == "  " {
             if "`section'" == "files" & `"`wide'"' == "" local wide = substr(`"`macval(line)'"', 3, .)
             if "`section'" == "warnings" mata: _ctosim_line("txt", st_local("line"))
-            if "`section'" == "unsatisfied" mata: _ctosim_line("err", st_local("line"))
+            if inlist("`section'", "unsatisfied", "formerrors") mata: _ctosim_line("err", st_local("line"))
         }
         file read `fh' line
     }
@@ -221,18 +227,31 @@ program define ctosim, rclass
         capture noisily run `"`dopath'"'
         local rc = _rc
         quietly cd `"`here'"'
-        if `rc' exit `rc'
+        if `rc' {
+            _ctosim_problems `formerrors' `unsatisfied' `"`report'"'
+            exit `rc'
+        }
     }
+    _ctosim_problems `formerrors' `unsatisfied' `"`report'"'
 
     return scalar N = real("`runN'")
     return scalar warnings = real("`warnings'")
     return scalar unsatisfied = real("`unsatisfied'")
+    return scalar formerrors = real("`formerrors'")
     return local fakepreload `"`fakefiles'"'
     return scalar seed = real("`runseed'")
     return local form_id `"`form_id'"'
     return local outdir `"`outdir'"'
     return local wide `"`widepath'"'
     return local report `"`report'"'
+end
+
+* The final message, in red, when the form has problems (spec 11, Amendment 6).
+program define _ctosim_problems
+    args formerrors unsatisfied report
+    if `formerrors' == 0 & `unsatisfied' == 0 exit
+    local line `"ctosim: this form has problems: `formerrors' form errors (that would block an enumerator) and `unsatisfied' unsatisfied constraints; see `report'"'
+    mata: _ctosim_line("err", st_local("line"))
 end
 
 * An absolute path for a path relative to the current working directory.
