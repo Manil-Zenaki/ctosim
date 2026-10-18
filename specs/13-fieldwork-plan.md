@@ -199,3 +199,35 @@ does not depend on `N` (10); villages are observed through their
 consequences only (11); lists are unmodifiable, with no promise on the
 lifetime of earlier lists (12); the days taken are the last day index
 used plus one, and the overflow warning comes before the id warning (13).
+
+## Amendment 1: a daily quota, and ids from a `search()` list
+
+Checking simulated data with `ipacheck` and travel checks showed two
+problems. With the defaults (100 submissions, 5 enumerators, 30 days)
+the quota `q` of "When" is 1: each enumerator did one interview a day,
+which is not how fieldwork goes, and checks between the interviews of
+a day had nothing to look at. And a survey id chosen from a list loaded
+by `search()` (the household picked from the preloaded list) had no
+possible values but the list's placeholder. Everything not mentioned
+here is unchanged.
+
+### Quota
+
+The quota `q` of "When" is now `config.interviewsPerDay()` (spec 04,
+Amendment 5), 4 by default, whatever `N`, `E` and `D`. An enumerator
+still moves to its next day when its next interview would start after
+the end of work, so a long form gives fewer interviews a day. The length
+of fieldwork follows from the quota and the interviews' durations;
+`config.fieldworkDays()` is only used for the warning when the
+interviews go beyond day `D − 1`.
+
+### Ids from a `search()` list
+
+For a `select_one` question whose choices are loaded by `search()`
+(spec 07, Amendment 3) and that has no `value`, `texts` or range in its
+override, the possible values of "Survey ids" are the values of the
+choices the question offers when the form is opened, before any answer:
+the choices loaded from the attached file and the static choices,
+without the list's placeholder and without the special values of the
+configuration. When the file cannot be read, they are the static
+choices alone.

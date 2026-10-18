@@ -200,6 +200,11 @@ public final class SimulationConfig {
         return java.util.Optional.ofNullable(area);
     }
 
+    /** Most interviews an enumerator does in a day. See specs/04-simulation-config.md, Amendment 5. */
+    public int interviewsPerDay() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** The question holding the survey id. See specs/04-simulation-config.md, Amendment 4. */
     public java.util.Optional<String> id() {
         return java.util.Optional.ofNullable(id);

@@ -351,3 +351,25 @@ feed count as white space at either edge, and are rejected, not trimmed
 overrides in the configuration itself (31); the existing diagnostics and
 input rules apply (32); copies keep `id()`, and uniqueness of the
 generated ids belongs to spec 13 (33).
+
+## Amendment 5: interviews per day
+
+One top-level key is added for the fieldwork plan (spec 13, Amendment
+1); everything else is unchanged.
+
+| Key | Type | Default | Constraint | Meaning (used by spec 13) |
+|---|---|---|---|---|
+| `interviewsPerDay` | integer | `4` | 1 to 1 000 | Most interviews an enumerator does in a day. |
+
+Accessor added to `SimulationConfig`:
+
+```java
+public int interviewsPerDay();   // 4 by default
+```
+
+- `defaults()` has `interviewsPerDay()` 4.
+- A value that is not an integer or is outside 1 to 1 000 is an error of
+  the configuration (`ConfigException`), as for `enumerators`.
+- The meaning of `fieldworkDays` in the table of top-level keys becomes:
+  the expected length of fieldwork; the plan warns when the interviews
+  take longer (spec 13).
