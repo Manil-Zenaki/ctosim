@@ -218,7 +218,8 @@ def _renamed_survey(survey: Sheet) -> Sheet:
 def _drop_texts(s: Sheet, row: list[Any]) -> None:
     """A calculate is never displayed: its labels and hints, in every language, are left out."""
     for i, h in enumerate(s.headers):
-        if h.partition(":")[0] in ("label", "hint"):
+        # label, hint, label:French, hint::French, and the hint_urdu spelling some forms use
+        if re.match(r"(label|hint)([:_]|$)", h):
             row[i] = None
 
 
