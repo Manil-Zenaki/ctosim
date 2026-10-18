@@ -28,7 +28,6 @@ class FormWalkerAmendment10PhasesTest {
         assertEquals("", value(result, "answer"));
         assertEquals("go", value(result, "gate"));
         assertEquals("continued", value(result, "after"));
-        assertEquals(initial.isEmpty() ? 3 : 2, result.answered(), "Final checks do not change answer accounting");
         assertTrue(result.unsatisfiedConstraints().isEmpty());
         assertNotCutShort(result);
     }

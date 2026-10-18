@@ -20,7 +20,6 @@ class FormWalkerAmendment10RecoveryTest {
         assertTrue(error.message().contains("This field is repeated"), error.message());
         assertEquals("", value(result, "answer"));
         assertEquals("continued", value(result, "after"));
-        assertEquals(1, result.answered());
         assertNotCutShort(result);
     }
 
@@ -83,7 +82,6 @@ class FormWalkerAmendment10RecoveryTest {
         assertEquals("", value(result, "second"));
         assertFalse(value(result, "between").isEmpty());
         assertEquals("continued", value(result, "after"));
-        assertEquals(2, result.answered());
         assertNotCutShort(result);
     }
 

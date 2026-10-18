@@ -513,3 +513,65 @@ file already leaves answer accounting around a form error unprescribed.
 Requested: count the phones in the expected values (or drop the
 `answered()` assertions that only depend on them), keeping the other
 assertions of these cases.
+
+## Adjudication of Dispute 7
+
+### Basis: accept removing the counts, not a mandated replacement count
+
+Spec 07 Amendment 10's clarification expressly says that "answered
+counts, the clock and required-field warnings are not prescribed for a
+form error (68)". These fixtures exercise that outcome. Their exact total
+answer counts are therefore not supported by the current contract.
+
+The dispute's broader claim about Amendment 3 is not established by its
+text: that amendment specifies a count of zero, and confirmed assumption
+34 expressly leaves manually pre-populated rows and late count changes
+unprescribed. It does not require discarding the two written phone values
+for this positive count. The reported two-answer difference cannot itself
+establish a new requirement. Drop the disputed total-count assertions
+rather than replace them with 3, 4, or 5. Leave the shared fixture intact.
+
+### Point 1: repeated-reference constraint recovery
+
+Accepted the removal alternative for
+`repeatedReferenceConstraintLeavesBlankRecordsEngineMessageAndContinues`.
+Removed `answered() == 1`. Retained the single error record, field and
+engine-message checks, blank failed answer, continued next answer, warning
+diagnostics and no-cut assertion. Those are required by Amendment 10;
+an exact total count is not.
+
+### Point 2: several independent errors
+
+Accepted the removal alternative for
+`severalIndependentErrorsAreAllReportedInBodyOrder`.
+Removed `answered() == 2`. Retained both errors in body order, their
+diagnostics, both cleared answers, the populated intervening question,
+the continued final answer and the no-cut assertion. These directly check
+recovery from multiple independent errors without prescribing accounting.
+
+### Point 3: errors first raised at the final check (both parameters)
+
+Accepted the removal alternative for
+`aConstraintThatStartsThrowingOnlyAtFinalCheckIsClearedAndRecorded`.
+Removed the conditional expectation of 3 or 2 answers. Both the initially
+empty and kept-value cases remain. They still require the error record,
+cleared answer, changed gate, continued next answer, no unsatisfied-
+constraint record and no premature cut. Amendment 5 specifies unchanged
+accounting for normal final repairs; Amendment 10 explicitly leaves
+accounting unspecified when a form expression throws during that check.
+
+Updated questions-file point 68 to reflect this explicit clarification
+instead of its earlier, narrower accounting assumption. Earlier resolved
+disputes are unchanged. No production source was read or modified, and no
+commit was made.
+
+Validation: `mvnw.cmd -o -q test` failed in `testCompile` on the cached
+`commons-io-2.5.jar`. The existing offline compiler probe compiled all 52
+FormWalker test/support sources against available project class files.
+The existing Amendment 10 JUnit probe then ran all four Amendment 10 test
+classes: all 43 cases passed, including the four disputed cases, with no
+skipped or aborted tests or failed containers. This verifies independent
+compilation and those tests against compiled classes, not a successful
+Maven suite run. Logs: `.codex-runs/walker-dispute7-maven-test.log`,
+`.codex-runs/walker-dispute7-compile.log`, and
+`.codex-runs/walker-dispute7-junit.log`.

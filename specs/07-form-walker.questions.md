@@ -1372,10 +1372,13 @@ of the walker; no walker internals or replacement production stubs are used.
     **Assumption:** These accounting details are not specified for the new
     outcome. No exact clock increment, speed violation, or answered count
     is imposed on a partially applied cascading failure or navigation error.
-    A direct constraint exception accepts no answer; final rechecks retain
-    the pre-existing rule that answered() does not change. Extra required
-    warnings are not prescribed. Blankness means clearing an overridden
-    existing value as well as leaving an initially empty question blank.
+    Amendment 10's clarification explicitly leaves answered counts
+    unprescribed for a form error, including a direct constraint exception
+    or a final recheck that throws. Dispute 7 removes the exact total-count
+    assertions for these cases; normal Amendment 5 repairs still retain
+    their specified accounting. Extra required warnings are not prescribed.
+    Blankness means clearing an overridden existing value as well as
+    leaving an initially empty question blank.
     **Tests:** `repeatedReferenceConstraintLeavesBlankRecordsEngineMessageAndContinues`,
     `failedAnswerClearsAnyOverriddenDefault`,
     `aConstraintThatStartsThrowingOnlyAtFinalCheckIsClearedAndRecorded`,
@@ -1487,3 +1490,18 @@ of the walker; no walker internals or replacement production stubs are used.
 - Existing tests, production source, other specs and build settings remain
   unchanged. No commit was made. Temporary probes and logs stay under
   `.codex-runs/`.
+
+### Dispute 7 build and validation
+
+- **Question:** Can the prescribed offline Maven suite compile and execute
+  the corrected tests in this environment?
+- **Observation:** `mvnw.cmd -o -q test` fails during `testCompile` on the
+  cached `commons-io-2.5.jar`, before running tests. No dependency, build
+  configuration or production source was changed.
+- **Independent validation:** The existing offline compiler probe compiled
+  all 52 FormWalker test/support sources against available project class
+  files. The Amendment 10 JUnit probe ran all 43 cases successfully, with
+  none skipped or aborted and no failed containers. This does not establish
+  a successful Maven suite run. Logs: `.codex-runs/walker-dispute7-maven-test.log`,
+  `.codex-runs/walker-dispute7-compile.log`, and
+  `.codex-runs/walker-dispute7-junit.log`.
