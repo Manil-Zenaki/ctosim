@@ -326,6 +326,42 @@ public final class FormWalker {
         return out.append(expression.substring(last)).toString();
     }
 
+    /** The engine's message for an error in a field's expression: "Error evaluating field 'x' (/data/x[1]): ...". */
+    private static final java.util.regex.Pattern FAILING_FIELD =
+            java.util.regex.Pattern.compile("^Error evaluating field '([^']*)' \\((/[^)\\s]*)\\)");
+    /** The expression an XPath error comes from: "Calculate expression for /data/x". */
+    private static final java.util.regex.Pattern SOURCE_PATH = java.util.regex.Pattern.compile(" for (/\\S+)");
+
+    /** The simulator's own limit of navigation steps (Limits): not a form error. */
+    private static final class WalkLimitException extends IllegalStateException {
+        WalkLimitException(String message) {
+            super(message);
+        }
+    }
+
+    /** True for an error raised while the engine was at work, that is, evaluating the form (Amendment 10). */
+    static boolean fromEngine(RuntimeException e) {
+        if (e instanceof WalkLimitException) {
+            return false;
+        }
+        for (StackTraceElement frame : e.getStackTrace()) {
+            if (frame.getClassName().startsWith("org.javarosa.")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Where the engine says an XPath error comes from, when it says so. */
+    private static String engineSource(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof org.javarosa.xpath.XPathException x && x.getSource() != null) {
+                return x.getSource();
+            }
+        }
+        return null;
+    }
+
     /** Mixes the configuration seed, the submission number and a stream id into one seed. */
     private static long seed(long base, long number, long stream) {
         long h = base * 0x9E3779B97F4A7C15L + number;
@@ -345,6 +381,7 @@ public final class FormWalker {
         private final FormEntryController session;
         private final List<String> warnings = new ArrayList<>();
         private final List<UnsatisfiedConstraint> unsatisfied = new ArrayList<>();
+        private final List<FormError> errors = new ArrayList<>();
         private final Map<String, Integer> repeatTargets = new HashMap<>();
         private final SplittableRandom violationDraws;
         /** The submission's profile (spec 07, Amendment 7); "" without profiles. */
@@ -372,11 +409,38 @@ public final class FormWalker {
 
         Submission run() {
             int steps = 0;
-            for (int event = step(++steps); event != FormEntryController.EVENT_END_OF_FORM; event = step(++steps)) {
-                if (event == FormEntryController.EVENT_QUESTION) {
-                    question(session.getModel().getQuestionPrompt());
-                } else if (event == FormEntryController.EVENT_PROMPT_NEW_REPEAT) {
-                    newRepeatPrompt();
+            String failedAt = null; // the point of the last error met while moving forward
+            while (true) {
+                int event;
+                try {
+                    event = step(++steps);
+                } catch (RuntimeException e) {
+                    TreeReference at = formError(e, session.getModel().getFormIndex().getReference());
+                    String point = at == null ? "" : at.toString(true);
+                    if (point.equals(failedAt)) {
+                        warn("the walk cannot get past " + (at == null ? "the beginning of the form" : point)
+                                + "; the submission was cut short there");
+                        break;
+                    }
+                    failedAt = point;
+                    continue;
+                }
+                failedAt = null;
+                if (event == FormEntryController.EVENT_END_OF_FORM) {
+                    break;
+                }
+                TreeReference ref = session.getModel().getFormIndex().getReference();
+                try {
+                    if (event == FormEntryController.EVENT_QUESTION) {
+                        question(session.getModel().getQuestionPrompt());
+                    } else if (event == FormEntryController.EVENT_PROMPT_NEW_REPEAT) {
+                        newRepeatPrompt();
+                    }
+                } catch (RuntimeException e) {
+                    formError(e, ref);
+                    if (event == FormEntryController.EVENT_QUESTION) {
+                        clearAfterError(ref);
+                    }
                 }
             }
             enforceConstraints();
@@ -392,16 +456,58 @@ public final class FormWalker {
             }
             LocalDateTime end = clock.now();
             LocalDateTime submitted = end.plusMinutes(1 + new SplittableRandom(seed(config.seed(), number, 7)).nextInt(240));
-            return new Submission(number, xml, start, end, submitted, answered, warnings, unsatisfied);
+            return new Submission(number, xml, start, end, submitted, answered, warnings, unsatisfied, errors);
         }
 
         private int step(int steps) {
             if (steps > MAX_STEPS) {
                 TreeReference at = session.getModel().getFormIndex().getReference();
-                throw new IllegalStateException("submission " + number + ": stopped after " + MAX_STEPS
+                throw new WalkLimitException("submission " + number + ": stopped after " + MAX_STEPS
                         + " navigation steps at " + (at == null ? "the beginning of the form" : at.toString(true)));
             }
             return session.stepToNextEvent();
+        }
+
+        // --- Form errors (Amendment 10) -------------------------------------------------
+
+        /**
+         * Records an error the engine raised while evaluating the form's expressions at {@code at},
+         * the question being handled; rethrows any other error. Returns {@code at}.
+         */
+        private TreeReference formError(RuntimeException e, TreeReference at) {
+            if (!fromEngine(e)) {
+                throw e;
+            }
+            String message = String.valueOf(e.getMessage()).replaceAll("\\R", " ");
+            String name = at == null ? "" : at.getNameLast();
+            String path = at == null ? "" : at.toString(true);
+            java.util.regex.Matcher failing = FAILING_FIELD.matcher(message);
+            String source = engineSource(e);
+            if (failing.find()) {
+                name = failing.group(1);
+                path = failing.group(2);
+            } else if (source != null) {
+                java.util.regex.Matcher m = SOURCE_PATH.matcher(source);
+                if (m.find() && (at == null || !genericPath(at).equals(m.group(1)))) {
+                    path = m.group(1);
+                    name = path.substring(path.lastIndexOf('/') + 1);
+                }
+            }
+            errors.add(new FormError(number, name, path, message));
+            warn("field '" + name + "' (" + path + "): the form has an error that would block an enumerator ("
+                    + message + "); left blank");
+            return at;
+        }
+
+        /** Leaves the question blank after a form error; clearing it may raise the same error again. */
+        private void clearAfterError(TreeReference ref) {
+            try {
+                clear(ref);
+            } catch (RuntimeException e) {
+                if (!fromEngine(e)) {
+                    throw e;
+                }
+            }
         }
 
         // --- Questions ----------------------------------------------------------------
@@ -542,36 +648,64 @@ public final class FormWalker {
             session.jumpToIndex(FormIndex.createBeginningOfFormIndex());
             boolean changed = false;
             int steps = 0;
-            for (int event = step(++steps); event != FormEntryController.EVENT_END_OF_FORM; event = step(++steps)) {
+            String failedAt = null;
+            while (true) {
+                int event;
+                try {
+                    event = step(++steps);
+                } catch (RuntimeException e) {
+                    TreeReference at = formError(e, session.getModel().getFormIndex().getReference());
+                    String point = at == null ? "" : at.toString(true);
+                    if (point.equals(failedAt)) {
+                        return changed; // the rest of the form cannot be reached
+                    }
+                    failedAt = point;
+                    continue;
+                }
+                failedAt = null;
+                if (event == FormEntryController.EVENT_END_OF_FORM) {
+                    break;
+                }
                 if (event != FormEntryController.EVENT_QUESTION) {
                     continue;
                 }
-                FormEntryPrompt prompt = session.getModel().getQuestionPrompt();
                 TreeReference ref = session.getModel().getFormIndex().getReference();
-                // The value is read from the instance: the prompt drops a select value that its
-                // filtered choice list does not hold, such as a value loaded by search().
-                TreeElement node = session.getModel().getForm().getMainInstance().resolveReference(ref);
-                IAnswerData value = node == null ? null : node.getValue();
-                QuestionKind kind = kind(prompt);
-                if (prompt.isReadOnly() || value == null || kind == null
-                        || TreeElement.getAttribute(prompt.getBindAttributes(), FormLoader.CTOSIM_NS,
-                        FormLoader.CALCULATE_HERE) != null) {
-                    continue;
-                }
-                if (session.getModel().getForm().evaluateConstraint(ref, value)) {
-                    continue;
-                }
-                changed = true;
-                String name = ref.getNameLast();
-                String path = ref.toString(true);
-                if (clearOnly || !answerAgain(prompt, ref, name, path, kind)) {
-                    clear(ref);
-                    warn("field '" + name + "' (" + path + "): its constraint does not hold at the end of the form; left blank");
-                    recordUnsatisfied(ref, name, path, true);
-                    warnIfRequired(prompt.isRequired(), name, path);
+                try {
+                    changed |= recheck(ref, clearOnly);
+                } catch (RuntimeException e) {
+                    formError(e, ref);
+                    clearAfterError(ref);
+                    changed = true;
                 }
             }
             return changed;
+        }
+
+        /** Re-checks the constraint of the current question; true when it changed its value. */
+        private boolean recheck(TreeReference ref, boolean clearOnly) {
+            FormEntryPrompt prompt = session.getModel().getQuestionPrompt();
+            // The value is read from the instance: the prompt drops a select value that its
+            // filtered choice list does not hold, such as a value loaded by search().
+            TreeElement node = session.getModel().getForm().getMainInstance().resolveReference(ref);
+            IAnswerData value = node == null ? null : node.getValue();
+            QuestionKind kind = kind(prompt);
+            if (prompt.isReadOnly() || value == null || kind == null
+                    || TreeElement.getAttribute(prompt.getBindAttributes(), FormLoader.CTOSIM_NS,
+                    FormLoader.CALCULATE_HERE) != null) {
+                return false;
+            }
+            if (session.getModel().getForm().evaluateConstraint(ref, value)) {
+                return false;
+            }
+            String name = ref.getNameLast();
+            String path = ref.toString(true);
+            if (clearOnly || !answerAgain(prompt, ref, name, path, kind)) {
+                clear(ref);
+                warn("field '" + name + "' (" + path + "): its constraint does not hold at the end of the form; left blank");
+                recordUnsatisfied(ref, name, path, true);
+                warnIfRequired(prompt.isRequired(), name, path);
+            }
+            return true;
         }
 
         /** Asks the generator again for the current question; true when the engine accepted an answer. */
