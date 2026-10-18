@@ -575,3 +575,74 @@ public stub bodies were read while updating the tests.
   the input workbook, asserting that the injection actually ran; they neither
   patch nor inspect converter internals. All generated fixtures are temporary;
   no existing tests or production files were changed.
+
+## 40. Amendment 7: quotes in valid cells versus invalid identifiers or XPath
+
+- **Question:** Does preserving typographic quotes also require accepting them
+  as XPath string delimiters or in otherwise invalid field names? How can the
+  catalog preserve them when labels and calculations are not catalog fields?
+- **Assumption:** U+2018, U+2019, U+201C and U+201D remain ordinary characters.
+  Tests put them inside ASCII-delimited XPath strings (including unpaired curly
+  punctuation), and do not infer acceptance of syntactically invalid XPath or
+  XML names. Catalog coverage uses the title and the original type of a
+  `sensor_statistic` row: the spec permits any type with that first word, so its
+  qualifiers can contain these characters without inventing identifier rules.
+  Preservation is checked after XML/JSON decoding; character escaping is not
+  normalization. Existing type whitespace normalization still applies.
+- **Tests:** All tests in `converter/tests/test_converter_typographic_quotes.py`,
+  especially `test_each_curly_quote_is_ordinary_text_inside_either_ascii_string_delimiter`,
+  `test_spec_apostrophe_example_preserves_string_and_expands_field_reference`,
+  and `test_quotes_survive_title_original_type_catalog_and_utf8_output`.
+
+## 41. Amendment 7: languages introduced only by discarded text
+
+- **Question:** Must a language whose only nonempty cell is a hidden calculate's
+  label or hint disappear, or can an empty translation remain because its
+  column header still exists?
+- **Assumption:** No new empty-language policy is inferred. The explicit
+  "as if those cells were empty" requirement is tested by comparing conversion
+  with identical headers, filename, settings and row positions, changing only
+  the hidden text cells to empty. Most translated fixtures also have visible
+  text in every tested language, avoiding missing-translation fallback questions.
+- **Tests:** `test_language_used_only_by_hidden_text_behaves_as_an_empty_cell`,
+  `test_each_hidden_type_ignores_missing_references_in_each_label_and_hint`, and
+  `test_all_hidden_text_cells_are_absent_even_when_their_references_exist` in
+  `converter/tests/test_converter_hidden_calculate_text.py`.
+
+## 42. Amendment 7: which rows are hidden calculates?
+
+- **Question:** Does the reference to converted hidden calculates include
+  calculate_here or enumerator, or change their display rules?
+- **Assumption:** Amendment 2 makes calculate_here a visible read-only text
+  question, and enumerator is also visible. Amendment 7's hidden set consists
+  of ordinary calculate, caseid, comments, text audit, audio audit, all three
+  speed-violation types, and both sensor first-word families. Removing hidden
+  texts must retain their nodes, catalog types/rows, original warnings,
+  calculation/relevance processing, and timing/speed attributes. Other visible
+  rows still validate references in labels and hints. No new behavior for
+  calculate_here's own translated source text, media, or message columns is
+  inferred; its existing display and custom calculation behavior is retained.
+- **Tests:** `test_each_hidden_type_ignores_missing_references_in_each_label_and_hint`,
+  `test_discarding_text_preserves_calculation_relevance_timing_scope_and_following_rows`,
+  `test_discarding_speed_field_text_keeps_custom_bind_attributes`,
+  `test_visible_rows_still_validate_references_in_their_text`,
+  `test_hidden_text_is_discarded_after_type_whitespace_normalization`, and
+  `test_hidden_text_removal_does_not_remove_calculate_here_question`.
+
+## 43. Amendment 7: discarded references versus remaining errors and cached cells
+
+- **Question:** Does ignoring labels/hints suppress validation of other columns,
+  or change how formula cells are read? Must diagnostics exclude all discarded
+  label text even when they quote the entire input row?
+- **Assumption:** Other columns and formula caching follow the existing rules.
+  Missing references in calculation/relevance and invalid minimum_seconds still
+  raise ConversionError with the physical row and input filename. No diagnostic
+  format or prohibition on quoting row context is inferred. Cached label/hint
+  strings are discarded just like literal cells; cached expression and visible
+  label strings retain typographic quotes. The input remains unchanged, and
+  repeated conversion remains deterministic. All workbooks are generated in
+  pytest temporary directories; existing tests and production code are untouched.
+- **Tests:** `test_ignored_label_reference_does_not_hide_errors_in_other_columns`,
+  `test_cached_hidden_label_and_hint_references_are_discarded`,
+  `test_cached_formula_text_keeps_typographic_quotes`, and
+  `test_quotes_survive_title_original_type_catalog_and_utf8_output`.
