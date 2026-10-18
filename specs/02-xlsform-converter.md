@@ -416,3 +416,11 @@ are not part of the converted form: a reference such as `${emiscode}`
 written there does not have to name a field, and the form converts as
 if those cells were empty. Other columns of the row (the calculation,
 relevance, ...) are converted as before.
+
+Clarification (Amendment 7): assumptions 40–42 of the questions file are
+reviewed one by one and confirmed. In particular, typographic quotes are
+ordinary characters, not string delimiters (40); a language used only by
+the dropped texts is treated as if those cells were empty (41); the
+hidden rows are ordinary calculates and the types converted to hidden
+calculates, not `calculate_here` or `enumerator`, which are displayed
+(42).
