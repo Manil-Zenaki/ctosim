@@ -348,3 +348,45 @@ Logs: `.codex-runs/stata-help-use-cases/full-suite.log`, the five area logs in t
 **Assumption:** The help checker tests the option name and broad English vocabulary for unavailable preload, invented values, inference from form usage, testing, output `attachments/`, reading/editing and reuse through `media()`. These are smoke checks: semantic review is still needed to establish the "only follow the form's own use" limitation and that the concepts are causally connected. Synonyms may need extending; no exact sentence or SMCL layout is required. The help artifact is read only by the test, never inspected to derive expectations. The existing child launcher may be reused unchanged, replacing only its disposable simulator jar with a new independent fixture. All new build outputs and extra logs are under `.codex-runs/`; the prescribed unchanged runner itself writes under `target/stata-tests/`. All eleven do-files and their fixture/helper sources are new; committed tests and helpers are preserved, and production code is neither read nor changed.
 
 **Tests:** `test_fakepreload_help.do`, all new `test_fakepreload_*.do`, `fakepreload-helpers.do`, `build-fakepreload-fixtures.ps1`, `fixtures/FakepreloadFixture.java`, `fixtures/fakepreload_import.do`.
+
+## Amendment 6: form problems shown last, in red
+
+### F1. Meaning and lifetime of the two problem counts
+
+**Question:** Does the new count describe fields, records, submissions, or warning lines? Is `r()` promised after an import do-file fails?
+
+**Assumption:** `r(formerrors)` is the report header's field count, following spec 10 Amendment 3; it is independent of submission and warning counts. `r(unsatisfied)` remains the report's question count. Both are zero for absent sections, including after earlier nonzero runs. Report-derived results survive an import template changing `r()` and the observation count. No returned-result assertion is made after command failure: only the final message's report-derived counts are checked then. No artificial zero-count section or malformed report is generated, since the referenced report format only includes nonempty sections.
+
+**Tests:** `test_form_problems_results.do`, `test_form_problems_absent.do`, `test_form_problems_template.do`, `test_form_problems_template_failure.do`.
+
+### F2. Section rendering and unspecified ordering
+
+**Question:** Must the two red sections and the fictitious-attachments line appear in report order relative to one another? Does "before the warnings" include simulator stdout?
+
+**Assumption:** Each section's lines appear once, on separate lines, in their own report order and entirely in error style, following the confirmed Amendment 4 contract. No order between the two problem sections is imposed. They precede step 3's warning count and details; the simulator's own stdout is still shown first. Indentation is free. Identical submission lines for different fields are legitimate and counted with multiplicity. Tests include optional row numbers, omitted references, repeated lines, a truncated twenty-submission list, literal XPath braces, quotes, Unicode, and the adjacent fictitious-attachments and Files sections. They do not require warning color or a particular indentation.
+
+**Tests:** `test_form_problems_display.do`, the full-log checks in `test_form_problems_final_plain.do`, `test_form_problems_absent.do`, `test_form_problems_template.do`, `test_form_problems_template_failure.do`; `FormProblemsFixture.checkLog`.
+
+### F3. Final message wording, line wrapping, and error trailers
+
+**Question:** What exact words or layout identify the final diagnostic? Is Stata's own `r(459);` error trailer part of the command's "last output"?
+
+**Assumption:** There is no mandated sentence. The checker accepts a multiline red final message identifying form problems, naming both counts (including a zero count), explaining that form errors block an enumerator, and containing the actual absolute report path. It uses broad English wording and accepts slash/case differences for Windows paths; synonyms beyond the recognized vocabulary may require extending the smoke check. The test paths fit within the 255-column log setting. Stata's own error-code trailer may follow the message; unrelated output may not. No exact count of final-message physical lines is imposed. Simulator summaries naming only `run-report.txt` cannot substitute for the post-load message. For zero/zero counts, no form-problem final message is expected, even if warnings or fictitious attachments exist.
+
+**Tests:** `test_form_problems_final_plain.do`, `test_form_problems_absent.do`, `test_form_problems_template.do`, `test_form_problems_template_failure.do`; `FormProblemsOracleChecks.java` covers valid logs and mutations for missing/wrong counts, color, path, content, late output and misplaced error trailers.
+
+### F4. Observable timing and unchanged failure behavior
+
+**Question:** How can tests establish that a message follows a quiet template, and does it also appear after a simulator failure that leaves an old report on disk?
+
+**Assumption:** Templates execute as `run` does, may change the directory, data, and `r()`, and may operate a caller-created named log. Each new template enables a second log only at its end, after its import/data edits and directory change. The final diagnostic must occur in this tail log, including when the next template command raises error 459. The full log checks report sections and warnings. Both successful and failing templates preserve the existing directory/data/error contracts. The new final message concerns a completed simulation's load stage; a simulator failure still preserves memory and its existing error mapping and must not display stale report diagnostics. Plain-import failures and malformed reports remain unspecified and untested.
+
+**Tests:** `test_form_problems_template.do`, `test_form_problems_template_failure.do`, `test_form_problems_simulator_failure.do`; `fixtures/form_problems_import.do`, `fixtures/form_problems_import_failure.do`.
+
+### F5. Help and test infrastructure
+
+**Question:** What depth of help prose is required by "documents ... the section and the final message", and may existing test isolation be reused without modifying it?
+
+**Assumption:** Help smoke checks require `r(formerrors)`, the FORM ERRORS section, its enumerator-blocking meaning, and the final red message's timing and diagnostic/report content. They do not prescribe headings or sentences; semantic review may still be needed to establish connections between these concepts. Existing `launch.do`, `launch.ps1`, and `helpers.do` are reused unchanged, substituting only the launcher's disposable simulator jar through the confirmed `CTOSIM_JAR` mechanism. All Amendment 6 tests, helper/fixture sources and build script are new. Temporary fixture build outputs and additional logs use `.codex-runs/`; the prescribed unchanged runner itself uses `target/stata-tests/`. No production implementation was opened, searched, or modified, and no existing test was rewritten.
+
+**Tests:** `test_form_problems_help.do`, all eight new `test_form_problems_*.do` files; `build-form-problems-fixtures.ps1`, `form-problems-helpers.do`, `fixtures/FormProblemsFixture.java`, `fixtures/FormProblemsOracleChecks.java`.
