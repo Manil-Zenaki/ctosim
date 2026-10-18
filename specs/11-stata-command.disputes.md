@@ -275,3 +275,27 @@ logs are under `target/stata-tests/`.
 `git diff --check` passed. Only this disputes file and the test fixture source
 were changed. No production implementation was read or modified, and no commit
 was made.
+
+## Dispute 5: Amendment 6 tests that read r() after closing a log
+
+Three Amendment 6 tests run `ctosim` inside a named log and read the
+returned results with `a6_results` only after `quietly log close`:
+
+- `test_form_problems_final_plain.do`, lines 14-17;
+- `test_form_problems_template.do`, lines 15-22;
+- `test_form_problems_absent.do`, lines 14-17, 23-26 and 29-32.
+
+Each fails with `assertion is false` (r(9)) in `a6_results`, right after
+a run whose output is otherwise as expected. `log close` is itself an
+r-class command and clears `r()`. A three-line check in StataSE 19 (batch
+mode) shows it: a program returning `r(x) = 5` gives `5` when `r(x)` is read
+with no log and with a named log open, and `.` once `quietly log close` has
+run. No implementation of `ctosim` can make its results survive a later
+command that replaces them; the spec makes no such promise.
+
+`test_form_problems_results.do` and `test_form_problems_display.do`, which
+read `r()` before closing their logs (or open none), pass.
+
+Requested: in these three tests, read the results (`a6_results`, or a copy
+of `r()` into locals) before `quietly log close`, keeping the other
+assertions, and the log checks, unchanged.
