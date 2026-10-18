@@ -19,9 +19,9 @@ what was learnt along the way.
 | 09 | Constraint hints | done |
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
-| 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17 (`--fake-attachments`, Stata `fakepreload`); 3 disputes pending Codex adjudication |
+| 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17: `--fake-attachments`, Stata `fakepreload`; disputes adjudicated |
 
-Suite: 7536 Java tests, 703 Python tests and 47 Stata tests, all green (2026-10-17).
+Suite: 7770 Java tests, 703 Python tests and 58 Stata tests, all green (2026-10-17).
 
 ## Next step
 
