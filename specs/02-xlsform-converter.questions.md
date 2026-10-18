@@ -646,3 +646,102 @@ public stub bodies were read while updating the tests.
   `test_cached_hidden_label_and_hint_references_are_discarded`,
   `test_cached_formula_text_keeps_typographic_quotes`, and
   `test_quotes_survive_title_original_type_catalog_and_utf8_output`.
+
+## 44. Amendment 8: superseded block-removal tests
+
+- **Question:** How should the existing committed tests that require removal of
+  every descendant of a disabled container be handled?
+- **Assumption:** Amendment 8 replaces that requirement. This run explicitly
+  requires keeping existing tests and adding new files/classes only, so no old
+  test is edited, removed, skipped, or marked xfail. Earlier assumptions about
+  dropping whole blocks (including points 2, 23, 33, and 38) do not apply to
+  independently enabled descendants under Amendment 8. Consequently, a future
+  conforming implementation can fail old block-removal tests even while passing
+  these new tests; collection alone does not resolve that intentional conflict.
+- **Tests:** All tests in `test_converter_disabled_rows_amendment8.py` and
+  `test_converter_disabled_rows_amendment8_boundaries.py` are additive. In
+  particular, `test_enabled_text_and_calculate_survive_disabled_container`
+  requires precisely the text and calculate survival in the amendment's example.
+
+## 45. Amendment 8: warnings for automatically removed closing rows
+
+- **Question:** Does "each row left out" require a separate warning for the
+  automatically removed matching end row, which commonly has no name? Does
+  that depend on its own disabled flag?
+- **Assumption:** Every disabled opener and independently disabled ordinary row
+  must have exactly one omission warning; every surviving converted type retains
+  its own conversion warning, all in physical sheet order. The amendment gives
+  explicit group/repeat opener wording, which is checked verbatim. Tests allow
+  an additional warning identifying an automatically removed closer's physical
+  row, without requiring or forbidding it or prescribing its unnamed-field
+  format. No other extra warnings are accepted in warning-focused tests.
+- **Tests:** `test_each_disabled_opener_uses_the_amendment_warning_text`,
+  `test_nested_omission_and_surviving_conversion_warnings_follow_physical_rows`,
+  `test_enabled_text_and_calculate_survive_disabled_container`,
+  `test_independently_disabled_children_leave_no_node_control_or_conversion_warning`,
+  and long-gap warning assertions use the new `assert_warnings` helper.
+
+## 46. Amendment 8: malformed disabled boundaries and validation precedence
+
+- **Question:** What happens when a disabled opener has no matching end, or an
+  enabled opener's end row alone is disabled? Are invalid minimum times on a
+  removed opener validated before removal?
+- **Assumption:** No new precedence is inferred for these unresolved cases.
+  Disabled containers in new fixtures are balanced. Their matching ends are
+  removed regardless of the end's own disabled value, as explicitly required.
+  Removed opener labels and relevance are absent, including missing references
+  in those discarded properties. Disabled timing cells use valid values; invalid
+  minima on independently enabled children still fail. An unmatched enabled end
+  or unclosed enabled opener outside a balanced removed container remains an
+  error, with the original physical row. Duplicate names exposed by flattening,
+  explicit references to a removed container, and all-disabled/empty entire
+  forms are left untested rather than assigning new policies.
+- **Tests:** `test_matching_end_is_removed_regardless_of_its_disabled_cell`,
+  `test_removed_container_text_and_relevance_references_are_not_validated`,
+  `test_errors_in_enabled_children_are_not_suppressed_by_disabled_parent`,
+  `test_unmatched_enabled_end_after_removed_container_still_reports_its_physical_row`,
+  and `test_enabled_unclosed_container_after_flattening_is_still_rejected`.
+
+## 47. Amendment 8: equivalence to deleting boundaries and surviving features
+
+- **Question:** Does "as if ... begin and end rows were not there" permit
+  inherited relevance, labels, timing, appearance, repeat-count nodes, or stale
+  references to the removed container? Which row numbers survive flattening?
+- **Assumption:** It does not: a control workbook containing only the retained
+  rows, with the same filename, settings and choices, must produce identical
+  XForm text. The spec already requires deterministic conversion. Catalog
+  content matches that control except for the original physical sheet rows;
+  warnings are checked separately. This checks primary instances, controls,
+  bindings, reference expansion and repeat settings through public outputs,
+  without prescribing converter internals. Empty cells and non-yes flags still
+  leave children enabled, and yes matching remains trimmed/case-insensitive.
+  Enabled nested containers, metadata, translated texts/media, generated
+  or_other companions, custom bind attributes and child type conversions retain
+  their existing specified behavior in the flattened scope. All fixtures are
+  generated in pytest temporary directories; no persistent workbook is needed.
+- **Tests:** `test_nested_boundaries_match_by_nesting_and_keep_nearest_enabled_scope`,
+  `test_disabled_container_properties_are_not_inherited_or_emitted`,
+  `test_disabled_repeat_settings_do_not_remove_enabled_nested_repeat_settings`,
+  `test_row_by_row_rule_preserves_every_node_producing_child_type`,
+  `test_retained_expressions_and_custom_binds_use_flattened_paths`,
+  `test_surviving_or_other_companion_uses_flattened_scope_and_source_row`,
+  `test_translated_children_keep_labels_hints_and_media_after_parent_is_removed`,
+  `test_cached_disabled_flags_are_evaluated_independently_per_row`,
+  `test_removed_repeat_count_does_not_require_its_referenced_field`, and
+  `test_written_xml_catalog_and_cli_warnings_reflect_independent_disabled_rows`.
+
+## 48. Amendment 8: long-run coverage
+
+- **Question:** Do Amendment 4's long runs now include both independently
+  disabled children and enabled children inside removed containers?
+- **Assumption:** Enabled children always survive; only independently disabled
+  or empty rows are skipped. Counts 100, 136, 1000 and 1001 exercise the stated
+  examples, the original regression size and an above-example boundary without
+  introducing a capacity or timing limit. Repeated adjacent removed containers
+  also retain their enabled children, and neither their closing rows nor long
+  gaps end traversal or corrupt enclosing paths. Errors after a long empty gap
+  within a removed container retain the physical input row.
+- **Tests:** `test_long_gaps_inside_disabled_container_keep_enabled_children_and_later_rows`,
+  `test_long_run_of_enabled_children_is_not_discarded_with_its_parent`,
+  `test_adjacent_disabled_containers_do_not_hide_each_others_enabled_children`,
+  and `test_errors_in_enabled_children_are_not_suppressed_by_disabled_parent`.
