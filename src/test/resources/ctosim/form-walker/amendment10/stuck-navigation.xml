@@ -1,0 +1,41 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa" xmlns:ct="urn:ctosim:xforms">
+  <h:head><h:title>Relevance blocks entry to a repeat</h:title><model>
+    <instance><data id="stuck-navigation">
+      <two>2</two>
+      <source jr:template=""><phone/></source>
+      <source><phone>11</phone></source><source><phone>22</phone></source>
+      <repair>old</repair><gate>safe</gate><timed/><before/>
+      <blocked jr:template=""><inside/></blocked><after/>
+      <elapsed/><violations/><violated/><started/><finished/><meta><instanceID/></meta>
+    </data></instance>
+    <bind nodeset="/data/two" type="int"/>
+    <bind nodeset="/data/source/phone" type="string"/>
+    <bind nodeset="/data/repair" type="string" constraint="/data/gate = 'safe' or . = 'fixed'"/>
+    <bind nodeset="/data/gate" type="string"/>
+    <bind nodeset="/data/timed" type="string" ct:minimum-seconds="61"/>
+    <bind nodeset="/data/before" type="string"/>
+    <bind nodeset="/data/blocked" relevant="string(/data/source/phone) != ''"/>
+    <bind nodeset="/data/blocked/inside" type="string"/>
+    <bind nodeset="/data/after" type="string"/>
+    <bind nodeset="/data/elapsed" type="int" calculate="duration()"/>
+    <bind nodeset="/data/violations" type="int" ct:speed-violations="count"/>
+    <bind nodeset="/data/violated" type="string" ct:speed-violations="list"/>
+    <bind nodeset="/data/started" type="dateTime" jr:preload="timestamp" jr:preloadParams="start"/>
+    <bind nodeset="/data/finished" type="dateTime" jr:preload="timestamp" jr:preloadParams="end"/>
+    <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <repeat nodeset="/data/source" jr:count="/data/two">
+      <input ref="/data/source/phone"><label>Phone</label></input>
+    </repeat>
+    <input ref="/data/repair"><label>Repair at final check</label></input>
+    <input ref="/data/gate"><label>Gate</label></input>
+    <input ref="/data/timed"><label>Timed question</label></input>
+    <input ref="/data/before"><label>Before blocked repeat</label></input>
+    <repeat nodeset="/data/blocked" jr:count="/data/two">
+      <input ref="/data/blocked/inside"><label>Unreachable inside</label></input>
+    </repeat>
+    <input ref="/data/after"><label>Unreachable after</label></input>
+  </h:body>
+</h:html>

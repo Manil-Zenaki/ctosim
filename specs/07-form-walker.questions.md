@@ -1325,3 +1325,165 @@ configuration, generator and constraint-hint contracts.
   compilation. Logs are `.codex-runs/walker-dispute6-maven-test.log`,
   `.codex-runs/walker-dispute6-compile.log`, and
   `.codex-runs/walker-dispute6-junit.log`.
+
+## Amendment 10 questions and assumptions (2026-10-18)
+
+This addition uses only new `FormWalkerAmendment10*` classes and fixtures
+under `src/test/resources/ctosim/form-walker/amendment10/`. Existing tests
+and fixtures are retained. Production source was not opened, searched or
+modified. Expectations come from spec 07 and its referenced public
+contracts. A few fixture checks drive the public JavaRosa session API to
+verify the error's phase and obtain the engine's diagnostic independently
+of the walker; no walker internals or replacement production stubs are used.
+
+66. **Question:** Does recovery also cover errors during session creation,
+    constructor work, or the final timestamp/report recalculations?
+    **Assumption:** The definition says expressions evaluated during a walk,
+    but the recovery procedure explicitly names giving answers, checking
+    constraints and moving forward. The tests exercise those three phases.
+    They do not prescribe recovery from initialization or finalization
+    errors; all error fixtures successfully initialize. Finalization after
+    an earlier recovered error or cutoff is explicitly required and tested.
+    **Tests:** `FormWalkerAmendment10RecoveryTest`,
+    `FormWalkerAmendment10PhasesTest`, and
+    `FormWalkerAmendment10NavigationTest`.
+
+67. **Question:** Which field does a message identify, and how exactly must
+    diagnostic paths, quoting and newline normalization be formatted?
+    **Assumption:** A field identified as the failing calculation/condition
+    is used even when another question was being answered. References named
+    only as the cause of a multi-node error are not the failing field;
+    the handled question is then used. The same rule applies to setvalue
+    errors without a named failing destination. Paths identify that field,
+    including every one-based repeat index, without imposing multiplicity
+    notation on nonrepeated steps. Warning prose must include the field and
+    complete normalized engine message in occurrence order, but no particular
+    quotation-mark style. CRLF is one line break; CR and LF are also replaced
+    by spaces, without trimming or otherwise rewriting the message.
+    **Tests:** `unnamedConstraintDiagnosticFallsBackToTheHandledQuestionAndPreservesMessageText`,
+    `dependentBindExpressionErrorsNameTheFailingFieldAndClearTheAnswerBeingHandled`,
+    `failingValueChangedSetvalueIsRecordedAndTheNextQuestionIsAnswered`,
+    `anInvalidRegexRaisedByAFormExpressionIsRecoveredToo`, the repeat/group
+    path tests, and `assertDiagnostics`.
+
+68. **Question:** Does a partially accepted answer count or advance the
+    clock when a dependent expression then fails? Does a required question
+    cleared for a form error receive another required-field warning?
+    **Assumption:** These accounting details are not specified for the new
+    outcome. No exact clock increment, speed violation, or answered count
+    is imposed on a partially applied cascading failure or navigation error.
+    A direct constraint exception accepts no answer; final rechecks retain
+    the pre-existing rule that answered() does not change. Extra required
+    warnings are not prescribed. Blankness means clearing an overridden
+    existing value as well as leaving an initially empty question blank.
+    **Tests:** `repeatedReferenceConstraintLeavesBlankRecordsEngineMessageAndContinues`,
+    `failedAnswerClearsAnyOverriddenDefault`,
+    `aConstraintThatStartsThrowingOnlyAtFinalCheckIsClearedAndRecorded`,
+    `optionalAndRequiredExpressionErrorsAreNotUnsatisfiedConstraints`, and
+    `dependentBindExpressionErrorsNameTheFailingFieldAndClearTheAnswerBeingHandled`.
+
+69. **Question:** Is a recurrence identified by a leaf name or by a
+    specific question instance? What ordering applies across phases?
+    **Assumption:** A question includes its full contextual path. Two
+    repeat instances or two groups with the same leaf name are different
+    questions and do not justify cutoff. Records follow actual occurrence,
+    including navigation failures before errors discovered by the final
+    check, irrespective of bind or primary-instance order.
+    **Tests:** `errorsAtDifferentRepeatInstancesDoNotLookLikeAStuckQuestion`,
+    `nestedRepeatPathsIdentifyEveryInstanceWithAnError`,
+    `sameLeafNameInTwoGroupsDoesNotTriggerEarlyTermination`,
+    `severalIndependentErrorsAreAllReportedInBodyOrder`, and
+    `navigationErrorsPrecedeFinalCheckErrorsInTheRecordList`.
+
+70. **Question:** How many attempts or records are required at a point
+    that the engine cannot get past, and what happens to defaults in
+    questions after the cutoff?
+    **Assumption:** Each occurrence is recorded, including the initial
+    failure and its recurrence, so the stuck fixture has at least two
+    records. The spec does not expose an exact retry budget or require a
+    particular way to skip engine events. The fixture independently
+    verifies that two forward steps fail at the same engine index. A
+    generous timeout catches nontermination without defining a speed
+    contract. Remaining fixture questions start empty, so no unmentioned
+    rule about deleting their defaults is imposed. The ordinary final
+    constraint check, speed reports, duration, timestamps and upload time
+    must still be produced. An early result must not poison subsequent
+    walks, and its replay remains deterministic.
+    **Tests:** The three cut-short tests in
+    `FormWalkerAmendment10NavigationTest`; fixture `stuck-navigation.xml`.
+
+71. **Question:** Are engine exceptions also unsatisfied constraints,
+    and do ordinary simulator/configuration failures become form errors?
+    **Assumption:** A constraint exception is not a constraint evaluated
+    false after exhausted proposals; it creates a FormError, without an
+    UnsatisfiedConstraint. A false constraint, successful search,
+    conversion failure and an unevaluated constraint on an irrelevant or
+    read-only field do not create FormErrors. Configuration expressions
+    retain Amendment 7 diagnostics because they are not form expressions.
+    Invalid submission numbers and the navigation limit continue to throw.
+    Errors raised by native expression functions, including malformed
+    regex evaluation, qualify even when they are not repeated-node errors.
+    **Tests:** Exclusion/error-classification tests in
+    `FormWalkerAmendment10ContractTest`,
+    `optionalAndRequiredExpressionErrorsAreNotUnsatisfiedConstraints`,
+    `finalCheckContinuesToRepairOtherQuestionsAfterAnExpressionError`, and
+    `anInvalidRegexRaisedByAFormExpressionIsRecoveredToo`.
+
+72. **Question:** Does the FormError constructor impose validation or
+    defensive-copy rules beyond being a record? Must diagnostic results
+    be stable across later walks?
+    **Assumption:** No extra constructor validation is specified. Tests
+    check the list supplied by Submission, including empty lists, iterators
+    and sublists, and compare complete records across replay and fresh loads.
+    Submission.of does not parse XML and therefore has no errors even for
+    unchecked XML. No specific RNG sequence or distribution is introduced
+    by this amendment.
+    **Tests:** List immutability, Submission.of, replay and prior-result
+    stability tests in `FormWalkerAmendment10ContractTest` and
+    `aCutShortSubmissionCanBeReplayedAndDoesNotPoisonTheNextWalk`.
+
+73. **Question:** How should a throwing repeat-count expression be represented
+    in an engine-compatible XForm?
+    **Assumption:** Use a control-free calculated count field referenced by
+    jr:count, as converted forms and the Amendment 9 fixtures do. Inline
+    arithmetic/function calls in jr:count are not required by these tests.
+    A count calculation inside a newly created parent causes its error
+    while navigating, not while initializing. No cardinality is imposed on
+    the child repeat when that count remains blank. Both this count case
+    and an ordinary calculation during repeat creation must recover.
+    **Tests:** `anErrorInACalculatedRepeatCountDoesNotStopTheWholeSubmission`,
+    `anExpressionErrorDuringForwardNavigationIsRecordedAndTheWalkContinues`.
+
+### Amendment 10 build and validation
+
+- **Question:** Can the requested `mvnw.cmd -o -q test-compile` complete?
+- **Observation:** The command fails in Maven's testCompile phase on the
+  cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, before
+  source diagnostics. The offline `-e` diagnostic confirms
+  `java.nio.file.AccessDeniedException` in `WindowsLinkSupport.getRealPath`.
+  This is a build-environment failure, not evidence that test sources are
+  invalid. No dependency installation, cache copy, drive mapping or
+  build-configuration edit was made.
+- **Independent compilation:** The existing offline diagnostic compiler
+  `.codex-runs/WalkerAmendment5CompileProbe.java` compiles all 52 FormWalker
+  test/support sources, including the five new files, with Java release 17
+  against actual project classes and cached JUnit/JavaRosa APIs. It reads
+  existing class/JAR bytes through an in-memory file manager and uses no
+  replacement production stubs. This is successful independent compilation,
+  not a successful Maven invocation. Logs:
+  `.codex-runs/walker-amendment10-test-compile.log`,
+  `.codex-runs/walker-amendment10-test-compile-detail.log`, and
+  `.codex-runs/walker-amendment10-probe-compile.log`.
+- **Execution:** The new suite has 43 cases. The offline JUnit launcher
+  reports 2 passing cases and 41 expected failures: 9 at the unimplemented
+  `formErrors()` accessor and 32 from unhandled engine expression errors
+  (25 XPath type errors, 6 wrapped calculation/condition errors and 1 regex
+  error). There are no fixture-loading errors, assertion failures,
+  skipped/aborted tests or failed containers. The two passes confirm that
+  invalid submission numbers and the simulator's navigation guard still
+  throw. Assertions beyond each pending recovery/accessor remain unvalidated
+  until the amendment is implemented. Log:
+  `.codex-runs/walker-amendment10-junit.log`.
+- Existing tests, production source, other specs and build settings remain
+  unchanged. No commit was made. Temporary probes and logs stay under
+  `.codex-runs/`.
