@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>CLI plan keys</h:title><model>
+    <instance><data id="cli_plan_keys" version="4"><key/><person/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/key" type="string"/>
+    <bind nodeset="/data/person" type="string" calculate="pulldata('people','full_name','id',/data/key)"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body><input ref="/data/key"><label>Household key</label></input></h:body>
+</h:html>

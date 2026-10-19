@@ -535,3 +535,111 @@ are unchanged. Production sources were not opened, searched, or modified.
 - A final retry of the requested Maven command has the same cached-JAR access
   failure. `git diff --check` passes. Only this questions file is modified;
   Java and fixture additions are all new files. No commit was made.
+
+## Amendment 4 questions and test assumptions (2026-10-18)
+
+New tests are isolated in `CliAmendment4UsageTest`,
+`CliAmendment4PipelineTest`, and `CliAmendment4AttachmentsTest`, with the
+new `CliAmendment4Support` helper and two new XML/catalog fixture pairs
+under `src/test/resources/ctosim/cli/amendment4/`. Existing tests and
+fixtures are kept unchanged. Production sources were not read or changed.
+
+30. **Question:** Does the CLI impose a stricter question-name grammar than
+    the configuration's `id`, and what counts as edge white space?
+    **Assumption:** The CLI uses the stated nonempty/unpadded-name rule, with
+    space, tab, CR, LF, and form feed as explicitly clarified in spec 04
+    Amendment 4. Such values are rejected, not trimmed. Unicode names and
+    internal spaces/punctuation pass argument validation; absent names are
+    handled by the plan. Unicode whitespace classes, a value beginning with
+    `-`, and a help token consumed as an option value are left open, as in
+    question 3. No exact diagnostic sentence is required, only the problem
+    name and usage. Duplicate identical and different values both fail.
+    **Tests:** `CliAmendment4UsageTest`; the Unicode and absent-name pipeline
+    tests. Invalid-name tests also supply missing inputs to check usage
+    validation precedes I/O, and check that outputs remain untouched.
+
+31. **Question:** How is the replacement of the walker by the fieldwork plan
+    observable through the CLI, without inspecting constructors or internals?
+    **Assumption:** Continue confirmed question 11, using the newly required
+    public `Fieldwork` API as the orchestration oracle. Independently load the
+    input and effective configuration, call `walkAll()`, and compare every
+    wide/long export byte. Independent assertions cover round-robin metadata,
+    nonoverlap/travel, GPS proximity, repeat row counts, unique/cyclic IDs,
+    and exact report/warning content. Current spec 13, including its daily
+    quota amendment, supplies the plan contract: the short eight-interview,
+    two-enumerator fixture fits four interviews per enumerator on day zero.
+    No random algorithm or constructor count is prescribed. GPS checks allow
+    0.2 metres for coordinate serialization rounding.
+    **Tests:** `CliAmendment4PipelineTest`, especially the exports, metadata,
+    GPS, default-configuration, seed, and ID-cycle tests.
+
+32. **Question:** Does `--id` replacement change configuration validation,
+    warning wording, report layout, or the other CLI overrides?
+    **Assumption:** No additional precedence over invalid configuration is
+    stated, so invalid configuration combined with a valid replacement is
+    not tested. With a valid configuration the effective `id`, seed and N
+    all reach the plan; the file itself is unchanged. Existing warning
+    categories remain ordered, with the plan's configuration warnings in
+    the configuration slot and its post-walk warnings last. Plan warning
+    prose is taken from its public API, independently checked for specified
+    names/counts, rather than hard-coded. Warnings alone add no extra stdout
+    line or report section. Existing structured constraint/error summaries
+    must use the returned planned submissions.
+    **Tests:** The before/after FORM override test, both warning-order tests,
+    missing/empty ID pool tests, structured-report tests, and rerun test in
+    `CliAmendment4PipelineTest`. The converter-category test also retains
+    loader and stub warnings ahead of plan configuration warnings.
+
+33. **Question:** How are fictitious keys combined with `id` and explicit
+    question overrides before the plan is constructed?
+    **Assumption:** Amendment 2's rules still apply: missing text keys get
+    `texts`, integer row keys get `min:1,max:N`, and any existing `fields`
+    entry prevents that injection. Independently generate attachment bytes,
+    install the permitted suggestions in an independent configuration,
+    reload with an independent media directory, then construct the plan.
+    Fifty and fifty-one submissions distinguish unique assignment from
+    independent key draws and check exhaustion. Missing rate one must not
+    blank an assigned survey ID (spec 13 clarification). A `missingRate`-only
+    text override has no possible IDs and must still produce the plan warning.
+    The already approved converter process double is reused unchanged.
+    **Tests:** `CliAmendment4AttachmentsTest`, covering text/integer keys,
+    config/CLI IDs, explicit overrides, no fake-attachment flag, and XLSForm
+    conversion with converter warnings before the plan warning.
+
+34. **Question:** Does the determinism rule also cover fieldwork plans when
+    the CLI is called repeatedly or from another working directory/time zone?
+    **Assumption:** Yes; everything else is expressly unchanged. Keep input
+    basenames/bytes equal and compare complete output snapshots, including
+    the report, in child JVMs with different directories and zones. Compare
+    exports against the public plan for each of four fixed seeds and require
+    more than one ID permutation, without choosing an exact permutation.
+    A later call without `--id` removes the prior plan warning/ID setting.
+    **Tests:** Determinism, distinct-seed, and rerun tests in
+    `CliAmendment4PipelineTest`. Existing 45-second child-process safeguards
+    and workspace-local temporary-file rules are retained.
+
+## Amendment 4 validation
+
+- The requested `mvnw.cmd -o -q test-compile` reaches test compilation but
+  cannot complete. The `-e` retry confirms `java.nio.file.AccessDeniedException`
+  for `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, the same
+  cached-JAR access failure documented above. Logs:
+  `.codex-runs/cli-amendment4-author-test-compile.log` and
+  `.codex-runs/cli-amendment4-author-test-compile-detail.log`.
+- The existing in-memory diagnostic compiler successfully compiles all
+  **19 CLI/support sources**, including the four new sources, with
+  `--release 17` against the cached binary APIs and JUnit dependencies.
+  Log: `.codex-runs/cli-amendment4-author-memory-compile.log`. This is
+  supplementary compilation evidence, not a successful Maven build.
+- A diagnostic JUnit run executes all **60 new cases**: **24 pass, 36 fail**,
+  with no skipped/aborted tests or failed discovery containers. Failures
+  concern the unsupported `--id` option, exports/metadata/GPS still using
+  independent walks, duplicate IDs, and missing plan warnings. The new forms
+  and catalogs load through the public APIs; no fixture-loading or setup
+  exception occurs. Some downstream assertions cannot be reached until the
+  CLI integration is implemented. Log:
+  `.codex-runs/cli-amendment4-author-junit.log`.
+- Only new test/support files, new fixtures, and this questions-file
+  addition are included. Existing tests, production code, specifications,
+  and build configuration are unchanged. No dependencies were installed,
+  Maven repositories copied, drives mapped, or commits created.

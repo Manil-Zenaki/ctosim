@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa" xmlns:ct="urn:ctosim:xforms">
+  <h:head><h:title>CLI fieldwork</h:title><model>
+    <instance><data id="cli_fieldwork" version="4"><start/><end/><username/><deviceid/><household/><respondent/><ménage/><code/><gps/><gps2/><bad/><children jr:template=""><item/></children><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/start" type="dateTime" jr:preload="timestamp" jr:preloadParams="start"/>
+    <bind nodeset="/data/end" type="dateTime" jr:preload="timestamp" jr:preloadParams="end"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/deviceid" type="string" jr:preload="property" jr:preloadParams="deviceid"/>
+    <bind nodeset="/data/household" type="int" ct:minimum-seconds="60"/>
+    <bind nodeset="/data/respondent" type="string"/>
+    <bind nodeset="/data/ménage" type="string"/>
+    <bind nodeset="/data/code" type="string"/>
+    <bind nodeset="/data/gps" type="geopoint"/>
+    <bind nodeset="/data/gps2" type="geopoint"/>
+    <bind nodeset="/data/bad" type="int"/>
+    <bind nodeset="/data/children/item" type="string"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/household"><label>Household</label></input>
+    <input ref="/data/respondent"><label>Respondent</label></input>
+    <input ref="/data/ménage"><label>Ménage</label></input>
+    <select1 ref="/data/code"><label>Code</label>
+      <item><label>Alpha</label><value>a</value></item>
+      <item><label>Beta</label><value>b</value></item>
+      <item><label>Gamma</label><value>c</value></item>
+      <item><label>Refused</label><value>99</value></item>
+    </select1>
+    <input ref="/data/gps"><label>Location</label></input>
+    <input ref="/data/gps2"><label>Second location</label></input>
+    <input ref="/data/bad"><label>Diagnostic answer</label></input>
+    <repeat nodeset="/data/children"><input ref="/data/children/item"><label>Item</label></input></repeat>
+  </h:body>
+</h:html>

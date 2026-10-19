@@ -1,0 +1,15 @@
+{"form_id":"cli_fieldwork","title":"CLI fieldwork","version":"4","fields":[
+  {"name":"start","type":"start","xpath":"/data/start","row":2},
+  {"name":"end","type":"end","xpath":"/data/end","row":3},
+  {"name":"username","type":"username","xpath":"/data/username","row":4},
+  {"name":"deviceid","type":"deviceid","xpath":"/data/deviceid","row":5},
+  {"name":"household","type":"integer","xpath":"/data/household","row":6},
+  {"name":"respondent","type":"text","xpath":"/data/respondent","row":7},
+  {"name":"ménage","type":"text","xpath":"/data/ménage","row":8},
+  {"name":"code","type":"select_one codes","xpath":"/data/code","row":9},
+  {"name":"gps","type":"geopoint","xpath":"/data/gps","row":10},
+  {"name":"gps2","type":"geopoint","xpath":"/data/gps2","row":11},
+  {"name":"bad","type":"integer","xpath":"/data/bad","row":12},
+  {"name":"children","type":"begin repeat","xpath":"/data/children","row":13},
+  {"name":"item","type":"text","xpath":"/data/children/item","row":14}
+]}

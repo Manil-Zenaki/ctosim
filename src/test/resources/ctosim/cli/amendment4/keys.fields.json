@@ -1,0 +1,4 @@
+{"form_id":"cli_plan_keys","title":"CLI plan keys","version":"4","fields":[
+  {"name":"key","type":"text","xpath":"/data/key","row":2},
+  {"name":"person","type":"calculate","xpath":"/data/person","row":3}
+]}
