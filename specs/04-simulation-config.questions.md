@@ -524,3 +524,84 @@ spec 04. No production source was opened, read, searched, or changed.
   environment blocker; production code, Maven configuration, and dependencies
   should remain unchanged. **Dependent tests:** Full Maven test compilation
   remains unverified. Runtime tests were not requested and were not run.
+
+## Amendment 5: interviews per day
+
+Existing tests, fixtures, and questions are preserved. New coverage is in
+`SimulationConfigInterviewsPerDayTest`, `SimulationConfigInterviewsPerDayIoTest`,
+and `SimulationConfigInterviewsPerDayCopiesTest`, with the minimal UTF-8 fixture
+`amendment-interviews-per-day.json`. Expectations come solely from spec 04;
+no production source was opened, read, searched, or changed.
+
+34. **Does the exact-integer rule extend to interviewsPerDay?**
+    - **Assumption:** Yes. The new key is an integer, explicitly validated as
+      enumerators is. Integral decimal and exponent forms are accepted;
+      fractional values remain invalid even when double rounding would make
+      them integral. Values outside 1..1000 cannot wrap, truncate, clamp, or
+      fall back to the default. Extreme exponents are unambiguously outside
+      this integer domain; they do not extend the unresolved double-valued
+      behavior discussed in question 7.
+    - **Dependent tests:** `acceptedCounts` and `invalidCounts`, and their
+      parse/load consumers.
+
+35. **Does expected fieldwork duration impose a capacity constraint on config?**
+    - **Assumption:** No. Amendment 5 assigns warnings about longer fieldwork
+      to the plan. Parsing retains the independently valid submissions,
+      enumerators, fieldworkDays, and interviewsPerDay values, even when
+      submissions exceed their nominal capacity or the daily limit exceeds
+      submissions. Copies likewise do not recalculate or clamp those values.
+      Scheduling, warnings, allocation, and generated interview counts belong
+      to spec 13; no statistical or generation tests are added here.
+    - **Dependent tests:**
+      `aWorkloadBeyondExpectedFieldworkDaysIsStillValidConfiguration`,
+      `dailyCapacityMayExceedSubmissionsWithoutClamping`,
+      `omissionUsesFourRegardlessOfOtherSettings`, and the submission-copy tests.
+
+36. **Does interviewsPerDay extend or reserve names in nested schemas?**
+    - **Assumption:** Only the top-level schema changes. Keys are recognized
+      case-sensitively after JSON decoding. Closed nested schemas reject the
+      new word; arbitrary field, profile, and choice-name mappings, and the
+      id name, can still use it. A same-named field override does not supply
+      the top-level value. This follows the previously confirmed conventions
+      for amendments 1 through 4.
+    - **Dependent tests:** `onlyTheExactTopLevelSchemaKeyIsAdded`,
+      `theNewNameRemainsLegalInArbitraryNameMappings`, escaped/duplicate-key
+      tests, the omitted-setting test, and their load counterparts.
+
+37. **Which diagnostic, copy, and input conventions apply to the new key?**
+    - **Assumption:** The unchanged base contract applies: invalid values
+      name the source and interviewsPerDay location and explain the failure,
+      without prescribed wording or validation-cause type. Duplicate-key
+      diagnostics retain question 2's confirmed flexibility. JSON syntax
+      errors require the failing line and underlying cause. UTF-8 and a
+      leading BOM are accepted. Copies preserve the daily limit and all
+      other settings, including unchanged seed/count copies, and loaded
+      configurations remain snapshots. No new API setter is inferred.
+    - **Dependent tests:** Diagnostic and input tests in the parsing/I/O
+      classes; all tests in `SimulationConfigInterviewsPerDayCopiesTest`;
+      `loadedConfigurationAndItsCopiesRetainTheirSnapshotAfterFileReplacement`.
+
+### Amendment 5 build verification (2026-10-18)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile` and a diagnostic retry
+  with `-e`. Both reached `maven-compiler-plugin:3.15.0:testCompile` and
+  failed with `java.nio.file.AccessDeniedException` on
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac closed
+  its archive file manager. Logs are
+  `.codex-runs/04-interviews-test-compile.log` and
+  `.codex-runs/04-interviews-test-compile-detail.log`.
+- All three new test classes and their two existing support classes
+  **compiled successfully with Java release 17 against the actual
+  target/classes binaries and cached JUnit 5.11.4 API**. The temporary
+  compiler probe reads dependency class entries in memory to avoid the
+  archive-close error, without inspecting production implementation,
+  copying repositories, changing permissions, or installing dependencies.
+  Probe: `.codex-runs/InterviewsPerDayCompileProbe.java`; result:
+  `.codex-runs/04-interviews-probe-compile.log` (`compiled=true`). This
+  verifies compilation of the new sources, but does not make the requested
+  Maven command successful. Runtime tests were not requested and were not run.
+- **Question:** Can the calling environment rerun Maven with accessible
+  cached dependencies? **Assumption:** The archive access failure is an
+  environment blocker and does not authorize changes to production code,
+  dependencies, or build configuration. **Dependent tests:** Full Maven
+  test compilation remains unverified. All existing tests are unchanged.
