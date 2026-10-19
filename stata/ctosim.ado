@@ -6,8 +6,17 @@ program define ctosim, rclass
         display as error "n() and seed() need a value"
         exit 198
     }
+    * likewise id(): an empty survey id question is an error (spec 11, Amendment 7)
+    local idgiven = ustrregexm(`"`0'"', "(^|[ ,])id\(")
     syntax using/ [, N(string) SEED(string) CONFIG(string) SAVING(string) MEDIA(string) ///
-        SERVER(string) DOFILE(string) REPLACE CLEAR FAKEPRELOAD]
+        SERVER(string) DOFILE(string) REPLACE CLEAR FAKEPRELOAD ID(string)]
+    if `idgiven' {
+        local idword `id'
+        if !ustrregexm(`"`idword'"', "^\S+$") {
+            display as error "id() must name one question: a single word"
+            exit 198
+        }
+    }
 
     local form `"`using'"'
 
@@ -152,6 +161,7 @@ program define ctosim, rclass
     if `"`server'"' != "" local args `"`args' --server "`server'""'
     if `"`python'"' != "" local args `"`args' --python "`python'""'
     if "`fakepreload'" != "" local args `"`args' --fake-attachments"'
+    if `idgiven' local args `"`args' --id "`idword'""'
 
     tempfile out err status
     if `"`converter'"' == "" local converter "-"

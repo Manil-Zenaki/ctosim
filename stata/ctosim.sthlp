@@ -29,6 +29,7 @@ XForm already converted ({cmd:.xml}) with its {cmd:.fields.json} file beside it.
 {synopt:{opt replace}}allow writing into an output directory that already holds a run{p_end}
 {synopt:{opt clear}}allow replacing the data in memory{p_end}
 {synopt:{opt fakepreload}}invent the preloaded files the form reads but {opt media()} lacks; see {help ctosim##fakepreload:Fictitious preload}{p_end}
+{synopt:{opt id(name)}}the question holding the survey id (household, respondent): each submission gets its own value; see {help ctosim##fieldwork:Fieldwork plan}{p_end}
 {synoptline}
 
 
@@ -106,9 +107,11 @@ setting.
 {synoptset 22}{...}
 {synopt:{cmd:seed}}seed of all randomness (default 1){p_end}
 {synopt:{cmd:submissions}}number of submissions (default 100){p_end}
-{synopt:{cmd:start}, {cmd:fieldworkDays}}start and length of fieldwork (default 2026-01-05T08:00, 30 days){p_end}
+{synopt:{cmd:start}, {cmd:fieldworkDays}}start of fieldwork, which also sets when work starts each day, and its expected length (default 2026-01-05T08:00, 30 days){p_end}
 {synopt:{cmd:timeZone}}time zone of stored date-times (default UTC){p_end}
 {synopt:{cmd:enumerators}}number of simulated enumerators (default 5){p_end}
+{synopt:{cmd:interviewsPerDay}}most interviews an enumerator does in a day (default 4); see {help ctosim##fieldwork:Fieldwork plan}{p_end}
+{synopt:{cmd:id}}the question holding the survey id, as option {opt id()}{p_end}
 {synopt:{cmd:missingRate}}probability that an optional question is left blank (default 0.05){p_end}
 {synopt:{cmd:specialRate}, {cmd:specialValues}}probability of a "don't know / refused" code, and which values are such codes{p_end}
 {synopt:{cmd:speedViolationRate}}probability of a speed violation on a field with a minimum time (default 0.1){p_end}
@@ -272,6 +275,38 @@ its error when it fails): it gives the number of form errors (that would
 block an enumerator) and of unsatisfied constraints, and the absolute path of
 the run report {cmd:run-report.txt}. Fix the form before using it in the
 field.{p_end}
+
+
+{marker fieldwork}{...}
+{title:Fieldwork plan}
+
+{pstd}
+{cmd:ctosim} simulates the fieldwork as it happens, so that data-quality
+checks such as {cmd:ipacheck} find only the problems you put in the data.
+Each enumerator works days of interviews one after the other:{p_end}
+
+{phang2}- an enumerator's interviews never overlap, and at least ten minutes
+separate two of them (travel and rest);{p_end}
+{phang2}- every interview starts within working hours: from the time of day of
+the configuration's {cmd:start} for nine hours (an interview may end later);{p_end}
+{phang2}- an enumerator works in one village a day: its interviews that day are
+at most 3 km apart, and the GPS answers of an interview are within 30 m of the
+household (inside the configuration's {cmd:area}, when it has one);{p_end}
+{phang2}- an enumerator does at most {cmd:interviewsPerDay} interviews a day (4 by
+default, set in the configuration), fewer when the form is long.{p_end}
+
+{pstd}
+With {opt id(name)}, or the configuration's {cmd:id}, each submission gets
+its own value of that question, so that survey ids are distinct: among the
+values its configuration allows, its choices (also those loaded by
+{cmd:search()}, with {opt fakepreload} for instance) or its integer range.
+When there are fewer possible values than submissions, some ids are used
+twice and a warning says so. {it:name} is a single word.{p_end}
+
+{pstd}
+The length of fieldwork follows from the number of interviews, of
+enumerators and the interviews' duration. When the interviews do not fit in
+{cmd:fieldworkDays}, the fieldwork lasts longer and a warning says so.{p_end}
 
 
 {marker fakepreload}{...}
