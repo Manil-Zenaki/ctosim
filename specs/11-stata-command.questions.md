@@ -390,3 +390,47 @@ Logs: `.codex-runs/stata-help-use-cases/full-suite.log`, the five area logs in t
 **Assumption:** Help smoke checks require `r(formerrors)`, the FORM ERRORS section, its enumerator-blocking meaning, and the final red message's timing and diagnostic/report content. They do not prescribe headings or sentences; semantic review may still be needed to establish connections between these concepts. Existing `launch.do`, `launch.ps1`, and `helpers.do` are reused unchanged, substituting only the launcher's disposable simulator jar through the confirmed `CTOSIM_JAR` mechanism. All Amendment 6 tests, helper/fixture sources and build script are new. Temporary fixture build outputs and additional logs use `.codex-runs/`; the prescribed unchanged runner itself uses `target/stata-tests/`. No production implementation was opened, searched, or modified, and no existing test was rewritten.
 
 **Tests:** `test_form_problems_help.do`, all eight new `test_form_problems_*.do` files; `build-form-problems-fixtures.ps1`, `form-problems-helpers.do`, `fixtures/FormProblemsFixture.java`, `fixtures/FormProblemsOracleChecks.java`.
+
+## Amendment 7: additional questions and assumptions
+
+### G1. The meaning of a single word
+
+**Question:** Does `id(name)` impose Stata variable-name restrictions, allow a quoted word, or trim outer whitespace? Are punctuation, duplicate options, Unicode whitespace, or names over 32 characters defined?
+
+**Assumption:** The amendment requires one nonempty word, not a varlist or an existing Stata variable. Tests accept a one-character name, mixed case, underscores/digits, a 32-character name, and an accented Unicode name, preserving the name exactly as a separate `--id` argument. Quoting a single word is ordinary Stata string-option syntax and does not become part of the name. Empty parentheses, an empty quoted string, whitespace-only content, and two or more words separated by spaces, a tab, or a newline require exactly 198 before simulator invocation. The amendment gives no alternative syntax-error code for `id()`. No expectation is imposed on trimming outer whitespace around an otherwise valid word, punctuation, repeated `id()` options, Unicode whitespace classification, or an undocumented maximum length. If "word" is intended to mean a narrower ASCII identifier grammar, the Unicode expectation needs clarification.
+
+**Tests:** `test_id_forwarding.do`, `test_id_empty.do`, `test_id_multiple_words.do`; helpers `a7_id_argument` and `a7_reject_id`.
+
+### G2. Configuration fallback and limits on distinctness
+
+**Question:** Does the option replace a configured id, and does the unconditional wording about distinct ids supersede spec 13's unavailable/exhausted-pool warnings?
+
+**Assumption:** Follow the explicitly referenced contracts: spec 10 Amendment 4 makes the option replace configuration `id`; without it the original configuration applies. No CLI override is invented on omission or retained from an earlier call. Spec 13 qualifies uniqueness: tests asserting distinct ids supply enough possible values; an unknown question and an exhausted finite pool produce warnings and still load data. Optional id questions are populated even when their missing rate is 1, per spec 13's clarification. The other optional question stays blank, making override versus fallback observable without probabilistic duplicate assumptions. No specific randomized permutation or generated string format is required.
+
+**Tests:** `test_id_omission.do`, `test_id_real_config.do`, `test_id_real_xlsx.do`, `test_id_real_warnings.do`, `test_id_real_determinism.do`.
+
+### G3. Scope of fieldwork-plan integration checks
+
+**Question:** Which plan guarantees belong in the Stata tests, and how can one village a day be observed when village centres are not exported?
+
+**Assumption:** Command integration tests inspect exported start/end, username and GPS fields using spec 13's public consequences, without checking internal scheduling or random-number algorithms. Fixed-seed visits must not overlap (including across days), must start between 08:00 and 17:00 for the fixture, and must be separated by at least ten minutes. Pairwise GPS distances on the same enumerator/day may be up to 3,060 metres: two 1.5 km household offsets plus two 30 m answer offsets; a 0.1 metre allowance covers exported coordinate precision. The test requires multiple visits on at least one enumerator/day so this is not vacuous. This follows the current spec 13, including its default daily quota amendment, without hard-coding a quota value. It does not require interviews to end within working hours. The overflow case requests 60 visits per enumerator in one planned day, which cannot fit even on minimum travel time alone, and requires data for all submissions and the plan warning to reach Results. Times are parsed from the spec 08 export format. Same-seed outputs are compared in full, including after `replace`; no single-value different-seed inequality is assumed.
+
+The schedule test deliberately omits id from both the command and configuration, so it also checks that planning is unconditional.
+
+**Tests:** `test_id_real_schedule.do`, `test_id_real_overflow.do`, `test_id_real_determinism.do`; `fixtures/id_plan.xml`, `.fields.json`, `.json`, and `id_plan_schedule.json`.
+
+### G4. Unchanged command behavior with id enabled
+
+**Question:** Does the new option relax checks or change importing, results, failure codes, or interaction with `fakepreload`?
+
+**Assumption:** No, under "Everything not mentioned here is unchanged." New interaction tests cover XML/XLSX argument forwarding with all valued simulator options; dirty memory and output protections; missing files; status 2 versus other simulator failures; successful/failing import templates; report-derived results; and simultaneous `id()`/`fakepreload`. Invalid id cases use valid files, clean output paths and `clear`, so they do not assume precedence among unrelated errors. The successful simulator double deliberately reports a different N/seed from requested options, and does not pretend to allocate ids; real-simulator tests establish the data behavior.
+
+**Tests:** `test_id_forwarding.do`, `test_id_preflight.do`, `test_id_failures.do`, `test_id_template.do`, `test_id_fakepreload.do`.
+
+### G5. Help prose and independent infrastructure
+
+**Question:** How should help completeness be tested without prescribing exact English sentences, and can the committed isolation harness be reused?
+
+**Assumption:** New help smoke checks strip SMCL and look for the option, its survey-id/question meaning, distinct ids, enumerator interviews without overlap, starts within working hours, one village a day, and extension beyond `fieldworkDays` when interviews do not fit, with a warning. Broad English alternatives are accepted, but semantic review remains necessary and equivalent vocabulary may require extending the checker. No exact heading or sentence is prescribed. Positive and per-clause omission tests exercise the oracle independently. The committed launcher/helpers are reused unchanged. A small new Java adapter supports the valueless fake-attachments flag while delegating ordinary report production to the existing test double and recording the original arguments. Build outputs and additional logs live under `.codex-runs/`; the required unchanged runner writes its own logs under `target/stata-tests/`. No production implementation or help text was read to derive expectations; the help artifact is read only by the automated checks. Existing tests and fixtures remain untouched.
+
+**Tests:** `test_id_help_option.do`, `test_id_help_plan.do`, `id-help-check.do`, `fixtures/IdTestSupport.java`, `build-id-fixtures.ps1`; all new `test_id_*.do` files.

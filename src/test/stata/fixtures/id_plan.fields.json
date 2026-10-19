@@ -1,0 +1,8 @@
+{"form_id":"id_plan","title":"Id plan","version":"1","fields":[
+  {"name":"starttime","type":"start","xpath":"/data/starttime","row":2},
+  {"name":"endtime","type":"end","xpath":"/data/endtime","row":3},
+  {"name":"username","type":"username","xpath":"/data/username","row":4},
+  {"name":"survey_id","type":"integer","xpath":"/data/survey_id","row":5},
+  {"name":"config_id","type":"integer","xpath":"/data/config_id","row":6},
+  {"name":"gps","type":"geopoint","xpath":"/data/gps","row":7}
+]}

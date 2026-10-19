@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Id plan</h:title><model>
+    <instance><data id="id_plan" version="1"><starttime/><endtime/><username/><survey_id/><config_id/><gps/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/starttime" type="dateTime" jr:preload="timestamp" jr:preloadParams="start"/>
+    <bind nodeset="/data/endtime" type="dateTime" jr:preload="timestamp" jr:preloadParams="end"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/survey_id" type="int"/>
+    <bind nodeset="/data/config_id" type="int"/>
+    <bind nodeset="/data/gps" type="geopoint" required="true()"/>
+    <bind nodeset="/data/meta/instanceID" type="string" readonly="true()" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/survey_id"><label>Survey id</label></input>
+    <input ref="/data/config_id"><label>Configured id</label></input>
+    <input ref="/data/gps"><label>Location</label></input>
+  </h:body>
+</h:html>

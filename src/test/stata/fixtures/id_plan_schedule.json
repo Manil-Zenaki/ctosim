@@ -1,0 +1,9 @@
+{
+  "seed": 27017,
+  "submissions": 40,
+  "start": "2026-01-05T08:00:00",
+  "timeZone": "UTC",
+  "enumerators": 2,
+  "fieldworkDays": 30,
+  "missingRate": 0
+}

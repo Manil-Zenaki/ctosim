@@ -1,0 +1,12 @@
+{
+  "seed": 27017,
+  "submissions": 40,
+  "start": "2026-01-05T08:00:00",
+  "timeZone": "UTC",
+  "enumerators": 2,
+  "fieldworkDays": 30,
+  "missingRate": 0,
+  "id": "config_id",
+  "integerRange": {"min": 1001, "max": 1100},
+  "fields": {"survey_id": {"missingRate": 1}, "config_id": {"missingRate": 1}}
+}
