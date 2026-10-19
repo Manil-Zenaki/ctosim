@@ -1,0 +1,10 @@
+code,label,region,active
+A01,Alpha,north,yes
+B02,Beta,south,yes
+É03,Écho,north,no
+0007,Leading zeros,north,yes
+A01,Duplicate,north,yes
+99,Special,north,yes
+-99,Refused,south,no
+8,Also static,south,yes
+,Empty value,north,yes

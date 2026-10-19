@@ -229,3 +229,144 @@ The test sources have **71 test methods**, expanding to the 135 parameterized
 cases above. No commit was made. The requested Maven command remains blocked
 by the environment; the supplementary compiler/JUnit results do not claim a
 successful Maven build.
+
+## Amendment 1 additions
+
+The new tests are in `FieldworkAmendment1QuotaTest` and
+`FieldworkAmendment1SearchIdTest`, with `FieldworkAmendment1SearchSupport`
+and four CSV fixtures under `src/test/resources/ctosim/fieldwork-plan/amendment1/`.
+Existing test files and fixtures are unchanged. No production source was read
+or changed; no public API stub inspection was necessary.
+
+### 14. Previously committed quota expectations
+
+**Question:** Should existing tests for the old `ceil(N / (E * D))` quota be
+updated now that Amendment 1 explicitly replaces it?
+
+**Assumption:** No, following this run's instruction to keep committed tests
+and add new files/classes only. The amendment is the oracle for the new tests;
+some old schedule assertions will conflict with a correct new implementation.
+
+**Tests:** All of `FieldworkAmendment1QuotaTest`. This is a known conflict in
+the retained tests, not a reason to preserve the old quota in production.
+
+### 15. Numeric ranges on search select questions
+
+**Question:** Amendment 1 excludes an override with a range from its search
+fallback, but the original survey-ID rules define a range pool only for an
+integer question. What pool should a range-only override on a `select_one`
+question produce, especially when its bind is numeric?
+
+**Assumption:** Leave this unspecified. Tests cover absent overrides,
+weights/missingRate-only overrides, fixed values and texts. They do not assert
+an ID pool for a range-only select override, nor infer integer-question
+semantics from a numeric select bind. Conditional rules and expressions that
+change the pool are also not given an additional allocation oracle here.
+
+**Tests:** `aFixedLoadedValueTakesPrecedenceOverSearchAndStaticChoices`,
+`explicitTextsTakePrecedenceOverTheSearchPoolAndRetainExplicitSpecialCodes`,
+and `weightsAndMissingRateDoNotSuppressPossibleSearchIds` cover the
+unambiguous precedence cases; no test depends on a range-only interpretation.
+
+### 16. Form-opening choices versus the choices at answer time
+
+**Question:** What should be checked when an earlier answer changes a search
+argument, so an allocated opening-time ID is no longer offered at the question?
+
+**Assumption:** Amendment 1 explicitly fixes the allocation pool at opening,
+before answers. Empty instance values and literal defaults are therefore used
+for that pool, even when an earlier question has a configured fixed answer.
+The unchanged visit-ID rejection/fallback contract may change the stored
+answer; these tests assert the visits' IDs, not equality with that later
+answer. Repeat-specific contexts and opening actions/calculations are not
+assigned new semantics. Repeating walkAll must use a fresh opening state.
+
+**Tests:** `idPoolUsesBlankOrDefaultValuesBeforeAnEarlierQuestionIsAnswered`
+(blank and nonblank defaults) and
+`sourceFileExpressionIsAlsoEvaluatedBeforeEarlierAnswers`.
+
+### 17. Deduplication and special values across sources
+
+**Question:** Does an ID present in both the attached file and the static
+choices count once, and do configured special values apply to both sources?
+
+**Assumption:** Yes: the existing clarification says K counts distinct
+nonempty values, and Amendment 1 excludes configured special values from the
+combined offered list. Explicit value/texts overrides retain their established
+precedence, including explicitly allowed special codes. Placeholder labels
+are never IDs, and numeric-looking strings such as `0007` retain their text.
+
+**Tests:** `loadedAndStaticDuplicatesCountAsOnePossibleId`,
+`attachedValuesAndStaticChoicesReplaceThePlaceholderAndCycleWithoutDuplicates`,
+`configuredSpecialValuesAreRemovedFromBothLoadedAndStaticChoices`,
+`clearingSpecialValuesRestoresCodesFromTheFileAndStaticList`, and
+`explicitTextsTakePrecedenceOverTheSearchPoolAndRetainExplicitSpecialCodes`.
+
+### 18. Unreadable attachments and warning ownership
+
+**Question:** Which diagnostics belong to the plan when loading a search list
+fails, and must tests force operating-system permission errors?
+
+**Assumption:** Use portable missing-file and missing-value-column cases from
+spec 07 Amendment 3. Both give an empty loaded list and retain static choices.
+A header-only file and a no-match search are also empty lists, but are not
+read errors. Only the specified exhaustion/no-pool warnings are asserted on
+the plan; search diagnostics belong to the submission under the incorporated
+walker contract. No exact diagnostic wording or OS permission setup is required.
+
+**Tests:** `anUnreadableSearchFallsBackToStaticChoicesOnBothSidesOfThePlaceholder`,
+`noUsableLoadedOrStaticChoicesLeavesNullVisitIdsAndOnePlanWarning`,
+`readableHeaderOnlyFileLeavesStaticChoicesAsTheIdPool`,
+`noMatchingRowsWithoutStaticChoicesGivesAnEmptyPool`, and
+`fixedStaticValueStillWorksWhenTheAttachmentIsMissing`.
+
+### 19. Observable scheduling and search-list order
+
+**Question:** How can exact scheduling boundaries and shuffled pools be checked
+without prescribing the random implementation?
+
+**Assumption:** One-question forms with a 60-second minimum have exactly
+60-second interviews under spec 07. Quotas up to six always fit within the
+nine-hour window even with maximum opening/travel draws. A five-hour interview
+always permits exactly two starts per day, including with quota 1000. The
+closing-boundary test obtains the travel draw through the public plan, then
+changes only the form duration, as the confirmed number-only minute rule
+permits. ID tests compare pool membership, distinctness, periodicity, replay
+and prefix stability; they impose no exact shuffle or file-order permutation.
+
+**Tests:** `FieldworkAmendment1QuotaTest`, `searchPoolExhaustionWarnsExactlyWhenDistinctKIsLessThanN`,
+`differentSeedsCanChangeTheSearchIdPermutation`, and
+`extendingNPreservesTheSeededSearchIdPrefix`. Search filtering and itemset
+choices use the explicitly incorporated spec 07 Amendment 3 contract,
+including bypassing choice filters.
+
+### Amendment 1 build verification
+
+The requested `.\mvnw.cmd -o -q test-compile` was run again after the final
+test edits and exited 1. Maven reaches `testCompile` but the compiler fails
+with `java.nio.file.AccessDeniedException` for the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. An `-e` diagnostic run
+confirmed the ZIP-filesystem / `WindowsPath.toRealPath` failure. Logs are
+`.codex-runs/fieldwork-amendment1/test-compile.log` and
+`test-compile-detail.log`. No dependencies were installed or copied, drives
+mapped, or production/build settings changed.
+
+As a supplementary source check, the existing diagnostic compiler driver
+was adapted under `.codex-runs/fieldwork-amendment1/`. It compiled all three
+new Java files and their three existing test-support dependencies against
+the existing compiled public APIs and cached JUnit 5 dependencies, with
+`--release 17`. Result: `compiled=true`; log: `memory-compile.log`. This
+checks the test sources without opening production sources, and does not
+claim the requested Maven build succeeded.
+
+The supplementary JUnit run discovered and executed **70 test cases** from
+the two new test classes: **9 passed, 61 failed**, with no skipped/aborted
+tests or failed containers. Of the failures, 23 reject the unimplemented
+`interviewsPerDay` key; 38 are assertion failures consistent with the old
+quota or placeholder-based search ID pool. There were no form-loading
+exceptions. Assertions after an earlier failure remain unexercised until
+the amendment is implemented. Log: `.codex-runs/fieldwork-amendment1/junit.log`.
+
+Only this questions file, the three new Java files and the four new CSV
+fixtures are task changes. Previously committed tests are preserved, and no
+commit was made.
