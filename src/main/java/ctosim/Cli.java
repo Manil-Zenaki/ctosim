@@ -32,12 +32,15 @@ public final class Cli {
             "      --server NAME       server name in attachment URLs (default: example)",
             "      --python EXE        Python used to convert an XLSForm (default: $CTOSIM_PYTHON or python)",
             "      --fake-attachments  invent the attached files (preload) the form reads but the media lacks",
+            "      --id NAME           question holding the survey id: each submission gets its own value",
             "  -h, --help              show this help");
 
     static final String REPORT = "run-report.txt";
     private static final Set<String> SIMULATED_FUNCTIONS = Set.of("duration", "username");
     private static final Set<String> OPTIONS = Set.of("-c", "--config", "-n", "--submissions", "-s", "--seed",
-            "-o", "--output", "-m", "--media", "--server", "--python");
+            "-o", "--output", "-m", "--media", "--server", "--python", "--id");
+    /** White space that a name must not start or end with (spec 04, Amendment 4). */
+    private static final java.util.regex.Pattern EDGE_SPACE = java.util.regex.Pattern.compile("^[ \t\r\n\f]|[ \t\r\n\f]$");
     private static final DateTimeFormatter ISO = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss", Locale.ROOT);
 
     private Cli() {
@@ -58,7 +61,7 @@ public final class Cli {
     }
 
     private record Options(Path form, boolean xlsx, Path config, Integer submissions, Long seed, Path output,
-                           Path media, String server, String python, boolean fakeAttachments) { }
+                           Path media, String server, String python, boolean fakeAttachments, String id) { }
 
     /** Where fictitious attached files are written, in the output directory (spec 10, Amendment 2). */
     static final String FAKE_DIRECTORY = "attachments";
@@ -116,6 +119,7 @@ public final class Cli {
         String server = "example";
         String python = null;
         boolean fake = false;
+        String id = null;
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             if (arg.equals("--fake-attachments")) {
@@ -138,6 +142,16 @@ public final class Cli {
                     case "-m", "--media" -> media = value;
                     case "--server" -> server = value;
                     case "--python" -> python = value;
+                    case "--id" -> {
+                        if (id != null) {
+                            throw new UsageException("option --id is given twice");
+                        }
+                        if (value.isEmpty() || EDGE_SPACE.matcher(value).find()) {
+                            throw new UsageException("--id must be a question name without white space at its ends, not '"
+                                    + value + "'");
+                        }
+                        id = value;
+                    }
                     default -> throw new UsageException("unknown option " + arg);
                 }
             } else if (form == null) {
@@ -185,7 +199,7 @@ public final class Cli {
             python = env == null || env.isEmpty() ? "python" : env;
         }
         return new Options(formPath, xlsx, config == null ? null : Path.of(config), n, s, out, mediaDir, server, python,
-                fake);
+                fake, id);
     }
 
     // ---- the run ----
@@ -204,6 +218,9 @@ public final class Cli {
         }
         if (o.seed() != null) {
             config = config.withSeed(o.seed());
+        }
+        if (o.id() != null) {
+            config = config.withId(o.id());
         }
         if (!Files.isRegularFile(o.form())) {
             throw new RunException(o.form() + ": the form file does not exist");
@@ -261,14 +278,13 @@ public final class Cli {
             }
             warnings.add("function " + name + "() is not implemented by the simulator; it returns a fixed value");
         }
-        FormWalker walker = new FormWalker(form, config);
-        warnings.addAll(walker.configWarnings());
-        List<Submission> submissions = new ArrayList<>();
-        for (int k = 1; k <= config.submissions(); k++) {
-            Submission s = walker.walk(k);
-            submissions.add(s);
+        Fieldwork fieldwork = new Fieldwork(form, config); // spec 10, Amendment 4
+        warnings.addAll(fieldwork.configWarnings());
+        List<Submission> submissions = fieldwork.walkAll();
+        for (Submission s : submissions) {
             warnings.addAll(s.warnings());
         }
+        warnings.addAll(fieldwork.warnings());
 
         SurveyCtoExporter exporter;
         Map<String, String> longFiles;
