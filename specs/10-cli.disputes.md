@@ -140,3 +140,27 @@ remains a harness safeguard rather than a specification requirement.
 The diagnostic compilation and execution are supplementary validation,
 not a successful Maven build. No production source was read or modified,
 no dependency or build configuration was changed, and no commit was made.
+
+## Dispute 4: tests that rebuild a run with `FormWalker.walk(k)` (Amendment 4)
+
+Amendment 4 makes a run simulate through the fieldwork plan:
+`new Fieldwork(form, config).walkAll()` instead of `FormWalker.walk(k)`
+for each `k`, so the submissions now have planned enumerators, start
+times and locations. Four earlier tests build their expected exports by
+calling `FormWalker.walk(n)` for `n` = 1 to N, and compare them byte for
+byte with the run's:
+
+- `CliRunTest.exportedBytesEqualWalkingSubmissionsOneThroughNWithEffectiveConfiguration`
+  (line 196; its oracle is lines 192-194);
+- `CliAmendment2PipelineTest.injectingKeysPreservesOtherSettingsAndExplicitFieldsExactly` (line 145),
+  `integerKeySuggestionsUseOneThroughNRangeAndLookupsSucceed` (line 176) and
+  `merelyNamingAFieldInConfigurationSuppressesSuggestedTexts` (line 131),
+  whose oracle is `CliAmendment2Support` lines 113-115.
+
+Each fails on the first differing line of the wide export (the
+`SubmissionDate`, `starttime`, `endtime` and enumerator columns). The
+Amendment 4 tests already compare runs with `Fieldwork.walkAll()` on the
+same inputs (assumption 31), and they pass.
+
+Requested: build these oracles with `new Fieldwork(form,
+config).walkAll()`, keeping what each test checks.
