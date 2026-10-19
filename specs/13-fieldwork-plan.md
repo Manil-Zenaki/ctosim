@@ -231,3 +231,19 @@ the choices loaded from the attached file and the static choices,
 without the list's placeholder and without the special values of the
 configuration. When the file cannot be read, they are the static
 choices alone.
+
+Clarification (Amendment 1): assumptions 14–19 of the questions file are
+reviewed one by one and confirmed, with one decision on the point left
+open (15): a range defines possible values only for an integer question,
+so on a `select_one` question whose choices are loaded by `search()` a
+range in its override does not count, and the loaded and static choices
+apply. Also confirmed: the earlier tests of the quota derived from
+`fieldworkDays` are superseded and go through a dispute (14); the pool is
+taken when the form is opened, with blank or default values, and each
+`walkAll()` starts from a fresh form (16); a value found in the file and
+among the static choices counts once, and special values are removed
+from both, but not from an explicit `value` or `texts` (17); a missing
+file or column gives the static choices, an empty file or no matching
+row gives none, and search diagnostics belong to the submissions (18);
+schedules are checked through their consequences, without a prescribed
+random sequence (19).

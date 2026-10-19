@@ -373,3 +373,9 @@ public int interviewsPerDay();   // 4 by default
 - The meaning of `fieldworkDays` in the table of top-level keys becomes:
   the expected length of fieldwork; the plan warns when the interviews
   take longer (spec 13).
+
+Clarification (Amendment 5): assumptions 34–37 of the questions file are
+reviewed one by one and confirmed: the key follows the integer rules of
+`enumerators` (34); the configuration imposes no capacity check, which
+belongs to the plan (35); only the top-level key is new (36); the
+existing diagnostics, input rules and copies apply (37).

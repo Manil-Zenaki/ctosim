@@ -344,3 +344,13 @@ not put there. Everything not mentioned here is unchanged.
   within working hours, one village a day per enumerator, distinct survey
   ids when `id()` is given) and that the fieldwork may last longer than
   `fieldworkDays` when the interviews do not fit, with a warning.
+
+Clarification (Amendment 7): assumptions G1–G5 of the questions file are
+reviewed one by one and confirmed: `id()` takes one non-empty word, kept
+exactly and passed as one `--id` argument, with no Stata name rule (G1);
+it replaces the configuration's `id`, and distinct ids are qualified by
+spec 13's warnings when the possible values run out (G2); the plan is
+checked through the exported times, usernames and GPS values, with or
+without `id()` (G3); nothing else in the command changes (G4); the help
+is checked for the option and each guarantee of the plan, without fixed
+wording (G5).

@@ -329,3 +329,13 @@ returned submissions as before.
 - With `--fake-attachments`, the key answers (Amendment 2) are set before
   the plan is built, so that a key question named by the id takes its
   possible values from them (spec 13, "Survey ids").
+
+Clarification (Amendment 4): assumptions 30–34 of the questions file are
+reviewed one by one and confirmed: `--id` follows the name rule of spec
+04 Amendment 4 and is checked before any input is read (30); the run is
+compared with the public `Fieldwork` API on the same inputs (31); `--id`
+changes nothing else, and the plan's configuration warnings take the
+place of the walker's while its other warnings come last (32); key
+answers of Amendment 2 are set before the plan is built, and an assigned
+id is never blanked by the missing rate (33); runs are deterministic
+across directories and time zones (34).
