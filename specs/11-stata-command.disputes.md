@@ -376,3 +376,23 @@ expectations were changed. Runner logs are under `target/stata-tests/`.
 `git diff --check` passed. Only the three disputed do-files and this disputes
 file were changed. No production implementation was read or modified, and
 no commit was made.
+
+## Dispute 6: the name Stata gives the GPS columns (Amendment 7)
+
+`test_id_real_schedule.do` (lines 17-18 and the loop below them) reads
+the geopoint `gps` of `fixtures/id_plan.xml` as the variables
+`gps_latitude` and `gps_longitude`, and fails with `variable
+gps_latitude not found` (r(111)) after `ctosim` has run and loaded the
+data; every assertion before it passes, including `a7_plan_times`.
+
+Spec 08 writes a geopoint's columns as SurveyCTO does: `gps-Latitude`,
+`gps-Longitude`, `gps-Altitude`, `gps-Accuracy` (the run's wide CSV has
+them). Without `dofile()`, the command loads that CSV with `import
+delimited, varnames(1)` (the step "Load the data" of spec 11), and Stata
+turns a column name that is not a valid Stata name into one by dropping
+the characters it cannot use: `gps-Latitude` becomes `gpslatitude`,
+`gps-Longitude` `gpslongitude`. Nothing in specs 08, 11 or 13 renames
+them `gps_latitude`.
+
+Requested: read `gpslatitude` and `gpslongitude` (or rename them in the
+test before use), keeping the distance checks unchanged.
