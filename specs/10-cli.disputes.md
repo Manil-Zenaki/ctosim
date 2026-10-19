@@ -141,7 +141,7 @@ The diagnostic compilation and execution are supplementary validation,
 not a successful Maven build. No production source was read or modified,
 no dependency or build configuration was changed, and no commit was made.
 
-## Dispute 4: tests that rebuild a run with `FormWalker.walk(k)` (Amendment 4)
+## Dispute 6: tests that rebuild a run with `FormWalker.walk(k)` (Amendment 4)
 
 Amendment 4 makes a run simulate through the fieldwork plan:
 `new Fieldwork(form, config).walkAll()` instead of `FormWalker.walk(k)`
