@@ -40,7 +40,7 @@ final class ConfigParser {
 
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
             "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
-            "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id");
+            "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
             "distribution", "expr", "area", "when");
@@ -112,10 +112,13 @@ final class ConfigParser {
         Area area = root.has("area") ? area(root.get("area"), "area") : null;
         Map<String, List<String>> pools = root.has("textPools") ? textPools(root.get("textPools")) : Map.of();
         String id = root.has("id") ? surveyId(root.get("id")) : null;
+        int interviewsPerDay = root.has("interviewsPerDay")
+                ? boundedInt(root.get("interviewsPerDay"), "interviewsPerDay", 1, SimulationConfig.MAX_INTERVIEWS_PER_DAY)
+                : d.interviewsPerDay();
 
         return new SimulationConfig(seed, submissions, start, days, missing, special, specialValues,
                 repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations,
-                profiles, area, pools, id);
+                profiles, area, pools, id, interviewsPerDay);
     }
 
     // --- Sections -------------------------------------------------------------------

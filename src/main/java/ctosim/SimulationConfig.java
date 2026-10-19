@@ -23,6 +23,8 @@ public final class SimulationConfig {
 
     static final int MAX_SUBMISSIONS = 1_000_000;
     static final int MAX_ENUMERATORS = 10_000;
+    static final int MAX_INTERVIEWS_PER_DAY = 1_000;
+    static final int DEFAULT_INTERVIEWS_PER_DAY = 4;
 
     static final List<String> DEFAULT_SPECIAL_VALUES = List.of(
             "-99", "-98", "-97", "-96", "-88", "-77", "-999", "-888", "-777", "97", "98", "99", "999");
@@ -47,6 +49,7 @@ public final class SimulationConfig {
     private final Area area;
     private final Map<String, List<String>> textPools;
     private final String id;
+    private final int interviewsPerDay;
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
@@ -63,15 +66,17 @@ public final class SimulationConfig {
                      Map<String, Double> profiles, Area area, Map<String, List<String>> textPools) {
         this(seed, submissions, start, fieldworkDays, missingRate, specialRate, specialValues, repeatMin, repeatMax,
                 integerRange, decimalRange, fields, timeZone, enumerators, speedViolationRate, profiles, area, textPools,
-                null);
+                null, DEFAULT_INTERVIEWS_PER_DAY);
     }
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
                      NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
                      ZoneId timeZone, int enumerators, double speedViolationRate,
-                     Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id) {
+                     Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id,
+                     int interviewsPerDay) {
         this.id = id;
+        this.interviewsPerDay = interviewsPerDay;
         this.profiles = Collections.unmodifiableMap(new java.util.LinkedHashMap<>(profiles));
         this.area = area;
         java.util.Map<String, List<String>> pools = new java.util.LinkedHashMap<>();
@@ -202,7 +207,7 @@ public final class SimulationConfig {
 
     /** Most interviews an enumerator does in a day. See specs/04-simulation-config.md, Amendment 5. */
     public int interviewsPerDay() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return interviewsPerDay;
     }
 
     /** The question holding the survey id. See specs/04-simulation-config.md, Amendment 4. */
@@ -214,7 +219,7 @@ public final class SimulationConfig {
     SimulationConfig withId(String id) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay);
     }
 
     /** Text pools in file order; empty when not set. */
@@ -235,13 +240,13 @@ public final class SimulationConfig {
         more.put(name, override);
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, more,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay);
     }
 
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
@@ -250,6 +255,6 @@ public final class SimulationConfig {
         }
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay);
     }
 }
