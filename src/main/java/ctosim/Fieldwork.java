@@ -56,9 +56,11 @@ public final class Fieldwork {
         this.idType = idQuestion == null ? Constants.DATATYPE_NULL : dataType(def, idQuestion);
         this.configWarnings = List.copyOf(configured);
         this.definition = def;
+        this.form = form;
     }
 
     private final FormDef definition;
+    private final LoadedForm form;
 
     public List<String> configWarnings() {
         return configWarnings;
@@ -68,7 +70,7 @@ public final class Fieldwork {
         int n = config.submissions();
         int e = config.enumerators();
         int days = config.fieldworkDays();
-        long quota = Math.max(1, ((long) n + (long) e * days - 1) / ((long) e * days));
+        long quota = config.interviewsPerDay(); // spec 13, Amendment 1
         List<String> planWarnings = new ArrayList<>();
         List<String> ids = surveyIds(n, planWarnings);
 
@@ -233,10 +235,16 @@ public final class Fieldwork {
             return distinct(override.texts());
         }
         boolean integer = idType == Constants.DATATYPE_INTEGER || idType == Constants.DATATYPE_LONG;
+        boolean select = idQuestion != null && idQuestion.getControlType() == Constants.CONTROL_SELECT_ONE;
+        List<String> searched = select ? searchChoices() : null;
+        if (searched != null) { // a range does not count for a search() list (spec 13, Amendment 1)
+            searched.removeAll(config.specialValues());
+            return distinct(searched);
+        }
         if (integer && override != null && override.range().orElse(null) instanceof NumericRange) {
             return null;
         }
-        if (idQuestion != null && idQuestion.getControlType() == Constants.CONTROL_SELECT_ONE) {
+        if (select) {
             List<String> choices = new ArrayList<>(SurveyCtoExporter.choiceValues(definition, idQuestion));
             choices.removeAll(config.specialValues());
             return distinct(choices);
@@ -245,6 +253,30 @@ public final class Fieldwork {
             return null;
         }
         return List.of();
+    }
+
+    /**
+     * The choices the id question offers when the form is opened, when they are loaded by search():
+     * the file's and the static ones; null when the question has no search() appearance.
+     */
+    private List<String> searchChoices() {
+        String appearance = idQuestion.getAppearanceAttr();
+        if (appearance == null) {
+            return null;
+        }
+        FormDef opened = form.newEntryController().getModel().getForm();
+        TreeReference ref = (TreeReference) idQuestion.getBind().getReference();
+        List<String> formChoices = SurveyCtoExporter.choiceValues(opened, idQuestion);
+        SearchChoices.Result result = SearchChoices.load(appearance, formChoices, expression -> {
+            try {
+                Object value = org.javarosa.xpath.XPathParseTool.parseXPath(expression).eval(opened.getMainInstance(),
+                        new org.javarosa.core.model.condition.EvaluationContext(opened.getEvaluationContext(), ref));
+                return org.javarosa.xpath.expr.XPathFuncExpr.toString(org.javarosa.xpath.expr.XPathFuncExpr.unpack(value));
+            } catch (org.javarosa.xpath.parser.XPathSyntaxException e) {
+                throw new IllegalArgumentException("'" + expression + "' does not parse", e);
+            }
+        }, form.attachments());
+        return result == null ? null : new ArrayList<>(result.choices());
     }
 
     private NumericRange integerRange() {
