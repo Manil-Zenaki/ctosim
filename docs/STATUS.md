@@ -1,6 +1,6 @@
 # Project status and hand-over notes
 
-Last updated: 2026-10-17. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
+Last updated: 2026-10-23. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
 `docs/ARCHITECTURE.md` first; this file records where the work stands and
 what was learnt along the way.
 
@@ -160,9 +160,11 @@ accepted. End-to-end check with the Stata command on the IPA household
 form (100 submissions, `fakepreload id(hhid)`): 100 distinct ids,
 `ipacheckids` 0 duplicate, 0 overlap, 0 impossible trip, 0 start outside
 working hours, 4 interviews per enumerator a day over 5 days. Suites:
-Java 8805 (1 case under spec 13 Dispute 3, waiting for Codex), Stata 82
-green. **Next**: Codex on spec 13 Dispute 3, then phase 2 (problems
-injected on purpose, with an answer key).
+Java 8805 and Stata 82, all green (spec 13 Dispute 3 accepted).
+**Next**: phase 2, problems injected on purpose with an answer key
+(faulty enumerators, duplicate ids, outliers within constraints,
+abnormal durations, impossible travel; named after ipacheck's checks),
+to be designed with the owner before any spec.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
