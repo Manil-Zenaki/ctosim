@@ -135,7 +135,15 @@ public final class FormWalker {
     static final class IdHistory {
         final Set<String> received = new HashSet<>();
         int reused;
+        /** The upper questions of the id's cascade, by name (spec 13, Amendment 3). */
+        final Map<String, Upper> uppers = new HashMap<>();
     }
+
+    /**
+     * An upper question of the id's cascade: the question below it, whose search() call
+     * ({@code appearance}, with its form choices) has the argument {@code reference} naming it.
+     */
+    record Upper(String below, boolean belowIsId, String appearance, List<String> formChoices, String reference) { }
 
     /** Fills the form for one visit of the fieldwork plan. See specs/13-fieldwork-plan.md. */
     public Submission walk(int number, Visit visit) {
@@ -606,6 +614,9 @@ public final class FormWalker {
                     && giveUnusedId(prompt, ref, name, path)) {
                 return;
             }
+            if (history != null && history.uppers.containsKey(name) && steer(prompt, ref, name, path)) {
+                return;
+            }
             boolean overridden = config.field(name).isPresent();
             if (prompt.getAnswerValue() != null && !overridden && satisfiesConstraint(ref, prompt)) {
                 return; // keep a default or a value set by a calculation or an action
@@ -712,6 +723,87 @@ public final class FormWalker {
             answered++;
             handled(ref, minimumSeconds(prompt));
             return true;
+        }
+
+        /**
+         * Answers an upper question of the id's cascade with a viable choice (spec 13, Amendment 3);
+         * false when it is not steered: an override that fixes it, a rule that applies, or no viable choice.
+         */
+        private boolean steer(FormEntryPrompt prompt, TreeReference ref, String name, String path) {
+            QuestionKind kind = kind(prompt);
+            FieldOverride override = config.field(name).orElse(null);
+            if (kind != QuestionKind.SELECT_ONE || (override != null && (override.value().isPresent()
+                    || !override.texts().isEmpty() || override.expression().isPresent()))) {
+                return false;
+            }
+            if (override != null) {
+                for (OverrideRule rule : override.rules()) {
+                    Object value = configExpression(rule.condition(), name, path, ref);
+                    if (value != null && truth(value)) {
+                        return false;
+                    }
+                }
+            }
+            Prepared prepared = prepare(prompt, ref, name, path, kind, true);
+            List<String> viable = new ArrayList<>();
+            for (String choice : new java.util.LinkedHashSet<>(prepared.question().choices())) {
+                if (!choice.isEmpty() && viable(name, choice, ref)) {
+                    viable.add(choice);
+                }
+            }
+            if (viable.isEmpty()) {
+                return false;
+            }
+            SplittableRandom random = new SplittableRandom(seed(config.seed(), number, 15));
+            String value = null;
+            double total = 0;
+            if (override != null) {
+                for (String c : viable) {
+                    total += override.weights().getOrDefault(c, 0.0);
+                }
+            }
+            if (total > 0) {
+                double target = random.nextDouble() * total;
+                for (String c : viable) {
+                    double w = override.weights().getOrDefault(c, 0.0);
+                    if (w > 0) {
+                        value = c;
+                        target -= w;
+                        if (target < 0) {
+                            break;
+                        }
+                    }
+                }
+            } else {
+                value = viable.get(random.nextInt(viable.size()));
+            }
+            IAnswerData data = prepared.loaded() == null ? convert(prompt, value) : convertLoaded(kind, value, prepared.loaded());
+            if (data == null || session.answerQuestion(data, true) != FormEntryController.ANSWER_OK) {
+                return false;
+            }
+            answered++;
+            handled(ref, minimumSeconds(prompt));
+            return true;
+        }
+
+        /** Whether the upper question {@code name} answered {@code choice} still leads to an id not yet received. */
+        private boolean viable(String name, String choice, TreeReference ref) {
+            Upper upper = history.uppers.get(name);
+            SearchChoices.Result below = SearchChoices.load(upper.appearance(), upper.formChoices(),
+                    expression -> expression.strip().equals(upper.reference().strip()) ? choice : evaluate(expression, ref),
+                    form.attachments());
+            if (below == null) {
+                return false;
+            }
+            for (String c : new java.util.LinkedHashSet<>(below.choices())) {
+                if (c.isEmpty() || config.specialValues().contains(c)) {
+                    continue;
+                }
+                if (upper.belowIsId() ? !history.received.contains(c) : viable(upper.below(), c, ref)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /** GPS answers of a visit are drawn around its household, unless the field has its own area (spec 13). */

@@ -75,6 +75,9 @@ public final class Fieldwork {
         boolean atQuestion = idAtQuestion();
         List<String> ids = atQuestion ? null : surveyIds(n, planWarnings);
         FormWalker.IdHistory history = atQuestion ? new FormWalker.IdHistory() : null;
+        if (history != null) {
+            cascade(history);
+        }
 
         LocalDateTime[] lastEnd = new LocalDateTime[e + 1];
         int[] day = new int[e + 1];
@@ -238,6 +241,86 @@ public final class Fieldwork {
             return false;
         }
         return (args.size() >= 4 && !isLiteral(args.get(3))) || (args.size() >= 6 && !isLiteral(args.get(5)));
+    }
+
+    /** Finds the upper questions of the id's cascade (spec 13, Amendment 3). */
+    private void cascade(FormWalker.IdHistory history) {
+        QuestionDef below = idQuestion;
+        Set<String> seen = new HashSet<>();
+        while (below != null) {
+            String belowName = ((TreeReference) below.getBind().getReference()).getNameLast();
+            if (!seen.add(belowName)) {
+                return; // a cycle
+            }
+            List<String> args = SearchChoices.searchArguments(below.getAppearanceAttr() == null ? "" : below.getAppearanceAttr());
+            if (args == null) {
+                return;
+            }
+            QuestionDef upper = null;
+            String reference = null;
+            for (int position : new int[] {3, 5}) {
+                if (args.size() > position && upper == null) {
+                    upper = searchSelect(args.get(position), below);
+                    reference = args.get(position);
+                }
+            }
+            if (upper == null) {
+                return;
+            }
+            String upperName = ((TreeReference) upper.getBind().getReference()).getNameLast();
+            history.uppers.put(upperName, new FormWalker.Upper(belowName, below == idQuestion, below.getAppearanceAttr(),
+                    SurveyCtoExporter.choiceValues(definition, below), reference));
+            below = upper;
+        }
+    }
+
+    /** The select_one loaded by search() that {@code arg} names by a single reference, or null. */
+    private QuestionDef searchSelect(String arg, QuestionDef context) {
+        org.javarosa.xpath.expr.XPathExpression parsed;
+        try {
+            parsed = org.javarosa.xpath.XPathParseTool.parseXPath(arg);
+        } catch (org.javarosa.xpath.parser.XPathSyntaxException e) {
+            return null;
+        }
+        if (!(parsed instanceof org.javarosa.xpath.expr.XPathPathExpr path)
+                || path.init_context == org.javarosa.xpath.expr.XPathPathExpr.INIT_CONTEXT_EXPR) {
+            return null;
+        }
+        TreeReference ref;
+        try {
+            ref = path.getReference();
+            if (!ref.isAbsolute()) {
+                ref = ref.anchor((TreeReference) context.getBind().getReference());
+            }
+        } catch (RuntimeException e) {
+            return null;
+        }
+        if (ref == null) {
+            return null;
+        }
+        String generic = ref.genericize().toString(false);
+        QuestionDef found = questionAt(definition, generic);
+        if (found == null || found.getControlType() != Constants.CONTROL_SELECT_ONE || found.getAppearanceAttr() == null
+                || SearchChoices.searchArguments(found.getAppearanceAttr()) == null) {
+            return null;
+        }
+        return found;
+    }
+
+    private static QuestionDef questionAt(IFormElement element, String generic) {
+        if (element instanceof QuestionDef q && q.getBind() != null
+                && generic.equals(((TreeReference) q.getBind().getReference()).genericize().toString(false))) {
+            return q;
+        }
+        if (element.getChildren() != null) {
+            for (IFormElement child : element.getChildren()) {
+                QuestionDef found = questionAt(child, generic);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     private static boolean isLiteral(String arg) {
