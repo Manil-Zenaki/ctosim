@@ -1,0 +1,12 @@
+{
+  "id": "ménage_家庭",
+  "problems": {
+    "travel": 0.77,
+    "overlap": 0.66,
+    "offHours": 0.55,
+    "longDuration": 0.44,
+    "shortDuration": 0.33,
+    "reinterview": 0.22,
+    "resent": 0.11
+  }
+}

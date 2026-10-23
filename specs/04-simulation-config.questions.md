@@ -605,3 +605,90 @@ no production source was opened, read, searched, or changed.
   environment blocker and does not authorize changes to production code,
   dependencies, or build configuration. **Dependent tests:** Full Maven
   test compilation remains unverified. All existing tests are unchanged.
+
+## Amendment 6: injected problems
+
+Existing tests, fixtures, and questions are preserved. New coverage is in
+`ProblemRatesAmendment6Test`, `SimulationConfigProblemsParsingTest`,
+`SimulationConfigProblemsCopiesTest`, and `SimulationConfigProblemsIoTest`,
+with `SimulationConfigProblemsSupport` and `amendment-problems.json`.
+Expectations come solely from spec 04. No production source was opened,
+read, searched, or changed.
+
+38. **Must the problem rates sum to at most one, or require a form, id,
+    area, or sufficient interview capacity?**
+    - **Assumption:** No. Each rate has its own inclusive 0..1 constraint.
+      All seven may be one, independently of existing probability settings.
+      This module reads configuration without form knowledge. Tests do not
+      impose scheduling, feasibility, generation, answer-key, or statistical
+      requirements; those belong to spec 14. An all-zero object remains a
+      present setting, distinct from an omitted key or `withProblems(null)`.
+    - **Dependent tests:** `allOneRatesAreValidWithoutASumConstraint`,
+      `problemRatesAreIndependentOfOtherProbabilitiesAndFieldworkCapacity`,
+      `allRatesCanBeAtTheSameEndpointWithoutDroppingTheOptionalOrNormalizing`,
+      and absent/empty/zero parsing, loading, and copy tests.
+
+39. **Which numeric representations and precision rules apply to rates?**
+    - **Assumption:** As for earlier number-valued rates, ordinary decimal
+      and exponent forms are accepted as Java doubles without normalization
+      or fixed-decimal rounding. Either sign of zero is numerically zero;
+      no sign-bit preservation is required. Representable values just below
+      and above one exercise the boundary. Constructor validation also covers
+      NaN, infinities, and the smallest positive and negative doubles in
+      every component, since its domain is explicitly Java doubles.
+    - **Unresolved:** Exact-decimal validation when JSON numbers round onto
+      an endpoint, JSON numeric underflow, and overflowing exponents remain
+      untested, consistent with questions 7 and 19. Unquoted NaN and Infinity
+      are instead tested as invalid JSON. No constructor message or cause
+      requirement is inferred.
+    - **Dependent tests:** `acceptedRates`, `invalidRates`, their parse/load
+      consumers, the syntax-diagnostic tests, and constructor parameterized
+      tests in `ProblemRatesAmendment6Test`.
+
+40. **Does the amendment reserve the new names elsewhere in the schema?**
+    - **Assumption:** Only top-level `problems` and its seven exact member
+      names are added. Closed nested schemas still reject misplaced keys;
+      arbitrary field, profile, choice, and id names remain legal. JSON
+      escape decoding precedes key recognition and duplicate detection.
+    - **Dependent tests:** `unknownKeys`, `duplicateKeys`, their parse/load
+      consumers, escaped-key tests, and
+      `newSchemaNamesRemainLegalInArbitraryNameMappingsWithoutEnablingProblems`.
+
+41. **Do existing diagnostic and immutable-copy conventions apply, including
+    an unchanged or null problems setting?**
+    - **Assumption:** Yes. `withProblems` explicitly returns a new configuration
+      as `withSeed` does, so every call returns a distinct configuration,
+      including null-to-null, equal-rate, and same-instance assignments.
+      ProblemRates object identity itself is not prescribed. Copies retain
+      all other settings and collection immutability. `withProblems(null)`
+      clears the setting, while JSON null is a configuration error.
+      Validation errors name source and path and explain the problem without
+      prescribed wording or cause. Duplicate errors retain question 2's
+      confirmed flexibility; syntax errors require a line and retained cause.
+      UTF-8, BOM, and loaded-snapshot rules continue to apply.
+    - **Dependent tests:** All tests in `SimulationConfigProblemsCopiesTest`;
+      validation, duplicate, syntax, UTF-8/BOM, and snapshot tests in the
+      parsing and I/O classes. No tests require distinct `ProblemRates.defaults()`
+      identities, since no such requirement is stated.
+
+### Amendment 6 build verification (2026-10-23)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile`, followed by an `-e`
+  diagnostic retry. Both reached `maven-compiler-plugin:3.15.0:testCompile`
+  and failed with `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac closed
+  its archive file manager. Logs are `.codex-runs/04-problems-test-compile.log`
+  and `.codex-runs/04-problems-test-compile-detail.log`.
+- The five new Java source files and the two existing support classes they
+  use compiled successfully with Java release 17 against the actual
+  `target/classes` binaries and cached JUnit 5.11.4 API. The temporary probe
+  reads class entries in memory to avoid the archive-close failure; it does
+  not inspect implementation, copy repositories, alter permissions, or
+  install dependencies. Probe: `.codex-runs/ProblemsCompileProbe.java`;
+  result: `.codex-runs/04-problems-probe-compile.log` (`compiled=true`).
+  This verifies the new sources compile, but does not make Maven successful.
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** This is an environment
+  blocker, not a reason to change production code, dependencies, or build
+  configuration. **Dependent tests:** Full Maven test compilation remains
+  unverified. Runtime tests were not requested and were not run.
