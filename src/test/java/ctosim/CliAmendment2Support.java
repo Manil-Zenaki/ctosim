@@ -110,9 +110,7 @@ final class CliAmendment2Support {
         SimulationConfig config = SimulationConfig.parse(settings.toString(), "oracle.json")
                 .withSeed(seed).withSubmissions(count);
         LoadedForm reloaded = FormLoader.load(input.form(), media);
-        FormWalker walker = new FormWalker(reloaded, config);
-        var submissions = new ArrayList<Submission>();
-        for (int i = 1; i <= count; i++) submissions.add(walker.walk(i));
+        var submissions = new Fieldwork(reloaded, config).walkAll();
         SurveyCtoExporter exporter = new SurveyCtoExporter(FieldCatalog.load(input.catalog()), reloaded, "example");
         assertEquals(exporter.wide(submissions), Files.readString(output.resolve(exporter.wideFileName())));
         for (var entry : exporter.longFiles(submissions).entrySet())

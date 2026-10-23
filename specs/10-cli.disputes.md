@@ -164,3 +164,72 @@ same inputs (assumption 31), and they pass.
 
 Requested: build these oracles with `new Fieldwork(form,
 config).walkAll()`, keeping what each test checks.
+
+## Adjudication of Dispute 6 (2026-10-23)
+
+Accept all four oracle corrections. Amendment 4 explicitly replaces the
+CLI's independent `FormWalker.walk(k)` calls with
+`new Fieldwork(form, config).walkAll()`. Its clarification confirms the
+public plan as the comparison oracle on the same inputs (assumption 31).
+Thus the old expected submissions are no longer specified CLI behavior;
+requiring their export bytes would reject the newly required plan.
+
+- `exportedBytesEqualWalkingSubmissionsOneThroughNWithEffectiveConfiguration`:
+  replace the walker and loop with a `Fieldwork` using the same loaded
+  form and configuration with submissions 3 and seed 42. Rename the test
+  to `exportedBytesEqualFieldworkPlanWithEffectiveConfiguration`. Keep
+  all wide/long export comparisons, the server setting, and the distinct
+  instance-ID assertion.
+- `injectingKeysPreservesOtherSettingsAndExplicitFieldsExactly`: correct
+  its shared `assertPublicPipeline` oracle to call `Fieldwork.walkAll()`.
+  Preserve suggested-key injection before constructing the plan, all
+  unrelated settings and explicit fields, effective seed/count, the
+  independent media reload, all export comparisons, and the assertions
+  that the input configuration is unchanged and its settings are reported.
+- `integerKeySuggestionsUseOneThroughNRangeAndLookupsSucceed`: use that
+  same corrected oracle. Keep the 50-row attachment assertion, every
+  integer answer's `1..N` range check, successful lookup checks, and export
+  comparisons. Amendment 4 does not repeal Amendment 2's integer-key rule.
+- `merelyNamingAFieldInConfigurationSuppressesSuggestedTexts`: use that
+  same corrected oracle. Keep the independent check that exported keys
+  are nonempty and outside the generated keys, and the export comparisons.
+  The confirmed Amendment 2 rule that any existing `fields` entry blocks
+  suggested answers remains unchanged.
+
+Only the two oracle locations needed code changes. Updated the questions
+file's renamed-test reference and noted that Amendment 4 supersedes its
+earlier walker-oracle description. No new contract assumptions are needed.
+
+### Earlier disputed points: retain the adjudicated tests
+
+Dispute 1 already has the reduced-repeat fixture (10001 rows of ten
+read-only notes); keep its failure assertions and existing timeout. Spec
+10 requires status 1 for a failed walk and no report for an incomplete run,
+without specifying a runtime limit. Dispute 5 point 1 already uses the
+fictitious-file CSV adapter accepting and checking the final LF; keep it,
+since generated attachments follow spec 12, not the export CSV contract.
+Dispute 5 point 2 already checks the amended integer range and successful
+lookups; keep those assertions. Its only further change is the shared
+fieldwork oracle described above. No fixture changes are needed.
+
+### Validation
+
+- `mvnw.cmd -o -q test` stopped during test compilation. An `-e` retry
+  confirms `java.nio.file.AccessDeniedException` for the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs:
+  `.codex-runs/cli-dispute6-maven.log` and
+  `.codex-runs/cli-dispute6-maven-detail.log`.
+- The existing diagnostic compiler successfully compiled all 19
+  CLI/support sources with `--release 17` against cached binary APIs and
+  dependencies. Log: `.codex-runs/cli-dispute6-compile.log`.
+- The diagnostic JUnit launcher ran `CliRunTest`, `CliFailureTest`,
+  `CliAmendment2PipelineTest`, and `CliAmendment2ReportTest`: all 80 tests
+  passed, with none skipped or aborted and no container failures. This
+  includes all four tests in Dispute 6 and the earlier runaway, attachment
+  CSV, integer-key, and file-order checks. Log:
+  `.codex-runs/cli-dispute6-junit.log`.
+- `git diff --check` passes. Diagnostic compilation and execution are
+  supplementary validation, not a successful Maven build or full-suite run.
+
+No production source was read or modified, no dependencies or build
+configuration were changed, and no commit was made.

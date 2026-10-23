@@ -51,7 +51,7 @@ No production source was opened, searched, or changed.
    checks the exact sequence 1 through N and the effective configuration.
    **Tests:** `submissionLimitsAreAcceptedByArgumentValidation`, the XML suffix
    test, defaults test, and
-   `exportedBytesEqualWalkingSubmissionsOneThroughNWithEffectiveConfiguration`.
+   `exportedBytesEqualFieldworkPlanWithEffectiveConfiguration`.
 
 6. **Question:** Is CRLF one line break or two replacements? Must unusual
    Unicode line separators, blank converter stderr lines, and whitespace be
@@ -115,6 +115,24 @@ No production source was opened, searched, or changed.
     implementation internals is used to count constructors.
     **Tests:** The direct pipeline comparison in `CliRunTest` and warning
     collection tests in `CliWarningsTest`/`CliConverterTest`.
+
+    **Amendment 4 update (Dispute 6):** The direct export oracle in
+    `CliRunTest` and the shared Amendment 2 export oracle now use
+    `new Fieldwork(form, config).walkAll()`, as Amendment 4 explicitly
+    requires and confirmed assumption 31 describes. The former independent
+    `FormWalker.walk(k)` sequence no longer defines the CLI's submissions.
+
+    **Dispute 6 validation (2026-10-23):** `mvnw.cmd -o -q test` cannot
+    complete test compilation; an `-e` retry confirms the cached
+    `commons-io-2.5.jar` `AccessDeniedException` documented below. Logs:
+    `.codex-runs/cli-dispute6-maven.log` and
+    `.codex-runs/cli-dispute6-maven-detail.log`. Supplementary compilation
+    of all 19 CLI/support sources succeeds with `--release 17`, and all
+    80 diagnostic JUnit cases in `CliRunTest`, `CliFailureTest`,
+    `CliAmendment2PipelineTest`, and `CliAmendment2ReportTest` pass, with
+    none skipped or aborted. Logs: `.codex-runs/cli-dispute6-compile.log`
+    and `.codex-runs/cli-dispute6-junit.log`. This is not a successful
+    Maven build or full-suite run.
 
 12. **Question:** How can a walk failure and filesystem write failures be
     triggered reliably without altering production or depending on permissions?

@@ -2,7 +2,6 @@ package ctosim;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -183,15 +182,14 @@ class CliRunTest {
         assertEquals(5, csv(output.resolve("Repeat CLI-alpha.csv")).size());
     }
 
-    @Test void exportedBytesEqualWalkingSubmissionsOneThroughNWithEffectiveConfiguration() throws Exception {
+    @Test void exportedBytesEqualFieldworkPlanWithEffectiveConfiguration() throws Exception {
         Input input = fixture(temp, "simple", "survey.xml");
         Path config = config(temp, "{\"submissions\":9,\"seed\":99,\"enumerators\":13,\"timeZone\":\"+03:00\"}");
         Path output = temp.resolve("out");
         success(simulate(input, output, "-c", config.toString(), "-n", "3", "-s", "42", "--server", "expected"));
         LoadedForm form = FormLoader.load(input.form(), temp);
-        FormWalker walker = new FormWalker(form, SimulationConfig.load(config).withSubmissions(3).withSeed(42));
-        List<Submission> submissions = new ArrayList<>();
-        for (int n = 1; n <= 3; n++) submissions.add(walker.walk(n));
+        Fieldwork plan = new Fieldwork(form, SimulationConfig.load(config).withSubmissions(3).withSeed(42));
+        List<Submission> submissions = plan.walkAll();
         SurveyCtoExporter exporter = new SurveyCtoExporter(FieldCatalog.load(input.catalog()), form, "expected");
         assertEquals(exporter.wide(submissions), Files.readString(output.resolve(exporter.wideFileName())));
         for (var entry : exporter.longFiles(submissions).entrySet())
