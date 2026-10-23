@@ -758,3 +758,110 @@ production source was opened, searched, or modified.
   failure. Only new test/support files, new fixtures, and this questions-file
   addition are changes for this task. Existing tests are retained, and no
   production code, specification, build file, or commit was changed.
+
+## Amendment 5 questions and test assumptions (2026-10-23)
+
+New coverage is isolated in `CliAmendment5ActivationTest`,
+`CliAmendment5ReportTest`, and `CliAmendment5LifecycleTest`, with the new
+`CliAmendment5Support` helper and the XML/catalog fixture pair under
+`src/test/resources/ctosim/cli/amendment5/`. Existing tests and fixtures are
+unchanged. No production source was opened, searched, or modified.
+
+39. **Question:** Does "without problems" mean disabled injection or an enabled
+    plan that produces no records?
+    **Assumption:** It means disabled injection. The explicit activation rule
+    uses the presence of the configuration setting or flag; spec 04 Amendment
+    6 confirms that all-zero rates are a present setting. Enabled runs with
+    zero rates or no eligible targets therefore write a header-only answer
+    key, list it in Files, and report zero in both summaries. A flag does not
+    replace configured zero/custom rates or bypass invalid configuration.
+    **Tests:** The all-zero, absent-setting, default/partial-setting,
+    configured-rate precedence, invalid-configuration, and ineligible-target
+    tests in the new activation/report classes.
+
+40. **Question:** What exact sentence should stdout use, and where does the
+    report's Problems line go relative to Files?
+    **Assumption:** Stdout has no prescribed wording beyond the distinct
+    submission count and `answer-key.csv`; tests require those tokens on
+    the third line without prescribing a verb or punctuation. The report
+    uses the exact specified line, following Enumerators and all present
+    optional sections and preceding Files. All seven nonempty combinations
+    of the three earlier optional sections are exercised. Existing summary
+    order and the final FORM ERRORS alert remain unchanged.
+    **Tests:** `summaryCountsDistinctAffectedSubmissionsRatherThanDurationRecords`,
+    `problemReportLineFollowsOlderSectionsAndStdoutLinePrecedesTheirSummaries`,
+    and shared `summary` assertions.
+
+41. **Question:** How can CLI orchestration be checked independently without
+    requiring a particular random algorithm or inspecting production code?
+    **Assumption:** Continue confirmed assumptions 11 and 31: separately load
+    the form and effective configuration, walk one public Fieldwork plan,
+    compare AnswerKey.csv(plan.problems()) and every wide/long export byte.
+    Spec 14 owns problem selection and distributions; these tests check CLI
+    activation and forwarding for all seven rate settings, including the
+    effective seed, count and id. Independent assertions check header/UTF-8,
+    file order, two duration records per target, distinct target counts at
+    N=1, N=3 and N=24, zero eligible targets, and preserved warnings.
+    No particular target numbers or probabilistic frequencies are imposed.
+    **Tests:** The default/custom-rate, effective-option, count, warning,
+    seed, and export/key comparisons in all three new test classes.
+
+42. **Question:** Should a disabled rerun delete an existing answer key, and
+    should a failed key write delete an earlier successful report?
+    **Assumption:** Neither deletion is specified. The unchanged rule says
+    files the run does not write are left alone. A disabled rerun preserves
+    the old key but removes it from its report and summary. An enabled run
+    replaces/truncates the key, including to header-only at zero rates.
+    A failure to write even a header is status 1 with no stdout and no new
+    report; an older report remains byte-for-byte unchanged. A nonempty
+    directory at the key path provides a portable failure without ACL changes.
+    **Tests:** Rerun, obstructed-key, and disabled-obstructed-key tests in
+    `CliAmendment5LifecycleTest`.
+
+43. **Question:** Are new parsing conventions introduced for the flag?
+    **Assumption:** Only the stated valueless option and duplicate rejection
+    are added. It can precede or follow FORM, consumes no following FORM or
+    option, and does not count as FORM. A third positional argument is not
+    a boolean value for it. Duplicate validation precedes I/O, while help
+    still ignores all other arguments. Unspecified syntax such as
+    `--problems=true` and combined flags remains untested (question 3).
+    **Tests:** Flag placement, duplicate-before-I/O, help, and positional
+    argument tests in `CliAmendment5ActivationTest`.
+
+44. **Question:** Do conversion, warnings, UTF-8, and determinism guarantees
+    extend to the answer key?
+    **Assumption:** Yes: everything not mentioned remains unchanged. The
+    previously approved converter process double is reused read-only, now
+    serving the new fixture. Converted filenames follow the answer key in
+    Files, converter warnings stay first, and plan warnings stay last.
+    AnswerKey uses spec 08 CSV text (no final LF), whereas the report ends
+    with one LF. Determinism keeps source/config basenames equal across
+    process directories/time zones, compares all output bytes, and also
+    exercises repeated calls and distinct fixed seeds. Downstream component
+    behavior is tested through its published API, not reimplemented.
+    **Tests:** UTF-8/framing, fallback warning ordering, converted-form,
+    working-directory/time-zone, and repeated-seed tests.
+
+## Amendment 5 validation
+
+- The requested `mvnw.cmd -o -q test-compile` reaches test compilation but
+  cannot complete. The `-e` retry confirms `java.nio.file.AccessDeniedException`
+  for `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, the same
+  environment blocker documented for prior amendments. Logs:
+  `.codex-runs/cli-amendment5-test-compile.log` and
+  `.codex-runs/cli-amendment5-test-compile-detail.log`.
+- The existing in-memory diagnostic compiler successfully compiles all
+  **26 CLI/support sources**, including the four new files, with
+  `--release 17` against cached public binary APIs and JUnit dependencies.
+  Log: `.codex-runs/cli-amendment5-memory-compile.log`. This is supplementary
+  compilation evidence, not a successful Maven build.
+- A diagnostic JUnit run executes all **50 new cases**: **9 pass, 41 fail**,
+  with no skipped/aborted tests or failed discovery containers. Failures
+  concern the unsupported `--problems` option, missing answer keys/report
+  lines, and unimplemented problem APIs. The clean baseline and new fixture
+  load/export successfully; assertions downstream of feature failures await
+  implementation. Log: `.codex-runs/cli-amendment5-junit.log`.
+- No dependency was installed, Maven repository copied, drive mapped,
+  permissions changed, production code read/modified, or commit created.
+  Existing test files are retained. Temporary probes and logs are confined
+  to `.codex-runs/`.

@@ -1,0 +1,11 @@
+{"form_id":"cli_problems","title":"CLI problèmes","version":"5","fields":[
+  {"name":"start_z","type":"start","xpath":"/data/start_z","row":2},
+  {"name":"start_a","type":"start","xpath":"/data/start_a","row":3},
+  {"name":"household","type":"integer","xpath":"/data/household","row":4},
+  {"name":"answer","type":"text","xpath":"/data/answer","row":5},
+  {"name":"gps","type":"geopoint","xpath":"/data/gps","row":6},
+  {"name":"duration_z","type":"calculate","xpath":"/data/duration_z","row":7},
+  {"name":"durée","type":"calculate","xpath":"/data/durée","row":8},
+  {"name":"children","type":"begin repeat","xpath":"/data/children","row":9},
+  {"name":"item","type":"text","xpath":"/data/children/item","row":10}
+]}
