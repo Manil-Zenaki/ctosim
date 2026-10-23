@@ -280,3 +280,42 @@ All draws come from `config.seed()`, as in spec 13. The same form and
 configuration give equal submissions, visits, warnings and problems on
 every call of `walkAll()`, whatever the machine's locale or time zone.
 Lists returned by this module are unmodifiable.
+
+## Clarification
+
+Assumptions 1–14 of the questions file are reviewed one by one. Decisions
+on the points left open:
+
+- **Geopoint value** (1): the `value` of a geopoint's record is its
+  answer as the instance holds it: latitude, longitude, altitude and
+  accuracy separated by single spaces (spec 05), the same numbers as its
+  four wide-export columns.
+- **Other clean values** (2): `cleanValue` is `""` in every record but
+  those of `short` and `long`.
+- **Duration fields** (4): a field counts when its calculation is
+  exactly `duration()` (white space aside); `once(duration())` and other
+  expressions do not. When the form has such fields but none holds a
+  value in the target, the record is the one for a form without such a
+  field.
+- **Minimum time** (5): the drawn advance is multiplied by `f` and
+  rounded (half up, at least 1 second), then a question's minimum time
+  applies to the result.
+- **Count warnings** (7): for a problem, the warning about a short count
+  comes before its per-submission warnings.
+- **A short overlapping interview** (10): the target is not lengthened;
+  when it lasts less than five minutes, the two interviews share its
+  whole duration.
+
+Also confirmed: instance document order is the form's order (3); every
+target of every problem is reserved before originals are drawn, and a
+target that falls back is not reused (6); one configuration-wide warning
+when no id is configured or no location question exists (7); a fallback
+is an ordinary visit, and a duration's clean value is that of the same
+visit walked without the problem (8); the unit of the off-hours draw is
+not prescribed, and the stated boundaries are inclusive (9); a
+reinterview's visit carries the original's id, and its cascade answers
+are copied (11); the next interview after travel is only required to be
+the first of the next day, and area overrides, location questions in
+repeats or all irrelevant are not prescribed (12); no random sequence is
+prescribed (13); no constructor validation and no lifetime for earlier
+lists (14).
