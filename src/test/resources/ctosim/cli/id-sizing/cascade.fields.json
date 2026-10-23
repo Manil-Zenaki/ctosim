@@ -1,0 +1,8 @@
+{"form_id":"cli_sized_ids","title":"CLI sized ids","version":null,"fields":[
+  {"name":"district","type":"select_one districts","xpath":"/data/district","row":2},
+  {"name":"village","type":"select_one villages","xpath":"/data/village","row":3},
+  {"name":"household","type":"select_one households","xpath":"/data/household","row":4},
+  {"name":"age","type":"calculate","xpath":"/data/age","row":5},
+  {"name":"category","type":"select_one categories","xpath":"/data/category","row":6},
+  {"name":"manual","type":"text","xpath":"/data/manual","row":7}
+]}

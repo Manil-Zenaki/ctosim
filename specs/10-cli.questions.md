@@ -661,3 +661,100 @@ fixtures are kept unchanged. Production sources were not read or changed.
   addition are included. Existing tests, production code, specifications,
   and build configuration are unchanged. No dependencies were installed,
   Maven repositories copied, drives mapped, or commits created.
+
+## Clarification of Amendment 4: sized fictitious files (2026-10-23)
+
+New coverage is isolated in `CliIdSizingBoundariesTest`,
+`CliIdSizingPipelineTest`, and `CliIdSizingSupport`. The new fixture is
+`src/test/resources/ctosim/cli/id-sizing/cascade.xml` with its catalog and
+a two-household real CSV. Existing tests and fixtures are unchanged. No
+production source was opened, searched, or modified.
+
+35. **Question:** Which submission count, seed, and id reach the new overload
+    when CLI options replace configuration settings?
+    **Assumption:** "The run's" values mean the effective values after the
+    documented replacements: last valid `-n`/`--submissions` and `-s`/`--seed`,
+    and `--id` instead of the configuration's id. Defaults apply when no
+    configuration is supplied. Unicode names retain their decoded spelling,
+    consistent with confirmed question 30. The source configuration is not rewritten.
+    **Tests:** `cliIdOverridesConfigurationAndLastCountAndSeedReachAttachmentGeneration`
+    (options on either side of FORM),
+    `cliCountCanReduceConfiguredExpansionBackToLegacySize`, and
+    `defaultSubmissionCountAlsoSizesTheFileWhenOnlyCliIdIsGiven`, and
+    `unicodeIdFromConfigurationOrCliIsForwardedToTheSizingFactory`.
+
+36. **Question:** Does "enough rows" mean N rows exactly, and is expansion
+    decided by the original file's row count or the id level's code count?
+    **Assumption:** Use the explicitly referenced spec 12 Amendment 1 and its
+    clarification: compare N with the original id-level code count; round
+    child counts up per parent; retain earlier levels and make later levels
+    unary on expansion. Thus district/20 produces 20 rows even though the
+    ordinary file has 27 rows, village/10 produces 12, and household/501
+    produces 504. At or below capacity, legacy bytes remain unchanged.
+    First-level padding follows the spec 12 clarified examples. No exact
+    pseudorandom sequence is invented: attachment bytes are additionally
+    compared with the public four-argument factory on independent inputs.
+    **Tests:** `effectiveIdLevelAndCountDetermineAttachmentSize` and
+    `expandedCodesUseRoundedUpBranchCountAndCorrectZeroPadding`.
+
+37. **Question:** Does the CLI infer an id when none is configured, expand
+    plain pulldata key files, resize existing media, or size by an explicit
+    override's pool instead of N?
+    **Assumption:** No: pass null for absent id, otherwise pass the effective
+    name and N unchanged. Eligibility and file sizing are spec 12's rules;
+    only the fictitious search file containing the named id level expands.
+    An explicit `fields` value still controls the plan's possible values
+    but does not change the arguments passed to attachment generation.
+    Existing media remains authoritative and copied byte-for-byte when
+    another fictitious file causes creation of the attachments directory.
+    **Tests:** `noIdOrAnIneligibleIdKeepsLegacyAttachmentBytesEvenForLargeN`,
+    `textPulldataIdStillUsesFiftyKeysRatherThanExpandingNonSearchFiles`,
+    `explicitIdPoolDoesNotChangeWhichFileOrHowManyRowsAreGenerated`,
+    `existingMediaIsCopiedExactlyAndNeverExpandedToMeetN`, and the
+    no-flag test. Existing spec 10 tests already cover invalid argument
+    validation; no new option or error semantics are inferred here.
+
+38. **Question:** Must the larger files affect the actual plan, exports,
+    warnings, converted forms, and subsequent runs?
+    **Assumption:** Amendment 2's reload still precedes the plan; sizing is
+    not only an output-file change. Compare all wide/long bytes and warnings
+    with independent public factory/load/Fieldwork/exporter calls. The
+    current spec 13 cascade rules allow distinct ids with sufficient viable
+    choices; no explicit parent override restricts these fixtures. The
+    assigned id remains present with its missing rate set to one. Exact
+    random id order is not prescribed. The existing converter process double
+    is reused; this does not test actual XLSForm conversion. Original source
+    media, not stale output attachments, supplies each new run's missing-file
+    determination. Determinism includes every generated file recursively.
+    **Tests:** `expandedAttachmentsAreReloadedBeforePlanningAndExporting`,
+    `convertedXlsformUsesEffectiveIdNAndSeedForSizedAttachments`,
+    `rerunResizesFromSourceAndDoesNotReusePriorOutputAttachmentsOrId`, and
+    `expandedAttachmentsAndExportsAreByteIdenticalAcrossWorkingDirectoriesAndTimeZones`.
+
+## Sized fictitious files validation
+
+- Requested `mvnw.cmd -o -q test-compile` was run after adding the new
+  sources. It fails during test compilation; the `-e` retry identifies
+  `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs are
+  `.codex-runs/cli-id-sizing-test-compile.log` and
+  `.codex-runs/cli-id-sizing-test-compile-detail.log`. The initial check,
+  before adding tests, had no diagnostics; it does not establish compilation
+  of the new sources. No repository, dependency, permission, or build
+  configuration changes were made to work around the error.
+- The existing diagnostic in-memory compiler successfully compiles all
+  **22 CLI/support sources**, including all three new Java files, against
+  cached public binary APIs and JUnit with `--release 17`. This is
+  supplementary compilation evidence, not a successful Maven build. Log:
+  `.codex-runs/cli-id-sizing-memory-compile.log`.
+- The diagnostic JUnit run executes all **37 new cases**: **10 pass and
+  27 fail**, with no skipped/aborted tests or failed discovery containers.
+  The fixtures and catalogs load successfully. Failures concern unchanged
+  attachment sizes/content and insufficient distinct survey ids; assertions
+  downstream of those failures remain unverified until implementation.
+  Log: `.codex-runs/cli-id-sizing-junit.log`. This uses the supplementary
+  compiled tests and cached binaries, not a successful Maven test run.
+- The final requested Maven compilation attempt still reports the cached-JAR
+  failure. Only new test/support files, new fixtures, and this questions-file
+  addition are changes for this task. Existing tests are retained, and no
+  production code, specification, build file, or commit was changed.
