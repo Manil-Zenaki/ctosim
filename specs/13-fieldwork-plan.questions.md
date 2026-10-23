@@ -391,3 +391,169 @@ directory. These supplementary results do not claim the Maven build passed.
 The decisions correcting assumptions affected by the disputed tests are
 recorded at the end of `13-fieldwork-plan.disputes.md`. No new behavioral
 assumption was needed for either disputed point.
+
+## Amendment 2 additions
+
+The new tests are `FieldworkAmendment2CascadeTest`,
+`FieldworkAmendment2ContractTest`, and `FieldworkAmendment2RandomnessTest`,
+with `FieldworkAmendment2Support` and three CSV fixtures under
+`src/test/resources/ctosim/fieldwork-plan/amendment2/`. They reuse existing
+test helpers without changing them. No production source or public API
+stub was opened; expectations come from the spec and its incorporated
+contracts. Existing test files are unchanged.
+
+### 20. Previously committed opening-time expectations
+
+**Question:** Should the old Amendment 1 tests that preallocate IDs for an
+answer-dependent search be rewritten for Amendment 2?
+
+**Assumption:** No: this run explicitly requires retaining the committed
+tests and adding new classes only. Amendment 2 supersedes opening-time
+allocation for its qualifying filters. In particular, the old
+`idPoolUsesBlankOrDefaultValuesBeforeAnEarlierQuestionIsAnswered` oracle
+conflicts with the new rule. That conflict is recorded, not resolved by
+editing the old test or weakening the new tests.
+
+**Tests:** `idsComeFromTheAnsweredVillageRatherThanTheOpeningValue` and
+`eitherNonliteralFilterArgumentActivatesAllocationAtTheQuestion` assert the
+new behavior. Literal filters are separately checked against Amendment 1.
+
+### 21. No eligible choices at question time
+
+**Question:** What happens when the dynamic list is empty, or every offered
+value is special? The instruction to draw among all choices after exhaustion
+does not define a draw from an empty eligible set, nor a reuse count for it.
+
+**Assumption:** Do not prescribe the answer, fallback, or runtime diagnostic
+in this case. The visit still has a null ID; the configured question exists,
+so it does not receive an absent-field configuration warning. Nonempty
+static fallbacks are unambiguous and are fully tested, including unreadable
+files and filters with no matching rows.
+
+**Tests:** `evenAnEmptyDynamicListIsNotAssignedAnOpeningTimeVisitId` checks
+only visits and configuration warnings. The unreadable-file and no-match
+tests with static choices check allocation, reuse counts and warning
+ownership. No test interprets empty-list exhaustion or all-special lists.
+
+### 22. Repeated questions, existing values and rejected answers
+
+**Question:** How does question-time allocation interact with repeated ID
+questions, irrelevant/read-only questions, existing defaults, engine
+rejections, or conditional overrides that acquire a value/texts at runtime?
+Does an attempted but rejected ID count as received?
+
+**Assumption:** Leave these interactions open. Amendment 2 says an earlier
+submission must have "received" the value but does not define per-repeat
+allocation, reservation after rejection, or when to inspect conditional
+overrides. Fixtures contain one relevant writable ID question, no ID default,
+and choices that the engine accepts. Nonempty unconditional value/texts
+overrides retain the explicit exception in Amendment 2.
+
+**Tests:** All new allocation tests use these restricted fixtures.
+`aFixedValueOverrideKeepsVisitAllocationEvenForAnAnswerDependentSearch`,
+`explicitTextsKeepVisitAllocationIncludingExplicitSpecialCodes`, and
+`aFixedSpecialCodeStillOverridesTheDeferredChoiceRule` cover the explicit
+override exceptions. No repeat/rejection/conditional-override oracle is added.
+
+### 23. Which search arguments activate the new rule
+
+**Question:** Is any nonliteral search argument enough, including source,
+type or column expressions? Does a constant expression count as depending on
+answers?
+
+**Assumption:** Tests use only the explicitly named `text` and `filterText`
+positions to activate deferred allocation. They exercise field references,
+a concatenation containing a field reference, both positions together, and
+single/double-quoted literal syntax. No new semantics are inferred for a
+dynamic source/type/column alone or a nonliteral constant expression.
+Weights, a field missing rate, and a numeric select range contain neither
+value nor texts and therefore do not disable deferred allocation; the
+Amendment 1 clarification also says ranges define pools only for integers.
+
+**Tests:** `eitherNonliteralFilterArgumentActivatesAllocationAtTheQuestion`,
+`literalFiltersStillAllocateAndCycleVisitIdsUnderAmendmentOne`,
+`weightsAndNumericRangesDoNotDisableDeferredSelectIdAllocation`, and the
+missing-rate tests.
+
+### 24. Global receipt history and warning counts
+
+**Question:** Is history global across filters, enumerators and days, and
+does the warning count distinct reused codes or submissions receiving a
+previously used code? Is warning prose standardized?
+
+**Assumption:** The phrases "no earlier submission of the same walkAll"
+and "number of submissions whose id was used before" require global
+value-based history and a count of submissions, excluding each value's
+first receipt. Duplicate CSV rows, loaded/static duplicates and empty CSV
+values follow the existing distinct-choice rules. No exact warning text
+is imposed: tests require the field name and whole-number count, one
+aggregate warning, and its position after the overflow warning. Search
+diagnostics remain in submissions, as in spec 07.
+
+**Tests:** `checkAllocation` reconstructs offered sets from fixture data
+and actual earlier submissions, without assuming the PRNG or choice order.
+The overlapping-list, static-choice, singleton, cross-enumerator/day,
+warning-count, warning-order and warning-ownership tests use this oracle.
+
+### 25. Seed/number dependence and statistical tolerances
+
+**Question:** Must the ID draw be independent of unrelated answer draws when
+the eligible values and previous receipts are identical? How can uniformity
+be checked without prescribing an RNG or exact output?
+
+**Assumption:** "From config.seed() and n" means unrelated preceding answer
+draws do not change that ID decision. Increasing N retains its earlier ID
+decisions, including after exhaustion. No mapping of a particular seed to
+an ID is assumed. For unused IDs, 360 reproducibly selected seeds sample
+the first choice and ordered pairs from three distinct choices. After
+exhaustion, a fixed-seed run supplies 900 draws from the same three choices,
+even with ordinary weights favoring just one. Each marginal frequency uses
+the existing seven-binomial-standard-deviation tolerance plus two counts.
+This is a statistical check, not a proof of uniformity or independence.
+
+**Tests:** `FieldworkAmendment2RandomnessTest`, especially
+`unrelatedAnswerDrawsDoNotChangeIdsWhenTheOfferedSetsAreTheSame`,
+`unusedChoicesAreDrawnUniformlyAndDifferentSeedsCanChangeTheirOrder`, and
+`exhaustedListsDrawUniformlyFromAllEligibleChoicesDespiteOrdinaryWeights`.
+
+### 26. Standalone walking versus planned results
+
+**Question:** Does the original equality between planned submissions and
+walking their visits directly still apply to dynamically allocated IDs?
+
+**Assumption:** Amendment 2's explicit standalone-walk exception supersedes
+that equality for these questions. A standalone walk with a null visit ID
+uses ordinary answer weights and missing rates, and has no shared allocation
+history. A plan must not leak ID state into another plan or a standalone
+walker using the same LoadedForm. Replay within the planned workflow remains
+fully deterministic, including times, XML and warnings.
+
+**Tests:** The standalone-walk tests in `FieldworkAmendment2ContractTest`,
+the repeated/separate-plan tests, and the locale/time-zone replay test.
+No test equates a deferred-ID plan's answer to its standalone null-ID visit.
+
+### Amendment 2 build verification (2026-10-23)
+
+The requested `.\mvnw.cmd -o -q test-compile` was run and exited 1 at
+`testCompile`. A diagnostic retry with `-e` identified
+`java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs are
+`.codex-runs/fieldwork-amendment2/test-compile.log` and
+`test-compile-detail.log`. The Maven compilation is blocked by the
+environment; no repository was copied, drive mapped, dependency installed,
+or production/build configuration changed.
+
+The existing diagnostic compiler driver was adapted in
+`.codex-runs/fieldwork-amendment2/`. All eight new/support Java sources
+compiled successfully with `--release 17` against the existing compiled
+public APIs and cached JUnit 5 dependencies, without opening production
+sources. Result: `compiled=true`; log: `memory-compile.log`. This is
+supplementary compilation evidence, not a successful Maven build.
+
+The diagnostic JUnit run executed **52 cases** from the three new test
+classes: **11 passed, 41 failed**, with no skipped/aborted cases, container
+failures or fixture-loading exceptions. All failures were assertion failures
+consistent with the prior opening-time allocation and ordinary-answer
+behavior; later assertions remain unexercised until Amendment 2 is
+implemented. Log: `.codex-runs/fieldwork-amendment2/junit.log`. Existing
+tests were not changed or committed.

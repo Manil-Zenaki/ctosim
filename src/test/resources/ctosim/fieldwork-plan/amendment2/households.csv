@@ -1,0 +1,15 @@
+code,village,district,active,label
+0007,1,north,yes,Alpha
+É02,1,north,yes,Echo
+A03,1,north,yes,Alpha
+0007,1,north,yes,Duplicate
+,1,north,yes,Empty
+99,1,north,yes,Refused
+-99,1,north,yes,Unknown
+B01,2,north,yes,Beta
+B02,2,north,yes,Beta
+B03,2,north,yes,Beta
+C01,3,south,yes,Gamma
+C02,3,south,yes,Gamma
+D01,4,south,yes,Delta
+D02,4,south,yes,Delta
