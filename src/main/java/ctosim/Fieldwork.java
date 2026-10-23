@@ -72,7 +72,9 @@ public final class Fieldwork {
         int days = config.fieldworkDays();
         long quota = config.interviewsPerDay(); // spec 13, Amendment 1
         List<String> planWarnings = new ArrayList<>();
-        List<String> ids = surveyIds(n, planWarnings);
+        boolean atQuestion = idAtQuestion();
+        List<String> ids = atQuestion ? null : surveyIds(n, planWarnings);
+        FormWalker.IdHistory history = atQuestion ? new FormWalker.IdHistory() : null;
 
         LocalDateTime[] lastEnd = new LocalDateTime[e + 1];
         int[] day = new int[e + 1];
@@ -107,7 +109,7 @@ public final class Fieldwork {
             double[] village = village(enumerator, day[enumerator]);
             double[] point = household(number, village);
             Visit visit = new Visit(enumerator, start, point[0], point[1], ids == null ? null : ids.get(number - 1));
-            Submission s = walker.walk(number, visit);
+            Submission s = walker.walk(number, visit, history);
             submissions.add(s);
             planned.add(visit);
             lastEnd[enumerator] = s.end();
@@ -117,6 +119,10 @@ public final class Fieldwork {
         if (lastDay + 1 > days) {
             planWarnings.add(0, "fieldwork: the interviews took " + (lastDay + 1) + " days, more than fieldworkDays ("
                     + days + "); the enumerators could not do them in time");
+        }
+        if (history != null && history.reused > 0) {
+            planWarnings.add("fieldwork: " + history.reused + " submissions got a survey id '" + idField
+                    + "' that an earlier submission had received; the offered choices ran out");
         }
         this.visits = Collections.unmodifiableList(planned);
         this.warnings = List.copyOf(planWarnings);
@@ -212,6 +218,32 @@ public final class Fieldwork {
             ids.add(order.get(k % order.size()));
         }
         return ids;
+    }
+
+    /**
+     * True when the id is a select_one loaded by search() whose filter depends on the answers, and
+     * its override has no value or texts: it is then given at the question (spec 13, Amendment 2).
+     */
+    private boolean idAtQuestion() {
+        if (idQuestion == null || idQuestion.getControlType() != Constants.CONTROL_SELECT_ONE) {
+            return false;
+        }
+        FieldOverride override = config.field(idField).orElse(null);
+        if (override != null && (override.value().isPresent() || !override.texts().isEmpty())) {
+            return false;
+        }
+        String appearance = idQuestion.getAppearanceAttr();
+        List<String> args = appearance == null ? null : SearchChoices.searchArguments(appearance);
+        if (args == null) {
+            return false;
+        }
+        return (args.size() >= 4 && !isLiteral(args.get(3))) || (args.size() >= 6 && !isLiteral(args.get(5)));
+    }
+
+    private static boolean isLiteral(String arg) {
+        String a = arg.strip();
+        return a.length() >= 2 && (a.charAt(0) == '\'' || a.charAt(0) == '"') && a.charAt(a.length() - 1) == a.charAt(0)
+                && a.indexOf(a.charAt(0), 1) == a.length() - 1;
     }
 
     private static List<String> shuffled(List<String> values, SplittableRandom random) {

@@ -122,14 +122,28 @@ public final class FormWalker {
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone(config.timeZone()));
         try {
-            return new Walk(number, null).run();
+            return new Walk(number, null, null).run();
         } finally {
             TimeZone.setDefault(previous);
         }
     }
 
+    /**
+     * The survey ids given at the question during one plan (spec 13, Amendment 2): the ids already
+     * received and how many submissions got one that was used before.
+     */
+    static final class IdHistory {
+        final Set<String> received = new HashSet<>();
+        int reused;
+    }
+
     /** Fills the form for one visit of the fieldwork plan. See specs/13-fieldwork-plan.md. */
     public Submission walk(int number, Visit visit) {
+        return walk(number, visit, null);
+    }
+
+    /** As {@link #walk(int, Visit)}, giving the id question an id not yet received when {@code history} is set. */
+    Submission walk(int number, Visit visit, IdHistory history) {
         Objects.requireNonNull(visit, "visit");
         Objects.requireNonNull(visit.start(), "visit.start");
         if (number < 1) {
@@ -148,7 +162,7 @@ public final class FormWalker {
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone(config.timeZone()));
         try {
-            return new Walk(number, visit).run();
+            return new Walk(number, visit, history).run();
         } finally {
             TimeZone.setDefault(previous);
         }
@@ -432,8 +446,12 @@ public final class FormWalker {
         /** Where GPS answers are drawn for the visit: a square of {@link #HOUSEHOLD_METRES} around it. */
         private final Area household;
 
-        Walk(int number, Visit visit) {
+        /** The plan's history of ids given at the question (spec 13, Amendment 2), or null. */
+        private final IdHistory history;
+
+        Walk(int number, Visit visit, IdHistory history) {
             this.visit = visit;
+            this.history = history;
             this.number = number;
             long base = config.seed();
             this.answers = new SplittableRandom(seed(base, number, 2));
@@ -584,6 +602,10 @@ public final class FormWalker {
                     && giveId(prompt, ref, name, path)) {
                 return;
             }
+            if (history != null && config.id().isPresent() && config.id().get().equals(name)
+                    && giveUnusedId(prompt, ref, name, path)) {
+                return;
+            }
             boolean overridden = config.field(name).isPresent();
             if (prompt.getAnswerValue() != null && !overridden && satisfiesConstraint(ref, prompt)) {
                 return; // keep a default or a value set by a calculation or an action
@@ -656,6 +678,40 @@ public final class FormWalker {
             warn("field '" + name + "' (" + path + "): the survey id '" + visit.id()
                     + "' is not accepted by this question; answered as usual");
             return false;
+        }
+
+        /**
+         * Answers the id question with an offered choice no earlier submission of the plan received,
+         * or any offered choice when all were (spec 13, Amendment 2); false when it offers none.
+         */
+        private boolean giveUnusedId(FormEntryPrompt prompt, TreeReference ref, String name, String path) {
+            QuestionKind kind = kind(prompt);
+            if (kind != QuestionKind.SELECT_ONE) {
+                return false;
+            }
+            Prepared prepared = prepare(prompt, ref, name, path, kind, true);
+            List<String> offered = new ArrayList<>(new java.util.LinkedHashSet<>(prepared.question().choices()));
+            offered.removeAll(config.specialValues());
+            offered.remove("");
+            if (offered.isEmpty()) {
+                return false;
+            }
+            List<String> unused = new ArrayList<>(offered);
+            unused.removeAll(history.received);
+            boolean reused = unused.isEmpty();
+            List<String> pool = reused ? offered : unused;
+            String value = pool.get(new SplittableRandom(seed(config.seed(), number, 14)).nextInt(pool.size()));
+            IAnswerData data = prepared.loaded() == null ? convert(prompt, value) : convertLoaded(kind, value, prepared.loaded());
+            if (data == null || session.answerQuestion(data, true) != FormEntryController.ANSWER_OK) {
+                return false;
+            }
+            history.received.add(value);
+            if (reused) {
+                history.reused++;
+            }
+            answered++;
+            handled(ref, minimumSeconds(prompt));
+            return true;
         }
 
         /** GPS answers of a visit are drawn around its household, unless the field has its own area (spec 13). */
