@@ -256,7 +256,7 @@ public final class Cli {
         }
         FakeAttachments fake = null;
         if (o.fakeAttachments()) {
-            fake = FakeAttachments.of(form, config.seed());
+            fake = FakeAttachments.of(form, config.seed(), config.id().orElse(null), config.submissions());
             if (!fake.files().isEmpty()) {
                 form = withFakeAttachments(o, xform, fake);
                 for (Map.Entry<String, List<String>> key : fake.keyAnswers().entrySet()) {
