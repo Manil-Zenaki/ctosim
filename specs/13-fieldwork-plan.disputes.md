@@ -39,3 +39,58 @@ six other cases of this test pass.
 
 Requested: add `8` to the expected pool of that case (or change the
 fixture row's label so that it does not start with `Al`).
+
+## Adjudication (2026-10-23)
+
+### Point 1: upheld; correct the superseded quota expectations
+
+Amendment 1 explicitly replaces `ceil(N / (E * D))` with
+`config.interviewsPerDay()`, defaulting to 4 independently of N, E and D.
+The clarification also confirms that the earlier quota expectations are
+superseded. The tests are wrong wherever they retain the old formula.
+
+Renamed the round-robin test to
+`roundRobinAssignmentsAndConfiguredQuotaDetermineShortInterviewDays` and
+made its expected day use `config.interviewsPerDay()`. Its six input cases,
+submission ordering, per-enumerator counting and schedule checks are retained.
+The shared `assertSchedule` helper now uses the configured quota too, so its
+daily-cap and quota-exhaustion checks follow the same amended contract.
+
+Both cases of
+`firstInterviewMinutesOnInitialAndLaterDaysAreUniformIncludingBothEndpoints`
+now explicitly set `interviewsPerDay` to 1. This guarantees that all 6,100
+observations are first interviews of a day, preserving the initial-day and
+later-day coverage, fixed seed, uniformity checks and endpoint checks without
+depending on the obsolete quota formula.
+
+### Point 2: upheld; include ID `8` in the expected search pool
+
+Spec 13 Amendment 1 includes the loaded and static choices offered at opening
+for this literal-argument search. The incorporated spec 07 Amendment 3 defines
+`startswith` as an exact, case-sensitive comparison. Both `Alpha` (ID `A01`)
+and `Also static` (ID `8`) start with `Al`; the static ID `7` is also offered.
+The correct pool is therefore `{A01, 8, 7}`.
+
+Added `8` to this case's expected set, leaving the fixture and the other six
+cases unchanged. The existing helper still checks pool membership,
+distinctness before exhaustion, cycling, stored IDs and the warning's K/N
+counts, now with K = 3 and N = 7 for this case.
+
+### Verification
+
+Ran `.\mvnw.cmd -o -q test`; it exited 1 at `testCompile` with a fatal
+compiler error naming the cached `commons-io-2.5.jar`. The full Maven suite
+could not run. This limitation is also recorded in the questions file.
+
+As supplementary verification, adapted the existing diagnostic compiler and
+JUnit launcher under `.codex-runs/fieldwork-dispute/`. Compilation of both
+changed test classes, the Amendment 1 quota class and their test-support
+dependencies succeeded against the existing compiled APIs with `--release 17`.
+JUnit ran all 85 cases in `FieldworkScheduleTest`,
+`FieldworkAmendment1QuotaTest` and `FieldworkAmendment1SearchIdTest`:
+85 passed, none failed, skipped or aborted. Logs are `memory-compile.log`
+and `junit.log` in that directory; the Maven log is `maven-test.log`.
+This supplements, but does not establish, a successful Maven build.
+
+No production source was read or changed, no build configuration or fixtures
+were changed, and no commit was made.

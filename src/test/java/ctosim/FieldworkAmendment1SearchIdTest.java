@@ -79,7 +79,7 @@ class FieldworkAmendment1SearchIdTest extends FieldworkAmendment1SearchSupport {
         return Stream.of(
                 Arguments.of("'matches', 'region', 'north'", Set.of("A01", "É03", "0007", "7")),
                 Arguments.of("'matches', 'region', 'south'", Set.of("B02", "8", "7")),
-                Arguments.of("'startswith', 'label', 'Al'", Set.of("A01", "7")),
+                Arguments.of("'startswith', 'label', 'Al'", Set.of("A01", "8", "7")),
                 Arguments.of("'endswith', 'label', 'ta'", Set.of("B02", "7")),
                 Arguments.of("'contains', 'label', 'cho'", Set.of("É03", "7")),
                 Arguments.of("'matches', 'region', 'north', 'active', 'yes'", Set.of("A01", "0007", "7")),

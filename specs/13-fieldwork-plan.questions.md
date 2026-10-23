@@ -370,3 +370,24 @@ the amendment is implemented. Log: `.codex-runs/fieldwork-amendment1/junit.log`.
 Only this questions file, the three new Java files and the four new CSV
 fixtures are task changes. Previously committed tests are preserved, and no
 commit was made.
+
+### Dispute adjudication build verification (2026-10-23)
+
+The requested `.\mvnw.cmd -o -q test` exited 1 at `testCompile` with a
+fatal compiler error naming
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The Maven test run
+is blocked; its log is `.codex-runs/fieldwork-dispute/maven-test.log`.
+No dependencies were installed or copied and no build configuration was
+changed.
+
+The existing diagnostic compiler and JUnit launcher were adapted under
+`.codex-runs/fieldwork-dispute/`. All seven selected test/support source
+files compiled successfully with `--release 17` against existing compiled
+APIs. All 85 cases in `FieldworkScheduleTest`, `FieldworkAmendment1QuotaTest`
+and `FieldworkAmendment1SearchIdTest` passed, with no skipped/aborted cases
+or failed containers. Logs: `memory-compile.log` and `junit.log` in that
+directory. These supplementary results do not claim the Maven build passed.
+
+The decisions correcting assumptions affected by the disputed tests are
+recorded at the end of `13-fieldwork-plan.disputes.md`. No new behavioral
+assumption was needed for either disputed point.

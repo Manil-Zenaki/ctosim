@@ -16,18 +16,18 @@ import static org.junit.jupiter.api.Assertions.*;
 class FieldworkScheduleTest {
     @ParameterizedTest
     @CsvSource({"1,1,1", "13,3,2", "12,3,2", "7,2,3", "3,8,30", "3,10000,3650"})
-    void roundRobinAssignmentsAndCeilingQuotaDetermineShortInterviewDays(int n, int e, int d) throws Exception {
+    void roundRobinAssignmentsAndConfiguredQuotaDetermineShortInterviewDays(int n, int e, int d) throws Exception {
         var config = settings("\"submissions\":" + n + ",\"enumerators\":" + e + ",\"fieldworkDays\":" + d);
         var plan = new Fieldwork(timed(60), config);
         var submissions = plan.walkAll();
         assertEquals(n, submissions.size());
         assertEquals(n, plan.visits().size());
-        int q = (int) Math.ceil((double) n / (e * d));
+        int q = config.interviewsPerDay();
         for (int i = 0; i < n; i++) {
             Visit visit = plan.visits().get(i);
             assertEquals(i + 1, submissions.get(i).number());
             assertEquals(i % e + 1, visit.enumerator());
-            assertEquals((i / e) / q, day(config, visit), "ceiling quota, counted separately per enumerator");
+            assertEquals((i / e) / q, day(config, visit), "configured quota, counted separately per enumerator");
             assertEquals(visit.start(), submissions.get(i).start());
         }
         assertSchedule(plan, config, submissions);
@@ -116,7 +116,8 @@ class FieldworkScheduleTest {
     @ParameterizedTest @CsvSource({"6100,1", "100,61"})
     void firstInterviewMinutesOnInitialAndLaterDaysAreUniformIncludingBothEndpoints(int enumerators, int days) throws Exception {
         int draws = 6100;
-        var config = settings("\"submissions\":" + draws + ",\"enumerators\":" + enumerators + ",\"fieldworkDays\":" + days);
+        var config = settings("\"submissions\":" + draws + ",\"enumerators\":" + enumerators
+                + ",\"fieldworkDays\":" + days + ",\"interviewsPerDay\":1");
         var plan = new Fieldwork(timed(60), config);
         plan.walkAll();
         int[] bins = new int[61];
@@ -152,7 +153,7 @@ class FieldworkScheduleTest {
     private static void assertSchedule(Fieldwork plan, SimulationConfig config, List<Submission> submissions) {
         var previous = new HashMap<Integer, Integer>();
         var counts = new HashMap<String, Integer>();
-        int quota = (int) Math.ceil((double) config.submissions() / (config.enumerators() * config.fieldworkDays()));
+        int quota = config.interviewsPerDay();
         for (int i = 0; i < submissions.size(); i++) {
             Visit visit = plan.visits().get(i);
             long day = day(config, visit);
