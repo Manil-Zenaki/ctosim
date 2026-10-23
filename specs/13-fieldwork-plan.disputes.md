@@ -158,3 +158,26 @@ successful Maven build. Logs in that directory are `maven-test.log`,
 
 No production source was read or changed, no dependency or build
 configuration was changed, and no commit was made.
+
+## Dispute 3: a reuse warning that depends on an ordinary draw (Amendment 3)
+
+`FieldworkAmendment3FallbackTest.aHigherFixedAnswerIsRespectedWhileLowerUpperQuestionsStillSteer`
+(line 89, `expected: <1> but was: <0>`) runs 8 submissions of the `deep`
+fixture with `region` fixed to `R1`, under which 7 ids are reachable,
+and expects the 8th submission to reuse an id (one warning). Every
+assertion before line 89 passes: the first 7 submissions are steered and
+receive the 7 reachable ids.
+
+At the 8th submission no district and no village is viable, so the
+amendment says they are "answered as before": an ordinary draw. The draw
+gives district `D2`, whose villages are `C` and `X`, then village `X`,
+the fixture's deliberately empty branch: the id question offers no
+choice, so no id is received and none is reused (Clarification of
+Amendment 2, point 21), and there is no warning. With village `C` the
+id would have been reused. The amendment does not make the ordinary
+draw avoid empty branches, so the warning count at line 89 depends on
+that draw, not on the specified behaviour.
+
+Requested: drop the assertion on the 8th submission's warning (or
+accept 0 or 1 warning with the matching reuse count), or use 7
+submissions, keeping the steering assertions.
