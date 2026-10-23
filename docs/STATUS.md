@@ -137,6 +137,21 @@ once Codex has rewritten them) and spec 11 Amendment 7; then the code,
 and the ipacheck check again. Phase 2 (injected problems with an answer
 key) follows.
 
+2026-10-23: the Codex tests of 13 A1, 04 A5, 10 A4 and 11 A7 are in and
+implemented (quota `interviewsPerDay`, `--id`, Stata `id()`); disputes 13/1,
+10/6 and 11/6 accepted. An end-to-end check on the IPA household form
+(district, village, household chosen in cascade from a preloaded file)
+led to spec 13 Amendment 2 (an id from a `search()` list filtered by an
+answer is given at the question, among the offered choices not yet
+received) and spec 12 Amendment 1 (the id's level of a fictitious file
+gets a code for every submission), both implemented: ipacheckids went
+from 97 to 21 duplicated observations (11 ids reused, in villages drawn
+more often than others); 0 overlap, 0 impossible trip. Open: disputes
+13/2 and 12/2 (tests superseded by these rules), and the CLI's part of
+the sizing (spec 10, "Clarification of Amendment 4"): Codex's tests
+stopped on its usage limit (partial work in `git stash`), code to follow.
+Java 8700 tests, only the 9 disputed cases fail.
+
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
 correctness): web submissions (`deviceid` `(web)`, no audio audit,
