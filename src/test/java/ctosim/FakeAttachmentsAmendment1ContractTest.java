@@ -54,12 +54,12 @@ class FakeAttachmentsAmendment1ContractTest extends FakeAttachmentsAmendment1Sup
 
     @ParameterizedTest @CsvSource({
             "1,q0,0", "1,q0,1", "1,q0,2", "1,q0,3",
-            "3,q0,4", "3,q0,26", "3,q0,27",
-            "3,q1,10", "3,q1,26", "3,q1,27",
+            "3,q0,0", "3,q0,1", "3,q0,2", "3,q0,3",
+            "3,q1,0", "3,q1,1", "3,q1,8", "3,q1,9",
             "3,q2,0", "3,q2,1", "3,q2,26", "3,q2,27",
-            "6,q5,485", "6,q5,486", "8,q0,486", "8,q7,486"
+            "6,q5,485", "6,q5,486", "8,q0,2", "8,q0,3", "8,q7,486"
     })
-    void countsAtOrBelowOrdinaryLeafCountPreserveBytesEvenWhenIdCountIsSmaller(
+    void countsAtOrBelowOrdinaryIdCodeCountPreserveBytes(
             int depth, String id, int submissions) throws Exception {
         assertUnchanged(levels(depth), id, submissions);
     }

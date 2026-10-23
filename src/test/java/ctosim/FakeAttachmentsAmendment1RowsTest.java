@@ -12,6 +12,26 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 class FakeAttachmentsAmendment1RowsTest extends FakeAttachmentsAmendment1Support {
+    static Stream<Arguments> earlyIdExpansionsWithinOrdinaryLeafCount() {
+        return Stream.of(
+                Arguments.of(0, 4, new int[] {4, 1, 1}),
+                Arguments.of(0, 20, new int[] {20, 1, 1}),
+                Arguments.of(0, 26, new int[] {26, 1, 1}),
+                Arguments.of(0, 27, new int[] {27, 1, 1}),
+                Arguments.of(1, 10, new int[] {3, 4, 1}),
+                Arguments.of(1, 26, new int[] {3, 9, 1}),
+                Arguments.of(1, 27, new int[] {3, 9, 1}),
+                Arguments.of(0, 486, new int[] {486, 1, 1, 1, 1, 1, 1, 1}));
+    }
+
+    @ParameterizedTest @MethodSource("earlyIdExpansionsWithinOrdinaryLeafCount")
+    void submissionsAboveIdCodeCountExpandEvenWhenOrdinaryFileHasEnoughRows(
+            int idLevel, int submissions, int[] branches) throws Exception {
+        Table actual = table(FakeAttachments.of(levels(branches.length), SEED,
+                "q" + idLevel, submissions), "places");
+        assertPaths(actual, idLevel, submissions, branches);
+    }
+
     @ParameterizedTest @ValueSource(ints = {4, 9, 10, 12, 99, 100, 501, 1001})
     void firstAndOnlyLevelHasExactlyTheRequestedNumberOfDistinctCodes(int submissions) throws Exception {
         Table actual = table(FakeAttachments.of(levels(1), SEED, "q0", submissions), "places");

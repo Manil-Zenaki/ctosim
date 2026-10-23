@@ -170,11 +170,14 @@ the unchanged rules of spec 12; no production source was opened or searched.
 
 17. **Question:** Does a requested count greater than the number of distinct
     codes at an early id level, but no greater than the ordinary leaf count,
-    cause expansion? **Assumption:** No. The explicit final "Otherwise" clause
-    compares submissions with the ordinary number of rows in the entire file.
-    In a three-level tree, requests through 27 leave even a first-level id
-    unchanged, despite there being only three distinct first-level ids.
-    **Tests:** `countsAtOrBelowOrdinaryLeafCountPreserveBytesEvenWhenIdCountIsSmaller`.
+    cause expansion? **Resolved assumption:** Yes. The Clarification of
+    Amendment 1 explicitly supersedes the original assumption: compare
+    submissions with the ordinary number of codes of the id level. In a
+    three-level tree, a first-level id expands above 3 submissions and a
+    second-level id expands above 9, even when submissions do not exceed 27.
+    At or below the id-code threshold, files and key answers remain unchanged.
+    **Tests:** `countsAtOrBelowOrdinaryIdCodeCountPreserveBytes` and
+    `submissionsAboveIdCodeCountExpandEvenWhenOrdinaryFileHasEnoughRows`.
 
 18. **Question:** Does expansion impose a CSV row order, or preserve row prefixes
     or random values from the smaller unexpanded file? **Assumption:** No new
@@ -243,3 +246,19 @@ the unimplemented API (`UnsupportedOperationException: not implemented yet`,
 or an exception-type assertion reporting that exception). No fixture-loading
 failures were reported. This is the expected pre-implementation result, not
 a passing test suite. Log: `.codex-runs/fake-attachments-amendment1-tests.log`.
+
+### Dispute 2 build verification
+
+After correcting assumption 17's tests, `.\mvnw.cmd -o -q test` still stopped
+at `testCompile` with a fatal compiler error naming
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+Log: `.codex-runs/fake-attachments-dispute2-test.log`.
+
+The existing in-memory classpath diagnostic compiled all 10
+`FakeAttachments*.java` test/support sources and a temporary JUnit runner
+with Java release 17 against compiled public APIs and cached dependencies.
+All 174 tests across the three Amendment 1 classes and the discovery class
+then passed through JUnit Platform, including both disputed areas. This
+verifies targeted compilation and execution, not a successful Maven build.
+Logs: `.codex-runs/fake-attachments-dispute2-probe-compile.log` and
+`.codex-runs/fake-attachments-disputes-focused-tests.log`.

@@ -60,3 +60,67 @@ level is expanded (3 codes, 20 submissions: 20 codes).
 
 Requested: expect expansion when the submissions exceed the id level's
 own codes, and keep the byte-for-byte check for counts at or below them.
+
+## Adjudication of the current disputed tests
+
+### Dispute 1: retain the corrected constraint fixtures
+
+The existing adjudication remains valid. Spec 12 takes a `LoadedForm` and
+scans bind expressions, including constraints. Its Errors section requires
+unreadable calls to add nothing without throwing; it does not require the
+loader to initialise malformed calculations. The current four disputed
+cases already put the invalid calls in a question's constraint and retain
+a valid calculation. Keep those tests unchanged: their no-throw and exact
+`age,id` header assertions test spec 12 without evaluating the invalid
+calls at form initialisation.
+
+### Dispute 2: upheld; use the ordinary id-code count as the threshold
+
+The Clarification of Amendment 1 explicitly corrects assumption 17. The
+comparison is with the ordinary number of codes at the id level, not the
+file's terminal row count. The seven disputed unchanged-file expectations
+are therefore incorrect, even though they followed the earlier wording.
+
+Renamed the preservation test to
+`countsAtOrBelowOrdinaryIdCodeCountPreserveBytes`. Retained its valid cases
+and added early-level boundary cases: first-level requests through 3 and
+second-level requests through 9 must preserve both exact CSV bytes and key
+answers. The existing terminal-level thresholds of 27 and 486 remain.
+
+Added `submissionsAboveIdCodeCountExpandEvenWhenOrdinaryFileHasEnoughRows`
+with all seven disputed inputs and the clarification's explicit 20-submission
+example. Expected branch counts follow Amendment 1:
+
+- First-level ids in a three-level file with 4, 20, 26, or 27 submissions
+  have that many first-level codes and one child at each following level.
+- Second-level ids with 10 submissions have 3 parents with 4 children each
+  (12 rows); with 26 or 27 submissions they have 9 children per parent
+  (27 rows). The last level has one child per id.
+- A first-level id in an eight-level file with 486 submissions has 486
+  first-level codes and one child at every subsequent level.
+
+The existing independent path oracle checks complete code paths, padding,
+exact row counts, one distinct id per row, and enough rows for the requested
+submissions. It imposes no additional CSV row ordering. Updated question 17
+to record the clarification instead of preserving the superseded assumption.
+
+### Validation
+
+Ran `.\mvnw.cmd -o -q test`; it stopped at `testCompile` with a fatal
+compiler error naming `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+Log: `.codex-runs/fake-attachments-dispute2-test.log`. This is not a passing
+Maven build.
+
+Reused the existing in-memory classpath compiler diagnostic against compiled
+public APIs and cached dependencies. All 10 `FakeAttachments*.java` test and
+support sources, plus the temporary JUnit runner, compiled with Java release
+17. Log: `.codex-runs/fake-attachments-dispute2-probe-compile.log`.
+
+Ran all three Amendment 1 test classes and `FakeAttachmentsDiscoveryTest`
+through JUnit Platform: 174 tests started, 174 passed, no skipped tests or
+failed containers. This includes all four malformed-call fixtures from
+Dispute 1 and the corrected threshold and expansion cases from Dispute 2.
+Log: `.codex-runs/fake-attachments-disputes-focused-tests.log`.
+
+No production source was read or modified, no dependencies or build
+configuration were changed, and no commit was made.
