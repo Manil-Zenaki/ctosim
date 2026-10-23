@@ -429,3 +429,12 @@ public SimulationConfig withProblems(ProblemRates problems);  // null: no proble
   `withProblems` keep every other setting.
 - `ProblemRates`' constructor throws `IllegalArgumentException` when a
   rate is not between 0 and 1 (NaN included).
+
+Clarification (Amendment 6): assumptions 38–41 of the questions file are
+reviewed one by one and confirmed: each rate is checked on its own, with
+no sum or feasibility rule, which belong to spec 14, and an all-zero
+object is a present setting (38); rates follow the number rules of the
+earlier rates, and the constructor rejects NaN and infinities (39); only
+the top-level key and its seven members are new (40); the usual
+diagnostics, input rules and copies apply, and `withProblems(null)`
+clears the setting while a JSON `null` is an error (41).
