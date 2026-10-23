@@ -295,3 +295,49 @@ whether the filter depends on the answers (23); the history of received
 ids covers the whole `walkAll()`, and the warning counts submissions (24);
 the draw depends on the seed, `n`, the offered choices and the ids already
 received only (25); a standalone `walk` has no shared history (26).
+
+## Amendment 3: upper questions of a cascade steered to free ids
+
+With Amendment 2, the village of a district-village-household cascade is
+still drawn freely, so a village drawn more often than others runs out
+of households while others keep free ones (11 repeated ids in 100
+submissions of the IPA household form, although its file had 108
+households). A team does not go back to a village whose households have
+all been interviewed. Everything not mentioned here is unchanged.
+
+### The cascade
+
+When the id question is given its id at the question (Amendment 2) and
+the `text` (or `filterText`) argument of its `search()` call is a single
+reference to another `select_one` question whose choices are loaded by
+`search()`, that question is the id's **upper question**; the upper
+question of an upper question is found the same way, and so on. (In the
+IPA form: `hhid`'s upper question is `a_kg_id`, whose upper question is
+`a_district_id`.)
+
+### Viable choices
+
+At a point of a submission, a choice `c` of an upper question is
+**viable** when, with `c` as that question's answer and the other
+answers as they are:
+
+- for the upper question of the id question: the id question would offer
+  (spec 07, Amendment 3) at least one choice, other than the
+  configuration's special values, that no earlier submission of the same
+  `walkAll()` received;
+- for a higher upper question: the question below it would offer at least
+  one viable choice.
+
+### Answering an upper question
+
+When the walker answers an upper question during `walkAll()`, and at
+least one of the choices it offers is viable:
+
+- the answer is drawn among the viable offered choices: with the weights
+  of the question's override restricted to them when it has weights,
+  uniformly otherwise, from `config.seed()` and the submission number;
+- the missing rate does not apply to the question.
+
+When no offered choice is viable, or outside `walkAll()`, the question is
+answered as before. A question whose override has a `value`, `texts` or
+an expression, or whose rules apply, is answered as before too.
