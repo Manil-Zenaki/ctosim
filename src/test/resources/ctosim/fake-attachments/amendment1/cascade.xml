@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml">
+  <h:head>
+    <h:title>Expanded survey id cascade</h:title>
+    <model>
+      <instance><data id="expanded_ids">
+        <district/><village/><household/><member/><textkey/><intkey/>
+        <phone/><latitude/><area/><age/><select_value/>
+      </data></instance>
+      <bind nodeset="/data/district" type="string"/>
+      <bind nodeset="/data/village" type="string"/>
+      <bind nodeset="/data/household" type="string"/>
+      <bind nodeset="/data/member" type="string"/>
+      <bind nodeset="/data/textkey" type="string"/>
+      <bind nodeset="/data/intkey" type="int"/>
+      <bind nodeset="/data/phone" type="string" calculate="pulldata('places','phone','text_id',/data/textkey)"/>
+      <bind nodeset="/data/latitude" type="string" calculate="pulldata('places','latitude','text_id',/data/textkey)"/>
+      <bind nodeset="/data/area" type="string" calculate="pulldata('places','area','text_id',/data/textkey)"/>
+      <bind nodeset="/data/age" type="string" calculate="pulldata('places','age','int_id',/data/intkey)"/>
+      <bind nodeset="/data/select_value" type="string" calculate="pulldata('places','total','lookup_id',/data/household)"/>
+    </model>
+  </h:head>
+  <h:body>
+    <select1 ref="/data/district" appearance="search('places')">
+      <label>District</label><item><label>DISTRICT</label><value>district_code</value></item>
+    </select1>
+    <select1 ref="/data/village" appearance="search('places','matches','district_match',/data/district)">
+      <label>Village</label><item><label>VILLAGE</label><value>village_code</value></item>
+    </select1>
+    <select1 ref="/data/household" appearance="minimal search('places','matches','village_match',/data/village)">
+      <label>Household</label><item><label>HOUSEHOLD</label><value>household_code</value></item>
+    </select1>
+    <select1 ref="/data/member" appearance="search('places','matches','household_match',/data/household,'district_filter',/data/district)">
+      <label>Member</label><item><label>MEMBER</label><value>member_code</value></item>
+    </select1>
+    <input ref="/data/textkey"><label>Text lookup</label></input>
+    <input ref="/data/intkey"><label>Integer lookup</label></input>
+  </h:body>
+</h:html>

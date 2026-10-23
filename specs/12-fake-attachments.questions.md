@@ -151,3 +151,95 @@ with `-e` both stopped at `testCompile`. The diagnostic again reports
 the revised fixtures' compilation and runtime behavior could not be verified.
 Logs: `.codex-runs/fake-attachments-adjudication-test.log` and
 `.codex-runs/fake-attachments-adjudication-diagnostic.log`.
+
+## Amendment 1 questions and assumptions
+
+Only new `FakeAttachmentsAmendment1*` classes and the new
+`amendment1/cascade.xml` fixture were added for this amendment. Existing test
+classes and fixtures are unchanged. Expectations come from Amendment 1 and
+the unchanged rules of spec 12; no production source was opened or searched.
+
+16. **Question:** Does padding apply when the id is the first level, which has
+    no parent code? **Assumption:** Yes. The first-level clause calls the number
+    of codes `b`, and the following padding rule applies when `b > 9` without
+    an exception for the first level. For 12 codes the set is `01` through
+    `12`; for 100 codes it is `001` through `100`.
+    **Tests:** `firstAndOnlyLevelHasExactlyTheRequestedNumberOfDistinctCodes`,
+    `firstLevelPaddingUsesAsciiDigitsAndEveryCodeHasTheSameWidth`, and
+    `expandedFirstLevelHasOneChildAtEachFollowingLevel`.
+
+17. **Question:** Does a requested count greater than the number of distinct
+    codes at an early id level, but no greater than the ordinary leaf count,
+    cause expansion? **Assumption:** No. The explicit final "Otherwise" clause
+    compares submissions with the ordinary number of rows in the entire file.
+    In a three-level tree, requests through 27 leave even a first-level id
+    unchanged, despite there being only three distinct first-level ids.
+    **Tests:** `countsAtOrBelowOrdinaryLeafCountPreserveBytesEvenWhenIdCountIsSmaller`.
+
+18. **Question:** Does expansion impose a CSV row order, or preserve row prefixes
+    or random values from the smaller unexpanded file? **Assumption:** No new
+    row ordering or cross-size prefix guarantee is specified. As in assumption
+    14, path tests compare complete path sets and cardinalities. Key-answer
+    lists still follow the actual CSV row order. Same-size generations with
+    the same seed are reproducible; counts that yield the same branch counts
+    have the same rows and random sequence (seed and file name determine it).
+    **Tests:** all `FakeAttachmentsAmendment1RowsTest` path-oracle cases,
+    expanded key-answer tests, and
+    `requestsThatRoundToTheSameBranchCountProduceIdenticalResults`.
+
+19. **Question:** If a form is null and submissions is negative, which exception
+    wins? Is there a practical upper bound for a positive expansion request?
+    **Assumption:** Neither error precedence nor a resource/overflow policy is
+    specified, so the conflicting-error case and expansions approaching
+    `Integer.MAX_VALUE` are not asserted. Null forms are tested with
+    nonnegative counts, and negative counts (including `Integer.MIN_VALUE`)
+    with a valid form. `Integer.MAX_VALUE` is tested only with no id, where
+    expansion cannot apply. Positive expanded cases reach 1,458 rows.
+    **Tests:** null-form and negative-count parameterizations,
+    `maximumSubmissionCountWithNoIdDoesNotExpandOrAllocateRows`, and
+    `expansionRemovesTheCapButPreservesOrdinaryTwoAndOneChildAncestors`.
+
+20. **Question:** When multiple selects name the same value column, is the id
+    level the column's first occurrence or the id question's body position?
+    **Assumption:** Levels remain deduplicated by value column, in body order.
+    Either select therefore identifies the same existing level; expansion
+    must not add a level for the duplicate select.
+    **Tests:** `duplicateSearchValueColumnIdentifiesTheExistingLevelWithoutAddingAnotherLevel`.
+
+21. **Question:** Does the idField parameter also accept absolute paths, trim
+    whitespace, or resolve ambiguous duplicate leaf names in different groups?
+    **Assumption:** These behaviors are not specified and are not tested. Tests
+    pass unique question names, including a Unicode name; an unknown name,
+    wrong case, empty string, or a column name that is not a question leaves
+    the files unchanged. A `select_one` with an integer bind still qualifies
+    because eligibility is stated in terms of the question kind.
+    **Tests:** `absentOrUnknownQuestionNameLeavesFilesAndKeysUnchanged`,
+    `unicodeQuestionNameCanIdentifyTheExpandedLevel`, and
+    `integerBoundSelectOneIsStillEligibleForExpandedCodes`.
+
+### Amendment 1 build verification
+
+The requested `.\mvnw.cmd -o -q test-compile` failed at `testCompile`.
+A diagnostic retry with `-e` confirmed `java.nio.file.AccessDeniedException`
+for `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` in
+`WindowsPath.toRealPath` while closing the JDK ZIP filesystem. Logs:
+`.codex-runs/fake-attachments-amendment1-compile.log` and
+`.codex-runs/fake-attachments-amendment1-compile-diagnostic.log`.
+
+An additional local compiler diagnostic successfully compiled all ten
+`FakeAttachments*.java` test/support sources with Java release 17 against
+the existing compiled public APIs and cached JUnit/JavaRosa dependencies.
+The diagnostic serves classpath binaries from memory to avoid the Windows
+ZIP filesystem failure; it does not inspect production source, copy a Maven
+repository, map a drive, or change dependencies/build configuration. Its
+output is confined to `.codex-runs/`. The final diagnostic also compiled the
+temporary JUnit runner (11 sources total). Log:
+`.codex-runs/fake-attachments-amendment1-probe-compile.log`.
+This establishes targeted source compilation, not a successful Maven build.
+
+A focused JUnit Platform run of the three new test classes discovered and
+started 125 test invocations, with no failed containers. All 125 failed at
+the unimplemented API (`UnsupportedOperationException: not implemented yet`,
+or an exception-type assertion reporting that exception). No fixture-loading
+failures were reported. This is the expected pre-implementation result, not
+a passing test suite. Log: `.codex-runs/fake-attachments-amendment1-tests.log`.
