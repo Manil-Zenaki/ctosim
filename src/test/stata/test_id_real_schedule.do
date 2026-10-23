@@ -15,8 +15,9 @@ a7_plan_times
 
 // Observable village consequence: all pairs of GPS answers per enumerator/day
 // are within 3 km + two 30 m answer offsets (spec 13), not just adjacent pairs.
-confirm numeric variable gps_latitude gps_longitude
-assert !missing(gps_latitude, gps_longitude)
+// Plain import uses Stata's default names for gps-Latitude/gps-Longitude.
+confirm numeric variable gpslatitude gpslongitude
+assert !missing(gpslatitude, gpslongitude)
 sort username a7_day a7_start
 by username a7_day: generate long a7_group_size = _N
 quietly count if a7_group_size > 1
@@ -25,9 +26,9 @@ forvalues i = 1/`=_N' {
     forvalues j = 1/`=_N' {
         if username[`i'] == username[`j'] & a7_day[`i'] == a7_day[`j'] {
             local p = c(pi)/180
-            local h = sin((gps_latitude[`i']-gps_latitude[`j'])*`p'/2)^2 + ///
-                cos(gps_latitude[`i']*`p')*cos(gps_latitude[`j']*`p') * ///
-                sin((gps_longitude[`i']-gps_longitude[`j'])*`p'/2)^2
+            local h = sin((gpslatitude[`i']-gpslatitude[`j'])*`p'/2)^2 + ///
+                cos(gpslatitude[`i']*`p')*cos(gpslatitude[`j']*`p') * ///
+                sin((gpslongitude[`i']-gpslongitude[`j'])*`p'/2)^2
             local distance = 2*6371000*asin(min(1,sqrt(`h')))
             assert `distance' <= 3060.1
         }

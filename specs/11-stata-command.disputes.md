@@ -396,3 +396,89 @@ them `gps_latitude`.
 
 Requested: read `gpslatitude` and `gpslongitude` (or rename them in the
 test before use), keeping the distance checks unchanged.
+
+## Adjudication (2026-10-23)
+
+### Dispute 1 - prior correction retained
+
+The spec derives the default output directory from the form basename and
+requires error 602 for an existing report without `replace`. The current
+`test_options_paths.do` uses distinct numeric suffixes for its case variants,
+so it does not assume case-sensitive paths. Keep it unchanged.
+
+### Dispute 2 - prior correction retained
+
+Amendment 1 replaces unconditional use of Stata's Java with the first eligible
+Java 17-or-newer candidate in the specified order. The current
+`test_runtime_selection.do` already omits the obsolete Java assertion and
+retains its configured-Python checks. Keep it unchanged.
+
+### Dispute 3 (compiled support jars) - prior correction retained
+
+The spec requires runnable batch tests, not versioned compiled support jars.
+The runner builds both support jars from source under `.codex-runs/stata-support/`,
+and neither remains in the fixture directory. No further change is needed.
+
+### Dispute 3 (prompt-prefixed assert example) - prior correction retained
+
+Amendment 3 requires an answer-constraint assertion in a command example but
+does not forbid Stata's displayed prompt. The current helper accepts the
+optional prompt and retains its answer-predicate check. Keep it unchanged.
+
+### Dispute 4 - prior correction retained
+
+The fixture explicitly encodes stdout and stderr as UTF-8, consistent with
+the referenced simulator contract. Its Unicode, strict-decoding, display and
+template-failure checks remain valid. No further change is needed.
+
+### Dispute 5 - prior correction retained
+
+Step 5 and Amendment 6 specify results when `ctosim` returns, not after a
+caller command replaces `r()`. All five disputed sites already call
+`a6_results` before closing their logs. Keep those checks and their log
+assertions unchanged.
+
+### Dispute 6 - accepted; use the default imported GPS variable names
+
+Spec 08's geopoint rule names the exported columns `<name>-Latitude` and
+`<name>-Longitude`. Spec 11 step 4 explicitly requires Stata's default
+variable naming when importing without `dofile()`. Neither Amendment 7 nor
+its confirmed G3 assumption introduces a rename to underscore-separated
+names. The test's `gps_latitude` and `gps_longitude` references therefore
+impose an unsupported naming convention.
+
+Changed every coordinate reference in `test_id_real_schedule.do` to
+`gpslatitude` and `gpslongitude`. Retained the numeric/nonmissing assertions,
+all timing checks, the non-vacuity check, all within-enumerator/day pairs,
+the distance formula and the 3,060.1-metre bound. That bound follows spec 13's
+1.5-km village radius, two 30-metre answer offsets and the confirmed G3
+precision allowance. No production change is warranted by this dispute.
+
+### Validation for this adjudication
+
+A standalone CSV-import probe using the exact step-4 import options passed
+in both Stata 16 and Stata 19. It confirms that `gps-Latitude` and
+`gps-Longitude` import as numeric `gpslatitude` and `gpslongitude`, with
+their values intact. Probe files and logs are under
+`.codex-runs/stata-dispute6/`; the probe does not invoke `ctosim`.
+
+Ran `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`.
+All test-support fixtures compiled successfully, including their output/help
+oracle self-checks. The corrected `test_id_real_schedule.do` passed through
+its final distance assertion. All sixteen `test_id_*.do` files passed, as did
+the previously disputed options-paths, runtime-selection, advanced-help,
+fake-preload display/template-failure and form-problem tests.
+
+Full-suite result: **82 do-files, 70 passed, 12 failed** (runner exit status 1).
+The seven `test_amendment_*.do` and five `test_converter_name_*.do` failures
+occur in launcher cleanup: access is denied while removing existing
+`temp/hsperfdata_manil` directories, before the child command assertions run.
+The launcher logs under `.codex-runs/stata-amendment/` and
+`.codex-runs/stata-converter-name/` confirm the same environmental cause as
+previous adjudications. No unrelated cleanup logic or permissions were
+changed. Per-do-file runner logs are under `target/stata-tests/`.
+
+Also ran `.venv\Scripts\python -B src/test/stata/fixtures/help_use_cases_oracle_tests.py`:
+**16 tests passed**. `git diff --check` passed. Only the disputed GPS test and
+this disputes file were changed. No production implementation was read or
+modified, and no commit was made.
