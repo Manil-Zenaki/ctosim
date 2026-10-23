@@ -48,19 +48,25 @@ public final class FakeAttachments {
     }
 
     /** The fictitious files for the form's missing attachments, drawn with {@code seed}. */
-    /** Fictitious files with enough rows for distinct survey ids. See specs/12-fake-attachments.md, Amendment 1. */
-    public static FakeAttachments of(LoadedForm form, long seed, String idField, int submissions) {
-        throw new UnsupportedOperationException("not implemented yet");
+    public static FakeAttachments of(LoadedForm form, long seed) {
+        return of(form, seed, null, 0);
     }
 
-    public static FakeAttachments of(LoadedForm form, long seed) {
+    /**
+     * The fictitious files, with enough codes in the survey id's level for {@code submissions}
+     * distinct ids. See specs/12-fake-attachments.md, Amendment 1.
+     */
+    public static FakeAttachments of(LoadedForm form, long seed, String idField, int submissions) {
         Objects.requireNonNull(form, "form");
+        if (submissions < 0) {
+            throw new IllegalArgumentException("submissions must not be negative: " + submissions);
+        }
         Reading reading = new Reading(form);
         SortedMap<String, String> files = new TreeMap<>();
         SortedMap<String, List<String>> keys = new TreeMap<>();
         for (String name : form.attachments().missing(reading.files.keySet())) {
             FileUse use = reading.files.get(name);
-            Table table = build(use, reading, seed, name);
+            Table table = build(use, reading, seed, name, idLevel(use, idField), submissions);
             files.put(name, table.csv());
             for (Map.Entry<String, String> key : use.keyQuestions.entrySet()) {
                 String question = key.getKey();
@@ -89,6 +95,7 @@ public final class FakeAttachments {
         final Set<String> columns = new LinkedHashSet<>();
         final List<String> levels = new ArrayList<>();             // value columns of search() selects
         final Map<String, String> levelOfSelect = new HashMap<>();  // select path -> its level column
+        final Set<String> selectOnes = new HashSet<>();               // paths of the select_one search() selects
         final Map<String, String> levelOfLabel = new HashMap<>();   // label column -> its level column
         final Map<String, String> comparedSelect = new HashMap<>(); // match/filter column -> select path
         final Set<String> matchOrFilter = new HashSet<>();           // match and filter columns
@@ -244,6 +251,9 @@ public final class FakeAttachments {
                     use.levels.add(valueColumn);
                 }
                 use.levelOfSelect.put(path, valueColumn);
+                if ("select1".equals(select.getLocalName())) {
+                    use.selectOnes.add(path);
+                }
                 if (placeholder[1] != null && !placeholder[1].isBlank()) {
                     use.columns.add(placeholder[1]);
                     use.levelOfLabel.putIfAbsent(placeholder[1], valueColumn);
@@ -424,9 +434,22 @@ public final class FakeAttachments {
         }
     }
 
-    private static Table build(FileUse use, Reading reading, long seed, String name) {
+    /** The level of the survey id's select_one in this file, or -1 (spec 12, Amendment 1). */
+    private static int idLevel(FileUse use, String idField) {
+        if (idField == null) {
+            return -1;
+        }
+        for (String path : use.selectOnes) {
+            if (path.substring(path.lastIndexOf('/') + 1).equals(idField)) {
+                return use.levels.indexOf(use.levelOfSelect.get(path));
+            }
+        }
+        return -1;
+    }
+
+    private static Table build(FileUse use, Reading reading, long seed, String name, int idLevel, int submissions) {
         SplittableRandom random = new SplittableRandom(seed * 0x9E3779B97F4A7C15L + name.hashCode());
-        List<List<String>> paths = codePaths(use.levels.size());
+        List<List<String>> paths = codePaths(use.levels.size(), idLevel, submissions);
         int n = paths.isEmpty() ? ROWS_WITHOUT_LEVELS : paths.size();
         List<String> header = new ArrayList<>(use.columns);
         List<List<String>> rows = new ArrayList<>(n);
@@ -441,29 +464,57 @@ public final class FakeAttachments {
         return new Table(header, rows);
     }
 
-    /** The code of each level on each row: a tree of codes with at most MAX_ROWS leaves. */
-    private static List<List<String>> codePaths(int levels) {
+    /**
+     * The code of each level on each row: a tree of codes with at most MAX_ROWS leaves, except
+     * that the survey id's level gets at least {@code submissions} codes (spec 12, Amendment 1).
+     */
+    private static List<List<String>> codePaths(int levels, int idLevel, int submissions) {
         if (levels == 0) {
             return List.of();
         }
+        boolean expand = idLevel >= 0 && submissions > normalCodes(idLevel);
         List<List<String>> paths = new ArrayList<>();
-        for (int c = 1; c <= 3; c++) {
-            paths.add(List.of(Integer.toString(c)));
+        int first = expand && idLevel == 0 ? Math.max(3, submissions) : 3;
+        for (int c = 1; c <= first; c++) {
+            paths.add(List.of(index(c, first)));
         }
         for (int level = 1; level < levels; level++) {
             int b = paths.size() * 3 <= MAX_ROWS ? 3 : paths.size() * 2 <= MAX_ROWS ? 2 : 1;
+            if (expand && level == idLevel) {
+                b = Math.max(b, (submissions + paths.size() - 1) / paths.size());
+            } else if (expand && level > idLevel) {
+                b = 1;
+            }
             List<List<String>> next = new ArrayList<>(paths.size() * b);
             for (List<String> parent : paths) {
                 String p = parent.get(parent.size() - 1);
                 for (int c = 1; c <= b; c++) {
                     List<String> child = new ArrayList<>(parent);
-                    child.add(p + c);
+                    child.add(p + index(c, b));
                     next.add(child);
                 }
             }
             paths = next;
         }
         return paths;
+    }
+
+    /** The number of codes "Rows" gives a level. */
+    private static long normalCodes(int level) {
+        long codes = 3;
+        for (int l = 1; l <= level; l++) {
+            codes *= codes * 3 <= MAX_ROWS ? 3 : codes * 2 <= MAX_ROWS ? 2 : 1;
+        }
+        return codes;
+    }
+
+    /** A child's index, padded with zeros to the width of {@code b} when b is larger than 9. */
+    private static String index(int c, int b) {
+        String text = Integer.toString(c);
+        if (b <= 9) {
+            return text;
+        }
+        return "0".repeat(Integer.toString(b).length() - text.length()) + text;
     }
 
     private static String value(String column, FileUse use, Reading reading, List<String> path, int row,
