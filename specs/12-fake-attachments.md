@@ -203,3 +203,12 @@ that the file has at least `submissions` rows:
 Otherwise (no `idField`, a field that is not such a question, or
 `submissions` of at most the number of rows "Rows" gives), the files are
 as before.
+
+Clarification (Amendment 1): assumptions 16–21 of the questions file are
+reviewed one by one. They are confirmed (16, 18–21), except 17, where the
+amendment's wording was ambiguous: the comparison of its last paragraph
+is with the number of **codes of the id level** that "Rows" gives, not
+with the number of rows of the file. An id at the first level of a
+three-level file has 3 codes, so 20 submissions expand that level to 20
+codes, although the file had 27 rows. The test that keeps such a file
+unchanged goes through a dispute.

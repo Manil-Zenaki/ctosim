@@ -281,3 +281,17 @@ walker reaches it**, instead of from the visit:
 A `search()` list whose arguments are all string literals keeps the
 rule of Amendment 1. `walk(number, visit)` alone, outside `walkAll()`,
 answers such a question as usual.
+
+Clarification (Amendment 2): assumptions 20–26 of the questions file are
+reviewed one by one and confirmed, with decisions on the two points left
+open. When the question offers no choice at all, or only special values
+(21), it is answered as usual and no id counts as received. An id counts
+as received only when the engine accepted it as the answer (22); a
+repeated id question, read-only or irrelevant questions and conditional
+overrides are not prescribed. Also confirmed: the earlier test of an
+answer-dependent filter allocated at opening is superseded and goes
+through a dispute (20); only the `text` and `filterText` positions decide
+whether the filter depends on the answers (23); the history of received
+ids covers the whole `walkAll()`, and the warning counts submissions (24);
+the draw depends on the seed, `n`, the offered choices and the ids already
+received only (25); a standalone `walk` has no shared history (26).
