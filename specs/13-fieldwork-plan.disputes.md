@@ -94,3 +94,17 @@ This supplements, but does not establish, a successful Maven build.
 
 No production source was read or changed, no build configuration or fixtures
 were changed, and no commit was made.
+
+## Dispute 2: an Amendment 1 test of an answer-dependent filter (Amendment 2)
+
+`FieldworkAmendment1SearchIdTest.idPoolUsesBlankOrDefaultValuesBeforeAnEarlierQuestionIsAnswered`,
+both cases (`no repeats before exhaustion ==> expected: <2> but was:
+<1>`, line 103), allocates visit ids at opening for
+`search('opening', 'matches', 'region', /data/region)`. That filter's
+`text` argument is a field reference, so Amendment 2 now gives the id at
+the question and the visit's `id()` is null; assumption 20 of the
+questions file records the conflict. The Amendment 2 tests of the same
+situation pass.
+
+Requested: drop this case, or turn it into a case with a literal filter,
+which keeps Amendment 1's rule.

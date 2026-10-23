@@ -47,3 +47,16 @@ compilation and execution of the revised fixtures remain unverified in this
 sandbox. Logs are `.codex-runs/fake-attachments-adjudication-test.log` and
 `.codex-runs/fake-attachments-adjudication-diagnostic.log`. No production
 source was read or modified.
+
+## Dispute 2: an id level compared with the file's rows (Amendment 1)
+
+`FakeAttachmentsAmendment1ContractTest.countsAtOrBelowOrdinaryLeafCountPreserveBytesEvenWhenIdCountIsSmaller`,
+seven cases (line 64), expects a file whose id level has fewer codes than
+the submissions to stay unchanged as long as the submissions do not
+exceed the file's rows (for an id at the first level of a three-level
+file, up to 27). The Clarification of Amendment 1 corrects assumption 17:
+the comparison is with the number of codes of the id level, so such a
+level is expanded (3 codes, 20 submissions: 20 codes).
+
+Requested: expect expansion when the submissions exceed the id level's
+own codes, and keep the byte-for-byte check for counts at or below them.
