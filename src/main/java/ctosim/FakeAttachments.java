@@ -48,6 +48,11 @@ public final class FakeAttachments {
     }
 
     /** The fictitious files for the form's missing attachments, drawn with {@code seed}. */
+    /** Fictitious files with enough rows for distinct survey ids. See specs/12-fake-attachments.md, Amendment 1. */
+    public static FakeAttachments of(LoadedForm form, long seed, String idField, int submissions) {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     public static FakeAttachments of(LoadedForm form, long seed) {
         Objects.requireNonNull(form, "form");
         Reading reading = new Reading(form);

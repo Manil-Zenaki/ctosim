@@ -247,3 +247,37 @@ file or column gives the static choices, an empty file or no matching
 row gives none, and search diagnostics belong to the submissions (18);
 schedules are checked through their consequences, without a prescribed
 random sequence (19).
+
+## Amendment 2: survey ids chosen through a cascade
+
+Checking the IPA household form showed that Amendment 1 does not work
+for the usual cascade (district, then village, then the household from
+the preloaded list, each list filtered by the previous answer): when the
+form is opened no village is chosen yet, so the household list is empty,
+and every submission drew its id as usual, with repeats. Everything not
+mentioned here is unchanged.
+
+### Ids given at the question
+
+A `select_one` id question whose choices are loaded by `search()` with a
+**filter that depends on the form's answers** (a `text` or `filterText`
+argument of the call that is not a string literal, spec 07 Amendment 3)
+and whose override has no `value` or `texts` gets its id **when the
+walker reaches it**, instead of from the visit:
+
+- the visit's `id()` is null, and the plan has no possible values for it
+  (no warning of "Survey ids" for it);
+- submission `n` is answered with a value drawn uniformly, from
+  `config.seed()` and `n`, among the choices the question offers then
+  (spec 07, Amendment 3), without the configuration's special values,
+  that no earlier submission of the same `walkAll()` received;
+- when every offered choice has already been received, the value is
+  drawn among all of them, and `warnings()` holds, after the other
+  warnings, one warning that names the field and gives the number of
+  submissions whose id was used before;
+- the missing rate does not apply to the question, as for a visit's id
+  (Clarification of the original spec).
+
+A `search()` list whose arguments are all string literals keeps the
+rule of Amendment 1. `walk(number, visit)` alone, outside `walkAll()`,
+answers such a question as usual.

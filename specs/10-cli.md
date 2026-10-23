@@ -339,3 +339,10 @@ place of the walker's while its other warnings come last (32); key
 answers of Amendment 2 are set before the plan is built, and an assigned
 id is never blanked by the missing rate (33); runs are deterministic
 across directories and time zones (34).
+
+### Clarification of Amendment 4: fictitious files sized for the survey ids
+
+With `--fake-attachments`, step 1 of Amendment 2 now builds
+`FakeAttachments.of(form, seed, id, N)`, with the run's survey id
+question (`--id` or the configuration's `id`, null when none) and number
+of submissions (spec 12, Amendment 1).

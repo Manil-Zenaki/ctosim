@@ -160,3 +160,46 @@ those the form reads with `pulldata()` or `search()` (as described
 above) whose `<name>.csv` the media directory does not hold, whether or
 not `missingAttachments()` lists them. A `search()` call that spec 07
 cannot read (another number of arguments, an unknown type) reads nothing.
+
+## Amendment 1: enough rows for distinct survey ids
+
+With the fieldwork plan (spec 13), each submission should get its own
+survey id. When that id is chosen from a fictitious file, the file must
+hold at least as many ids as there are submissions; with three codes a
+level, a district-village-household file has 27 households. Everything
+not mentioned here is unchanged.
+
+### API addition
+
+```java
+public static FakeAttachments of(LoadedForm form, long seed, String idField, int submissions);
+```
+
+- `of(form, seed)` is `of(form, seed, null, 0)`.
+- `of(null, ...)` throws `NullPointerException`; a negative `submissions`
+  throws `IllegalArgumentException`.
+
+### The id's level
+
+When `idField` names a `select_one` question whose choices are loaded by
+`search()` from a fictitious file and whose value column is a level of
+that file (its **id level**), the codes of the id level are built so
+that the file has at least `submissions` rows:
+
+- the levels before the id level are built as in "Rows";
+- each code of the level before the id level (or the id level itself,
+  when it is the first level) has `b` child codes in the id level, where
+  `b` is the number of the rule of "Rows", or the number of parent codes
+  divided into `submissions` and rounded up when that is larger (for the
+  first level, `b` is the number of its codes: 3, or `submissions` when
+  larger);
+- when `b` is larger than 9, the index of a child is written with as many
+  digits as `b`, padded with zeros (`p01` ... `p12`), so that codes stay
+  distinct;
+- the levels after the id level have one child code per code;
+- the limit of 500 rows does not apply to such a file: it has as many
+  rows as the id level has codes.
+
+Otherwise (no `idField`, a field that is not such a question, or
+`submissions` of at most the number of rows "Rows" gives), the files are
+as before.
