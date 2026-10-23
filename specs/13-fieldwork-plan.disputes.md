@@ -181,3 +181,56 @@ that draw, not on the specified behaviour.
 Requested: drop the assertion on the 8th submission's warning (or
 accept 0 or 1 warning with the matching reuse count), or use 7
 submissions, keeping the steering assertions.
+
+## Adjudication of Dispute 3 (2026-10-23)
+
+### Reuse warning after reachable IDs are exhausted: upheld; correct the test
+
+The unconditional warning expectation is wrong. Amendment 3, "Answering an
+upper question", restores ordinary answering when no offered choice is viable.
+It does not require that ordinary answering avoid an empty branch. Amendment 2's
+clarification (21) says that when no choices are offered, the question is
+answered as usual and no ID counts as received. Its reuse warning counts
+submissions that actually receive a previously received ID, not submissions
+attempted after the reachable pool is exhausted.
+
+The test fixture confirms that fixed region R1 offers districts D1 and D2,
+whose villages A, B and C contain seven distinct eligible IDs altogether.
+D2 also offers village X, which has no household rows. Consequently, an
+eighth submission may reuse an ID or receive none; the spec does not require
+one reuse warning for this configuration, regardless of the current seeded draw.
+
+Changed `aHigherFixedAnswerIsRespectedWhileLowerUpperQuestionsStillSteer`
+to request seven submissions. All seven are checked for lower-question
+steering, offered parent/child relationships, distinct IDs and complete coverage
+of the reachable pool; the fixed R1 answer is still checked on every submission.
+The test now asserts no plan ID warning and null visit IDs with the existing
+`assertNoPlanIdWarning` helper. This directly tests Amendment 3 clarification
+(32): an override disables steering only on its own question.
+
+Kept the neighboring exhaustion tests unchanged. In particular,
+`exhaustingAllOfferedBranchesRestoresTheOrdinaryWeightsAndCountsReusedIds`
+uses nonempty branches and controlled ordinary weights, so its reuse count
+does follow from the spec. The previously adjudicated corrections for
+Disputes 1 and 2 remain present and unchanged. No new spec assumption or
+fixture change is needed.
+
+### Verification
+
+Ran `.\mvnw.cmd -o -q test`; it exited 1 at `testCompile`. A diagnostic
+`-e test-compile` run confirmed `java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The full Maven suite
+could not run; this limitation is also recorded in the questions file.
+
+Adapted the existing offline diagnostic compiler and JUnit launcher under
+`.codex-runs/fieldwork-dispute3/`. All eight Amendment 3 test/support sources
+compiled successfully with `--release 17` against existing compiled project
+APIs. JUnit ran all 57 cases in `FieldworkAmendment3ViabilityTest`,
+`FieldworkAmendment3FallbackTest` and `FieldworkAmendment3RandomnessTest`:
+57 passed, none failed, skipped or aborted, and no containers failed.
+This supplements, but does not establish, a successful Maven build. Logs are
+`maven-test.log`, `maven-detail.log`, `memory-compile.log` and `junit.log`
+in that diagnostic directory.
+
+No production source was read or changed, no dependency or build configuration
+was changed, and no commit was made.

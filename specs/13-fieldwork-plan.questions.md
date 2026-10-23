@@ -763,3 +763,25 @@ establish a successful Maven build.
 by `literalFilterKeepsItsVisitIdPoolWhenAnEarlierAnswerChanges`, as
 explained in the Dispute 2 adjudication. Dynamic-filter coverage remains
 in the existing Amendment 2 tests. No new behavioral assumption was made.
+
+## Dispute 3 verification (2026-10-23)
+
+**Question:** Can the required offline Maven test run compile the corrected
+Amendment 3 fallback test in this sandbox?
+
+**Observation:** `.\mvnw.cmd -o -q test` exited 1 at `testCompile`;
+`-e test-compile` confirmed `java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The full Maven suite
+could not run. Logs are under `.codex-runs/fieldwork-dispute3/`.
+
+**Verification:** The existing offline diagnostic compiler compiled all eight
+Amendment 3 test/support sources with `--release 17` against existing compiled
+APIs. The diagnostic JUnit run passed all 57 cases in the viability, fallback
+and randomness classes, with no skipped/aborted cases or failed containers.
+This does not establish a successful Maven build.
+
+**Tests:** `aHigherFixedAnswerIsRespectedWhileLowerUpperQuestionsStillSteer`
+now checks seven submissions, the number of distinct eligible IDs reachable
+under R1. It no longer assumes that an ordinary draw after exhaustion must
+avoid the empty branch. The reasoning is recorded in the Dispute 3
+adjudication; no new behavioral assumption was made.
