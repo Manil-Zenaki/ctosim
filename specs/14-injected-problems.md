@@ -114,8 +114,11 @@ Its record: `field` is the configuration's `id` and `value` its value in
 the submission when the configuration names an id; otherwise both are
 `""`. `relatedKey` is the original's KEY.
 
-Since the copy has the same times as its original, the two also overlap;
-checks of overlap are expected to be run once duplicates are handled.
+Since the copy has the same times as its original, the two also overlap
+in time. This is not an `overlap` problem: a duplicate is two
+submissions with the same survey id, whatever their times, while an
+overlap is two interviews of one enumerator with different survey ids
+whose times overlap.
 
 ### `reinterview`: the same household interviewed again
 
