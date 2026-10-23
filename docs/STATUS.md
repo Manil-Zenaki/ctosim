@@ -20,7 +20,7 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 | 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17: `--fake-attachments`, Stata `fakepreload`; disputes adjudicated |
-| 13 | Fieldwork plan (`Fieldwork`) | in progress: core done 2026-10-18; Amendment 1, CLI and Stata to come |
+| 13 | Fieldwork plan (`Fieldwork`) | done 2026-10-23: Amendments 1-3 (quota, cascade ids, steering); CLI `--id`, Stata `id()` |
 
 Suite (2026-10-18): 1083 Python, 7919 Java and 66 Stata tests, all green.
 
@@ -151,6 +151,18 @@ more often than others); 0 overlap, 0 impossible trip. Open: disputes
 the sizing (spec 10, "Clarification of Amendment 4"): Codex's tests
 stopped on its usage limit (partial work in `git stash`), code to follow.
 Java 8700 tests, only the 9 disputed cases fail.
+
+2026-10-23 afternoon, phase 1 done: spec 13 Amendment 3 (the upper
+questions of a survey-id cascade, district and village, are steered to
+choices that still lead to a household not yet interviewed) and the
+CLI's sizing of fictitious files are implemented; disputes 13/2 and 12/2
+accepted. End-to-end check with the Stata command on the IPA household
+form (100 submissions, `fakepreload id(hhid)`): 100 distinct ids,
+`ipacheckids` 0 duplicate, 0 overlap, 0 impossible trip, 0 start outside
+working hours, 4 interviews per enumerator a day over 5 days. Suites:
+Java 8805 (1 case under spec 13 Dispute 3, waiting for Codex), Stata 82
+green. **Next**: Codex on spec 13 Dispute 3, then phase 2 (problems
+injected on purpose, with an answer key).
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
