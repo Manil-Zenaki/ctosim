@@ -557,3 +557,187 @@ consistent with the prior opening-time allocation and ordinary-answer
 behavior; later assertions remain unexercised until Amendment 2 is
 implemented. Log: `.codex-runs/fieldwork-amendment2/junit.log`. Existing
 tests were not changed or committed.
+
+## Amendment 3 additions (2026-10-23)
+
+This run adds `FieldworkAmendment3ViabilityTest`,
+`FieldworkAmendment3FallbackTest`, `FieldworkAmendment3RandomnessTest`,
+and their new support class. Five CSV fixtures live under
+`src/test/resources/ctosim/fieldwork-plan/amendment3/`. Existing test
+classes and fixtures are unchanged. No production source was opened,
+searched or modified. The tests use the public APIs already exercised
+by the existing test support.
+
+### 27. Which references establish a cascade edge?
+
+**Question:** Does a single reference include a relative XPath reference,
+and what happens with two different eligible parent references, cycles,
+repeats, or a reference to a calculated alias rather than a question?
+
+**Assumption:** Absolute `/data/village` and relative `../village` are
+single references in the ID question's context. Either the `text` or
+`filterText` position can establish an edge; quoting and extra appearance
+words do not change this. `concat('', /data/village)` and
+`string(/data/village)` are expressions containing a reference, not a
+single reference. A parent must itself be a search-loaded `select_one`.
+No behavior is prescribed for cycles, repeat contexts, calculated aliases,
+or two different qualifying select parents. The two-answer filter fixture
+uses a text input for `cohort`, so it cannot be a second upper question.
+
+**Tests:** `aSingleQuestionReferenceRecognizesTheUpperQuestion`,
+`viabilityPropagatesThroughThreeUpperQuestionsForEitherFilterPosition`,
+`aFilterExpressionContainingAReferenceIsNotASingleReference`,
+`aReferencedSelectWithoutSearchIsNotAnUpperQuestion`, and
+`aReferencedSearchSelectMultipleIsNotAnUpperQuestion`.
+
+### 28. Zero weights after restriction to viable choices
+
+**Question:** What happens when an override has positive weight only on
+exhausted, nonviable or unoffered choices, leaving total weight zero on
+the viable subset?
+
+**Assumption:** The unchanged select-one rule of spec 05 supplies the
+uniform fallback when all remaining weights are zero; absent entries
+also have weight zero. This still chooses only viable offered choices,
+as Amendment 3 requires. Positive weights on the remaining choices retain
+their relative proportions. Once no choices are viable, the ordinary
+unrestricted weights and missing rate apply again.
+
+**Tests:** `zeroTotalWeightOnTheViableSubsetUsesTheExistingUniformFallback`,
+`upperWeightsAreRestrictedToViableOfferedChoicesAndRetainTheirRelativeRatio`,
+`higherUpperQuestionsAlsoRestrictWeightsToTheirViableChoices`,
+`staticUpperChoicesAndStaticIdChoicesParticipateInViability`, and both
+`exhaustingAllOfferedBranchesRestoresTheOrdinary...` tests. No exact RNG
+output is assumed: the exact route assertions use probability-one draws.
+
+### 29. Rules that exist versus rules that apply
+
+**Question:** Does merely having a `when` list disable steering, or must
+a rule's condition be true? Does a matching rule disable steering even
+if it supplies neither value, texts nor expression?
+
+**Assumption:** "Whose rules apply" means a condition evaluates true.
+A false rule does not disable steering; a true rule does, including one
+that only changes `missingRate`. Ordinary effective-override semantics
+remain those of spec 07 Amendment 7. A `texts` override disables steering
+even on a select whose ordinary generator ignores texts (spec 05); that
+test supplies weights to make the ordinary answer unambiguous. A range
+alone is not one of the exceptions. No additional policy is imposed for
+invalid expressions or failing rule evaluations.
+
+**Tests:** `explicitOverridesAndApplicableRulesKeepOrdinaryAnswersEvenAfterTheirBranchIsExhausted`,
+`anApplicableMissingRateRuleStillBlanksTheUpperQuestion`,
+`rulesWhoseConditionsAreFalseDoNotDisableSteering`, and
+`aRangeOnlyUpperOverrideDoesNotDisableSteering`.
+
+### 30. What viability counts and what hypothetical evaluation may change
+
+**Question:** Is viability based on rows, distinct values, or whole
+branches, and may looking ahead consume an ID or alter other answers?
+
+**Assumption:** Amendment 2's global history of accepted ID values still
+applies. Duplicate rows and values shared by villages do not create extra
+capacity. Upper choices must actually be offered in the current context;
+an unoffered village with free households does not make a selected branch
+viable. Loaded and static choices follow spec 07's search contract, and
+the placeholder is never an ID. Hypothetical choices are not receipts
+by an earlier submission and cannot reserve IDs. Other current answers
+must remain available when evaluating the search arguments. The tests
+use accepted, writable, relevant, nonrepeated questions without defaults
+or constraints; they do not impose new policies for rejected upper
+answers, relevance, defaults, final repairs or constraint filtering.
+
+**Tests:** `assertSteered` reconstructs remaining sets from submitted IDs;
+the shared-ID, static-choice, currently-offered-choice, singleton,
+other-current-answer and `hypotheticalViabilityChecksDoNotReceiveOrReserveIds`
+tests exercise these rules. The core fixture has eight reachable distinct
+ordinary IDs, unequal branch sizes, a special-only branch, an empty
+branch and an unoffered village with a free ID.
+
+### 31. Special values on upper questions
+
+**Question:** Does `specialRate` still apply to an upper question when
+its own special-valued choice is viable, or does the amendment's draw
+among viable choices replace that rule too?
+
+**Assumption:** Leave this interaction open. Upper choices in these
+tests are not configured special values. Special values on the ID
+question are explicitly excluded from viability, even at specialRate 1.
+Clearing `specialValues` makes those IDs eligible again. The no-viable
+tests check the upper question's ordinary missing behavior without
+prescribing a new answer/warning rule for an empty ID list.
+
+**Tests:** `aVillageWithOnlySpecialIdsIsNotViableEvenWhenSpecialRateIsOne`,
+`changingSpecialValuesChangesWhichBranchesAreViable`, and
+`noViableChoiceInitiallyRestoresTheOrdinaryMissingRule`.
+
+### 32. Overrides higher in the chain and ordinary standalone walks
+
+**Question:** Does an override on a higher upper question disable all
+steering below it? Does planned/standalone equality apply after steering?
+
+**Assumption:** The exception is local to the overridden question. Lower
+upper questions still steer within the branch actually chosen, even if
+a fixed higher answer leaves free IDs elsewhere unreachable. As in
+Amendment 2, the explicit standalone exception supersedes planned versus
+standalone answer equality. Both `walk(n)` and `walk(n, visit)` retain
+ordinary answering and cannot inherit steering history from a plan.
+No configured ID, a literal ID filter, or an explicit ID value/texts
+pool fails Amendment 3's prerequisite and must not enable steering.
+
+**Tests:** `aHigherFixedAnswerIsRespectedWhileLowerUpperQuestionsStillSteer`,
+the two standalone-walk tests, and the no-ID, literal-filter and
+explicit-ID-pool tests in `FieldworkAmendment3FallbackTest`.
+
+### 33. Randomness, statistical checks and replay
+
+**Question:** Does "from config.seed() and the submission number" require
+independence from unrelated answer draws and the requested total N? Is
+an unweighted upper choice uniform over branches or over descendant IDs?
+
+**Assumption:** With the same offered/viable sets and earlier receipts,
+seed and number determine the upper choice. Unrelated questions and a
+larger N do not change earlier choices. Uniformity is over viable offered
+choices, not household capacity. Statistical tests use 640 first-submission
+draws with reproducibly generated seeds, using a one-household versus
+nineteen-household fixture. Each bin allows seven binomial standard
+deviations plus two counts, following existing test support. These checks
+do not prescribe a PRNG or prove independence. All-zero and 1:3 weighted
+cases use the same sample size. Deterministic replays compare complete
+submissions, visits and warnings; prior list lifetimes are not assumed.
+
+**Tests:** `FieldworkAmendment3RandomnessTest`, plus
+`steeringSharesIdHistoryAcrossEnumeratorsAndDays`.
+
+### Amendment 3 build verification (2026-10-23)
+
+**Question:** Can the required offline Maven compilation finish in this
+sandbox, and have the new sources been independently checked?
+
+**Observation:** `.\mvnw.cmd -o -q test-compile` was run again after the
+final Java changes and exited 1 in `testCompile`. The diagnostic `-e`
+run confirms `java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. No dependency
+was installed, cache copied, drive mapped or build configuration changed.
+Logs: `.codex-runs/fieldwork-amendment3/test-compile.log` and
+`test-compile-detail.log`.
+
+**Independent compilation:** The existing offline diagnostic compiler
+was adapted under `.codex-runs/fieldwork-amendment3/`. It compiled all
+eight required test/support sources, including the four new files,
+with `--release 17` against existing compiled project APIs and cached
+JUnit 5/JavaRosa classes. It uses an in-memory file manager to avoid the
+failing JAR path canonicalization, with no replacement production stubs
+or production source inspection. Result: `compiled=true`, in
+`memory-compile.log`. This does not claim a successful Maven build.
+
+**Execution:** The new suite ran 57 cases: 23 passed and 34 failed with
+assertion failures consistent with absent cascade steering. There were
+no fixture-load errors, configuration errors, skipped/aborted tests or
+failed containers in the final run. Assertions following an earlier
+failure, including later statistical checks, remain unexercised until
+the amendment is implemented. Log:
+`.codex-runs/fieldwork-amendment3/junit.log`.
+
+Existing tests and fixtures remain unchanged. No commit was made;
+temporary probes and logs stay under `.codex-runs/`.
