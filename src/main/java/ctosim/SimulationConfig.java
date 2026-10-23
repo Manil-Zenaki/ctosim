@@ -222,6 +222,16 @@ public final class SimulationConfig {
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay);
     }
 
+    /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
+    public java.util.Optional<ProblemRates> problems() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    /** This configuration with {@code problems} as its problem rates (null: none). See Amendment 6. */
+    public SimulationConfig withProblems(ProblemRates problems) {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** Text pools in file order; empty when not set. */
     public java.util.Map<String, java.util.List<String>> textPools() {
         return textPools;

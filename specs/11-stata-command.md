@@ -354,3 +354,22 @@ checked through the exported times, usernames and GPS values, with or
 without `id()` (G3); nothing else in the command changes (G4); the help
 is checked for the option and each guarantee of the plan, without fixed
 wording (G5).
+
+## Amendment 8: option `problems`
+
+The command can inject problems into the fieldwork and list them in an
+answer key (spec 14, spec 10 Amendment 5). Everything not mentioned here
+is unchanged.
+
+- Option `problems` runs the simulator with `--problems`.
+- When problems are injected (option `problems`, or `problems` in the
+  configuration), the command shows, after the warnings, the number of
+  submissions with an injected problem and the answer key's path, and
+  returns `r(problems)`, that number (the one of the run report's
+  `Problems:` line), and `r(answerkey)`, the absolute path of
+  `answer-key.csv`. Without problems, neither is set.
+- The data in memory are loaded as before: the answer key is a separate
+  file, never merged into them.
+- The help file documents the option, lists the problems (spec 14) and
+  the answer key's columns, and shows how to load the key and merge it
+  with the data on `KEY`.

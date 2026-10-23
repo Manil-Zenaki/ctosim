@@ -140,6 +140,11 @@ public final class Fieldwork {
         return warnings;
     }
 
+    /** The problems injected by the last {@code walkAll()}. See specs/14-injected-problems.md. */
+    public List<InjectedProblem> problems() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     // --- When and where -------------------------------------------------------------
 
     private LocalDateTime dayStart(int day) {

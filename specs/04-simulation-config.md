@@ -379,3 +379,53 @@ reviewed one by one and confirmed: the key follows the integer rules of
 `enumerators` (34); the configuration imposes no capacity check, which
 belongs to the plan (35); only the top-level key is new (36); the
 existing diagnostics, input rules and copies apply (37).
+
+## Amendment 6: injected problems
+
+One top-level key is added for injected problems (spec 14); everything
+else is unchanged.
+
+| Key | Type | Default | Constraint | Meaning (used by spec 14) |
+|---|---|---|---|---|
+| `problems` | object, see below | none | | Inject problems into the fieldwork and list them in an answer key. Without the key, no problem is injected. |
+
+The object's keys are all optional; each is a number from 0 to 1, the
+share of submissions that carry that problem:
+
+| Key | Default | Problem (spec 14) |
+|---|---|---|
+| `resent` | `0.01` | the same submission sent twice |
+| `reinterview` | `0.01` | a household interviewed again |
+| `shortDuration` | `0.02` | an interview far too short |
+| `longDuration` | `0.02` | an interview far too long |
+| `offHours` | `0.02` | an interview outside working hours |
+| `overlap` | `0.02` | two interviews of one enumerator at once |
+| `travel` | `0.02` | an impossible trip between two interviews |
+
+`"problems": {}` therefore asks for every problem at its default rate;
+`"problems": {"travel": 0}` for every problem but travel.
+
+Public type and accessors added:
+
+```java
+public record ProblemRates(double resent, double reinterview,
+                           double shortDuration, double longDuration,
+                           double offHours, double overlap, double travel) {
+    public static ProblemRates defaults();   // the defaults of the table
+}
+
+// added to SimulationConfig:
+public java.util.Optional<ProblemRates> problems();          // empty when the key is absent
+public SimulationConfig withProblems(ProblemRates problems);  // null: no problems
+```
+
+- `defaults()` has an empty `problems()`.
+- A rate that is not a number or is outside 0 to 1, an unknown key inside
+  `problems`, or a `problems` value that is not an object is an error of
+  the configuration (`ConfigException`), located at its path
+  (`problems.travel`). The rules of "Strictness" and "Errors" apply.
+- `withProblems` returns a new configuration that differs only in that
+  setting, as `withSeed` does; `withSeed`, `withSubmissions` and
+  `withProblems` keep every other setting.
+- `ProblemRates`' constructor throws `IllegalArgumentException` when a
+  rate is not between 0 and 1 (NaN included).

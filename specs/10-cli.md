@@ -353,3 +353,28 @@ effective seed, number of submissions and id (after `-n`, `-s` and `--id`)
 are passed (35); sizing follows spec 12 Amendment 1 and its Clarification
 (36); the CLI infers no id and resizes no existing media (37); the larger
 files are those the run uses (38).
+
+## Amendment 5: injected problems, `--problems`
+
+A run can inject problems into the fieldwork and write their answer key
+(spec 14). Everything not mentioned here is unchanged.
+
+| Option | Value | Meaning |
+|---|---|---|
+| `--problems` | none | Inject problems: at the configuration's `problems` rates when it has them, at `ProblemRates.defaults()` otherwise (spec 04, Amendment 6). |
+
+- Problems are injected when `--problems` is given or the configuration
+  has `problems`. Given twice, `--problems` is a usage error (status 2).
+- When problems are injected, the run writes `answer-key.csv` in the
+  output directory: `AnswerKey.csv(fieldwork.problems())` (spec 14), as
+  UTF-8 without byte-order mark. The `Files:` list of the run report
+  names it right after the long files (and before the fictitious
+  attachments, if any). Without problems, the file is not written.
+- The run report holds, after the `Enumerators:` line and after the
+  sections of Amendments 1 to 3, a line
+  `Problems: <P> injected, listed in answer-key.csv`, where `<P>` is the
+  number of distinct submissions in `problems()`; without problems, no
+  such line.
+- When problems are injected, `out` receives, after the line giving the
+  number of warnings and before the lines of Amendments 1 to 3, one line
+  that gives `<P>` and names `answer-key.csv`.
