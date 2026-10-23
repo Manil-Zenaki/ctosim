@@ -40,7 +40,7 @@ final class ConfigParser {
 
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
             "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
-            "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay");
+            "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay", "problems");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
             "distribution", "expr", "area", "when");
@@ -48,6 +48,8 @@ final class ConfigParser {
             "distribution", "expr", "area");
     private static final Set<String> AREA_KEYS = Set.of("minLatitude", "maxLatitude", "minLongitude", "maxLongitude");
     private static final Set<String> MEAN_SD = Set.of("mean", "sd");
+    private static final List<String> PROBLEM_KEYS = List.of("resent", "reinterview", "shortDuration",
+            "longDuration", "offHours", "overlap", "travel");
     private static final Set<String> POOLS = Set.of("firstName", "lastName", "place", "comment");
 
     private final String source;
@@ -118,7 +120,24 @@ final class ConfigParser {
 
         return new SimulationConfig(seed, submissions, start, days, missing, special, specialValues,
                 repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations,
-                profiles, area, pools, id, interviewsPerDay);
+                profiles, area, pools, id, interviewsPerDay,
+                root.has("problems") ? problems(root.get("problems")) : null);
+    }
+
+    /** The rates of injected problems (spec 04, Amendment 6); absent keys take their defaults. */
+    private ProblemRates problems(JsonNode node) throws ConfigException {
+        JsonNode problems = object(node, "problems");
+        checkKeys(problems, "problems", new HashSet<>(PROBLEM_KEYS));
+        ProblemRates d = ProblemRates.defaults();
+        double[] rates = {d.resent(), d.reinterview(), d.shortDuration(), d.longDuration(), d.offHours(),
+                d.overlap(), d.travel()};
+        for (int i = 0; i < rates.length; i++) {
+            String key = PROBLEM_KEYS.get(i);
+            if (problems.has(key)) {
+                rates[i] = rate(problems.get(key), "problems." + key);
+            }
+        }
+        return new ProblemRates(rates[0], rates[1], rates[2], rates[3], rates[4], rates[5], rates[6]);
     }
 
     // --- Sections -------------------------------------------------------------------

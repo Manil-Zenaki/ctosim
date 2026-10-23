@@ -4,11 +4,25 @@ package ctosim;
 public record ProblemRates(double resent, double reinterview, double shortDuration, double longDuration,
                            double offHours, double overlap, double travel) {
 
+    private static final ProblemRates DEFAULTS = new ProblemRates(0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02);
+
     public ProblemRates {
-        throw new UnsupportedOperationException("not implemented yet");
+        check(resent, "resent");
+        check(reinterview, "reinterview");
+        check(shortDuration, "shortDuration");
+        check(longDuration, "longDuration");
+        check(offHours, "offHours");
+        check(overlap, "overlap");
+        check(travel, "travel");
     }
 
     public static ProblemRates defaults() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return DEFAULTS;
+    }
+
+    private static void check(double rate, String name) {
+        if (!(rate >= 0 && rate <= 1)) {
+            throw new IllegalArgumentException(name + " must be between 0 and 1: " + rate);
+        }
     }
 }
