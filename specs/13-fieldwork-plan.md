@@ -341,3 +341,18 @@ least one of the choices it offers is viable:
 When no offered choice is viable, or outside `walkAll()`, the question is
 answered as before. A question whose override has a `value`, `texts` or
 an expression, or whose rules apply, is answered as before too.
+
+Clarification (Amendment 3): assumptions 27–33 of the questions file are
+reviewed one by one and confirmed, with a decision on the point left
+open (31): while an upper question is steered, the draw among its viable
+choices replaces the special-value rate (a special value is drawn only
+when it is viable, like any choice). Also confirmed: absolute and
+relative single references make a cascade, an expression containing a
+reference does not, and the upper question must be a `select_one` loaded
+by `search()` (27); weights restricted to the viable choices keep their
+ratios, and all-zero weights give a uniform draw (28); only a rule whose
+condition is true disables steering (29); viability counts distinct ids
+not yet received among the choices actually offered, and looking ahead
+neither receives nor reserves an id (30); an override disables steering
+only on its own question, and standalone walks never steer (32); draws
+depend on the seed and the submission number (33).

@@ -346,3 +346,10 @@ With `--fake-attachments`, step 1 of Amendment 2 now builds
 `FakeAttachments.of(form, seed, id, N)`, with the run's survey id
 question (`--id` or the configuration's `id`, null when none) and number
 of submissions (spec 12, Amendment 1).
+
+Clarification of the sizing (Clarification of Amendment 4): assumptions
+35–38 of the questions file are reviewed one by one and confirmed: the
+effective seed, number of submissions and id (after `-n`, `-s` and `--id`)
+are passed (35); sizing follows spec 12 Amendment 1 and its Clarification
+(36); the CLI infers no id and resizes no existing media (37); the larger
+files are those the run uses (38).
