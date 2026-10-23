@@ -108,3 +108,53 @@ situation pass.
 
 Requested: drop this case, or turn it into a case with a literal filter,
 which keeps Amendment 1's rule.
+
+## Adjudication of Dispute 2 (2026-10-23)
+
+### Answer-dependent opening-time pool: upheld; replace the superseded test
+
+The original test is wrong under Amendment 2. In
+`search('opening', 'matches', 'region', /data/region)`, the `text`
+argument is not a string literal. With no `value` or `texts` override on
+the id question, Amendment 2 requires a null visit id and allocation from
+the choices offered when the walker reaches that question. The earlier
+expectation of an opening-time pool based on blank/default region values
+is explicitly superseded by Amendment 2's clarification of assumption 20.
+
+Renamed the test to
+`literalFilterKeepsItsVisitIdPoolWhenAnEarlierAnswerChanges` and replaced
+the reference with a quoted literal in both cases (`''` and `'initial'`).
+Amendment 2 explicitly preserves Amendment 1 for all-literal searches.
+These cases therefore retain their two-value pools, cycling, K/N warning
+checks and deterministic replay. The test now also checks that the ids
+are stored as answers and that replay stores those same ids despite the
+earlier region question being answered `later`. No fixture was changed.
+
+Kept the existing Amendment 2 tests, including
+`idsComeFromTheAnsweredVillageRatherThanTheOpeningValue` and
+`eitherNonliteralFilterArgumentActivatesAllocationAtTheQuestion`, which
+cover the superseding dynamic-filter behavior. No new interpretation of
+the spec is needed. The already-adjudicated Dispute 1 corrections are
+present and remain unchanged.
+
+### Verification
+
+Ran `.\mvnw.cmd -o -q test`; it exited 1 at `testCompile`. A diagnostic
+`-e test-compile` run confirmed `java.nio.file.AccessDeniedException` for
+the cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+The full Maven suite could not run; this is also recorded in the questions
+file.
+
+Adapted the existing offline diagnostic compiler and JUnit launcher under
+`.codex-runs/fieldwork-dispute2/`. All 11 selected test/support sources
+compiled successfully with `--release 17` against the existing compiled
+project APIs. JUnit ran 137 cases across `FieldworkScheduleTest`,
+`FieldworkAmendment1QuotaTest`, `FieldworkAmendment1SearchIdTest`,
+`FieldworkAmendment2CascadeTest`, `FieldworkAmendment2ContractTest` and
+`FieldworkAmendment2RandomnessTest`: all passed, none skipped or aborted,
+and no failed containers. This supplements, but does not establish, a
+successful Maven build. Logs in that directory are `maven-test.log`,
+`maven-detail.log`, `memory-compile.log` and `junit.log`.
+
+No production source was read or changed, no dependency or build
+configuration was changed, and no commit was made.

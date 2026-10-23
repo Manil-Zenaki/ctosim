@@ -17,6 +17,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static ctosim.FieldworkTestSupport.*;
 import static ctosim.FormWalkerTestSupport.bind;
 import static ctosim.FormWalkerTestSupport.input;
+import static ctosim.FormWalkerTestSupport.value;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Spec 13 Amendment 1: enumerate the search choices offered at form opening. */
@@ -93,17 +94,21 @@ class FieldworkAmendment1SearchIdTest extends FieldworkAmendment1SearchSupport {
     }
 
     @ParameterizedTest @ValueSource(strings = {"", "initial"})
-    void idPoolUsesBlankOrDefaultValuesBeforeAnEarlierQuestionIsAnswered(String initial) throws Exception {
+    void literalFilterKeepsItsVisitIdPoolWhenAnEarlierAnswerChanges(String initial) throws Exception {
         var form = attached("<region>" + initial + "</region><answer/>",
                 bind("region", "string", "") + bind("answer", "string", ""),
-                input("region") + control("search('opening', 'matches', 'region', /data/region)", "code"));
+                input("region") + control("search('opening', 'matches', 'region', '" + initial + "')", "code"));
         var config = idConfig(5, "\"fields\":{\"region\":{\"value\":\"later\"}}");
-        // The initial IDs need not remain accepted after region changes. Allocation alone is the oracle here.
+        // Literal filters retain Amendment 1's visit allocation regardless of earlier answers.
         Set<String> expected = initial.isEmpty() ? Set.of("BLANK1", "BLANK2") : Set.of("INITIAL1", "INITIAL2");
-        var plan = assertPool(form, config, expected, false);
+        var plan = assertPool(form, config, expected, true);
         var firstIds = new ArrayList<>(ids(plan));
-        plan.walkAll();
-        assertEquals(firstIds, ids(plan), "previous submissions must not leak their later region into the opening pool");
+        var replay = plan.walkAll();
+        assertEquals(firstIds, ids(plan), "literal-filter visit IDs must replay unchanged");
+        for (int i = 0; i < replay.size(); i++) {
+            assertEquals("later", value(replay.get(i), "region"));
+            assertEquals(firstIds.get(i), value(replay.get(i), "answer"));
+        }
     }
 
     @Test void sourceFileExpressionIsAlsoEvaluatedBeforeEarlierAnswers() throws Exception {

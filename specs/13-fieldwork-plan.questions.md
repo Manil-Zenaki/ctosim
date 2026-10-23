@@ -741,3 +741,25 @@ the amendment is implemented. Log:
 
 Existing tests and fixtures remain unchanged. No commit was made;
 temporary probes and logs stay under `.codex-runs/`.
+
+## Dispute 2 verification (2026-10-23)
+
+**Question:** Can the required offline Maven test run compile the corrected
+Amendment 1 test in this sandbox?
+
+**Observation:** `.\mvnw.cmd -o -q test` exited 1 at `testCompile`;
+`-e test-compile` confirmed `java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The full Maven
+suite could not run. Logs are under `.codex-runs/fieldwork-dispute2/`.
+
+**Verification:** The existing offline diagnostic compiler compiled all
+11 selected test/support sources with `--release 17` against existing
+compiled APIs. The diagnostic JUnit run passed all 137 cases in the
+schedule, Amendment 1 quota/search-id and Amendment 2 cascade/contract/
+randomness classes. No cases were skipped or aborted. This does not
+establish a successful Maven build.
+
+**Tests:** The obsolete test identified in assumption 20 is now replaced
+by `literalFilterKeepsItsVisitIdPoolWhenAnEarlierAnswerChanges`, as
+explained in the Dispute 2 adjudication. Dynamic-filter coverage remains
+in the existing Amendment 2 tests. No new behavioral assumption was made.
