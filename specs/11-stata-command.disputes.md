@@ -516,3 +516,102 @@ under H2.
 the key's path (for example remove paths before matching, as the summary
 search already does, or take the first matching line instead of the
 last), or name the case's directory without the word "warning".
+
+## Adjudication (2026-10-24)
+
+### Dispute 1 - prior correction retained
+
+The default output directory follows the form basename, and an existing
+report requires `replace`. The current options-paths test uses distinct
+numeric suffixes rather than relying on case-sensitive paths. Keep it.
+
+### Dispute 2 - prior correction retained
+
+Amendment 1 replaces unconditional use of Stata's Java with ordered selection
+of an eligible Java 17 or newer. The runtime-selection test already removes
+the obsolete assertion and retains the specified Python checks. Keep it.
+
+### Dispute 3 (compiled support jars) - prior correction retained
+
+The spec requires executable batch tests, not committed compiled fixtures.
+Both support jars are built from source under `.codex-runs/stata-support/`
+by the runner's build hooks and are absent from the fixture directory.
+No further change is needed.
+
+### Dispute 3 (prompt-prefixed assert example) - prior correction retained
+
+Amendment 3 requires a constraint assertion in a command example without
+forbidding Stata's displayed prompt. The existing matcher accepts that
+optional prompt and retains the answer-predicate check. Keep it.
+
+### Dispute 4 - prior correction retained
+
+The fixture already sets stdout and stderr to UTF-8, consistent with the
+referenced simulator contract. Keep its Unicode display and template-failure
+assertions and strict UTF-8 log reader unchanged.
+
+### Dispute 5 - prior correction retained
+
+The spec promises results when `ctosim` returns, not after a caller command
+replaces `r()`. All five disputed sites now read the results before closing
+their logs. Keep the result checks and subsequent log checks unchanged.
+
+### Dispute 6 - prior correction retained
+
+Step 4 explicitly requires Stata's default import naming. The schedule test
+already uses `gpslatitude` and `gpslongitude`, without imposing the unsupported
+underscore naming convention. Keep its timing and distance assertions.
+
+### Dispute 7 - accepted; correct the warning-count cursor
+
+Step 3 requires the warning count followed by each warning; Amendment 8 and
+confirmed H2/H3 require the problem count and key path after those warnings.
+They allow a single-line summary and do not restrict directory names or
+require the displayed path to be absolute. Equal warning and problem counts
+are also valid. Selecting the last line containing "warning" and that number
+therefore rejects permitted output when the later summary's path contains
+"warnings".
+
+`InjectedProblemsFixture.logCheck` now stops at the first matching warning-count
+line after the simulator-output boundary. It still requires every warning
+in order after that line and the problem summary after all warnings. The
+disputed do-file, its `warnings several` directory, and its count combinations
+remain unchanged.
+
+Added positive oracle checks for single-line and wrapped summaries with
+forward-slash and backslash absolute paths, relative paths and quoted relative
+paths containing "warnings", with equal counts. Negative checks retain
+rejection of an early summary, a missing warning count, a missing warning,
+and reversed warnings for each path. Existing wrong-count, wrong-key,
+numeric-path-component and simulator-only-summary checks remain intact.
+
+### Validation for this adjudication
+
+Added the regression checks before changing the matcher and ran
+`src/test/stata/build-injected-problems-fixtures.ps1`. The fixture compiled
+with `--release 8`, and the first new valid-path case failed with
+`Missing or reordered warning 1`, reproducing the disputed false rejection.
+After the matcher correction, all Amendment 8 log/help self-checks passed,
+including the 24 new positive and negative checks.
+
+Ran `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`.
+All test-support fixtures compiled successfully and their oracle self-checks
+passed. The disputed `test_injected_problems_display.do` passed all four
+count combinations with its original directory names. All sixteen
+`test_injected_problems_*.do` files passed. The previously disputed
+options-paths, runtime-selection, advanced-help, fake-preload display and
+template-failure, form-problem, and GPS schedule tests also passed.
+
+Full-suite result: **98 do-files, 86 passed, 12 failed** (runner exit status 1).
+The seven `test_amendment_*.do` and five `test_converter_name_*.do` failures
+occur during launcher cleanup: access is denied while removing pre-existing
+`temp/hsperfdata_manil` directories, before the child command assertions run.
+The current launcher logs under `.codex-runs/stata-amendment/` and
+`.codex-runs/stata-converter-name/` confirm the same environmental failure
+recorded in earlier adjudications. No unrelated cleanup logic or permissions
+were changed. Runner logs are under `target/stata-tests/`.
+
+Also ran `.venv\Scripts\python -B src/test/stata/fixtures/help_use_cases_oracle_tests.py`:
+**16 tests passed**. `git diff --check` passed. Only the Amendment 8 test
+fixture and this disputes file were changed. No production implementation
+was read or modified, and no commit was made.

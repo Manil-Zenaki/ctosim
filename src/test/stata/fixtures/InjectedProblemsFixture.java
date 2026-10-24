@@ -63,7 +63,12 @@ public final class InjectedProblemsFixture {
         int cursor = -1;
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i).toLowerCase(Locale.ROOT);
-            if (line.contains("warning") && line.matches(".*\\b" + warnings + "\\b.*")) cursor = i;
+            if (line.contains("warning") && line.matches(".*\\b" + warnings + "\\b.*")) {
+                // Later summaries may repeat this number and contain
+                // "warnings" in the freely chosen answer-key path.
+                cursor = i;
+                break;
+            }
         }
         require(cursor >= 0, "Missing warning count before problem summary");
         for (int w = 1; w <= warnings; w++) {
@@ -102,6 +107,21 @@ public final class InjectedProblemsFixture {
         String warnings = "Warnings: 2\nWARNING_11_1: first\nWARNING_11_2: second\n";
         String summary = "2 submissions have injected problems\nC:/output/answer-key.csv\n";
         logCheck(warnings + summary, 2, 2);
+        // The problem count can equal the warning count, and paths are free
+        // to contain "warnings". Neither should move the warning-count cursor.
+        for (String path : Arrays.asList(
+                "C:/output/warnings several/answer-key.csv",
+                "C:\\output\\warnings several\\answer-key.csv",
+                "warnings several/answer-key.csv",
+                "\"warnings several/answer-key.csv\"")) {
+            String withPath = "2 submissions with an injected problem; answer key: " + path + "\n";
+            logCheck(warnings + withPath, 2, 2);
+            logCheck(warnings + "2 submissions with an injected problem; answer key:\n" + path + "\n", 2, 2);
+            rejects(() -> logCheck(withPath + warnings, 2, 2));
+            rejects(() -> logCheck(warnings.replace("Warnings: 2\n", "") + withPath, 2, 2));
+            rejects(() -> logCheck(warnings.replace("WARNING_11_2: second\n", "") + withPath, 2, 2));
+            rejects(() -> logCheck("Warnings: 2\nWARNING_11_2: second\nWARNING_11_1: first\n" + withPath, 2, 2));
+        }
         logCheck("Warnings: 0\n0 problems: answer-key.csv\n", 0, 0);
         logCheck("Warnings: 0\n", -1, 0);
         rejects(() -> logCheck(summary + warnings, 2, 2));
