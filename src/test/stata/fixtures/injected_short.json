@@ -1,0 +1,23 @@
+{
+  "seed": 58013,
+  "submissions": 20,
+  "start": "2026-01-05T08:00:00",
+  "timeZone": "UTC",
+  "enumerators": 2,
+  "fieldworkDays": 30,
+  "missingRate": 0,
+  "id": "survey_id",
+  "integerRange": {
+    "min": 1001,
+    "max": 1100
+  },
+  "problems": {
+    "resent": 0,
+    "reinterview": 0,
+    "shortDuration": 0.25,
+    "longDuration": 0,
+    "offHours": 0,
+    "overlap": 0,
+    "travel": 0
+  }
+}

@@ -434,3 +434,45 @@ The schedule test deliberately omits id from both the command and configuration,
 **Assumption:** New help smoke checks strip SMCL and look for the option, its survey-id/question meaning, distinct ids, enumerator interviews without overlap, starts within working hours, one village a day, and extension beyond `fieldworkDays` when interviews do not fit, with a warning. Broad English alternatives are accepted, but semantic review remains necessary and equivalent vocabulary may require extending the checker. No exact heading or sentence is prescribed. Positive and per-clause omission tests exercise the oracle independently. The committed launcher/helpers are reused unchanged. A small new Java adapter supports the valueless fake-attachments flag while delegating ordinary report production to the existing test double and recording the original arguments. Build outputs and additional logs live under `.codex-runs/`; the required unchanged runner writes its own logs under `target/stata-tests/`. No production implementation or help text was read to derive expectations; the help artifact is read only by the automated checks. Existing tests and fixtures remain untouched.
 
 **Tests:** `test_id_help_option.do`, `test_id_help_plan.do`, `id-help-check.do`, `fixtures/IdTestSupport.java`, `build-id-fixtures.ps1`; all new `test_id_*.do` files.
+
+## Amendment 8: injected fieldwork problems
+
+### H1. Enabled injection with no affected submissions
+
+**Question:** Does "when problems are injected" mean that injection is enabled, or that at least one target actually received a problem?
+
+**Assumption:** It means enabled, including configuration-only activation and an all-zero rates object. Spec 10 Amendment 5 writes the key and `Problems:` line for an enabled run, and spec 04 Amendment 6 explicitly treats all-zero rates as present. Such a run returns scalar `r(problems)=0`, an absolute `r(answerkey)`, and displays zero and the key path. This differs from a disabled run, for which neither result is set. Tests cover a fresh disabled run and an enabled-to-disabled transition in the same session, including a stale answer key left in a reused output directory. No requirement is imposed on deleting stale files; the current report determines whether to return/announce the key.
+
+**Tests:** `test_injected_problems_results.do`, `test_injected_problems_absent.do`, `test_injected_problems_real_zero.do`.
+
+### H2. Count, paths, and report authority
+
+**Question:** Is the reported count submissions or key rows, and must the displayed path be absolute as the returned path must be?
+
+**Assumption:** The count is distinct affected submissions, exactly as the report's `Problems:` line specifies, not observations currently in memory, requested n(), or answer-key records. The fixture supplies two records per target and different requested/report N and seed values. The returned key path must be absolute and resolve to output/answer-key.csv, including default output paths, spaces and Unicode. The display requirement does not explicitly require an absolute path, so the display checker accepts the filename (a valid path relative to the output directory), relative paths or absolute paths. No behavior is invented for malformed report lines, missing keys, duplicate lines, or an undocumented size limit.
+
+**Tests:** `test_injected_problems_results.do`, `test_injected_problems_forwarding.do`, `test_injected_problems_template.do`, `test_injected_problems_real_config.do`, `test_injected_problems_real_defaults_determinism.do`.
+
+### H3. Message timing and unchanged failure/loading behavior
+
+**Question:** Does "after the warnings" mean after step 3's details, and is the summary promised when a later import do-file fails? Are returned results promised after failure?
+
+**Assumption:** Following earlier amendments' confirmed distinction, the command's new summary follows step 3's warning count and all warning lines, irrespective of the simulator's own stdout summary. With zero warnings it follows the zero count. Wording, color and wrapping are free; the smoke checker recognizes problem/injection vocabulary, a standalone count, and the key filename, allowing a short multiline message. No order relative to later form-problem final diagnostics is added. The summary is treated as the new post-warning reporting step, before loading, so it is also shown when the import template subsequently fails. No r() values are required after an error. Existing protections, simulator error mapping, memory preservation on simulation failure, import suppression, caller-directory restoration and partial data after template failure still apply with `problems`. A failed simulation must not announce a stale key/report. Native import is compared for names, types, values, row order and observation count, so an automatic key merge or replacement cannot pass.
+
+**Tests:** `test_injected_problems_display.do`, `test_injected_problems_config.do`, `test_injected_problems_plain_import.do`, `test_injected_problems_template.do`, `test_injected_problems_template_failure.do`, `test_injected_problems_preflight.do`, `test_injected_problems_simulator_failures.do`.
+
+### H4. Command integration versus problem-generation tests
+
+**Question:** How much of spec 14 should the Stata tests repeat, and what happens to configured rates when `problems` is also supplied?
+
+**Assumption:** This run tests Amendment 8's public command boundary rather than reimplementing spec 14's statistical/scheduling algorithms. The new valueless `--problems` must be forwarded exactly once for XML and XLSX together with other options, omitted on ordinary/configuration-only calls, and not retained from an earlier invocation. Real runs verify configuration-only activation; the flag uses configured rates rather than replacing them with defaults (spec 10 Amendment 5); absent configured rates use defaults; all-zero rates are honored; the report count matches distinct KEYs; and key rows match actual submission KEYs. A fixed-seed short-duration-only case has exactly five targets out of twenty and avoids scheduling fallback assumptions. Same-seed files and data are compared across directories and on replace. No different-seed inequality for an individual random value is prescribed. The existing small plan form is reused read-only.
+
+**Tests:** `test_injected_problems_forwarding.do`, `test_injected_problems_absent.do`, `test_injected_problems_config.do`, `test_injected_problems_real_config.do`, `test_injected_problems_real_zero.do`, `test_injected_problems_real_defaults_determinism.do`.
+
+### H5. Help completeness and independent infrastructure
+
+**Question:** How can free-form documentation be checked without requiring specific prose or imposing a unique merge direction?
+
+**Assumption:** Help smoke checks recognize the option and intentional injection, its stored results, all seven problems using broad alternatives, all ten answer-key column names, a CSV-loading example and a `merge` on KEY. They accept 1:1, 1:m or m:1 because the example may select one record per target or load either data/key as master; they do not execute an example or prescribe its temporary-file names. These lexical checks cannot replace semantic review; synonyms may require extending them. The help artifact is read only by automated checks and was not inspected to derive expectations. Java log/help oracles have independent positive and negative self-checks. Existing launchers, helpers and tests are reused without edits; only the disposable child simulator jar is replaced via the approved CTOSIM_JAR boundary. New support builds and probes live under `.codex-runs/`; the prescribed unchanged runner itself writes under `target/stata-tests/`. No production implementation was opened or changed.
+
+**Tests:** `test_injected_problems_help_option.do`, `test_injected_problems_help_families.do`, `test_injected_problems_help_key.do`; `fixtures/InjectedProblemsFixture.java`, `build-injected-problems-fixtures.ps1`, and all sixteen new `test_injected_problems_*.do` files.
