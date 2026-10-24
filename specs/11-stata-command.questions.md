@@ -476,3 +476,29 @@ The schedule test deliberately omits id from both the command and configuration,
 **Assumption:** Help smoke checks recognize the option and intentional injection, its stored results, all seven problems using broad alternatives, all ten answer-key column names, a CSV-loading example and a `merge` on KEY. They accept 1:1, 1:m or m:1 because the example may select one record per target or load either data/key as master; they do not execute an example or prescribe its temporary-file names. These lexical checks cannot replace semantic review; synonyms may require extending them. The help artifact is read only by automated checks and was not inspected to derive expectations. Java log/help oracles have independent positive and negative self-checks. Existing launchers, helpers and tests are reused without edits; only the disposable child simulator jar is replaced via the approved CTOSIM_JAR boundary. New support builds and probes live under `.codex-runs/`; the prescribed unchanged runner itself writes under `target/stata-tests/`. No production implementation was opened or changed.
 
 **Tests:** `test_injected_problems_help_option.do`, `test_injected_problems_help_families.do`, `test_injected_problems_help_key.do`; `fixtures/InjectedProblemsFixture.java`, `build-injected-problems-fixtures.ps1`, and all sixteen new `test_injected_problems_*.do` files.
+
+## Amendment 9: faulty enumerators and outliers in the help
+
+### I1. Free-form help prose
+
+**Question:** How can tests check the new documentation without prescribing sentences, headings, or SMCL markup?
+
+**Assumption:** As with the earlier help amendments, use English lexical smoke checks with alternative vocabulary and nearby related concepts. Strip SMCL formatting, preserve visible nested text, ignore SMCL comments, normalize line wrapping and curly apostrophes, and check the discoverable `ctosim.sthlp` only through the automated oracle. No production help or command implementation was read to choose expectations. These checks cannot establish all prose semantics; equivalent vocabulary outside the accepted alternatives may require extending the checker. Positive wording variants and clause-by-clause omissions exercise the oracle independently, along with empty/comment-only help and selected incorrect descriptions. The tests do not require a particular help section, example, capitalization of prose, or exact explanation sentence.
+
+**Tests:** All four new `test_faulty_enumerators_help_*.do` files, `faulty-enumerators-help-check.do`, and `fixtures/FaultyEnumeratorsHelpChecks.java`.
+
+### I2. How much of spec 14 Amendment 1 belongs in this amendment's help tests?
+
+**Question:** Does "documents the problems" require the full fault-selection formula, probabilities, warnings, and algorithmic details from spec 14 in the Stata help?
+
+**Assumption:** Test the topics expressly listed in spec 11 Amendment 9: enumerators going too fast, answering No to filter questions to skip modules, declaring fewer repeat instances (including equivalent roster wording), abusing don't-know codes, one enumerator per fault when enough are available, at least half staying clean, increasing the enumerator count to obtain one per fault, and unusual numeric outliers accepted by constraints. Do not require the exact `min(|F|, floor(E/2))` formula, an example with six enumerators, probabilities, numerical outlier fences, additional warnings, or new command behavior. The allocation check accepts either a clean-half guarantee or the equivalent at-most-half-faulty statement; no simulation/statistical assertions are added because this amendment explicitly leaves the command unchanged.
+
+**Tests:** `test_faulty_enumerators_help_behaviors.do`, `test_faulty_enumerators_help_allocation.do`, `test_faulty_enumerators_help_outliers.do`.
+
+### I3. Configuration documentation format and test infrastructure
+
+**Question:** Must the help add a runnable JSON example for `outliers` and `faults`, or a prescribed table or nesting notation?
+
+**Assumption:** Amendment 9 requires the two exact key spellings in help that discusses configuration; it does not prescribe an additional JSON example, table, defaults, or full key paths. Tests require the visible words `outliers` and `faults` plus configuration/JSON/settings context and nearby descriptions of their roles: an outlier rate and a selection/list of enumerator faults, as specified by the expressly referenced spec 14 Amendment 1. This avoids treating unexplained names alone as documentation. The other areas check the associated concepts. The new source-only Java oracle follows the existing help-test `javacall` pattern and is compiled for Java 8 by a new `build-*.ps1` script discovered by the unchanged runner. Build products and diagnostics are under `.codex-runs/stata-support/`; the prescribed runner itself writes logs under `target/stata-tests/`. Any `findfile` or oracle error propagates from the do-file. No existing tests, helpers, fixtures, production code, or build configuration are rewritten.
+
+**Tests:** `test_faulty_enumerators_help_configuration.do`, `build-faulty-enumerators-help-fixtures.ps1`, and the common new help checker.
