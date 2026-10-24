@@ -638,7 +638,7 @@ public final class SurveyCtoExporter {
         return time == null ? stored : formatTime(time);
     }
 
-    private static String formatDateTimeValue(String stored) {
+    static String formatDateTimeValue(String stored) {
         Matcher m = DATETIME_VALUE.matcher(stored);
         if (!m.matches()) {
             return stored;
@@ -687,7 +687,7 @@ public final class SurveyCtoExporter {
         return title.replaceAll("[\\\\/:*?\"<>|]", "_");
     }
 
-    private static String csv(List<List<String>> rows) {
+    static String csv(List<List<String>> rows) {
         StringBuilder out = new StringBuilder();
         for (int i = 0; i < rows.size(); i++) {
             if (i > 0) {

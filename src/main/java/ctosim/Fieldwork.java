@@ -3,9 +3,11 @@ package ctosim;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SplittableRandom;
 import org.javarosa.core.model.Constants;
@@ -37,6 +39,12 @@ public final class Fieldwork {
     private final int idType;
     private List<Visit> visits = List.of();
     private List<String> warnings = List.of();
+    private List<InjectedProblem> problems = List.of();
+    /** The form's start, duration() and location fields, by generic path in document order (spec 14). */
+    private final List<String> startPaths;
+    private final List<String> durationPaths;
+    private final List<String> locationPaths;
+    private final boolean hasLocation;
 
     public Fieldwork(LoadedForm form, SimulationConfig config) {
         this.config = java.util.Objects.requireNonNull(config, "config");
@@ -54,6 +62,12 @@ public final class Fieldwork {
         this.idField = name;
         this.idQuestion = name == null ? null : question(def, name);
         this.idType = idQuestion == null ? Constants.DATATYPE_NULL : dataType(def, idQuestion);
+        Set<String> order = new LinkedHashSet<>();
+        instancePaths(def.getMainInstance().getRoot(), order);
+        this.startPaths = startPaths(form, order);
+        this.durationPaths = durationPaths(form, order);
+        this.locationPaths = locationPaths(def, order);
+        this.hasLocation = !locationPaths.isEmpty();
         this.configWarnings = List.copyOf(configured);
         this.definition = def;
         this.form = form;
@@ -78,44 +92,175 @@ public final class Fieldwork {
         if (history != null) {
             cascade(history);
         }
+        Problems plan = config.problems().map(rates -> new Problems(rates, n, e)).orElse(null);
 
         LocalDateTime[] lastEnd = new LocalDateTime[e + 1];
         int[] day = new int[e + 1];
         long[] today = new long[e + 1];
+        Submission[] last = new Submission[e + 1];
+        Visit[] lastVisit = new Visit[e + 1];
+        boolean[] dayOver = new boolean[e + 1]; // after an off-hours interview or a trip (spec 14)
         int lastDay = 0;
         List<Submission> submissions = new ArrayList<>(n);
         List<Visit> planned = new ArrayList<>(n);
+        List<InjectedProblem> injected = new ArrayList<>();
         for (int number = 1; number <= n; number++) {
             int enumerator = (number - 1) % e + 1;
             SplittableRandom minutes = new SplittableRandom(FormWalker.seed(config.seed(), number, 10));
             int first = minutes.nextInt(FIRST_START_MINUTES + 1);
             int gap = MIN_GAP_MINUTES + minutes.nextInt(MAX_GAP_MINUTES - MIN_GAP_MINUTES + 1);
-            LocalDateTime start;
-            if (lastEnd[enumerator] == null) {
-                day[enumerator] = 0;
-                start = dayStart(0).plusMinutes(first);
-            } else {
-                LocalDateTime candidate = lastEnd[enumerator].plusMinutes(gap);
-                if (today[enumerator] < quota && !candidate.isAfter(dayStart(day[enumerator]).plusMinutes(WORK_MINUTES))) {
-                    start = candidate;
-                } else {
-                    int next = day[enumerator] + 1;
-                    LocalDateTime earliest = lastEnd[enumerator].plusMinutes(MIN_GAP_MINUTES);
-                    while (dayStart(next).plusMinutes(first).isBefore(earliest)) {
-                        next++; // an interview so long that it runs into the next day's work
-                    }
-                    day[enumerator] = next;
-                    today[enumerator] = 0;
-                    start = dayStart(next).plusMinutes(first);
+            String problem = plan == null ? null : plan.problemOf(number);
+
+            Integer original = null;
+            if (RESENT.equals(problem) || REINTERVIEW.equals(problem)) {
+                original = plan.original(number, problem);
+                if (original == null) {
+                    problem = null;
                 }
             }
-            double[] village = village(enumerator, day[enumerator]);
-            double[] point = household(number, village);
-            Visit visit = new Visit(enumerator, start, point[0], point[1], ids == null ? null : ids.get(number - 1));
-            Submission s = walker.walk(number, visit, history);
+            if (RESENT.equals(problem)) {
+                Submission copy = resend(submissions.get(original - 1), planned.get(original - 1), number);
+                submissions.add(copy);
+                planned.add(planned.get(original - 1));
+                injected.add(resentRecord(copy, planned.get(original - 1), submissions.get(original - 1)));
+                continue;
+            }
+            String originalId = null;
+            if (REINTERVIEW.equals(problem)) {
+                originalId = idField == null ? null : value(submissions.get(original - 1).instanceXml(), idField);
+                if (originalId == null) {
+                    plan.warn(problem, "problems: reinterview: the original " + original + " of submission " + number
+                            + " has no survey id '" + idField + "'; walked as an ordinary interview");
+                    problem = null;
+                }
+            }
+
+            LocalDateTime start = null;
+            double[] point = null;
+            if (OFFHOURS.equals(problem) || OVERLAP.equals(problem) || TRAVEL.equals(problem)) {
+                Submission previous = last[enumerator];
+                String why = previous == null ? "its enumerator has no interview before it" : null;
+                if (why == null && OFFHOURS.equals(problem)) {
+                    LocalDateTime evening = dayStart(day[enumerator]).plusMinutes(WORK_MINUTES)
+                            .plusMinutes(120 + new SplittableRandom(FormWalker.seed(config.seed(), number, 17)).nextInt(121));
+                    LocalDateTime earliest = lastEnd[enumerator].plusMinutes(MIN_GAP_MINUTES);
+                    LocalDateTime candidate = evening.isBefore(earliest) ? earliest : evening;
+                    LocalDateTime nextWork = dayStart(day[enumerator] + 1);
+                    if (!candidate.isBefore(nextWork) && !candidate.isAfter(nextWork.plusMinutes(WORK_MINUTES))) {
+                        why = "it would start within the next day's working hours";
+                    } else {
+                        start = candidate;
+                        point = household(number, village(enumerator, day[enumerator]));
+                    }
+                } else if (why == null && OVERLAP.equals(problem)) {
+                    long length = java.time.Duration.between(previous.start(), previous.end()).getSeconds();
+                    if (length < OVERLAP_SECONDS) {
+                        why = "the previous interview lasts less than five minutes";
+                    } else {
+                        long offset = new SplittableRandom(FormWalker.seed(config.seed(), number, 18))
+                                .nextLong(length - OVERLAP_SECONDS + 1);
+                        start = previous.start().plusSeconds(offset);
+                        point = household(number, village(enumerator, day[enumerator]));
+                    }
+                } else if (why == null && TRAVEL.equals(problem)) {
+                    LocalDateTime candidate = lastEnd[enumerator].plusMinutes(gap);
+                    if (candidate.isAfter(dayStart(day[enumerator]).plusMinutes(WORK_MINUTES))) {
+                        why = "it would start after the end of work";
+                    } else {
+                        point = farAway(number, lastVisit[enumerator], Math.max(20_000, 2_000.0 * gap));
+                        if (point == null) {
+                            why = "no point of the area is far enough from the previous interview";
+                        } else {
+                            start = candidate;
+                        }
+                    }
+                }
+                if (why != null) {
+                    plan.warn(problem, "problems: " + problem + ": submission " + number + " was walked as an ordinary"
+                            + " interview: " + why);
+                    problem = null;
+                }
+            }
+            if (start == null) { // an ordinary visit (spec 13)
+                if (lastEnd[enumerator] == null) {
+                    day[enumerator] = 0;
+                    start = dayStart(0).plusMinutes(first);
+                } else {
+                    LocalDateTime candidate = lastEnd[enumerator].plusMinutes(gap);
+                    if (!dayOver[enumerator] && today[enumerator] < quota
+                            && !candidate.isAfter(dayStart(day[enumerator]).plusMinutes(WORK_MINUTES))) {
+                        start = candidate;
+                    } else {
+                        int next = day[enumerator] + 1;
+                        LocalDateTime earliest = lastEnd[enumerator].plusMinutes(MIN_GAP_MINUTES);
+                        while (dayStart(next).plusMinutes(first).isBefore(earliest)) {
+                            next++; // an interview so long that it runs into the next day's work
+                        }
+                        day[enumerator] = next;
+                        today[enumerator] = 0;
+                        dayOver[enumerator] = false;
+                        start = dayStart(next).plusMinutes(first);
+                    }
+                }
+                point = household(number, village(enumerator, day[enumerator]));
+            }
+
+            String id = ids == null ? null : ids.get(number - 1);
+            Map<String, String> given = Map.of();
+            if (REINTERVIEW.equals(problem)) {
+                id = originalId;
+                if (history != null) {
+                    Map<String, String> uppers = new HashMap<>();
+                    for (String upper : history.uppers.keySet()) {
+                        String v = value(submissions.get(original - 1).instanceXml(), upper);
+                        if (v != null) {
+                            uppers.put(upper, v);
+                        }
+                    }
+                    given = uppers;
+                }
+            }
+            double factor = 1;
+            if (SHORT.equals(problem) || LONG.equals(problem)) {
+                double u = new SplittableRandom(FormWalker.seed(config.seed(), number, 20)).nextDouble();
+                factor = SHORT.equals(problem) ? 0.15 + 0.15 * u : 3 + 3 * u;
+            }
+            Visit visit = new Visit(enumerator, start, point[0], point[1], id);
+            FormWalker.IdHistory before = factor != 1 && history != null ? history.copy() : null;
+            Submission s = walker.walk(number, visit, history,
+                    new FormWalker.Injection(factor, TRAVEL.equals(problem), given));
             submissions.add(s);
             planned.add(visit);
-            lastEnd[enumerator] = s.end();
+
+            if (REINTERVIEW.equals(problem)) {
+                if (originalId.equals(value(s.instanceXml(), idField))) {
+                    injected.add(record(s, visit, problem, idField, originalId, "",
+                            key(submissions.get(original - 1))));
+                } else {
+                    plan.warn(problem, "problems: reinterview: submission " + number + " does not accept the survey id '"
+                            + originalId + "' of submission " + original + "; it carries no problem");
+                }
+            } else if (factor != 1) {
+                Submission clean = walker.walk(number, visit, before, FormWalker.Injection.NONE);
+                injected.addAll(durationRecords(s, clean, visit, problem));
+            } else if (OFFHOURS.equals(problem)) {
+                injected.addAll(startRecords(s, visit, problem, ""));
+            } else if (OVERLAP.equals(problem)) {
+                injected.addAll(startRecords(s, visit, problem, key(last[enumerator])));
+            } else if (TRAVEL.equals(problem)) {
+                injected.addAll(travelRecords(s, visit, key(last[enumerator])));
+            }
+
+            if (OVERLAP.equals(problem)) {
+                lastEnd[enumerator] = s.end().isAfter(lastEnd[enumerator]) ? s.end() : lastEnd[enumerator];
+            } else {
+                lastEnd[enumerator] = s.end();
+            }
+            if (OFFHOURS.equals(problem) || TRAVEL.equals(problem)) {
+                dayOver[enumerator] = true;
+            }
+            last[enumerator] = s;
+            lastVisit[enumerator] = visit;
             today[enumerator]++;
             lastDay = Math.max(lastDay, day[enumerator]);
         }
@@ -127,8 +272,12 @@ public final class Fieldwork {
             planWarnings.add("fieldwork: " + history.reused + " submissions got a survey id '" + idField
                     + "' that an earlier submission had received; the offered choices ran out");
         }
+        if (plan != null) {
+            planWarnings.addAll(plan.warnings());
+        }
         this.visits = Collections.unmodifiableList(planned);
         this.warnings = List.copyOf(planWarnings);
+        this.problems = List.copyOf(injected);
         return Collections.unmodifiableList(submissions);
     }
 
@@ -142,8 +291,9 @@ public final class Fieldwork {
 
     /** The problems injected by the last {@code walkAll()}. See specs/14-injected-problems.md. */
     public List<InjectedProblem> problems() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return problems;
     }
+
 
     // --- When and where -------------------------------------------------------------
 
@@ -460,4 +610,338 @@ public final class Fieldwork {
         TreeElement template = def.getMainInstance().getTemplatePath(ref);
         return template == null ? Constants.DATATYPE_NULL : template.getDataType();
     }
+
+    // --- Injected problems (spec 14) --------------------------------------------------
+
+    static final String RESENT = "resent";
+    static final String REINTERVIEW = "reinterview";
+    static final String SHORT = "short";
+    static final String LONG = "long";
+    static final String OFFHOURS = "offhours";
+    static final String OVERLAP = "overlap";
+    static final String TRAVEL = "travel";
+    private static final List<String> PROBLEMS = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP, TRAVEL);
+    private static final long OVERLAP_SECONDS = 300;
+    private static final int FAR_ATTEMPTS = 100_000;
+
+    /** The targets of one plan's problems, their originals, and the warnings, problem by problem. */
+    private final class Problems {
+        private final java.util.Map<Integer, String> targets = new HashMap<>();
+        private final Set<Integer> originals = new HashSet<>();
+        private final java.util.Map<String, List<String>> warnings = new HashMap<>();
+
+        Problems(ProblemRates rates, int n, int e) {
+            double[] shares = {rates.resent(), rates.reinterview(), rates.shortDuration(), rates.longDuration(),
+                rates.offHours(), rates.overlap(), rates.travel()};
+            SplittableRandom random = new SplittableRandom(FormWalker.seed(config.seed(), n, 16));
+            for (int k = 0; k < PROBLEMS.size(); k++) {
+                String problem = PROBLEMS.get(k);
+                warnings.put(problem, new ArrayList<>());
+                long count = count(shares[k], n);
+                if (count == 0) {
+                    continue;
+                }
+                List<Integer> eligible = new ArrayList<>();
+                int from = SHORT.equals(problem) || LONG.equals(problem) ? 1 : e + 1;
+                for (int number = from; number <= n; number++) {
+                    if (!targets.containsKey(number)) {
+                        eligible.add(number);
+                    }
+                }
+                if (count > eligible.size()) {
+                    warn(problem, "problems: " + problem + ": " + count + " asked for, " + eligible.size()
+                            + " injected; there are not enough submissions");
+                    count = eligible.size();
+                }
+                for (int i = 0; i < count; i++) {
+                    int pick = i + random.nextInt(eligible.size() - i);
+                    Collections.swap(eligible, i, pick);
+                    targets.put(eligible.get(i), problem);
+                }
+                if (REINTERVIEW.equals(problem) && idField == null) {
+                    warn(problem, "problems: reinterview: no survey id is configured, or the form has none;"
+                            + " no reinterview was injected");
+                }
+                if (TRAVEL.equals(problem) && !hasLocation) {
+                    warn(problem, "problems: travel: the form has no geopoint, geotrace or geoshape question;"
+                            + " no travel problem was injected");
+                }
+            }
+        }
+
+        String problemOf(int number) {
+            String problem = targets.get(number);
+            boolean impossible = TRAVEL.equals(problem) && !hasLocation || REINTERVIEW.equals(problem) && idField == null;
+            return impossible ? null : problem; // the target stays reserved, walked as an ordinary visit
+        }
+
+        /** The original of a duplicate, drawn among earlier submissions that are no target and no original. */
+        Integer original(int number, String problem) {
+            List<Integer> candidates = new ArrayList<>();
+            for (int m = 1; m < number; m++) {
+                if (!targets.containsKey(m) && !originals.contains(m)) {
+                    candidates.add(m);
+                }
+            }
+            if (candidates.isEmpty()) {
+                warn(problem, "problems: " + problem + ": submission " + number + " has no earlier submission to repeat;"
+                        + " walked as an ordinary interview");
+                return null;
+            }
+            int m = candidates.get(new SplittableRandom(FormWalker.seed(config.seed(), number, 22)).nextInt(candidates.size()));
+            originals.add(m);
+            return m;
+        }
+
+        void warn(String problem, String warning) {
+            warnings.get(problem).add(warning);
+        }
+
+        List<String> warnings() {
+            List<String> all = new ArrayList<>();
+            for (String problem : PROBLEMS) {
+                all.addAll(warnings.get(problem));
+            }
+            return all;
+        }
+    }
+
+    /** A problem's count: its rate times N, rounded half up, at least 1 when the rate is above 0. */
+    private static long count(double rate, int n) {
+        if (rate <= 0) {
+            return 0;
+        }
+        long count = java.math.BigDecimal.valueOf(rate).multiply(java.math.BigDecimal.valueOf(n))
+                .setScale(0, java.math.RoundingMode.HALF_UP).longValue();
+        return Math.max(1, count);
+    }
+
+    /** The original sent again: its instance with the target's own instanceID, uploaded later. */
+    private Submission resend(Submission original, Visit originalVisit, int number) {
+        String own = value(walker.walk(number, originalVisit).instanceXml(), "instanceID");
+        String theirs = value(original.instanceXml(), "instanceID");
+        String xml = own == null || theirs == null ? original.instanceXml() : original.instanceXml().replace(theirs, own);
+        long later = 1 + new SplittableRandom(FormWalker.seed(config.seed(), number, 21)).nextInt(120);
+        return Submission.of(number, xml, original.start(), original.end(), original.submitted().plusMinutes(later));
+    }
+
+    private InjectedProblem resentRecord(Submission copy, Visit visit, Submission original) {
+        String id = config.id().orElse(null);
+        String value = id == null ? null : value(copy.instanceXml(), id);
+        return new InjectedProblem(copy.number(), key(copy), FormWalker.username(visit.enumerator(), config.enumerators()),
+                family(RESENT), RESENT, id == null ? "ipacheckdups" : "ipacheckids", id == null ? "" : id,
+                value == null ? "" : value, "", key(original), true);
+    }
+
+    private InjectedProblem record(Submission s, Visit visit, String problem, String field, String value,
+                                   String cleanValue, String related) {
+        return new InjectedProblem(s.number(), key(s), FormWalker.username(visit.enumerator(), config.enumerators()),
+                family(problem), problem, check(problem), field, value, cleanValue, related,
+                !SHORT.equals(problem) && !LONG.equals(problem));
+    }
+
+    private static String family(String problem) {
+        return switch (problem) {
+            case RESENT, REINTERVIEW -> "duplicate";
+            case SHORT, LONG -> "duration";
+            case OFFHOURS, OVERLAP -> "schedule";
+            default -> "travel";
+        };
+    }
+
+    private static String check(String problem) {
+        return switch (problem) {
+            case RESENT, REINTERVIEW -> "ipacheckids";
+            case SHORT, LONG -> "ipacheckoutliers";
+            case OFFHOURS -> "ipachecktimeuse";
+            default -> "custom";
+        };
+    }
+
+    private List<InjectedProblem> durationRecords(Submission s, Submission clean, Visit visit, String problem) {
+        List<InjectedProblem> records = new ArrayList<>();
+        for (String path : durationPaths) {
+            String value = valueAt(s.instanceXml(), path);
+            if (value != null) {
+                String cleanValue = valueAt(clean.instanceXml(), path);
+                records.add(record(s, visit, problem, lastStep(path), value, cleanValue == null ? "" : cleanValue, ""));
+            }
+        }
+        if (records.isEmpty()) {
+            records.add(record(s, visit, problem, "", Long.toString(seconds(s)), Long.toString(seconds(clean)), ""));
+        }
+        return records;
+    }
+
+    private static long seconds(Submission s) {
+        return java.time.Duration.between(s.start(), s.end()).getSeconds();
+    }
+
+    private List<InjectedProblem> startRecords(Submission s, Visit visit, String problem, String related) {
+        List<InjectedProblem> records = new ArrayList<>();
+        for (String path : startPaths) {
+            String value = valueAt(s.instanceXml(), path);
+            records.add(record(s, visit, problem, lastStep(path),
+                    value == null ? "" : SurveyCtoExporter.formatDateTimeValue(value), "", related));
+        }
+        if (records.isEmpty()) {
+            records.add(record(s, visit, problem, "",
+                    s.start().format(java.time.format.DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss")), "", related));
+        }
+        return records;
+    }
+
+    private List<InjectedProblem> travelRecords(Submission s, Visit visit, String related) {
+        List<InjectedProblem> records = new ArrayList<>();
+        for (String path : locationPaths) {
+            String value = valueAt(s.instanceXml(), path);
+            if (value != null) {
+                records.add(record(s, visit, TRAVEL, lastStep(path), value, "", related));
+            }
+        }
+        return records;
+    }
+
+    /** A point of the area at least {@code metres} from the previous visit's point, or null when none is found. */
+    private double[] farAway(int number, Visit previous, double metres) {
+        SplittableRandom random = new SplittableRandom(FormWalker.seed(config.seed(), number, 19));
+        Area area = area();
+        for (int attempt = 0; attempt < FAR_ATTEMPTS; attempt++) {
+            double lat = area.minLatitude() + random.nextDouble() * (area.maxLatitude() - area.minLatitude());
+            double lon = area.minLongitude() + random.nextDouble() * (area.maxLongitude() - area.minLongitude());
+            if (distance(lat, lon, previous.latitude(), previous.longitude()) >= metres) {
+                return new double[] {lat, lon};
+            }
+        }
+        return null;
+    }
+
+    private static double distance(double lat1, double lon1, double lat2, double lon2) {
+        double p1 = Math.toRadians(lat1);
+        double p2 = Math.toRadians(lat2);
+        double h = Math.pow(Math.sin((p2 - p1) / 2), 2)
+                + Math.cos(p1) * Math.cos(p2) * Math.pow(Math.sin(Math.toRadians(lon2 - lon1) / 2), 2);
+        return 2 * FormWalker.EARTH_RADIUS_METRES * Math.asin(Math.min(1, Math.sqrt(h)));
+    }
+
+    // --- Values of an instance --------------------------------------------------------
+
+    private static String key(Submission s) {
+        String id = value(s.instanceXml(), "instanceID");
+        return id == null ? "" : id;
+    }
+
+    /** The text of the first element named {@code name} in the instance; null when absent or empty. */
+    static String value(String instanceXml, String name) {
+        org.w3c.dom.NodeList found = parse(instanceXml).getElementsByTagNameNS("*", name);
+        String text = found.getLength() == 0 ? null : found.item(0).getTextContent();
+        return text == null || text.isEmpty() ? null : text;
+    }
+
+    /** The text at an absolute path of the instance (first element of each step); null when absent or empty. */
+    private static String valueAt(String instanceXml, String path) {
+        org.w3c.dom.Element at = parse(instanceXml).getDocumentElement();
+        List<String> steps = new ArrayList<>(List.of(path.replaceFirst("^/", "").split("/")));
+        if (steps.isEmpty() || at == null || !steps.remove(0).equals(at.getLocalName())) {
+            return null;
+        }
+        for (String step : steps) {
+            org.w3c.dom.Element next = null;
+            for (org.w3c.dom.Node c = at.getFirstChild(); c != null && next == null; c = c.getNextSibling()) {
+                if (c instanceof org.w3c.dom.Element el && step.equals(el.getLocalName())) {
+                    next = el;
+                }
+            }
+            if (next == null) {
+                return null;
+            }
+            at = next;
+        }
+        String text = at.getTextContent();
+        return text == null || text.isEmpty() ? null : text;
+    }
+
+    private static String lastStep(String path) {
+        return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    private static org.w3c.dom.Document parse(String xml) {
+        try {
+            javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            return factory.newDocumentBuilder().parse(new org.xml.sax.InputSource(new java.io.StringReader(xml)));
+        } catch (Exception e) {
+            throw new IllegalStateException("a submission's instance cannot be read", e);
+        }
+    }
+
+    // --- The form's start, duration and location fields ------------------------------------
+
+    /** The generic paths of the main instance's elements, in document order. */
+    private static void instancePaths(TreeElement element, Set<String> out) {
+        out.add(element.getRef().genericize().toString(false));
+        for (int i = 0; i < element.getNumChildren(); i++) {
+            instancePaths(element.getChildAt(i), out);
+        }
+    }
+
+    private static List<String> startPaths(LoadedForm form, Set<String> order) {
+        Set<String> starts = new HashSet<>();
+        try {
+            javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            org.w3c.dom.Document doc = factory.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(form.engineXml()));
+            org.w3c.dom.NodeList binds = doc.getElementsByTagNameNS("*", "bind");
+            for (int i = 0; i < binds.getLength(); i++) {
+                org.w3c.dom.Element bind = (org.w3c.dom.Element) binds.item(i);
+                if ("timestamp".equals(bind.getAttributeNS(JAVAROSA_NS, "preload"))
+                        && "start".equals(bind.getAttributeNS(JAVAROSA_NS, "preloadParams"))) {
+                    starts.add(bind.getAttribute("nodeset").strip());
+                }
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("the form's binds cannot be read", e);
+        }
+        return inOrder(order, starts);
+    }
+
+    private static List<String> durationPaths(LoadedForm form, Set<String> order) {
+        Set<String> durations = new HashSet<>();
+        form.durationCalculations().forEach((nodeset, calculate) -> {
+            String bare = calculate.replaceAll("\\s", "");
+            if (bare.equals("duration()") || bare.equals(EngineExpressions.STORE + "(duration())")) {
+                durations.add(nodeset);
+            }
+        });
+        return inOrder(order, durations);
+    }
+
+    private static List<String> locationPaths(FormDef def, Set<String> order) {
+        Set<String> locations = new HashSet<>();
+        locations(def.getMainInstance().getRoot(), locations);
+        return inOrder(order, locations);
+    }
+
+    private static void locations(TreeElement element, Set<String> out) {
+        int type = element.getDataType();
+        if (type == Constants.DATATYPE_GEOPOINT || type == Constants.DATATYPE_GEOTRACE
+                || type == Constants.DATATYPE_GEOSHAPE) {
+            out.add(element.getRef().genericize().toString(false));
+        }
+        for (int i = 0; i < element.getNumChildren(); i++) {
+            locations(element.getChildAt(i), out);
+        }
+    }
+
+    private static List<String> inOrder(Set<String> order, Set<String> wanted) {
+        List<String> paths = new ArrayList<>();
+        for (String path : order) {
+            if (wanted.contains(path)) {
+                paths.add(path);
+            }
+        }
+        return List.copyOf(paths);
+    }
+
+    private static final String JAVAROSA_NS = "http://openrosa.org/javarosa";
 }

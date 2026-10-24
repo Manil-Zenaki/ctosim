@@ -122,7 +122,7 @@ public final class FormWalker {
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone(config.timeZone()));
         try {
-            return new Walk(number, null, null).run();
+            return new Walk(number, null, null, Injection.NONE).run();
         } finally {
             TimeZone.setDefault(previous);
         }
@@ -137,6 +137,23 @@ public final class FormWalker {
         int reused;
         /** The upper questions of the id's cascade, by name (spec 13, Amendment 3). */
         final Map<String, Upper> uppers = new HashMap<>();
+
+        /** A copy whose received ids can change without changing this history's. */
+        IdHistory copy() {
+            IdHistory copy = new IdHistory();
+            copy.received.addAll(received);
+            copy.reused = reused;
+            copy.uppers.putAll(uppers);
+            return copy;
+        }
+    }
+
+    /**
+     * What an injected problem changes in a walk (spec 14): a factor on the clock's advances, location
+     * questions never left blank, and answers given to questions by name.
+     */
+    record Injection(double timeFactor, boolean keepLocations, Map<String, String> answers) {
+        static final Injection NONE = new Injection(1, false, Map.of());
     }
 
     /**
@@ -152,6 +169,11 @@ public final class FormWalker {
 
     /** As {@link #walk(int, Visit)}, giving the id question an id not yet received when {@code history} is set. */
     Submission walk(int number, Visit visit, IdHistory history) {
+        return walk(number, visit, history, Injection.NONE);
+    }
+
+    /** As {@link #walk(int, Visit, IdHistory)}, with an injected problem's changes. */
+    Submission walk(int number, Visit visit, IdHistory history, Injection injection) {
         Objects.requireNonNull(visit, "visit");
         Objects.requireNonNull(visit.start(), "visit.start");
         if (number < 1) {
@@ -170,7 +192,7 @@ public final class FormWalker {
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone(config.timeZone()));
         try {
-            return new Walk(number, visit, history).run();
+            return new Walk(number, visit, history, injection).run();
         } finally {
             TimeZone.setDefault(previous);
         }
@@ -198,7 +220,7 @@ public final class FormWalker {
         return ids;
     }
 
-    private static String username(int enumerator, int enumerators) {
+    static String username(int enumerator, int enumerators) {
         int width = Math.max(2, String.valueOf(enumerators).length());
         return "enumerator" + String.format(Locale.ROOT, "%0" + width + "d", enumerator);
     }
@@ -456,8 +478,10 @@ public final class FormWalker {
 
         /** The plan's history of ids given at the question (spec 13, Amendment 2), or null. */
         private final IdHistory history;
+        private final Injection injection;
 
-        Walk(int number, Visit visit, IdHistory history) {
+        Walk(int number, Visit visit, IdHistory history, Injection injection) {
+            this.injection = injection;
             this.visit = visit;
             this.history = history;
             this.number = number;
@@ -606,6 +630,10 @@ public final class FormWalker {
             if (prompt.isReadOnly()) {
                 return;
             }
+            String given = injection.answers().get(name);
+            if (given != null && give(prompt, ref, name, path, given)) {
+                return;
+            }
             if (visit != null && visit.id() != null && config.id().isPresent() && config.id().get().equals(name)
                     && giveId(prompt, ref, name, path)) {
                 return;
@@ -675,19 +703,36 @@ public final class FormWalker {
 
         /** Answers the visit's survey id (spec 13); false, with a warning, when the engine does not accept it. */
         private boolean giveId(FormEntryPrompt prompt, TreeReference ref, String name, String path) {
+            if (answerWith(prompt, ref, name, path, visit.id())) {
+                return true;
+            }
+            warn("field '" + name + "' (" + path + "): the survey id '" + visit.id()
+                    + "' is not accepted by this question; answered as usual");
+            return false;
+        }
+
+        /** Answers an injected problem's given value (spec 14); false, with a warning, when it is not accepted. */
+        private boolean give(FormEntryPrompt prompt, TreeReference ref, String name, String path, String value) {
+            if (answerWith(prompt, ref, name, path, value)) {
+                return true;
+            }
+            warn("field '" + name + "' (" + path + "): the value '" + value
+                    + "' of the interview repeated is not accepted by this question; answered as usual");
+            return false;
+        }
+
+        private boolean answerWith(FormEntryPrompt prompt, TreeReference ref, String name, String path, String value) {
             QuestionKind kind = kind(prompt);
             IAnswerData data = null;
             if (kind != null) {
                 List<String> loaded = prepare(prompt, ref, name, path, kind, false).loaded();
-                data = loaded == null ? convert(prompt, visit.id()) : convertLoaded(kind, visit.id(), loaded);
+                data = loaded == null ? convert(prompt, value) : convertLoaded(kind, value, loaded);
             }
             if (data != null && session.answerQuestion(data, true) == FormEntryController.ANSWER_OK) {
                 answered++;
                 handled(ref, minimumSeconds(prompt));
                 return true;
             }
-            warn("field '" + name + "' (" + path + "): the survey id '" + visit.id()
-                    + "' is not accepted by this question; answered as usual");
             return false;
         }
 
@@ -808,8 +853,13 @@ public final class FormWalker {
 
         /** GPS answers of a visit are drawn around its household, unless the field has its own area (spec 13). */
         private FieldOverride nearHousehold(FieldOverride override, QuestionKind kind) {
-            if (household == null || (override != null && override.area().isPresent())
-                    || (kind != QuestionKind.GEOPOINT && kind != QuestionKind.GEOTRACE && kind != QuestionKind.GEOSHAPE)) {
+            if (kind != QuestionKind.GEOPOINT && kind != QuestionKind.GEOTRACE && kind != QuestionKind.GEOSHAPE) {
+                return override;
+            }
+            if (injection.keepLocations()) {
+                override = FieldOverride.withoutMissing(override);
+            }
+            if (household == null || override != null && override.area().isPresent()) {
                 return override;
             }
             return FieldOverride.withArea(override, household);
@@ -1193,6 +1243,9 @@ public final class FormWalker {
                 violations.add(violationPath(ref));
             }
             long seconds = MIN_SECONDS + timing.nextInt(MAX_SECONDS - MIN_SECONDS + 1);
+            if (injection.timeFactor() != 1) { // an abnormal duration (spec 14)
+                seconds = Math.max(1, (long) Math.floor(seconds * injection.timeFactor() + 0.5));
+            }
             if (minimum > 0) {
                 seconds = Math.max(seconds, (long) Math.ceil(minimum));
             }

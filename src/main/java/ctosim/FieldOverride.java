@@ -74,6 +74,15 @@ public final class FieldOverride {
                 override.distribution, override.expression, area, override.rules);
     }
 
+    /** {@code override} (or none) never left blank by the missing rate (spec 14, travel). */
+    static FieldOverride withoutMissing(FieldOverride override) {
+        if (override == null) {
+            return new FieldOverride(null, null, Map.of(), List.of(), 0.0);
+        }
+        return new FieldOverride(override.value, override.range, override.weights, override.texts, 0.0,
+                override.distribution, override.expression, override.area, override.rules);
+    }
+
     /** An override that answers with one of {@code texts} (spec 10, Amendment 2). */
     static FieldOverride ofTexts(List<String> texts) {
         return new FieldOverride(null, null, Map.of(), texts, null);
