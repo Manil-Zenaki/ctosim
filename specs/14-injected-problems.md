@@ -490,3 +490,34 @@ Record: `field` the question's name, `value` the outlier value,
 The records of a submission come in the order of the problems' table
 (the original one, then `outlier`, `tooFast`, `skipModules`,
 `dontKnow`), and within a problem in the form's order of their fields.
+Clarification (Amendment 1): assumptions A1–A9 of the questions file are
+reviewed one by one. Decisions on the points left open:
+
+- **Outlier targets** (A1): `outlier` is a problem of the table like the
+  others: its targets are drawn without replacement after those of
+  `travel`, so a submission is the target of at most one problem of the
+  table, outlier included, and an outlier target is never a duplicate's
+  original. The sentence on submissions carrying problems of both kinds
+  concerns faults, which apply to any submission of a faulty enumerator.
+- **One enumerator** (A2): when `m` is 0, only the warning that no fault
+  was injected is given, not the cumulation warning. A faulty enumerator
+  with no submission gets the small-sample warning (0 submissions); the
+  count of `resent` copies is not prescribed.
+- **Several problems on one answer** (A6): a question that gets an
+  outlier value is not changed by `dontKnow`; an answer replaced by
+  `skipModules` is not changed again by `dontKnow`. The rule on
+  `cleanValue` applies to the records of this amendment; the records of
+  the original table keep theirs.
+- **Outlier distributions** (A7): the quartiles of a uniform
+  distribution are those of the continuous uniform distribution on the
+  drawing range, for integer questions too. A question is not eligible
+  when its `D` has a standard deviation of 0, when its answer drawn as
+  usual is blank, or when its override has a `value`, an `expr` or
+  rules (`when`).
+
+Also confirmed: fault assignment follows the order `tooFast`,
+`skipModules`, `dontKnow`, whatever the configuration's order (A3); an
+answer fixed by an override can be replaced by a fault (A4); without a
+count question, `low` is 1 and the configured repeat range does not
+apply to shortening (A5); the twenty refusals are observed through the
+fallback (A8); no random sequence is prescribed (A9).
