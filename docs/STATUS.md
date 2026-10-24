@@ -21,7 +21,7 @@ what was learnt along the way.
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 | 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17: `--fake-attachments`, Stata `fakepreload`; disputes adjudicated |
 | 13 | Fieldwork plan (`Fieldwork`) | done 2026-10-23: Amendments 1-3 (quota, cascade ids, steering); CLI `--id`, Stata `id()` |
-| 14 | Injected problems (`AnswerKey`) | phase 2a, 2026-10-23: duplicates, durations, off hours, overlaps, travel; CLI `--problems`, Stata `problems`; disputes 14/1 and 11/7 open |
+| 14 | Injected problems (`AnswerKey`) | phase 2a, 2026-10-23: duplicates, durations, off hours, overlaps, travel; CLI `--problems`, Stata `problems`; disputes 14/1 and 11/7 accepted |
 
 Suite (2026-10-18): 1083 Python, 7919 Java and 66 Stata tests, all green.
 
@@ -184,7 +184,10 @@ ids 8 flagged, all explained by the key; off hours 4/4, overlaps 2/2,
 impossible trips 4/4, no false alarm; the 8 abnormal durations are all IQR
 outliers, among natural ones (the form's durations are bimodal). Two
 overlaps were not injected: the IPA form's interviews often last under
-five minutes. **Next**: the two disputes, then phase 2b (faulty
+five minutes. 2026-10-24: disputes 14/1 (the cascade fixture gets an
+instanceID) and 11/7 (the warning-count cursor no longer matches the
+key's path) accepted; Java 9574 and Stata 98 tests, all green. **Next**:
+republish the package, then phase 2b (faulty
 enumerators: too fast, "No" to filter questions of modules of 3 or more
 questions, don't-know codes declared in the configuration, rounded
 numbers; outliers within constraints, detected automatically). Later
