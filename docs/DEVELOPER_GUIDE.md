@@ -91,6 +91,9 @@ launcher: `java -jar target/ctosim.jar FORM [options]`.
 | `-m`, `--media DIR` | attached files (CSV files read by `pulldata()`) | the form's directory |
 | `--server NAME` | server name in the fictitious attachment URLs | `example` |
 | `--python EXE` | Python used to convert an XLSForm | `CTOSIM_PYTHON`, else `python` |
+| `--fake-attachments` | invent the attached files the form reads but the media lacks (spec 12) | |
+| `--id NAME` | the question holding the survey id: each submission gets its own value (spec 13) | the configuration's `id` |
+| `--problems` | inject fieldwork problems on purpose and write `answer-key.csv` (spec 14) | the configuration's `problems` |
 | `-h`, `--help` | usage | |
 
 Example, with the project's environment:
@@ -106,6 +109,8 @@ The output directory then holds:
   export, one file per repeat group, linked by `PARENT_KEY` / `KEY`;
 - `form.xml` and `form.fields.json`: the converted form (XLSForm input
   only), to rerun without converting;
+- `answer-key.csv` (with injected problems only): one row per problem
+  and field concerned, see "Injected problems" below;
 - `run-report.txt`: form, seed, configuration, output files and every
   warning (conversion, missing attached files, unimplemented functions,
   configuration fields that the form does not have, problems met while
@@ -218,6 +223,30 @@ A JSON file; every key is optional. Full rules: `specs/04-simulation-config.md`.
   (`resp_name`, `phone_number`, `email`, `village`, `other_specify`, ...)
   get plausible names, phone numbers, e-mails, places (with a `place`
   pool) and comments.
+
+#### Injected problems
+
+To test data-quality checks (`ipacheck`, a team's own do-files), a run can
+put problems into the fieldwork on purpose (spec 14): `--problems`, the
+Stata option `problems`, or a `problems` object in the configuration. Its
+keys are the share of submissions carrying each problem: `resent` (the
+same submission sent twice) and `reinterview` (a household interviewed
+again), 0.01 by default; `shortDuration`, `longDuration`, `offHours`,
+`overlap` (an enumerator's interview of another household started before
+the end of its previous one) and `travel` (an impossible trip, only with a
+GPS question), 0.02 by default. `"problems": {}` asks for all of them at
+their default rates. A duplicate is two submissions with the same survey
+id; an overlap is two interviews of one enumerator with different ids.
+
+Every problem is one Collect would allow: submissions are still walked
+through the form. `answer-key.csv` lists them: `KEY, enumerator, family,
+problem, check, field, value, clean_value, related_KEY, kind`, where
+`check` names the `ipacheck` command expected to find the problem
+(`custom` for overlaps and trips) and `kind` says whether an exact check
+finds it every time (`deterministic`) or an outlier test may miss it or
+flag other submissions (`statistical`). A problem that cannot be placed
+(an interview too short to overlap, an area too small for a trip) is not
+injected, and a warning says so.
 
 #### Constraints
 
