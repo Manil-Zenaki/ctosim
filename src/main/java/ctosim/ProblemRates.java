@@ -9,7 +9,10 @@ import java.util.List;
 public record ProblemRates(double resent, double reinterview, double shortDuration, double longDuration,
                            double offHours, double overlap, double travel, double outliers, List<String> faults) {
 
-    private static final ProblemRates DEFAULTS = new ProblemRates(0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02);
+    /** The faults a faulty enumerator can carry, in their order (spec 14, Amendment 1). */
+    static final List<String> FAULTS = List.of("tooFast", "skipModules", "dontKnow");
+
+    private static final ProblemRates DEFAULTS = new ProblemRates(0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, FAULTS);
 
     public ProblemRates {
         check(resent, "resent");
@@ -19,6 +22,18 @@ public record ProblemRates(double resent, double reinterview, double shortDurati
         check(offHours, "offHours");
         check(overlap, "overlap");
         check(travel, "travel");
+        check(outliers, "outliers");
+        java.util.Objects.requireNonNull(faults, "faults");
+        List<String> copy = List.copyOf(faults); // rejects null elements
+        for (String fault : copy) {
+            if (!FAULTS.contains(fault)) {
+                throw new IllegalArgumentException("unknown fault '" + fault + "'; known: " + FAULTS);
+            }
+        }
+        if (new java.util.HashSet<>(copy).size() != copy.size()) {
+            throw new IllegalArgumentException("a fault is named twice: " + copy);
+        }
+        faults = copy;
     }
 
     /** The fieldwork problems only: no outliers and no faults (Amendment 7). */

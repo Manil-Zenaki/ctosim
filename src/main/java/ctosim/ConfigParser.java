@@ -127,7 +127,10 @@ final class ConfigParser {
     /** The rates of injected problems (spec 04, Amendment 6); absent keys take their defaults. */
     private ProblemRates problems(JsonNode node) throws ConfigException {
         JsonNode problems = object(node, "problems");
-        checkKeys(problems, "problems", new HashSet<>(PROBLEM_KEYS));
+        Set<String> keys = new HashSet<>(PROBLEM_KEYS);
+        keys.add("outliers");
+        keys.add("faults");
+        checkKeys(problems, "problems", keys);
         ProblemRates d = ProblemRates.defaults();
         double[] rates = {d.resent(), d.reinterview(), d.shortDuration(), d.longDuration(), d.offHours(),
                 d.overlap(), d.travel()};
@@ -137,7 +140,29 @@ final class ConfigParser {
                 rates[i] = rate(problems.get(key), "problems." + key);
             }
         }
-        return new ProblemRates(rates[0], rates[1], rates[2], rates[3], rates[4], rates[5], rates[6]);
+        double outliers = problems.has("outliers") ? rate(problems.get("outliers"), "problems.outliers") : d.outliers();
+        List<String> faults = problems.has("faults") ? faults(problems.get("faults")) : d.faults();
+        return new ProblemRates(rates[0], rates[1], rates[2], rates[3], rates[4], rates[5], rates[6], outliers, faults);
+    }
+
+    /** The faults of faulty enumerators (spec 04, Amendment 7): distinct known names, in file order. */
+    private List<String> faults(JsonNode node) throws ConfigException {
+        if (!node.isArray()) {
+            throw error("problems.faults", "must be an array of fault names");
+        }
+        List<String> faults = new ArrayList<>();
+        for (int i = 0; i < node.size(); i++) {
+            String path = "problems.faults[" + i + "]";
+            String name = string(node.get(i), path);
+            if (!ProblemRates.FAULTS.contains(name)) {
+                throw error(path, "must be one of " + String.join(", ", ProblemRates.FAULTS) + ", not '" + name + "'");
+            }
+            if (faults.contains(name)) {
+                throw error(path, "names the fault '" + name + "' twice");
+            }
+            faults.add(name);
+        }
+        return faults;
     }
 
     // --- Sections -------------------------------------------------------------------
