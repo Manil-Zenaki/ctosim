@@ -276,3 +276,191 @@ full Maven run. Logs: `.codex-runs/spec14-dispute-compile.log` and
 
 **Tests:** `reinterviewCopiesTheIdAndEveryUpperQuestionFromItsOriginal`
 and `resentCopiesACascadeSubmissionWithoutConsumingAnotherHouseholdId`.
+
+## Amendment 1 additions (2026-10-24)
+
+This run adds only new `InjectedAmendment1*` classes and the resource
+`ctosim/injected-problems/amendment1/all-faults.xml`. All previously committed
+tests and fixtures remain unchanged. Expectations below are from Amendment 1
+and its explicitly referenced specifications. No production source was read,
+searched, or modified.
+
+### A1. Can outlier targets overlap targets from the original table?
+
+**Question:** The outlier allocation paragraph inherits the original rule of
+drawing without replacement across problems, but the next paragraph explicitly
+allows an outlier on an original-table target. Which rule governs allocation,
+short-count warnings, and duplicate-original eligibility?
+
+**Assumption:** Do not decide that conflict. Outlier allocation/count tests use
+zero original-table rates. Coexistence tests cover faults with original-table
+targets and faults with outliers. The warning-order test requests only one
+reinterview and one outlier among four submissions, so there is enough room
+under either allocation interpretation. Exhausted allocation and outliers
+combined with duplicate targets are deliberately not asserted.
+
+**Tests:** `InjectedAmendment1OutlierTest` count/target tests;
+`InjectedAmendment1InteractionsTest` coexistence and warning-order tests.
+
+### A2. Which warnings apply when there is just one enumerator?
+
+**Question:** For nonempty F and E=1, both `m < |F|` and `m=0` are true.
+Should both the cumulation warning and the no-fault warning appear?
+
+**Assumption:** No exact warning count or literal sentence is prescribed in
+that case. Require no injected fault, unchanged interviews, and an enumerator
+warning. For positive m, enforce the specified cumulation threshold and the
+number `2 * |F|`. The fewer-than-ten rule includes zero submissions because the
+spec says "each faulty enumerator", without excluding unused ones. Counts
+for resent copies are not asserted because whose sample they count toward is
+not explicit.
+
+**Tests:** `oneEnumeratorCannotReceiveAnyFault`,
+`faultsUseAtMostHalfTheEnumeratorsAndWrapInCanonicalOrder`,
+`aSubsetOfFaultsUsesOnlyItsOwnMembersAndItsOwnCumulationThreshold`,
+`smallSampleWarningNamesEachFaultyEnumeratorAndItsExactCount`,
+`anAssignedEnumeratorWithZeroSubmissionsStillGetsASmallSampleWarning`.
+
+### A3. Does fault assignment use configuration order or canonical order?
+
+**Question:** Spec 04 preserves the input fault array's order, whereas
+Amendment 1 defines F "in the order tooFast, skipModules, dontKnow".
+
+**Assumption:** Assignment uses that explicit canonical order, after selecting
+only configured faults. Reordering the array does not change assignments or
+results. No particular seed-to-enumerator mapping is assumed.
+
+**Tests:** `faultsUseAtMostHalfTheEnumeratorsAndWrapInCanonicalOrder`,
+`orderingTheConfiguredFaultListDifferentlyDoesNotChangeAssignmentsOrResults`,
+`aSubsetOfFaultsUsesOnlyItsOwnMembersAndItsOwnCumulationThreshold`.
+
+### A4. Can faults replace ordinary answers supplied by overrides?
+
+**Question:** Is an answer from a fixed-value override still the answer drawn
+"as usual" for skipModules/dontKnow, or is it protected?
+
+**Assumption:** Yes: fixed overrides are not among "Questions left alone".
+Some fixtures fix the ordinary answer to make every eligible Bernoulli
+opportunity observable. Replacement must still satisfy the form engine.
+Outlier tests do not use fixed overrides for the selected numeric question,
+because its distribution D in that case is not defined.
+
+**Tests:** Module/roster tests in `InjectedAmendment1SkipModulesTest`, select
+tests in `InjectedAmendment1DontKnowTest`, all-fault assignment and interaction
+fixtures.
+
+### A5. What lower limit applies to an uncounted roster?
+
+**Question:** For an enumerator-controlled repeat, "drawn the same way" refers
+to a low derived from a count question's hints, but there is no count question.
+Does the configured repeat minimum constrain the shortened count?
+
+**Assumption:** Without a count question, there are no count-question hints,
+so low=1. The ordinary configured range draws a; it does not prohibit the
+specified faulty shortening below that range. Zero/one are retained, and a
+counted question's lower hints are rounded to the smallest allowed integer.
+
+**Tests:** `rostersAreShortenedHalfTheTimeUniformlyBelowTheOrdinaryCount`,
+`anUncountedRosterAlreadyAtZeroOrOneIsNotShortened`,
+`countLowerBoundUsesTheSmallestAllowedWholeNumber`,
+`aCountAtOrBelowItsLowerBoundIsKept`.
+
+### A6. How do multiple problems on the same answer compose?
+
+**Question:** When dontKnow and an outlier replace the same numeric answer,
+which value wins, and which records remain? Do skipModules and dontKnow use
+the same original answer when they both act on a filter? Does the new
+"in every record" cleanValue rule supersede the earlier explicitly empty
+values for original-table problems?
+
+**Assumption:** Do not impose unspecified same-field conflict precedence or
+revise old tests. Mixed-answer tests give dontKnow and outliers different
+eligible fields. The unambiguous timing composition multiplies factors before
+rounding. Each duration counterfactual retains the other duration modifier or
+the already skipped modules. Resent copies have only their resent record.
+
+**Tests:** `durationAndFaultFactorsMultiplyBeforeRoundingAndEachCleanValueKeepsTheOtherProblem`,
+`tooFastCleanDurationKeepsTheSkippedModulesOfTheSameSubmission`,
+`dontKnowAndAnOutlierCanAffectDifferentAnswersOnTheSameSubmission`,
+`resentCopiesKeepFaultyOriginalAnswersAndTimesButHaveOnlyTheirResentRecord`.
+
+### A7. Which distribution/rounding details are fixed for outliers?
+
+**Question:** Are uniform integer quartiles discrete or continuous, how are
+decimal tail draws serialized, and what happens for a degenerate distribution?
+
+**Assumption:** Exact uniform fences are tested with decimals only. Integer
+tests use normal overrides with known continuous theoretical fences and
+require whole-number injections within inward-rounded constraints. Normal
+and lognormal moments ignore override bounds as stated. Decimal comparisons
+allow half a hundredth at interval boundaries, consistent with spec 05.
+Zero-variance distributions, initially blank numeric answers, and the
+unspecified distribution of fixed/conditional-expression overrides are left
+open. Relevance and calculations may change after an injected answer; other
+numeric answers must remain ordinary, without imposing their precise draw.
+
+**Tests:** Distribution, hint clipping, integer tail, singleton-fence,
+eligibility, and replay tests in `InjectedAmendment1OutlierTest`.
+
+### A8. How can the twenty-refusal limit be observed?
+
+**Question:** The public API exposes the completed submission and warnings,
+not the count of attempted outlier answers. How should an independent test
+observe exactly twenty attempts without implementation hooks?
+
+**Assumption:** Assert the public fallback contract: a nonlinear constraint
+rejects every outlier candidate, the ordinary answer survives, no outlier
+record appears, and a warning names the submission and question. No private
+state inspection or timing-based proxy for exactly twenty attempts is used.
+Other warning assertions match required names/numeric tokens rather than
+inventing message wording. A no-eligible-question warning need only name the
+submission, as the spec states.
+
+**Tests:** `twentyRejectedOutlierDrawsFallBackToTheUsualAnswerAndNameTheQuestion`,
+no-eligible-question tests, `warningsForFaultsAreBetweenOriginalProblemWarningsAndOutlierWarnings`.
+
+### A9. What statistical assurance is required without a prescribed PRNG?
+
+**Question:** What exact sequences or tolerances should tests demand for
+uniform selections and Bernoulli fault probabilities?
+
+**Assumption:** No sequence is prescribed. Use fixed seeds, exact boundary
+assertions, and up to 800 assigned-enumerator opportunities. Frequencies use
+seven binomial standard deviations plus two observations. Assignment/target
+uniformity uses 200-240 fixed seeds. Tests require the sampled cases to occur
+instead of silently skipping them. Record ordering is checked by submission,
+then problem-table order, then field order where multiple records occur.
+
+**Tests:** Statistical methods across all new classes; assignment replay,
+outlier replay, multiple dontKnow records, and interaction metadata checks.
+
+### Amendment 1 verification
+
+**Question:** Can the requested offline compilation verify these additions in
+this sandbox?
+
+**Observation:** The final `.\mvnw.cmd -o -q test-compile` exits 1 at
+`testCompile`. An offline `-e` retry confirms
+`java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` in
+`WindowsPath.toRealPath`. This is the same environment limitation recorded
+above. Maven compilation cannot be reported as successful.
+
+**Supplementary verification:** Adapted the existing diagnostic compiler to
+compile the eight new Java sources and seven existing test/support sources
+against compiled public classes and cached dependencies, using JavaCompiler
+with `--release 17` and annotation processing disabled. All 15 sources compile
+successfully. This reads compiled classes as compiler inputs, not production
+source or implementation details.
+
+A diagnostic JUnit run selects only the seven new test classes: all 103
+invocations are discovered and started; 29 pass and 74 fail with assertion
+failures against the current implementation. There are no skipped/aborted
+tests and no fixture-loading exceptions. Failures are expected for the
+unimplemented amendment; this run is not represented as a passing test suite.
+
+**Logs:** `.codex-runs/spec14-amendment1/maven-test-compile.log`,
+`maven-test-compile-detail.log`, `diagnostic-compile.log`, and
+`diagnostic-junit.log` in the same directory. All diagnostic code and output
+remain under `.codex-runs/`; no Maven repository was copied, no drive mapped,
+no dependency installed, and no production/build configuration changed.

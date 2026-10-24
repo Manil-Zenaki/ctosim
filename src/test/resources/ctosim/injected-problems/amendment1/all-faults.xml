@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Faults in answers</h:title><model>
+    <instance><data id="amendment1_faults">
+      <gate/><module><q0/><q1/><q2/></module><code/><username/><meta><instanceID/></meta>
+    </data></instance>
+    <bind nodeset="/data/gate" type="select1"/>
+    <bind nodeset="/data/module" relevant="/data/gate = 'yes'"/>
+    <bind nodeset="/data/module/q0" type="string"/>
+    <bind nodeset="/data/module/q1" type="string"/>
+    <bind nodeset="/data/module/q2" type="string"/>
+    <bind nodeset="/data/code" type="select1"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/gate"><label>Open module?</label>
+      <item><label>Yes</label><value>yes</value></item>
+      <item><label>No</label><value>no</value></item>
+    </select1>
+    <group ref="/data/module">
+      <input ref="/data/module/q0"><label>First</label></input>
+      <input ref="/data/module/q1"><label>Second</label></input>
+      <input ref="/data/module/q2"><label>Third</label></input>
+    </group>
+    <select1 ref="/data/code"><label>Answer</label>
+      <item><label>Known</label><value>ok</value></item>
+      <item><label>Unknown</label><value>-99</value></item>
+    </select1>
+  </h:body>
+</h:html>
