@@ -378,3 +378,16 @@ A run can inject problems into the fieldwork and write their answer key
 - When problems are injected, `out` receives, after the line giving the
   number of warnings and before the lines of Amendments 1 to 3, one line
   that gives `<P>` and names `answer-key.csv`.
+
+Clarification (Amendment 5): assumptions 39–44 of the questions file are
+reviewed one by one and confirmed: problems are injected when the flag or
+the configuration's `problems` is present, so all-zero rates still write
+a header-only key and report 0, and the flag does not replace configured
+rates (39); the `Problems:` line comes after the optional sections and
+before `Files:`, and the `out` line is the third, with free wording around
+the count and the file name (40); the run is compared with the public
+`Fieldwork` and `AnswerKey` API (41); a run without problems leaves an
+earlier `answer-key.csv` alone, and a key that cannot be written is
+status 1 with no new report (42); the flag follows the stated parsing
+rules only (43); conversion, warnings, UTF-8 and determinism rules extend
+to the key, which follows spec 08's CSV text (44).
