@@ -1,0 +1,8 @@
+{
+  "id": "ménage_家庭",
+  "problems": {
+    "travel": 0.75,
+    "outliers": 0.625,
+    "faults": ["dontKnow", "tooFast"]
+  }
+}

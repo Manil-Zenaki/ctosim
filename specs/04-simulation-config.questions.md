@@ -692,3 +692,94 @@ read, searched, or changed.
   blocker, not a reason to change production code, dependencies, or build
   configuration. **Dependent tests:** Full Maven test compilation remains
   unverified. Runtime tests were not requested and were not run.
+
+## Amendment 7: faulty enumerators and outliers
+
+Existing tests, fixtures, and questions are preserved. New coverage is in
+`ProblemRatesAmendment7Test`, `SimulationConfigAmendment7ParsingTest`,
+`SimulationConfigAmendment7IoTest`, and `SimulationConfigAmendment7CopiesTest`,
+with `SimulationConfigAmendment7Support` and the minimal fixture
+`amendment-7-faults-outliers.json`. Expectations come solely from spec 04;
+no production source was opened, read, searched, or changed.
+
+42. **Does Amendment 7's reference to defaults enable problems in an otherwise
+    default SimulationConfig?**
+    - **Assumption:** No. It refers to `ProblemRates.defaults()` and the
+      explicitly present `"problems": {}`. The unchanged Amendment 6 rule
+      keeps `SimulationConfig.defaults().problems()` and an omitted problems
+      key empty. The seven-rate constructor deliberately differs from the
+      defaults factory: it sets outliers to zero and faults to an empty list.
+    - **Dependent tests:** `defaultsIncludeOutliersAndAllFaultsInTheSpecifiedOrder`,
+      `sevenRateConstructorPreservesItsArgumentsAndDisablesBothNewProblemKinds`,
+      `omittedProblemsRemainAbsentInsteadOfEnablingNewDefaults`, the empty and
+      partial parsing tests, and the load default/absence test.
+
+43. **Are fault names exact, and which location identifies an invalid or
+    repeated array entry?**
+    - **Assumption:** Names are compared exactly after JSON string decoding;
+      no trimming, case folding, sorting, or silent deduplication is allowed.
+      An invalid entry reports its zero-based bracket index, following the
+      amendment's example and Amendment 3's indexed paths. For duplicates,
+      the second occurrence is the offending entry (including nonadjacent
+      duplicates and differently escaped spellings of the same name).
+      Duplicate object keys retain question 2's confirmed flexibility about
+      syntax versus schema diagnostics.
+    - **Dependent tests:** `invalidValues`, its parse/load consumers, the
+      escaped-name test, constructor duplicate/name tests, and all sixteen
+      ordered-subset tests.
+
+44. **Must the constructor copy a caller-owned list, and what mutation
+    failures are required of faults()?**
+    - **Assumption:** Yes: retaining a mutable caller list would violate the
+      immutable configuration contract once it is passed to `withProblems`.
+      Tests check defensive snapshots and mutation attempts which actually
+      change a list, including iterator and sublist mutation. No identity
+      requirements are imposed on lists or ProblemRates objects. The empty
+      list is tested with addition, avoiding no-op mutation ambiguity.
+      Null list/element behavior is explicitly NPE; invalid typed String
+      entries are IAE. Passing raw, heap-polluted non-String Java lists is
+      left untested because the public constructor accepts `List<String>`;
+      wrong JSON array-element types are comprehensively tested instead.
+    - **Dependent tests:** Constructor defensive-copy and mutation tests;
+      parsing immutability tests; `mutatingCallerListCannotChangeConfigurationOrCopies`
+      and the other copy tests.
+
+45. **Do the existing number, schema, independence, and copy rules apply to
+    the two new components?**
+    - **Assumption:** Yes. Outliers follows prior number-valued rates, including
+      inclusive endpoints and ordinary exponent forms. Constructor NaN and
+      infinities are rejected, and its eight rates are validated independently.
+      JSON rounding onto endpoints, numeric underflow, and overflowing
+      exponents remain untested as in questions 7, 19, and 39. Faults may be
+      empty or any ordered subset independently of all rates and capacity.
+      Only the problems object gains these keys; arbitrary field/profile/
+      choice/id names remain legal. Existing diagnostics, UTF-8/BOM handling,
+      immutable copies (including unchanged assignments), and snapshots apply.
+      Fault assignment, outlier generation, feasibility, and statistical
+      frequencies belong to spec 14 and are not asserted here.
+    - **Dependent tests:** Outlier acceptance/rejection and syntax tests,
+      `canonicalConstructorValidatesEveryRateIncludingOutliers`, independence
+      tests, `unknownKeys`, arbitrary-name tests, and all copy/I/O tests.
+
+### Amendment 7 build verification (2026-10-24)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile`, then an `-e` diagnostic
+  retry. Both reached `maven-compiler-plugin:3.15.0:testCompile` and failed
+  with `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac closed
+  its archive file manager. Logs: `.codex-runs/04-amendment7-test-compile.log`
+  and `.codex-runs/04-amendment7-test-compile-detail.log`.
+- All five new Java files and their existing test-source dependencies
+  compiled successfully with Java release 17 against the actual
+  `target/classes` binaries and cached JUnit 5.11.4 API (eleven source files
+  total). The existing compiler-probe approach reads class entries in memory
+  to avoid the archive-close failure; it does not inspect implementation,
+  copy repositories, change permissions, or install dependencies. Probe:
+  `.codex-runs/Amendment7CompileProbe.java`; result:
+  `.codex-runs/04-amendment7-probe-compile.log` (`compiled=true`). This verifies
+  compilation of the added sources, but does not make Maven successful.
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** This is an environment
+  blocker; production, build configuration, dependencies, and existing tests
+  remain unchanged. **Dependent tests:** Full Maven test compilation remains
+  unverified. Runtime tests were not requested and were not run.
