@@ -319,3 +319,174 @@ the first of the next day, and area overrides, location questions in
 repeats or all irrelevant are not prescribed (12); no random sequence is
 prescribed (13); no constructor validation and no lifetime for earlier
 lists (14).
+
+## Amendment 1: faulty enumerators and outliers
+
+Phase 2b puts problems into the **answers**. Some enumerators are
+**faulty**: one goes too fast, one says "No" to filter questions to skip
+modules, one abuses "don't know" codes, on all their interviews, as data
+quality checks that compare enumerators (`ipacheckenumdb`) expect. And
+some submissions get an **outlier**: a number far from the others but
+accepted by the form's constraint. Everything not mentioned here is
+unchanged.
+
+The configuration (spec 04, Amendment 7) adds an `outliers` rate and the
+list of `faults` to inject; both are given by `config.problems()`.
+
+### New problems
+
+| `problem` | `family` | `check` | deterministic |
+|---|---|---|---|
+| `outlier` | `outlier` | `ipacheckoutliers` | no |
+| `tooFast` | `enumerator` | `ipacheckenumdb` | no |
+| `skipModules` | `enumerator` | `ipacheckenumdb` | no |
+| `dontKnow` | `enumerator` | `ipacheckenumdb` | no |
+
+`outlier` comes after `travel` in the table of "Problems": its targets
+are drawn after those of `travel`, by the rules of "How many, and which
+submissions", among all submissions (as for `short` and `long`), with
+the rate `outliers`. The faults are not drawn per submission: they are
+carried by enumerators.
+
+A submission may carry problems of both kinds: an outlier or a fault on
+a submission that is the target of a problem of the original table, a
+fault and an outlier on one submission. A `resent` copy stays an exact
+copy of its original and carries no record but its `resent` record.
+
+In every record, `cleanValue` is the value the field would hold without
+that problem, the other problems of the submission kept.
+
+### Faulty enumerators
+
+Let `F` be the faults of `config.problems()`, in the order `tooFast`,
+`skipModules`, `dontKnow`, and `m` = min(|F|, floor(E / 2)), so that at
+least half of the enumerators stay clean. `m` enumerators are drawn from
+`config.seed()` and `E` only, uniformly without replacement; fault number
+`k` of `F` (counting from 0) is carried by enumerator number `k mod m`
+of those drawn (counting from 0, in the order drawn). A faulty enumerator
+applies its faults to every one of its submissions (except `resent`
+copies).
+
+`warnings()` holds, after the warnings of the original table and before
+those of outliers:
+
+- when `m` is smaller than the size of `F`: one warning saying that
+  faults are cumulated on the same enumerators, and giving the number of
+  enumerators needed for one enumerator per fault (twice the size of `F`);
+- when `m` is 0 and `F` is not empty: one warning saying that no fault
+  was injected, since one enumerator cannot be compared with others;
+- for each faulty enumerator with fewer than 10 submissions: one warning
+  naming it and giving its number of submissions, too few for checks to
+  tell it from the others.
+
+#### `tooFast`
+
+Every advance of the simulated clock after a question is multiplied by
+0.4 (and by the factor of `short` or `long` too, when the submission is
+also such a target), rounded as in "`short` and `long`", before the
+question's minimum time applies; a speed violation is recorded with
+probability min(1, 3 × `config.speedViolationRate()`) instead of
+`config.speedViolationRate()`. Records: as for `short` and `long`.
+
+#### `skipModules`
+
+A **module** is a group or repeat of the form holding at least three
+questions, at any depth. A `select_one` question **controls** a module
+when, at the moment the walker answers it, two of the choices it offers
+are such that with one the module is relevant and with the other it is
+not, the other answers being as they are.
+
+When a faulty enumerator answers a question that controls modules, the
+walker draws its answer `a` as usual. Let `O` be the modules the
+question controls that are relevant with `a`. When `O` is not empty,
+with probability 0.5 (drawn from `config.seed()` and the submission
+number, apart from the answers' own draws) the answer is replaced by a
+choice drawn uniformly among the offered choices, other than the
+configuration's special values, with which no module of `O` is
+relevant; when there is none, `a` is kept. Record (one per replaced
+answer): `field` the question's name, `value` the answer given,
+`cleanValue` `a`.
+
+The same fault shortens rosters: a faulty enumerator declares fewer
+instances of a repeat, with the same probability 0.5 (drawn the same
+way):
+
+- when it answers a question whose answer sets the number of instances
+  of a repeat (`jr:count`), with `a` the count drawn as usual, the answer
+  is replaced by a whole number drawn uniformly between `low` and
+  `a − 1`, where `low` is the smallest whole number of at least 1 that
+  the question's constraint hints (spec 09) allow; when `a` is not
+  above `low`, `a` is kept. The engine may refuse the drawn number: `a`
+  is then kept. Record: `field` the question's name, `value` the number
+  given, `cleanValue` `a`;
+- for a repeat whose number of instances the enumerator controls (spec
+  07), with `a` the number drawn as usual, the enumerator stops after a
+  number drawn the same way. Record: `field` the repeat's name, `value`
+  the number of instances created, `cleanValue` `a`.
+
+#### `dontKnow`
+
+When a faulty enumerator answers a question whose answer `a` drawn as
+usual is not blank, with probability 0.25 (drawn as for `skipModules`)
+the answer is replaced by a "don't know / refused" code, among the
+configuration's `specialValues`:
+
+- for a `select_one` or `select_multiple` question: one of the special
+  values among the offered choices, drawn uniformly (alone, for a
+  `select_multiple`);
+- for an integer or decimal question: one of the special values that are
+  numbers and that the engine accepts, drawn uniformly;
+- otherwise, or when there is none, `a` is kept.
+
+Record (one per replaced answer that differs from `a`): `field` the
+question's name, `value` the code, `cleanValue` `a`.
+
+#### Questions left alone
+
+The faults and outliers never change: the survey id question and the
+upper questions of its cascade (spec 13), answers given by a
+`reinterview`, and read-only questions and calculations. Questions whose
+answer sets the number of instances of a repeat are changed only by
+`skipModules`, as above, never by `dontKnow` or an outlier.
+
+### Outliers
+
+In an `outlier` target, one integer or decimal question gets a value far
+from those the simulator draws for it, but accepted by its constraint.
+
+For a question, let `D` be the distribution the walker draws its answers
+from: uniform on its drawing range (spec 05 and spec 09, "Integer and decimal"), or
+the `normal` or `lognormal` distribution of its override (spec 04,
+Amendment 3), ignoring any bounds. Its **upper fence** is the larger of
+`Q3 + 1.5 × (Q3 − Q1)` and `mean + 3 × sd`, its **lower fence** the
+smaller of `Q1 − 1.5 × (Q3 − Q1)` and `mean − 3 × sd`, where `Q1`, `Q3`,
+`mean` and `sd` are those of `D`.
+
+A question of the target is **eligible** when the walker answers it as
+usual (it is not left alone, above), it is relevant, and its
+constraint's hints (spec 09) allow a value at or above its upper fence
+or at or below its lower fence. The target is first walked as usual; one
+eligible question (its first instance) is drawn uniformly, from
+`config.seed()` and the submission number; the target is then walked
+again with that question answered by an **outlier value**, drawn
+uniformly (whole numbers for an integer question):
+
+- in [upper fence, upper fence + (upper fence − median)], within the
+  hints; when that is empty,
+- in [lower fence − (median − lower fence), lower fence], within the
+  hints.
+
+The engine may still refuse it: after 20 refused draws the question is
+answered as usual, and `warnings()` holds a warning naming the
+submission and the question. When the target has no eligible question,
+it carries no outlier, and `warnings()` holds a warning naming the
+submission.
+
+Record: `field` the question's name, `value` the outlier value,
+`cleanValue` the answer drawn as usual.
+
+### Order
+
+The records of a submission come in the order of the problems' table
+(the original one, then `outlier`, `tooFast`, `skipModules`,
+`dontKnow`), and within a problem in the form's order of their fields.

@@ -1,8 +1,13 @@
 package ctosim;
 
-/** Share of submissions carrying each injected problem. See specs/04-simulation-config.md, Amendment 6. */
+import java.util.List;
+
+/**
+ * Share of submissions carrying each injected problem, and the faults of faulty enumerators. See
+ * specs/04-simulation-config.md, Amendments 6 and 7.
+ */
 public record ProblemRates(double resent, double reinterview, double shortDuration, double longDuration,
-                           double offHours, double overlap, double travel) {
+                           double offHours, double overlap, double travel, double outliers, List<String> faults) {
 
     private static final ProblemRates DEFAULTS = new ProblemRates(0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02);
 
@@ -14,6 +19,12 @@ public record ProblemRates(double resent, double reinterview, double shortDurati
         check(offHours, "offHours");
         check(overlap, "overlap");
         check(travel, "travel");
+    }
+
+    /** The fieldwork problems only: no outliers and no faults (Amendment 7). */
+    public ProblemRates(double resent, double reinterview, double shortDuration, double longDuration,
+                        double offHours, double overlap, double travel) {
+        this(resent, reinterview, shortDuration, longDuration, offHours, overlap, travel, 0, List.of());
     }
 
     public static ProblemRates defaults() {

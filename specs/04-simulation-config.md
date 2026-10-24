@@ -438,3 +438,37 @@ earlier rates, and the constructor rejects NaN and infinities (39); only
 the top-level key and its seven members are new (40); the usual
 diagnostics, input rules and copies apply, and `withProblems(null)`
 clears the setting while a JSON `null` is an error (41).
+
+## Amendment 7: faulty enumerators and outliers
+
+Two keys are added to the `problems` object (Amendment 6); everything
+else is unchanged.
+
+| Key | Type | Default | Meaning (spec 14, Amendment 1) |
+|---|---|---|---|
+| `outliers` | number, 0 to 1 | `0.02` | share of submissions with one outlier |
+| `faults` | array of distinct strings among `tooFast`, `skipModules`, `dontKnow` | all three | the faults carried by faulty enumerators; `[]` for none |
+
+`ProblemRates` gets two components; the constructor with the seven
+rates of Amendment 6 remains, and gives `outliers` 0 and no faults (the
+fieldwork problems only):
+
+```java
+public record ProblemRates(double resent, double reinterview,
+                           double shortDuration, double longDuration,
+                           double offHours, double overlap, double travel,
+                           double outliers, java.util.List<String> faults) {
+    public ProblemRates(double resent, double reinterview, double shortDuration, double longDuration,
+                        double offHours, double overlap, double travel);   // outliers 0, faults []
+    public static ProblemRates defaults();   // the defaults of both tables
+}
+```
+
+- `defaults()`, and `"problems": {}` in a file, have `outliers` 0.02 and
+  the three faults, in the order `tooFast`, `skipModules`, `dontKnow`.
+- `faults()` is unmodifiable and keeps the file's order. A fault named
+  twice, an unknown name, a value that is not an array of strings, or an
+  `outliers` rate outside 0 to 1 is an error of the configuration, at its
+  path (`problems.faults[1]`, `problems.outliers`); the constructor throws
+  `IllegalArgumentException` for the same cases, and
+  `NullPointerException` for a null list or element.

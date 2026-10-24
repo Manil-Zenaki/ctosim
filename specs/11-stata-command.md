@@ -386,3 +386,12 @@ failure behaviour is unchanged (H3); the command is tested at its
 boundary, `problems` forwarding `--problems` once and configured rates
 taking precedence (H4); the help is checked lexically for the option,
 the problems, the columns and a merge on `KEY` (H5).
+
+## Amendment 9: the help on faulty enumerators and outliers
+
+The command is unchanged; its help file documents the problems of spec
+14 Amendment 1: faulty enumerators (too fast, "No" to filter questions
+to skip modules and fewer repeat instances declared, "don't know" codes), how many enumerators are faulty
+(one per fault while at least half stay clean; more enumerators for one
+per fault), outliers within the constraints, and the configuration keys
+`outliers` and `faults`.
