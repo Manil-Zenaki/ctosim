@@ -373,3 +373,16 @@ is unchanged.
 - The help file documents the option, lists the problems (spec 14) and
   the answer key's columns, and shows how to load the key and merge it
   with the data on `KEY`.
+
+Clarification (Amendment 8): assumptions H1–H5 of the questions file are
+reviewed one by one and confirmed: "when problems are injected" means the
+run had injection enabled, so all-zero rates return `r(problems)` 0 and
+`r(answerkey)`, while a run without injection sets neither, even when an
+older key remains in the directory (H1); the count is the report's, and
+the returned path is absolute while the displayed one is free (H2); the
+summary follows the warnings and comes before the data are loaded, so it
+is shown even when the import do-file then fails, and the earlier
+failure behaviour is unchanged (H3); the command is tested at its
+boundary, `problems` forwarding `--problems` once and configured rates
+taking precedence (H4); the help is checked lexically for the option,
+the problems, the columns and a merge on `KEY` (H5).
