@@ -233,3 +233,43 @@ fieldwork oracle described above. No fixture changes are needed.
 
 No production source was read or modified, no dependencies or build
 configuration were changed, and no commit was made.
+
+## Dispute 7: problem settings that only name the seven fieldwork rates (Amendment 5, superseded by spec 04 Amendment 7)
+
+**Tests:** in `CliAmendment5ActivationTest`, `CliAmendment5LifecycleTest`
+and `CliAmendment5ReportTest`, every test whose configuration builds its
+`problems` object with `CliAmendment5Support.only(name, rate)`:
+`allZeroRatesStillWriteHeaderAndZeroSummariesEvenWithFlag` (both
+cases), `rerunReplacesExistingKeyThenZeroRatesTruncateItToHeader`,
+`effectiveSeedCountAndIdReachTheProblemPlanAndAllExports` (both cases),
+`enabledButIneligibleProblemsWriteHeaderAndReportActualZeroWithWarnings`,
+`fallbackWarningsAreRetainedAfterSubmissionWarningsAndDoNotCountAsInjectedProblems`
+and `summaryCountsDistinctAffectedSubmissionsRatherThanDurationRecords`
+(three cases).
+
+**Spec:** spec 04 Amendment 7 adds two keys to the `problems` object,
+`outliers` (default 0.02) and `faults` (default all three), and says
+that `"problems": {}` in a file has `outliers` 0.02 and the three faults.
+As for the seven rates of Amendment 6, a key left out of the object takes
+its default. Spec 14 Amendment 1 then injects outliers and faulty
+enumerators.
+
+**What the tests do:** `only(name, rate)` sets the seven rates of
+Amendment 6 (all 0, or one of them) and leaves `outliers` and `faults`
+out. Under Amendment 7 such a configuration asks for outliers at 0.02
+and for the three faults. The tests then expect what was true before
+Amendment 7: a header-only key when the seven rates are 0, exactly two
+duration records per affected submission, a count of affected
+submissions limited to the named problem. The failures show the key
+holding `tooFast` records (`expected: <3> but was: <6>`, a header
+followed by `tooFast` rows where only the header was expected).
+
+**Why the tests are superseded:** they were right for Amendment 6 alone;
+Amendment 7 changed what a `problems` object without `outliers` and
+`faults` means. The behaviour they check (activation, header-only key,
+counts of distinct submissions, warnings, file order) is unchanged once
+the configuration asks for no outliers and no faults.
+
+**Requested change:** make `only(name, rate)` also set `"outliers": 0`
+and `"faults": []` (unless the test means to inject them), keeping every
+assertion.
