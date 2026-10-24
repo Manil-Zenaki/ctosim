@@ -11,9 +11,25 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Reuses only test fixtures for spec 13 Amendment 3's attached search cascade. */
 @Isolated("Walks temporarily change JVM time zone")
 class InjectedProblemsCascadeTest extends FieldworkAmendment3Support {
+    @Override LoadedForm attached(String instance, String binds, String body) throws Exception {
+        // Duplicate records identify originals by KEY, so this fixture needs instance IDs.
+        return super.attached(instance + "<meta><instanceID/></meta>",
+                binds + "<bind nodeset=\"/data/meta/instanceID\" type=\"string\" jr:preload=\"uid\"/>", body);
+    }
+
+    private static void assertDistinctKeys(List<Submission> submissions) throws Exception {
+        var keys = new HashSet<String>();
+        for (var submission : submissions) {
+            String instanceId = key(submission);
+            assertFalse(instanceId.isEmpty(), "cascade fixture must provide a KEY");
+            assertTrue(keys.add(instanceId), "each submission must have its own KEY");
+        }
+    }
+
     @Test void reinterviewCopiesTheIdAndEveryUpperQuestionFromItsOriginal() throws Exception {
         var c = idConfig(6, "\"enumerators\":3").withProblems(only("reinterview", 1.0 / 3));
         var plan = new Fieldwork(deep(false), c); var submissions = plan.walkAll();
+        assertDistinctKeys(submissions);
         assertEquals(2, plan.problems().size()); Set<String> originals = new HashSet<>();
         for (var p : plan.problems()) {
             var target = submissions.get(p.submission() - 1); Submission original = null;
@@ -29,6 +45,7 @@ class InjectedProblemsCascadeTest extends FieldworkAmendment3Support {
     @Test void resentCopiesACascadeSubmissionWithoutConsumingAnotherHouseholdId() throws Exception {
         var c = idConfig(6, "\"enumerators\":3").withProblems(only("resent", 1.0 / 3));
         var plan = new Fieldwork(deep(true), c); var submissions = plan.walkAll();
+        assertDistinctKeys(submissions);
         assertEquals(2, plan.problems().size()); var targetNumbers = new HashSet<Integer>();
         for (var p : plan.problems()) targetNumbers.add(p.submission());
         var ordinaryIds = new HashSet<String>();

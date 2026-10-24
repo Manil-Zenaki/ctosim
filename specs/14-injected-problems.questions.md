@@ -256,3 +256,23 @@ The final suite contains 106 JUnit invocations. The diagnostic execution starts
 all 106, with 2 passing and 104 failing (99 `UnsupportedOperationException`
 failures from unimplemented APIs and 5 assertion failures for their missing
 behavior). There are no aborted/skipped tests or fixture-loading failures.
+
+## Dispute verification (2026-10-24)
+
+**Question:** Can the offline Maven suite verify the cascade-fixture correction?
+
+**Observation:** `mvnw.cmd -o -q test` failed at `testCompile`, reporting
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The Maven suite
+therefore did not run. See `.codex-runs/spec14-dispute-maven.log`.
+
+**Verification approach:** Reused the existing diagnostic compiler against
+compiled API classes and cached dependencies, without reading production
+source or copying Maven repositories. All 13 spec 14 test/support sources
+compiled successfully. A diagnostic JUnit runner selected only
+`InjectedProblemsCascadeTest`: both disputed tests passed, with no skips
+or aborted tests. This is supplementary verification, not a successful
+full Maven run. Logs: `.codex-runs/spec14-dispute-compile.log` and
+`.codex-runs/spec14-dispute-junit.log`.
+
+**Tests:** `reinterviewCopiesTheIdAndEveryUpperQuestionFromItsOriginal`
+and `resentCopiesACascadeSubmissionWithoutConsumingAnotherHouseholdId`.

@@ -35,3 +35,46 @@ form that has an `instanceID`, as every SurveyCTO form does.
 a `jr:preload="uid"` bind (as `src/test/resources/ctosim/injected-problems/form-template.xml`
 does), or find the original by another means than an empty KEY, and
 keep the assertions on the copied answers.
+
+## Adjudication (2026-10-24)
+
+### Dispute 1: upheld; fix the cascade fixture in both tests
+
+Spec 14 defines `key` as the submission's instanceID and `relatedKey` as
+the original's KEY. The tests read `meta/instanceID` to resolve that
+relationship, but `deep(...)` uses a template with no such element or
+UID preload. Looking up an original by an empty KEY cannot distinguish
+the returned submissions. The fixture therefore cannot support these
+assertions; this is a test defect, not evidence of incorrect copying.
+
+`InjectedProblemsCascadeTest` now overrides its fixture builder to add
+`meta/instanceID` and its `jr:preload="uid"` bind. This change is local to
+the two disputed tests and leaves the shared spec 13 fixtures unchanged.
+Both tests explicitly check that returned submission KEYs are nonempty
+and distinct before using KEYs to resolve originals.
+
+- `reinterviewCopiesTheIdAndEveryUpperQuestionFromItsOriginal`: retain
+  the copied region/district/village/id assertions and the visit ID
+  assertion. The reinterview section and clarification (11) explicitly
+  require them. Retain the earlier-original, unique-original and distinct
+  target-KEY assertions: originals must be earlier and cannot be reused,
+  and the target remains its own submission.
+- `resentCopiesACascadeSubmissionWithoutConsumingAnotherHouseholdId`:
+  retain the copied cascade answers, original-visit equality and distinct
+  ordinary household IDs. The resent section requires a copy of the
+  original and its visit; "Everything else" preserves distinct survey
+  IDs for the ordinary interviews. Fixing the missing metadata makes the
+  original lookup meaningful without weakening these checks.
+
+No production source was inspected or changed.
+
+**Verification:** `mvnw.cmd -o -q test` failed at `testCompile`, reporting
+the cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` path;
+the full Maven suite could not run. The existing diagnostic compiler
+successfully compiled all 13 spec 14 test/support sources against the
+compiled public API classes. A diagnostic JUnit run of
+`InjectedProblemsCascadeTest` then passed both disputed tests (2 started,
+2 successful, no failures or skips). Logs are
+`.codex-runs/spec14-dispute-maven.log`,
+`.codex-runs/spec14-dispute-compile.log`, and
+`.codex-runs/spec14-dispute-junit.log`.
