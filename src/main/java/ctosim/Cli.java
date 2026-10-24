@@ -33,9 +33,12 @@ public final class Cli {
             "      --python EXE        Python used to convert an XLSForm (default: $CTOSIM_PYTHON or python)",
             "      --fake-attachments  invent the attached files (preload) the form reads but the media lacks",
             "      --id NAME           question holding the survey id: each submission gets its own value",
+            "      --problems          inject fieldwork problems and list them in answer-key.csv",
             "  -h, --help              show this help");
 
     static final String REPORT = "run-report.txt";
+    /** The answer key of injected problems (spec 10, Amendment 5). */
+    static final String ANSWER_KEY = "answer-key.csv";
     private static final Set<String> SIMULATED_FUNCTIONS = Set.of("duration", "username");
     private static final Set<String> OPTIONS = Set.of("-c", "--config", "-n", "--submissions", "-s", "--seed",
             "-o", "--output", "-m", "--media", "--server", "--python", "--id");
@@ -61,7 +64,8 @@ public final class Cli {
     }
 
     private record Options(Path form, boolean xlsx, Path config, Integer submissions, Long seed, Path output,
-                           Path media, String server, String python, boolean fakeAttachments, String id) { }
+                           Path media, String server, String python, boolean fakeAttachments, String id,
+                           boolean problems) { }
 
     /** Where fictitious attached files are written, in the output directory (spec 10, Amendment 2). */
     static final String FAKE_DIRECTORY = "attachments";
@@ -120,10 +124,18 @@ public final class Cli {
         String python = null;
         boolean fake = false;
         String id = null;
+        boolean problems = false;
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             if (arg.equals("--fake-attachments")) {
                 fake = true;
+                continue;
+            }
+            if (arg.equals("--problems")) {
+                if (problems) {
+                    throw new UsageException("option --problems is given twice");
+                }
+                problems = true;
                 continue;
             }
             if (arg.startsWith("-") && arg.length() > 1) {
@@ -199,7 +211,7 @@ public final class Cli {
             python = env == null || env.isEmpty() ? "python" : env;
         }
         return new Options(formPath, xlsx, config == null ? null : Path.of(config), n, s, out, mediaDir, server, python,
-                fake, id);
+                fake, id, problems);
     }
 
     // ---- the run ----
@@ -221,6 +233,9 @@ public final class Cli {
         }
         if (o.id() != null) {
             config = config.withId(o.id());
+        }
+        if (o.problems() && config.problems().isEmpty()) {
+            config = config.withProblems(ProblemRates.defaults()); // spec 10, Amendment 5
         }
         if (!Files.isRegularFile(o.form())) {
             throw new RunException(o.form() + ": the form file does not exist");
@@ -303,6 +318,17 @@ public final class Cli {
         List<String> files = new ArrayList<>();
         files.add(exporter.wideFileName());
         files.addAll(longFiles.keySet());
+        long problems = -1; // no problems injected
+        if (config.problems().isPresent()) { // spec 10, Amendment 5
+            Path key = o.output().resolve(ANSWER_KEY);
+            try {
+                Files.writeString(key, AnswerKey.csv(fieldwork.problems()), StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                throw new RunException(key + ": the answer key cannot be written (" + e + ")");
+            }
+            files.add(ANSWER_KEY);
+            problems = fieldwork.problems().stream().mapToInt(InjectedProblem::submission).distinct().count();
+        }
         List<String> fakeNames = new ArrayList<>();
         if (fake != null) {
             for (String name : fake.files().keySet()) {
@@ -319,7 +345,7 @@ public final class Cli {
         List<String> unsatisfied = unsatisfiedSection(byQuestion, catalog, config.submissions());
         Map<String, List<FormError>> byField = formErrorsByField(submissions);
         List<String> formErrors = formErrorsSection(byField, catalog, config.submissions());
-        String report = report(o, form, config, files, warnings, fakeNames, formErrors, unsatisfied);
+        String report = report(o, form, config, files, warnings, fakeNames, formErrors, unsatisfied, problems);
         try {
             Files.writeString(o.output().resolve(REPORT), report, StandardCharsets.UTF_8);
         } catch (IOException e) {
@@ -329,6 +355,9 @@ public final class Cli {
             "Simulated " + config.submissions() + " submissions of " + form.formId() + " into " + o.output(),
             warnings.size() + " warnings; see " + REPORT};
         List<String> all = new ArrayList<>(List.of(lines));
+        if (problems >= 0) {
+            all.add(problems + " submissions with an injected problem; see " + ANSWER_KEY);
+        }
         if (!unsatisfied.isEmpty()) {
             List<String> fields = new ArrayList<>();
             for (List<UnsatisfiedConstraint> records : byQuestion.values()) {
@@ -526,7 +555,7 @@ public final class Cli {
 
     private static String report(Options o, LoadedForm form, SimulationConfig config, List<String> files,
                                  List<String> warnings, List<String> fakeNames, List<String> formErrors,
-                                 List<String> unsatisfied) {
+                                 List<String> unsatisfied, long problems) {
         StringBuilder r = new StringBuilder();
         line(r, "ctosim run report");
         line(r, "Form: " + form.title() + " (" + form.formId() + ", version "
@@ -546,6 +575,9 @@ public final class Cli {
         }
         for (String text : unsatisfied) {
             line(r, text);
+        }
+        if (problems >= 0) {
+            line(r, "Problems: " + problems + " injected, listed in " + ANSWER_KEY);
         }
         line(r, "Files:");
         for (String file : files) {
