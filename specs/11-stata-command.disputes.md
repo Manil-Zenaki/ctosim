@@ -482,3 +482,37 @@ Also ran `.venv\Scripts\python -B src/test/stata/fixtures/help_use_cases_oracle_
 **16 tests passed**. `git diff --check` passed. Only the disputed GPS test and
 this disputes file were changed. No production implementation was read or
 modified, and no commit was made.
+
+## Dispute 7: a summary whose output directory is named "warnings ..." (2026-10-23)
+
+**Test:** `src/test/stata/test_injected_problems_display.do`, case
+`warnings 2`, `count 2` (oracle `InjectedProblemsFixture.logCheck`).
+
+**Spec:** Amendment 8: "the command shows, after the warnings, the number
+of submissions with an injected problem and the answer key's path".
+Clarification H2: the displayed path is free (absolute or not).
+
+**What the test does:** the oracle sets its cursor on the *last* line
+that contains the word "warning" and the warning count as a standalone
+number, then requires every `WARNING_11_<w>` line after that cursor. The
+test saves this case's run under the directory `warnings several`. The
+command's summary, as required, gives the count and the key's path on one
+line: `ctosim: 2 submissions with an injected problem; answer key:
+C:/.../test_injected_problems_display/warnings several/answer-key.csv`.
+That line contains "warning" (in the directory name) and the standalone
+number 2 (the problem count, which equals the warning count in this
+case), so the cursor lands on the summary itself, after the warning
+lines, and the oracle reports "Missing or reordered warning 1" although
+the log shows the warning count, the two warnings, then the summary, in
+the required order. The three other cases (counts or warnings 0, or the
+directory named `quiet ...`) pass with the same command.
+
+**Why the test is wrong:** the failure depends on the test's own choice
+of directory name and on the two numbers being equal, not on the
+command's behaviour. A one-line summary with the path is a valid display
+under H2.
+
+**Requested change:** find the warning-count line without matching inside
+the key's path (for example remove paths before matching, as the summary
+search already does, or take the first matching line instead of the
+last), or name the case's directory without the word "warning".
