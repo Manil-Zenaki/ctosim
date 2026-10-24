@@ -104,6 +104,7 @@ public final class Fieldwork {
         List<Submission> submissions = new ArrayList<>(n);
         List<Visit> planned = new ArrayList<>(n);
         List<InjectedProblem> injected = new ArrayList<>();
+        Set<Integer> copies = new HashSet<>(); // resent copies, which take no place in the plan
         for (int number = 1; number <= n; number++) {
             int enumerator = (number - 1) % e + 1;
             SplittableRandom minutes = new SplittableRandom(FormWalker.seed(config.seed(), number, 10));
@@ -120,6 +121,7 @@ public final class Fieldwork {
             }
             if (RESENT.equals(problem)) {
                 Submission copy = resend(submissions.get(original - 1), planned.get(original - 1), number);
+                copies.add(number);
                 submissions.add(copy);
                 planned.add(planned.get(original - 1));
                 injected.add(resentRecord(copy, planned.get(original - 1), submissions.get(original - 1)));
@@ -225,12 +227,35 @@ public final class Fieldwork {
                 double u = new SplittableRandom(FormWalker.seed(config.seed(), number, 20)).nextDouble();
                 factor = SHORT.equals(problem) ? 0.15 + 0.15 * u : 3 + 3 * u;
             }
+            Set<String> faults = plan == null ? Set.of() : plan.faultsOf(enumerator);
+            boolean fast = faults.contains(TOO_FAST);
             Visit visit = new Visit(enumerator, start, point[0], point[1], id);
-            FormWalker.IdHistory before = factor != 1 && history != null ? history.copy() : null;
-            Submission s = walker.walk(number, visit, history,
-                    new FormWalker.Injection(factor, TRAVEL.equals(problem), given));
+            FormWalker.IdHistory before = history == null ? null : history.copy();
+            FormWalker.Injection injection = new FormWalker.Injection(factor * (fast ? FAST_FACTOR : 1),
+                    TRAVEL.equals(problem), given);
+            injection.violationFactor = fast ? FAST_VIOLATIONS : 1;
+            injection.skipModules = faults.contains(SKIP_MODULES);
+            injection.dontKnow = faults.contains(DONT_KNOW);
+            if (OUTLIER.equals(problem)) {
+                FormWalker.Injection probe = injection.with(injection.timeFactor());
+                probe.collectEligible = true;
+                walker.walk(number, visit, copy(before), probe);
+                if (probe.eligible.isEmpty()) {
+                    plan.warn(OUTLIER, "problems: outlier: submission " + number + " has no question that can get an"
+                            + " outlier within its constraint; it carries no outlier");
+                } else {
+                    injection.outlierField = probe.eligible.get(new SplittableRandom(
+                            FormWalker.seed(config.seed(), number, 26)).nextInt(probe.eligible.size()));
+                }
+            }
+            Submission s = walker.walk(number, visit, history, injection);
             submissions.add(s);
             planned.add(visit);
+            if (injection.outlierRefused) {
+                plan.warn(OUTLIER, "problems: outlier: submission " + number + ": the engine refused "
+                        + FormWalker.OUTLIER_ATTEMPTS + " outlier values for '" + injection.outlierField
+                        + "'; answered as usual");
+            }
 
             if (REINTERVIEW.equals(problem)) {
                 if (originalId.equals(value(s.instanceXml(), idField))) {
@@ -241,7 +266,8 @@ public final class Fieldwork {
                             + originalId + "' of submission " + original + "; it carries no problem");
                 }
             } else if (factor != 1) {
-                Submission clean = walker.walk(number, visit, before, FormWalker.Injection.NONE);
+                FormWalker.Injection without = injection.with(fast ? FAST_FACTOR : 1);
+                Submission clean = walker.walk(number, visit, copy(before), without);
                 injected.addAll(durationRecords(s, clean, visit, problem));
             } else if (OFFHOURS.equals(problem)) {
                 injected.addAll(startRecords(s, visit, problem, ""));
@@ -250,6 +276,15 @@ public final class Fieldwork {
             } else if (TRAVEL.equals(problem)) {
                 injected.addAll(travelRecords(s, visit, key(last[enumerator])));
             }
+            injected.addAll(changes(s, visit, injection, OUTLIER));
+            if (fast) {
+                FormWalker.Injection without = injection.with(factor);
+                without.violationFactor = 1;
+                Submission clean = walker.walk(number, visit, copy(before), without);
+                injected.addAll(durationRecords(s, clean, visit, TOO_FAST));
+            }
+            injected.addAll(changes(s, visit, injection, SKIP_MODULES));
+            injected.addAll(changes(s, visit, injection, DONT_KNOW));
 
             if (OVERLAP.equals(problem)) {
                 lastEnd[enumerator] = s.end().isAfter(lastEnd[enumerator]) ? s.end() : lastEnd[enumerator];
@@ -273,6 +308,7 @@ public final class Fieldwork {
                     + "' that an earlier submission had received; the offered choices ran out");
         }
         if (plan != null) {
+            plan.smallSamples(planned, copies);
             planWarnings.addAll(plan.warnings());
         }
         this.visits = Collections.unmodifiableList(planned);
@@ -620,7 +656,20 @@ public final class Fieldwork {
     static final String OFFHOURS = "offhours";
     static final String OVERLAP = "overlap";
     static final String TRAVEL = "travel";
-    private static final List<String> PROBLEMS = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP, TRAVEL);
+    static final String OUTLIER = "outlier";
+    static final String TOO_FAST = "tooFast";
+    static final String SKIP_MODULES = "skipModules";
+    static final String DONT_KNOW = "dontKnow";
+    private static final List<String> PROBLEMS = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP, TRAVEL,
+            OUTLIER);
+    /** Where the warnings of faulty enumerators come, between those of travel and of outliers. */
+    private static final String FAULTS = "faults";
+    private static final List<String> WARNING_ORDER = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP,
+            TRAVEL, FAULTS, OUTLIER);
+    private static final double FAST_FACTOR = 0.4;
+    private static final double FAST_VIOLATIONS = 3;
+    /** Fewer submissions than this and a faulty enumerator cannot be told from the others. */
+    private static final int SMALL_SAMPLE = 10;
     private static final long OVERLAP_SECONDS = 300;
     private static final int FAR_ATTEMPTS = 100_000;
 
@@ -629,10 +678,13 @@ public final class Fieldwork {
         private final java.util.Map<Integer, String> targets = new HashMap<>();
         private final Set<Integer> originals = new HashSet<>();
         private final java.util.Map<String, List<String>> warnings = new HashMap<>();
+        /** The faults of each faulty enumerator. */
+        private final java.util.Map<Integer, Set<String>> faulty = new HashMap<>();
 
         Problems(ProblemRates rates, int n, int e) {
             double[] shares = {rates.resent(), rates.reinterview(), rates.shortDuration(), rates.longDuration(),
-                rates.offHours(), rates.overlap(), rates.travel()};
+                rates.offHours(), rates.overlap(), rates.travel(), rates.outliers()};
+            warnings.put(FAULTS, new ArrayList<>());
             SplittableRandom random = new SplittableRandom(FormWalker.seed(config.seed(), n, 16));
             for (int k = 0; k < PROBLEMS.size(); k++) {
                 String problem = PROBLEMS.get(k);
@@ -642,7 +694,7 @@ public final class Fieldwork {
                     continue;
                 }
                 List<Integer> eligible = new ArrayList<>();
-                int from = SHORT.equals(problem) || LONG.equals(problem) ? 1 : e + 1;
+                int from = SHORT.equals(problem) || LONG.equals(problem) || OUTLIER.equals(problem) ? 1 : e + 1;
                 for (int number = from; number <= n; number++) {
                     if (!targets.containsKey(number)) {
                         eligible.add(number);
@@ -667,6 +719,66 @@ public final class Fieldwork {
                             + " no travel problem was injected");
                 }
             }
+            faulty(rates, e);
+        }
+
+        /** Draws the faulty enumerators and gives each its faults (spec 14, Amendment 1). */
+        private void faulty(ProblemRates rates, int e) {
+            List<String> faults = new ArrayList<>();
+            for (String fault : ProblemRates.FAULTS) {
+                if (rates.faults().contains(fault)) {
+                    faults.add(fault);
+                }
+            }
+            if (faults.isEmpty()) {
+                return;
+            }
+            int m = Math.min(faults.size(), e / 2);
+            if (m == 0) {
+                warn(FAULTS, "problems: faults: no fault was injected: with one enumerator, a faulty enumerator could"
+                        + " not be compared with others");
+                return;
+            }
+            if (m < faults.size()) {
+                warn(FAULTS, "problems: faults: " + faults.size() + " faults are cumulated on " + m
+                        + " enumerators, so that at least half of them stay clean; use at least " + 2 * faults.size()
+                        + " enumerators for one enumerator per fault");
+            }
+            List<Integer> all = new ArrayList<>();
+            for (int k = 1; k <= e; k++) {
+                all.add(k);
+            }
+            SplittableRandom random = new SplittableRandom(FormWalker.seed(config.seed(), e, 25));
+            for (int i = 0; i < m; i++) {
+                Collections.swap(all, i, i + random.nextInt(all.size() - i));
+            }
+            for (int k = 0; k < faults.size(); k++) {
+                faulty.computeIfAbsent(all.get(k % m), x -> new java.util.LinkedHashSet<>()).add(faults.get(k));
+            }
+        }
+
+        Set<String> faultsOf(int enumerator) {
+            return faulty.getOrDefault(enumerator, Set.of());
+        }
+
+        /** Warns about faulty enumerators with too few submissions to be told from the others. */
+        void smallSamples(List<Visit> visits, Set<Integer> copies) {
+            java.util.TreeMap<Integer, Integer> counts = new java.util.TreeMap<>();
+            for (int enumerator : faulty.keySet()) {
+                counts.put(enumerator, 0);
+            }
+            for (int i = 0; i < visits.size(); i++) {
+                if (!copies.contains(i + 1)) {
+                    counts.computeIfPresent(visits.get(i).enumerator(), (k, v) -> v + 1);
+                }
+            }
+            counts.forEach((enumerator, count) -> {
+                if (count < SMALL_SAMPLE) {
+                    warn(FAULTS, "problems: faults: " + FormWalker.username(enumerator, config.enumerators())
+                            + " is faulty (" + String.join(", ", faulty.get(enumerator)) + ") but has only " + count
+                            + " submissions, too few for checks to tell it from the others");
+                }
+            });
         }
 
         String problemOf(int number) {
@@ -699,7 +811,7 @@ public final class Fieldwork {
 
         List<String> warnings() {
             List<String> all = new ArrayList<>();
-            for (String problem : PROBLEMS) {
+            for (String problem : WARNING_ORDER) {
                 all.addAll(warnings.get(problem));
             }
             return all;
@@ -722,7 +834,8 @@ public final class Fieldwork {
         String theirs = value(original.instanceXml(), "instanceID");
         String xml = own == null || theirs == null ? original.instanceXml() : original.instanceXml().replace(theirs, own);
         long later = 1 + new SplittableRandom(FormWalker.seed(config.seed(), number, 21)).nextInt(120);
-        return Submission.of(number, xml, original.start(), original.end(), original.submitted().plusMinutes(later));
+        return new Submission(number, xml, original.start(), original.end(), original.submitted().plusMinutes(later),
+                original.answered(), List.of());
     }
 
     private InjectedProblem resentRecord(Submission copy, Visit visit, Submission original) {
@@ -737,7 +850,8 @@ public final class Fieldwork {
                                    String cleanValue, String related) {
         return new InjectedProblem(s.number(), key(s), FormWalker.username(visit.enumerator(), config.enumerators()),
                 family(problem), problem, check(problem), field, value, cleanValue, related,
-                !SHORT.equals(problem) && !LONG.equals(problem));
+                !SHORT.equals(problem) && !LONG.equals(problem) && !OUTLIER.equals(problem) && !TOO_FAST.equals(problem)
+                        && !SKIP_MODULES.equals(problem) && !DONT_KNOW.equals(problem));
     }
 
     private static String family(String problem) {
@@ -745,6 +859,8 @@ public final class Fieldwork {
             case RESENT, REINTERVIEW -> "duplicate";
             case SHORT, LONG -> "duration";
             case OFFHOURS, OVERLAP -> "schedule";
+            case OUTLIER -> "outlier";
+            case TOO_FAST, SKIP_MODULES, DONT_KNOW -> "enumerator";
             default -> "travel";
         };
     }
@@ -752,10 +868,26 @@ public final class Fieldwork {
     private static String check(String problem) {
         return switch (problem) {
             case RESENT, REINTERVIEW -> "ipacheckids";
-            case SHORT, LONG -> "ipacheckoutliers";
+            case SHORT, LONG, OUTLIER -> "ipacheckoutliers";
             case OFFHOURS -> "ipachecktimeuse";
+            case TOO_FAST, SKIP_MODULES, DONT_KNOW -> "ipacheckenumdb";
             default -> "custom";
         };
+    }
+
+    /** The records of what a walk's faults or outlier changed, for one problem, in walk order. */
+    private List<InjectedProblem> changes(Submission s, Visit visit, FormWalker.Injection injection, String problem) {
+        List<InjectedProblem> records = new ArrayList<>();
+        for (FormWalker.Change change : injection.changes) {
+            if (change.problem().equals(problem)) {
+                records.add(record(s, visit, problem, change.field(), change.value(), change.clean(), ""));
+            }
+        }
+        return records;
+    }
+
+    private static FormWalker.IdHistory copy(FormWalker.IdHistory history) {
+        return history == null ? null : history.copy();
     }
 
     private List<InjectedProblem> durationRecords(Submission s, Submission clean, Visit visit, String problem) {

@@ -181,7 +181,7 @@ public final class AnswerGenerator {
         }
     }
 
-    private static String formatDecimal(double value) {
+    static String formatDecimal(double value) {
         BigDecimal rounded = BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
         return rounded.signum() == 0 ? "0" : rounded.stripTrailingZeros().toPlainString();
     }
@@ -799,7 +799,7 @@ public final class AnswerGenerator {
     // --- Constraint hints (spec 09) -------------------------------------------------
 
     /** The numeric range to draw from once the constraint's bounds are taken into account. */
-    private static NumericRange hinted(NumericRange range, ConstraintHints hints, boolean integer) {
+    static NumericRange hinted(NumericRange range, ConstraintHints hints, boolean integer) {
         Bound lower = hints.lower();
         Bound upper = hints.upper();
         if (lower == null && upper == null) {
@@ -822,7 +822,7 @@ public final class AnswerGenerator {
         return lo != null ? new NumericRange(lo, lo + width) : new NumericRange(hi - width, hi);
     }
 
-    private static double closedLower(Bound bound, boolean integer) {
+    static double closedLower(Bound bound, boolean integer) {
         double v = bound.value();
         if (integer) {
             return bound.inclusive() ? Math.ceil(v) : Math.floor(v) + 1;
@@ -830,7 +830,7 @@ public final class AnswerGenerator {
         return bound.inclusive() ? v : v + 0.01;
     }
 
-    private static double closedUpper(Bound bound, boolean integer) {
+    static double closedUpper(Bound bound, boolean integer) {
         double v = bound.value();
         if (integer) {
             return bound.inclusive() ? Math.floor(v) : Math.ceil(v) - 1;

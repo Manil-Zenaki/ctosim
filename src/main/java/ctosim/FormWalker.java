@@ -71,6 +71,8 @@ public final class FormWalker {
     private final String[] deviceIds;
     /** Generic paths of the questions that set a repeat count (spec 07, Amendment 9). */
     private final Set<String> countQuestions;
+    /** The modules of the form (spec 14, Amendment 1). */
+    private final List<Module> modules;
     /** Generic path of each field name of the form (its first occurrence), for ${name} in expressions. */
     private final Map<String, String> paths = new HashMap<>();
 
@@ -80,6 +82,9 @@ public final class FormWalker {
         this.generator = new AnswerGenerator(config);
         this.deviceIds = deviceIds(config);
         this.countQuestions = countQuestions(form);
+        List<Module> found = new ArrayList<>();
+        modules(form.newEntryController().getModel().getForm(), found);
+        this.modules = List.copyOf(found);
 
         Set<String> names = new HashSet<>();
         collectNames(form.newEntryController().getModel().getForm().getMainInstance().getRoot(), names);
@@ -149,12 +154,64 @@ public final class FormWalker {
     }
 
     /**
-     * What an injected problem changes in a walk (spec 14): a factor on the clock's advances, location
-     * questions never left blank, and answers given to questions by name.
+     * What injected problems change in one walk (spec 14): a factor on the clock's advances, location
+     * questions never left blank, answers given to questions by name, and the faults and outlier of
+     * Amendment 1. A walk also reports here what it changed; use a fresh injection for each walk.
      */
-    record Injection(double timeFactor, boolean keepLocations, Map<String, String> answers) {
+    static final class Injection {
         static final Injection NONE = new Injection(1, false, Map.of());
+
+        private final double timeFactor;
+        private final boolean keepLocations;
+        private final Map<String, String> answers;
+        /** Multiplies the probability of a speed violation (tooFast). */
+        double violationFactor = 1;
+        boolean skipModules;
+        boolean dontKnow;
+        /** The question that gets an outlier value at its first instance, or null. */
+        String outlierField;
+        /** When set, the questions that could get an outlier are listed in {@link #eligible}. */
+        boolean collectEligible;
+        final List<String> eligible = new ArrayList<>();
+        /** What faults and the outlier changed, in walk order. */
+        final List<Change> changes = new ArrayList<>();
+        /** Set when the engine refused every outlier value. */
+        boolean outlierRefused;
+
+        Injection(double timeFactor, boolean keepLocations, Map<String, String> answers) {
+            this.timeFactor = timeFactor;
+            this.keepLocations = keepLocations;
+            this.answers = answers;
+        }
+
+        double timeFactor() {
+            return timeFactor;
+        }
+
+        boolean keepLocations() {
+            return keepLocations;
+        }
+
+        Map<String, String> answers() {
+            return answers;
+        }
+
+        /** A fresh injection with the same settings and another time factor. */
+        Injection with(double factor) {
+            Injection copy = new Injection(factor, keepLocations, answers);
+            copy.violationFactor = violationFactor;
+            copy.skipModules = skipModules;
+            copy.dontKnow = dontKnow;
+            copy.outlierField = outlierField;
+            return copy;
+        }
     }
+
+    /** One answer changed by a fault or an outlier (spec 14, Amendment 1). */
+    record Change(String problem, String field, String value, String clean) { }
+
+    /** A group or repeat holding at least three questions (spec 14, Amendment 1). */
+    private record Module(TreeReference ref, boolean repeat) { }
 
     /**
      * An upper question of the id's cascade: the question below it, whose search() call
@@ -250,6 +307,23 @@ public final class FormWalker {
         for (int i = 0; i < element.getNumChildren(); i++) {
             collectNames(element.getChildAt(i), names);
         }
+    }
+
+    /** Finds the groups and repeats that hold at least three questions, at any depth. */
+    private static int modules(IFormElement element, List<Module> out) {
+        int questions = 0;
+        if (element.getChildren() != null) {
+            for (IFormElement child : element.getChildren()) {
+                questions += modules(child, out);
+            }
+        }
+        if (element instanceof QuestionDef) {
+            return 1;
+        }
+        if (element instanceof GroupDef group && group.getBind() != null && questions >= 3) {
+            out.add(new Module(((TreeReference) group.getBind().getReference()).genericize(), group.getRepeat()));
+        }
+        return questions;
     }
 
     /**
@@ -446,6 +520,12 @@ public final class FormWalker {
     }
 
     /** Mixes the configuration seed, the submission number and a stream id into one seed. */
+    static final double SKIP_PROBABILITY = 0.5;
+    static final double DONT_KNOW_PROBABILITY = 0.25;
+    static final int OUTLIER_ATTEMPTS = 20;
+    /** The standard normal quantile of 0.75. */
+    private static final double QUARTILE_Z = 0.6744897501960817;
+
     static long seed(long base, long number, long stream) {
         long h = base * 0x9E3779B97F4A7C15L + number;
         h = (h ^ (h >>> 31)) * 0xBF58476D1CE4E5B9L + stream;
@@ -479,6 +559,9 @@ public final class FormWalker {
         /** The plan's history of ids given at the question (spec 13, Amendment 2), or null. */
         private final IdHistory history;
         private final Injection injection;
+        /** Counts the answers seen by faults, so that each has its own draws (spec 14, Amendment 1). */
+        private int adjusted;
+        private boolean outlierDone;
 
         Walk(int number, Visit visit, IdHistory history, Injection injection) {
             this.injection = injection;
@@ -684,12 +767,14 @@ public final class FormWalker {
                 }
                 if (session.answerQuestion(data, true) == FormEntryController.ANSWER_OK) {
                     answered++;
+                    adjust(prompt, ref, name, kind, question, loaded);
                     handled(ref, minimum);
                     return;
                 }
             }
             if (tryCandidates(prompt, question, kind, loaded) || search(prompt, question, kind, loaded, ref)) {
                 answered++;
+                adjust(prompt, ref, name, kind, question, loaded);
                 handled(ref, minimum);
                 return;
             }
@@ -1239,7 +1324,7 @@ public final class FormWalker {
          * minimum time, and the clock advances, by at least that minimum.
          */
         private void handled(TreeReference ref, double minimum) {
-            if (minimum > 0 && violationDraws.nextDouble() < config.speedViolationRate()) {
+            if (minimum > 0 && violationDraws.nextDouble() < Math.min(1, config.speedViolationRate() * injection.violationFactor)) {
                 violations.add(violationPath(ref));
             }
             long seconds = MIN_SECONDS + timing.nextInt(MAX_SECONDS - MIN_SECONDS + 1);
@@ -1275,10 +1360,336 @@ public final class FormWalker {
             int existing = ref.getMultiplicity(ref.size() - 1);
             String name = ref.getNameLast();
             String key = ref.getParentRef().toString(true) + "/" + name;
-            int target = repeatTargets.computeIfAbsent(key, k -> drawRepeatCount(name));
+            int target = repeatTargets.computeIfAbsent(key, k -> fewer(name, drawRepeatCount(name)));
             if (existing < target) {
                 session.newRepeat();
             }
+        }
+
+        /** A faulty enumerator may declare fewer instances of a repeat it controls (skipModules). */
+        private int fewer(String repeatName, int count) {
+            if (!injection.skipModules) {
+                return count;
+            }
+            SplittableRandom random = new SplittableRandom(seed(config.seed(), number, 30 + adjusted++));
+            if (random.nextDouble() >= SKIP_PROBABILITY || count <= 1) {
+                return count;
+            }
+            int fewer = 1 + random.nextInt(count - 1);
+            injection.changes.add(new Change("skipModules", repeatName, Integer.toString(fewer), Integer.toString(count)));
+            return fewer;
+        }
+
+        // --- Faults and outliers (spec 14, Amendment 1) ------------------------------------
+
+        /** Applies the faults and the outlier to an answer just given by the walker. */
+        private void adjust(FormEntryPrompt prompt, TreeReference ref, String name, QuestionKind kind, Question question,
+                            List<String> loaded) {
+            if (injection == Injection.NONE || leftAlone(name)) {
+                return;
+            }
+            String a = currentText(ref);
+            if (a == null || a.isEmpty()) {
+                return;
+            }
+            SplittableRandom random = new SplittableRandom(seed(config.seed(), number, 30 + adjusted++));
+            boolean count = countQuestions.contains(ref.genericize().toString(false));
+            boolean numeric = kind == QuestionKind.INTEGER || kind == QuestionKind.DECIMAL;
+            if (numeric && !count && firstInstance(ref)) {
+                if (injection.collectEligible && outlierInterval(name, kind, question) != null) {
+                    injection.eligible.add(name);
+                }
+                if (name.equals(injection.outlierField) && !outlierDone) {
+                    outlierDone = true;
+                    if (outlier(prompt, kind, loaded, name, question, a)) {
+                        return;
+                    }
+                }
+            }
+            if (injection.skipModules && count && shorten(prompt, kind, loaded, name, question, a, random)) {
+                return;
+            }
+            if (injection.skipModules && kind == QuestionKind.SELECT_ONE
+                    && skip(prompt, ref, kind, loaded, name, question, a, random)) {
+                return;
+            }
+            if (injection.dontKnow && !count) {
+                dontKnow(prompt, kind, loaded, name, question, a, random);
+            }
+        }
+
+        /** The survey id, the upper questions of its cascade and answers given by a reinterview. */
+        private boolean leftAlone(String name) {
+            return config.id().isPresent() && config.id().get().equals(name)
+                    || history != null && history.uppers.containsKey(name)
+                    || injection.answers().containsKey(name);
+        }
+
+        /** The answer at {@code ref} as the instance writes it (a decimal 34 is written 34.0). */
+        private String currentText(TreeReference ref) {
+            TreeElement element = session.getModel().getForm().getMainInstance().resolveReference(ref);
+            IAnswerData value = element == null ? null : element.getValue();
+            Object written = value == null ? null : new org.javarosa.xform.util.XFormAnswerDataSerializer()
+                    .serializeAnswerData(value);
+            return written == null ? null : written.toString();
+        }
+
+        /** The current question's answer as the instance writes it. */
+        private String stored() {
+            return currentText(session.getModel().getFormIndex().getReference());
+        }
+
+        private static boolean firstInstance(TreeReference ref) {
+            for (int i = 0; i < ref.size(); i++) {
+                if (ref.getMultiplicity(i) > 0) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /** Answers the current question with {@code text}; false when the engine refuses it. */
+        private boolean answer(FormEntryPrompt prompt, QuestionKind kind, List<String> loaded, String text) {
+            IAnswerData data = loaded == null ? convert(prompt, text) : convertLoaded(kind, text, loaded);
+            return data != null && session.answerQuestion(data, true) == FormEntryController.ANSWER_OK;
+        }
+
+        /** Gives an outlier value; false, with the usual answer back, when the engine refuses 20 draws. */
+        private boolean outlier(FormEntryPrompt prompt, QuestionKind kind, List<String> loaded, String name,
+                                Question question, String a) {
+            double[] interval = outlierInterval(name, kind, question);
+            if (interval == null) {
+                return false;
+            }
+            SplittableRandom random = new SplittableRandom(seed(config.seed(), number, 24));
+            for (int attempt = 0; attempt < OUTLIER_ATTEMPTS; attempt++) {
+                String value;
+                if (kind == QuestionKind.INTEGER) {
+                    long lo = (long) interval[0];
+                    long hi = (long) interval[1];
+                    value = Long.toString(lo + random.nextLong(hi - lo + 1));
+                } else {
+                    value = AnswerGenerator.formatDecimal(interval[0] + random.nextDouble() * (interval[1] - interval[0]));
+                }
+                if (answer(prompt, kind, loaded, value)) {
+                    injection.changes.add(new Change("outlier", name, stored(), a));
+                    return true;
+                }
+            }
+            answer(prompt, kind, loaded, a);
+            injection.outlierRefused = true;
+            return false;
+        }
+
+        /**
+         * Where an outlier value is drawn for a question (spec 14, Amendment 1), as [low, high]; null
+         * when the question is not eligible.
+         */
+        private double[] outlierInterval(String name, QuestionKind kind, Question question) {
+            FieldOverride o = config.field(name).orElse(null);
+            if (o != null && (o.value().isPresent() || o.expression().isPresent() || !o.rules().isEmpty())) {
+                return null;
+            }
+            boolean integer = kind == QuestionKind.INTEGER;
+            NumericRange base = o != null && o.range().orElse(null) instanceof NumericRange r ? r
+                    : integer ? config.integerRange() : config.decimalRange();
+            NumericRange drawing = AnswerGenerator.hinted(base, question.hints(), integer);
+            Distribution d = o == null ? null : o.distribution().orElse(null);
+            double upper;
+            double lower;
+            double median;
+            if (d == null) {
+                double w = drawing.max() - drawing.min();
+                if (!(w > 0)) {
+                    return null;
+                }
+                upper = drawing.min() + 1.5 * w; // Q3 + 1.5 IQR is above mean + 3 sd for a uniform
+                lower = drawing.max() - 1.5 * w;
+                median = (drawing.min() + drawing.max()) / 2;
+            } else if (!(d.sd() > 0)) {
+                return null;
+            } else if (d.kind().equals("lognormal")) {
+                double s = Math.sqrt(Math.log(1 + (d.sd() * d.sd()) / (d.mean() * d.mean())));
+                double mu = Math.log(d.mean()) - s * s / 2;
+                double q1 = Math.exp(mu - QUARTILE_Z * s);
+                double q3 = Math.exp(mu + QUARTILE_Z * s);
+                upper = Math.max(q3 + 1.5 * (q3 - q1), d.mean() + 3 * d.sd());
+                lower = Math.min(q1 - 1.5 * (q3 - q1), d.mean() - 3 * d.sd());
+                median = Math.exp(mu);
+            } else {
+                upper = d.mean() + 3 * d.sd(); // above Q3 + 1.5 IQR for a normal distribution
+                lower = d.mean() - 3 * d.sd();
+                median = d.mean();
+            }
+            ConstraintHints hints = question.hints();
+            double low = hints.lower() == null ? Double.NEGATIVE_INFINITY : AnswerGenerator.closedLower(hints.lower(), integer);
+            double high = hints.upper() == null ? Double.POSITIVE_INFINITY : AnswerGenerator.closedUpper(hints.upper(), integer);
+            double[] up = within(upper, upper + (upper - median), low, high, integer);
+            return up != null ? up : within(lower - (median - lower), lower, low, high, integer);
+        }
+
+        private static double[] within(double from, double to, double low, double high, boolean integer) {
+            double a = Math.max(from, low);
+            double b = Math.min(to, high);
+            if (integer) {
+                a = Math.ceil(a);
+                b = Math.floor(b);
+            }
+            return a <= b ? new double[] {a, b} : null;
+        }
+
+        /** A faulty enumerator declares fewer instances in a count question (skipModules). */
+        private boolean shorten(FormEntryPrompt prompt, QuestionKind kind, List<String> loaded, String name,
+                                Question question, String a, SplittableRandom random) {
+            if (random.nextDouble() >= SKIP_PROBABILITY) {
+                return false;
+            }
+            long count;
+            try {
+                count = Long.parseLong(a.strip());
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            long low = 1;
+            if (question.hints().lower() != null) {
+                low = Math.max(1, (long) AnswerGenerator.closedLower(question.hints().lower(), true));
+            }
+            if (count <= low) {
+                return false;
+            }
+            String fewer = Long.toString(low + random.nextLong(count - low));
+            if (answer(prompt, kind, loaded, fewer)) {
+                injection.changes.add(new Change("skipModules", name, stored(), a));
+                return true;
+            }
+            answer(prompt, kind, loaded, a);
+            return false;
+        }
+
+        /** A faulty enumerator answers a filter question so that the modules it opened stay closed. */
+        private boolean skip(FormEntryPrompt prompt, TreeReference ref, QuestionKind kind, List<String> loaded,
+                             String name, Question question, String a, SplittableRandom random) {
+            double u = random.nextDouble();
+            List<String> offered = new ArrayList<>(new java.util.LinkedHashSet<>(question.choices()));
+            offered.remove("");
+            if (offered.size() < 2 || modules.isEmpty()) {
+                return false;
+            }
+            FormDef def = session.getModel().getForm();
+            IAnswerData original = def.getMainInstance().resolveReference(ref).getValue();
+            Map<String, Set<Integer>> relevant = new HashMap<>();
+            for (String c : offered) {
+                IAnswerData data = loaded == null ? convert(prompt, c) : convertLoaded(kind, c, loaded);
+                if (data == null) {
+                    continue;
+                }
+                def.setValue(data, ref, true);
+                relevant.put(c, relevantModules(def, ref));
+            }
+            def.setValue(original, ref, true);
+            Set<Integer> controlled = new HashSet<>();
+            for (int m = 0; m < modules.size(); m++) {
+                boolean on = false;
+                boolean off = false;
+                for (Set<Integer> r : relevant.values()) {
+                    on |= r.contains(m);
+                    off |= !r.contains(m);
+                }
+                if (on && off) {
+                    controlled.add(m);
+                }
+            }
+            Set<Integer> opened = new HashSet<>(relevant.getOrDefault(a, Set.of()));
+            opened.retainAll(controlled);
+            if (opened.isEmpty() || u >= SKIP_PROBABILITY) {
+                return false;
+            }
+            List<String> closing = new ArrayList<>();
+            for (String c : offered) {
+                if (relevant.containsKey(c) && !config.specialValues().contains(c)
+                        && java.util.Collections.disjoint(relevant.get(c), opened)) {
+                    closing.add(c);
+                }
+            }
+            if (closing.isEmpty()) {
+                return false;
+            }
+            String c = closing.get(random.nextInt(closing.size()));
+            if (answer(prompt, kind, loaded, c)) {
+                injection.changes.add(new Change("skipModules", name, stored(), a));
+                return true;
+            }
+            answer(prompt, kind, loaded, a);
+            return false;
+        }
+
+        /** The indices of the modules that are relevant now, in the context of {@code ref}. */
+        private Set<Integer> relevantModules(FormDef def, TreeReference ref) {
+            Set<Integer> relevant = new HashSet<>();
+            for (int m = 0; m < modules.size(); m++) {
+                Module module = modules.get(m);
+                TreeReference at = module.ref().contextualize(ref);
+                for (int i = 0; i < at.size(); i++) {
+                    if (at.getMultiplicity(i) == TreeReference.INDEX_UNBOUND) {
+                        at.setMultiplicity(i, 0);
+                    }
+                }
+                TreeElement element = def.getMainInstance().resolveReference(at);
+                boolean on;
+                if (element != null) {
+                    on = element.isRelevant();
+                } else if (module.repeat()) {
+                    try {
+                        on = def.isRepeatRelevant(at);
+                    } catch (RuntimeException e) {
+                        on = false;
+                    }
+                } else {
+                    on = false;
+                }
+                if (on) {
+                    relevant.add(m);
+                }
+            }
+            return relevant;
+        }
+
+        /** A faulty enumerator answers with a "don't know / refused" code where the form allows one. */
+        private void dontKnow(FormEntryPrompt prompt, QuestionKind kind, List<String> loaded, String name,
+                              Question question, String a, SplittableRandom random) {
+            if (random.nextDouble() >= DONT_KNOW_PROBABILITY) {
+                return;
+            }
+            List<String> codes = new ArrayList<>();
+            if (kind == QuestionKind.SELECT_ONE || kind == QuestionKind.SELECT_MULTIPLE) {
+                for (String c : new java.util.LinkedHashSet<>(question.choices())) {
+                    if (config.specialValues().contains(c)) {
+                        codes.add(c);
+                    }
+                }
+            } else if (kind == QuestionKind.INTEGER || kind == QuestionKind.DECIMAL) {
+                for (String v : config.specialValues()) {
+                    try {
+                        Double.parseDouble(v);
+                        codes.add(v);
+                    } catch (NumberFormatException e) {
+                        // not a number
+                    }
+                }
+            }
+            for (int i = codes.size() - 1; i > 0; i--) {
+                java.util.Collections.swap(codes, i, random.nextInt(i + 1));
+            }
+            for (String code : codes) {
+                if (answer(prompt, kind, loaded, code)) {
+                    String given = stored();
+                    if (!given.equals(a)) {
+                        injection.changes.add(new Change("dontKnow", name, given, a));
+                    }
+                    return;
+                }
+            }
+            answer(prompt, kind, loaded, a);
         }
 
         private int drawRepeatCount(String repeatName) {
