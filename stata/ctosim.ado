@@ -9,7 +9,7 @@ program define ctosim, rclass
     * likewise id(): an empty survey id question is an error (spec 11, Amendment 7)
     local idgiven = ustrregexm(`"`0'"', "(^|[ ,])id\(")
     syntax using/ [, N(string) SEED(string) CONFIG(string) SAVING(string) MEDIA(string) ///
-        SERVER(string) DOFILE(string) REPLACE CLEAR FAKEPRELOAD ID(string)]
+        SERVER(string) DOFILE(string) REPLACE CLEAR FAKEPRELOAD ID(string) PROBLEMS]
     if `idgiven' {
         local idword `id'
         if !ustrregexm(`"`idword'"', "^\S+$") {
@@ -162,6 +162,7 @@ program define ctosim, rclass
     if `"`python'"' != "" local args `"`args' --python "`python'""'
     if "`fakepreload'" != "" local args `"`args' --fake-attachments"'
     if `idgiven' local args `"`args' --id "`idword'""'
+    if "`problems'" != "" local args `"`args' --problems"'
 
     tempfile out err status
     if `"`converter'"' == "" local converter "-"
@@ -187,6 +188,7 @@ program define ctosim, rclass
     local unsatisfied 0
     local formerrors 0
     local fakefiles ""
+    local injected ""
     local wide ""
     file open `fh' using `"`report'"', read text
     file read `fh' line
@@ -196,6 +198,9 @@ program define ctosim, rclass
         else if ustrregexm(`"`macval(line)'"', "^Seed: (.+)$") local runseed = ustrregexs(1)
         else if ustrregexm(`"`macval(line)'"', "^Submissions: ([0-9]+)$") local runN = ustrregexs(1)
         else if `"`macval(line)'"' == "Files:" local section files
+        else if ustrregexm(`"`macval(line)'"', "^Problems: ([0-9]+) injected, listed in answer-key\.csv$") {
+            local injected = ustrregexs(1)
+        }
         else if ustrregexm(`"`macval(line)'"', "^Fictitious attachments: (.+)$") {
             local fakefiles = subinstr(ustrregexs(1), ", ", " ", .)
             mata: _ctosim_line("txt", st_local("line"))
@@ -223,6 +228,13 @@ program define ctosim, rclass
         file read `fh' line
     }
     file close `fh'
+
+    * ---- injected problems (spec 11, Amendment 8) ----
+    local answerkey `"`outdir'/answer-key.csv"'
+    if "`injected'" != "" {
+        display as text "ctosim: " as result "`injected'" as text ///
+            " submissions with an injected problem; answer key: " as result `"`answerkey'"'
+    }
 
     * ---- load the data ----
     local widepath `"`outdir'/`wide'"'
@@ -254,6 +266,10 @@ program define ctosim, rclass
     return local outdir `"`outdir'"'
     return local wide `"`widepath'"'
     return local report `"`report'"'
+    if "`injected'" != "" {
+        return scalar problems = real("`injected'")
+        return local answerkey `"`answerkey'"'
+    }
 end
 
 * The final message, in red, when the form has problems (spec 11, Amendment 6).

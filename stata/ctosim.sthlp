@@ -30,6 +30,7 @@ XForm already converted ({cmd:.xml}) with its {cmd:.fields.json} file beside it.
 {synopt:{opt clear}}allow replacing the data in memory{p_end}
 {synopt:{opt fakepreload}}invent the preloaded files the form reads but {opt media()} lacks; see {help ctosim##fakepreload:Fictitious preload}{p_end}
 {synopt:{opt id(name)}}the question holding the survey id (household, respondent): each submission gets its own value; see {help ctosim##fieldwork:Fieldwork plan}{p_end}
+{synopt:{opt problems}}inject fieldwork problems on purpose and list them in an answer key; see {help ctosim##problems:Injected problems}{p_end}
 {synoptline}
 
 
@@ -112,6 +113,7 @@ setting.
 {synopt:{cmd:enumerators}}number of simulated enumerators (default 5){p_end}
 {synopt:{cmd:interviewsPerDay}}most interviews an enumerator does in a day (default 4); see {help ctosim##fieldwork:Fieldwork plan}{p_end}
 {synopt:{cmd:id}}the question holding the survey id, as option {opt id()}{p_end}
+{synopt:{cmd:problems}}rates of injected problems, as option {opt problems}; see {help ctosim##problems:Injected problems}{p_end}
 {synopt:{cmd:missingRate}}probability that an optional question is left blank (default 0.05){p_end}
 {synopt:{cmd:specialRate}, {cmd:specialValues}}probability of a "don't know / refused" code, and which values are such codes{p_end}
 {synopt:{cmd:speedViolationRate}}probability of a speed violation on a field with a minimum time (default 0.1){p_end}
@@ -233,6 +235,7 @@ area and local place names, with {it:realistic.json}:{p_end}
 {synopt:{cmd:r(warnings)}}number of warnings in the run report{p_end}
 {synopt:{cmd:r(unsatisfied)}}number of questions whose constraint no answer could satisfy (0 when none){p_end}
 {synopt:{cmd:r(formerrors)}}number of fields with form errors, which would block an enumerator (0 when none){p_end}
+{synopt:{cmd:r(problems)}}with injected problems: number of submissions that carry one{p_end}
 
 {p2col 5 16 20 2: Macros}{p_end}
 {synopt:{cmd:r(seed)}}seed used{p_end}
@@ -241,6 +244,7 @@ area and local place names, with {it:realistic.json}:{p_end}
 {synopt:{cmd:r(wide)}}wide CSV file (absolute path){p_end}
 {synopt:{cmd:r(report)}}{cmd:run-report.txt} (absolute path){p_end}
 {synopt:{cmd:r(fakepreload)}}with {opt fakepreload}: the fictitious files, separated by spaces (empty when none was needed){p_end}
+{synopt:{cmd:r(answerkey)}}with injected problems: {cmd:answer-key.csv} (absolute path){p_end}
 
 
 {pstd}
@@ -307,6 +311,64 @@ twice and a warning says so. {it:name} is a single word.{p_end}
 The length of fieldwork follows from the number of interviews, of
 enumerators and the interviews' duration. When the interviews do not fit in
 {cmd:fieldworkDays}, the fieldwork lasts longer and a warning says so.{p_end}
+
+
+{marker problems}{...}
+{title:Injected problems}
+
+{pstd}
+To test or teach data-quality checks ({cmd:ipacheck} and your own do-files),
+{cmd:ctosim} can put problems into the fieldwork {it:on purpose}, and list
+each one in an answer key, so that you can compare what your checks found with
+what was put there. With option {opt problems}, or a {cmd:problems} object in
+the configuration, these problems are injected; every one of them could happen
+with SurveyCTO Collect:{p_end}
+
+{phang2}- {bf:resent}: the same submission sent twice (a copy with another {cmd:KEY}), found by {cmd:ipacheckids} (or {cmd:ipacheckdups} without a survey id);{p_end}
+{phang2}- {bf:reinterview}: a household interviewed again, with the same survey id and other answers ({cmd:ipacheckids});{p_end}
+{phang2}- {bf:short} and {bf:long}: an interview far too short (15-30% of its normal duration) or too long (3 to 6 times), for {cmd:ipacheckoutliers} on the duration;{p_end}
+{phang2}- {bf:offhours}: an interview started in the evening, outside working hours ({cmd:ipachecktimeuse});{p_end}
+{phang2}- {bf:overlap}: an enumerator's interview of another household started before the end of its previous one, sharing at least five minutes;{p_end}
+{phang2}- {bf:travel}: an impossible trip, an interview too far from the enumerator's previous one for the time between them (only when the form has a GPS question).{p_end}
+
+{pstd}
+A duplicate is two submissions with the same survey id, whatever their times;
+an overlap is two interviews of one enumerator with different ids whose times
+overlap. The configuration's {cmd:problems} object sets the share of
+submissions carrying each problem: {cmd:resent} and {cmd:reinterview} (0.01 by
+default), {cmd:shortDuration}, {cmd:longDuration}, {cmd:offHours},
+{cmd:overlap} and {cmd:travel} (0.02); {cmd:{c -(}{c )-}} asks for every
+problem at its default rate, {cmd:{c -(}"travel": 0{c )-}} for every problem
+but travel. Option {opt problems} uses the configuration's rates when it has
+them, the defaults otherwise.{p_end}
+
+{pstd}
+The data in memory are loaded as usual: the answer key is a separate file,
+{cmd:answer-key.csv} in the output directory, never merged into them.
+{cmd:r(answerkey)} returns its path and {cmd:r(problems)} the number of
+submissions with a problem. It has one row per problem and field concerned,
+with the columns:{p_end}
+
+{synoptset 16}{...}
+{synopt:{cmd:KEY}} the submission that carries the problem{p_end}
+{synopt:{cmd:enumerator}} its username{p_end}
+{synopt:{cmd:family}} {cmd:duplicate}, {cmd:duration}, {cmd:schedule} or {cmd:travel}{p_end}
+{synopt:{cmd:problem}} one of the problems above{p_end}
+{synopt:{cmd:check}} the check expected to find it ({cmd:custom} for overlaps and trips){p_end}
+{synopt:{cmd:field}} the field concerned (survey id, duration, start time, GPS){p_end}
+{synopt:{cmd:value}} its value in the submission{p_end}
+{synopt:{cmd:clean_value}} its value without the problem (durations){p_end}
+{synopt:{cmd:related_KEY}} the other submission involved: the original of a duplicate, the previous interview of an overlap or a trip{p_end}
+{synopt:{cmd:kind}} {cmd:deterministic} (an exact check finds it every time) or {cmd:statistical} (an outlier test may miss it, or flag other submissions){p_end}
+
+{phang2}{cmd:. ctosim using "household.xlsx", n(200) id(hhid) problems replace clear}{p_end}
+{phang2}{cmd:. preserve}{p_end}
+{phang2}{cmd:. import delimited using "`r(outdir)'/answer-key.csv", varnames(1) stringcols(_all) clear}{p_end}
+{phang2}{cmd:. bysort key (problem): keep if _n == 1}{p_end}
+{phang2}{cmd:. tempfile answers}{p_end}
+{phang2}{cmd:. save `answers'}{p_end}
+{phang2}{cmd:. restore}{p_end}
+{phang2}{cmd:. merge 1:1 key using `answers', keepusing(problem check) nogenerate}{p_end}
 
 
 {marker fakepreload}{...}
