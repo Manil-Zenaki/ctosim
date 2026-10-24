@@ -472,3 +472,12 @@ public record ProblemRates(double resent, double reinterview,
   path (`problems.faults[1]`, `problems.outliers`); the constructor throws
   `IllegalArgumentException` for the same cases, and
   `NullPointerException` for a null list or element.
+
+Clarification (Amendment 7): assumptions 42–45 of the questions file are
+reviewed one by one and confirmed: a configuration without `problems`
+still has none, and the seven-rate constructor gives no outliers and no
+faults while `defaults()` gives both (42); fault names are exact, and an
+invalid or repeated entry is reported at its zero-based index, the second
+occurrence for a repeat (43); the constructor copies the list, and
+`faults()` cannot be changed (44); the number, schema, independence and
+copy rules of Amendment 6 apply to both new keys (45).
