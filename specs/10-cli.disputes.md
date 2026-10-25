@@ -341,3 +341,25 @@ assumptions are needed. Earlier adjudications remain unchanged.
 
 No production source was read or modified, no dependency or build
 configuration was changed, and no commit was made.
+
+## Dispute 8: problem settings without `leftOpen` (Amendment 5, superseded by spec 04 Amendment 9)
+
+**Tests:** `CliAmendment5ActivationTest.allZeroRatesStillWriteHeaderAndZeroSummariesEvenWithFlag`
+(both cases), `CliAmendment5LifecycleTest.effectiveSeedCountAndIdReachTheProblemPlanAndAllExports`
+(both cases), `CliAmendment5LifecycleTest.rerunReplacesExistingKeyThenZeroRatesTruncateItToHeader`,
+`CliAmendment5ReportTest.enabledButIneligibleProblemsWriteHeaderAndReportActualZeroWithWarnings`,
+`CliAmendment5ReportTest.fallbackWarningsAreRetainedAfterSubmissionWarningsAndDoNotCountAsInjectedProblems`,
+`CliAmendment5ReportTest.summaryCountsDistinctAffectedSubmissionsRatherThanDurationRecords`.
+
+**Spec:** spec 04 Amendment 9 adds `leftOpen` to the `problems` object,
+0.02 by default, and "a `problems` object without the key" has
+`leftOpen` 0.02; spec 14 Amendment 3 injects it. This is the same change
+as in Dispute 7 for `outliers` and `faults`.
+
+**What the tests do:** `CliAmendment5Support.only(name, rate)` (as fixed
+in Dispute 7) sets the seven fieldwork rates, `outliers` 0 and `faults`
+`[]`, but not `leftOpen`, so the runs inject forms left open and the
+counts, header-only keys and records the tests expect no longer hold.
+
+**Requested change:** make `only(name, rate)` also set `"leftOpen": 0`
+(unless the test means to inject it), keeping every assertion.

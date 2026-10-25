@@ -743,3 +743,19 @@ Also ran `.venv\Scripts\python -B src/test/stata/fixtures/help_use_cases_oracle_
 **16 tests passed**. `git diff --check` passed. Only the two disputed JSON
 fixtures and this disputes file were changed. No production implementation
 was read or modified, and no commit was made.
+
+## Dispute 9: Stata problem fixtures without `leftOpen` (superseded by spec 04 Amendment 9)
+
+**Tests:** `src/test/stata/test_injected_problems_real_zero.do` and
+`test_injected_problems_real_config.do`, through
+`src/test/stata/fixtures/injected_zero.json` and `injected_short.json`.
+
+**Spec:** spec 04 Amendment 9: a `problems` object without `leftOpen`
+has `leftOpen` 0.02. Same change as Dispute 8 for `outliers` and `faults`.
+
+**What the tests do:** the fixtures (as fixed in Dispute 8) set the seven
+rates, `outliers` 0 and `faults` `[]`, but not `leftOpen`, so the runs
+inject forms left open where the tests expect none.
+
+**Requested change:** add `"leftOpen": 0` to both fixtures' `problems`
+objects, keeping every assertion.
