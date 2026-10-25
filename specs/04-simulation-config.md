@@ -529,3 +529,33 @@ need nothing else in the configuration (48); the number, immutability
 and copy rules of the earlier amendments apply (49); only the default
 fault list gains `fakeRefusal`, and the earlier tests of the three-fault
 default are superseded and go through a dispute (50).
+
+## Amendment 9: a form left open
+
+One key is added to the `problems` object (Amendment 6); everything else
+is unchanged.
+
+| Key | Default | Problem (spec 14, Amendment 3) |
+|---|---|---|
+| `leftOpen` | `0.02` | a form left open while the enumerator does another interview |
+
+`ProblemRates` gets a component after `travel`; the constructors of
+Amendments 6 and 7 remain and give `leftOpen` 0:
+
+```java
+public record ProblemRates(double resent, double reinterview,
+                           double shortDuration, double longDuration,
+                           double offHours, double overlap, double travel, double leftOpen,
+                           double outliers, java.util.List<String> faults) {
+    public ProblemRates(double resent, double reinterview, double shortDuration, double longDuration,
+                        double offHours, double overlap, double travel,
+                        double outliers, java.util.List<String> faults);   // leftOpen 0
+    public ProblemRates(double resent, double reinterview, double shortDuration, double longDuration,
+                        double offHours, double overlap, double travel);   // leftOpen 0, outliers 0, faults []
+}
+```
+
+- `defaults()`, and a `problems` object without the key, have `leftOpen`
+  0.02.
+- The rules of Amendment 6 for a rate apply to `leftOpen` (an error at
+  `problems.leftOpen`; the constructor rejects a value outside 0 to 1).

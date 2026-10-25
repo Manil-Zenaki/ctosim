@@ -801,3 +801,23 @@ usual rules, with its usual diagnostics (77); the consent draw does not
 depend on the answers' draws (78); one configuration warning per missing
 field, after the others (79); the fallback warning names the field and
 the value (80).
+
+## Amendment 12: screen time and pauses
+
+SurveyCTO's `duration()` is the time the form has been open on the
+screen, across all the times it was opened, while `starttime` and
+`endtime` are the first opening and the finalisation. A form left open
+(spec 14, Amendment 3) makes them differ. Everything not mentioned here
+is unchanged; without a pause, nothing changes.
+
+- The walker keeps, besides the simulated clock, a **screen time**: the
+  sum of the clock's advances after questions (rule 7 of "Questions",
+  with the factors and minimum times of the amendments). A walk without a
+  pause has a screen time equal to the time from `start()` to the
+  clock's current time.
+- A **pause**, which only the fieldwork plan asks for, moves the clock
+  forward without adding to the screen time: the dates, times and `now()`
+  values after it, `end()` and the upload time follow the clock.
+- `duration()` returns the whole seconds of screen time, wherever it is
+  evaluated (in a calculation recomputed at the end of the interview,
+  spec 07 Amendment 1, or in a `calculate_here` field).

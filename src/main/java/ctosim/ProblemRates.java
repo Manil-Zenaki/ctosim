@@ -7,7 +7,8 @@ import java.util.List;
  * specs/04-simulation-config.md, Amendments 6 and 7.
  */
 public record ProblemRates(double resent, double reinterview, double shortDuration, double longDuration,
-                           double offHours, double overlap, double travel, double outliers, List<String> faults) {
+                           double offHours, double overlap, double travel, double leftOpen, double outliers,
+                           List<String> faults) {
 
     /** The faults a faulty enumerator can carry, in their order (spec 14, Amendment 1). */
     static final List<String> FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal");
@@ -34,6 +35,12 @@ public record ProblemRates(double resent, double reinterview, double shortDurati
             throw new IllegalArgumentException("a fault is named twice: " + copy);
         }
         faults = copy;
+    }
+
+    /** No form left open (Amendment 9). */
+    public ProblemRates(double resent, double reinterview, double shortDuration, double longDuration,
+                        double offHours, double overlap, double travel, double outliers, List<String> faults) {
+        this(resent, reinterview, shortDuration, longDuration, offHours, overlap, travel, 0, outliers, faults);
     }
 
     /** The fieldwork problems only: no outliers and no faults (Amendment 7). */

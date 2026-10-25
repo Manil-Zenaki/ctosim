@@ -412,3 +412,13 @@ reviewed one by one and confirmed: the help is checked lexically for the
 topics the amendment lists, without fixed wording (J1); the depth required
 is the amendment's list (J2); the help oracle follows the earlier help
 tests' infrastructure (J3).
+
+## Amendment 11: the help on forms left open
+
+The command is unchanged; its help file documents the problem `leftOpen`
+(spec 14, Amendment 3: a form interrupted, another interview done
+meanwhile, the form finished afterwards, or the next morning when the
+interruption comes late in the day or no interview follows), the
+configuration key `leftOpen`, and the difference between `duration`,
+the time on the screen, and the interval from `starttime` to `endtime`
+(spec 07, Amendment 12), with the check that compares them.

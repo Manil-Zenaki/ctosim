@@ -625,3 +625,68 @@ one warning among the faults' (B4); the bootstrap of a roster whose count
 refers directly to a question of the same repeat is not prescribed (B5);
 retries are observed through their outcomes (B8); no random sequence is
 prescribed (B10).
+
+## Amendment 3: a form left open
+
+An enumerator opens a form, is interrupted, does another interview, and
+comes back to finish the first one. In SurveyCTO data, `starttime` is the
+first opening and `endtime` the finalisation, while `duration` counts
+only the time the form was on the screen (spec 07, Amendment 12): the
+interval from start to end is far longer than the duration, and it
+contains the other interview. Everything not mentioned here is
+unchanged.
+
+### The problem
+
+| `problem` | `family` | `check` | deterministic | rate (spec 04, Amendment 9) |
+|---|---|---|---|---|
+| `leftOpen` | `schedule` | `custom` | yes | `leftOpen` |
+
+`leftOpen` comes after `outlier` in the table of "Problems": its targets
+are drawn after those of `outlier`, by the rules of "How many, and which
+submissions", among all submissions. It is a problem of the table: a
+submission is the target of at most one problem of the table.
+
+### The interruption
+
+Let `A` be the target and `D` the screen duration (spec 07, Amendment
+12) that `A` has when its visit is walked without the problem. A
+fraction `f` is drawn uniformly between 0.2 and 0.8 from
+`config.seed()` and the target's number. `A` is walked as its visit,
+with one pause (spec 07, Amendment 12) after the first question whose
+handling brings the screen time to at least `f × D`. Let `t` be the time
+the pause begins.
+
+**The englobed interview.** Let `B` be the enumerator's next submission
+in number order that is not a `resent` copy. When `B` exists and is the
+target of none of `offhours`, `overlap`, `travel` and `leftOpen`:
+
+- `B` starts at `t` plus a whole number of minutes drawn uniformly
+  between 10 and 40, when that is not after the end of work of the day
+  of `A`; otherwise (the form stays open overnight) `B` is the first
+  interview of the enumerator's next working day, as in spec 13 "When"
+  (start of work plus 0 to 60 minutes), in that day's village;
+- `B` is walked as an ordinary visit with that start (and, on the same
+  day, in the village of `A`), carrying its own problems if any;
+- the pause of `A` ends at the end of `B` plus a whole number of
+  minutes drawn uniformly between 10 and 40, from `config.seed()` and
+  the target's number.
+
+**Without an englobed interview** (no such `B`): the pause of `A` ends at
+the start of work of the next day after the day of `A`, plus a whole
+number of minutes drawn uniformly between 0 and 60.
+
+`A` then finishes its questions after the pause. The enumerator's next
+interview after `A` (after `B`, when there is one) follows the end of
+`A` as in spec 13, on the day `A` ended.
+
+So `A` starts within working hours, its interval from start to end
+contains `B` entirely, and `end() − start()` exceeds its duration by the
+length of the pause. No `leftOpen` target is skipped: the problem is
+always injected.
+
+### Records
+
+As "Start records" (one per field of type `start`, or one record with
+`field` `""`), with `relatedKey` the KEY of `B`, or `""` without an
+englobed interview.
