@@ -705,3 +705,171 @@ all passed, with none skipped or aborted.
 **Logs:** `.codex-runs/spec14-adjudication-maven.log`,
 `.codex-runs/spec14-adjudication/compile.log` and
 `.codex-runs/spec14-adjudication/junit.log`.
+
+## Amendment 3 additions (2026-10-25)
+
+Only new `InjectedAmendment3*` classes and
+`src/test/resources/ctosim/injected-problems/amendment3/timeline-template.xml`
+are added. Existing tests, helpers, and fixtures are unchanged. Expectations
+come from Amendment 3 and its expressly inherited contracts in specs 04,
+07, and 13. No production source was opened, searched, or modified.
+
+### C1. Where can the pause be observed without a new public pause API?
+
+**Question:** The amendment adds no public pause accessor or method to supply
+one. Does a calculate-here observation immediately after the triggering
+question run before or after the pause?
+
+**Assumption:** The pause is after that question's handling and before the next
+body control. Paired calculate-here snapshots of `now()` and `duration()`
+consume no screen time, under spec 07. Their difference identifies exactly
+one jump. The snapshot after the triggering question observes resumption.
+The public final `duration()` calculation supplies screen duration; no new
+Submission accessor or private hook is invented. A one-question form pauses
+after its only question even though no ordinary questions remain: its handling
+is necessarily the first to reach every fraction of its positive duration.
+
+**Tests:** `InjectedAmendment3Support.interruption`, timing tests in
+`InjectedAmendment3ScheduleTest`, and the fraction/gap distribution tests.
+
+### C2. What happens with zero screen duration or exceptionally long questions?
+
+**Question:** The promise that no target is skipped includes forms with no
+handled question, but the pause rule requires a first question. A question
+lasting multiple days may put the pause's beginning after the prescribed
+next-day resumption. How should these cases be resolved?
+
+**Assumption:** Leave those conflicting/unspecified cases untested rather
+than invent placement or negative-pause behavior. Every leftOpen fixture has
+positive screen time and a pause that can finish after it begins. Boundaries
+include one question, first/last submissions, every submission targeted,
+more enumerators than submissions, overnight workdays, and a ten-hour
+question whose interruption still precedes its next-day resumption.
+
+**Tests:** `singleQuestionCanTriggerItsPauseAtTheEndOfHandling`,
+`everyEnumeratorsFirstAndOnlyInterviewMayBeLeftOpen`,
+`pauseAfterClosingPlacesTheEnglobedInterviewAtNextWorkingDaysOpening`, and
+`nextDayIsCountedFromWorkOpeningRatherThanTheCalendarDateOfThePause`.
+
+### C3. Are reserved but unsuccessful problems still exclusions for B?
+
+**Question:** Is a submission originally targeted for travel still excluded
+as B when travel cannot be injected? Is an unsuccessful resent target still
+skipped as though it were a copy?
+
+**Assumption:** The explicit restriction concerns B being a *target* of
+offhours, overlap, travel, or leftOpen. The earlier clarification says failed
+targets remain reserved, so a reserved travel target is excluded even without
+location questions. In contrast, the successor search skips actual resent
+*copies*. Tests of skipping resent use successful copies with a distinct,
+available original. No assertion decides how an unsuccessful resent target
+is classified for successor selection. A conflicting next interview does
+not cause a search for a later B: the defined next non-copy is tested once.
+
+**Tests:** `aReservedTravelSuccessorIsExcludedEvenWhenItCannotInjectALocationProblem`,
+`conflictingNextTargetPreventsEnglobingAndIsNotBypassedForALaterInterview`,
+`resentCopiesAreSkippedWhenChoosingTheNextRealInterview`,
+`onlyResentCopiesRemainingMeansThereIsNoEnglobedInterview`, and consecutive
+leftOpen tests. Duplicate-original exclusion and moved-outlier reservation
+are tested separately.
+
+### C4. How do quotas, next working days, and resumed villages interact?
+
+**Question:** Does the ordinary daily quota prevent B starting on A's day?
+How is an interrupted interview counted toward quotas after resumption,
+and must A's recorded point change when it resumes in another day's village?
+
+**Assumption:** The explicit B branch tests only its proposed start against
+closing, so B can start that day even at quota 1. Workdays are measured from
+`config.start()`, as clarified in spec 13; no weekend/holiday calendar is
+introduced. Subsequent-visit tests use a high quota to avoid guessing how
+resumed interviews count. They assert the required gap after A's end and the
+workday of that end. On the same day, A and B's public Visit points must be
+within the specified 3 km village diameter. After overnight B, B and the next
+ordinary interview share the new day's village. No unwritten relocation of
+A's original Visit is asserted.
+
+**Tests:** `englobedInterviewMayStartOnTheSameDayEvenWhenTheDailyQuotaIsOne`,
+`afterEnglobingTheFollowingInterviewStartsAfterTheTargetsFinalisation`,
+`anOvernightResumptionContinuesSchedulingOnTheDayTheTargetEnded`,
+`consecutiveLeftOpenTargetsAreNeverSkippedAndDoNotEnglobeEachOther`, and
+same-day/overnight scheduling tests.
+
+### C5. Which random draws can be compared without prescribing a PRNG?
+
+**Question:** No random sequence, exact seed snapshot, fraction precision, or
+statistical significance level is prescribed. How should boundary and
+distribution tests remain independent?
+
+**Assumption:** Use the spec's seed/submission-only draws, not particular seed
+outputs. Scenario searches scan a fixed range of 160 seeds, assert a leftOpen
+record exists on each run, and fail if the requested allocation is not found;
+they never silently skip. Target frequencies use 240 fixed seeds. Fraction
+and no-successor resume tests use 480 targets. Gap tests create 1,000 visits
+and require at least 50 englobed interviews. Frequencies use the existing
+seven-binomial-standard-deviation-plus-two tolerance. Whole-minute ranges
+are inclusive; uneven bins account for the 31 or 61 possible minutes.
+Fraction bins allow triggering-question quantization, with no requirement to
+observe an exact continuous endpoint.
+
+For closing-boundary tests, first observe the same seed's englobed start-gap
+on a single-question form, then change only its minimum handling time so the
+candidate start is exactly closing or one second later. This uses the inherited
+spec 13 rule that start-minute draws depend on seed and submission number,
+not form answers or durations. The scaling test likewise compares the same
+seed/number fraction after all screen advances double.
+
+**Tests:** `InjectedAmendment3RandomnessTest`,
+`englobedStartAtClosingIsAllowedButOneSecondLaterMovesToTheNextDay`, and
+all tests using `InjectedAmendment3Support.find`.
+
+### C6. How should other faults and time-dependent answers enter clean duration?
+
+**Question:** Could pausing change later relevance through `now()`, and thus
+change final screen duration? Does the clean visit for D retain enumerator
+faults? What should an unrelated fault's cleanValue mean during a pause?
+
+**Assumption:** "Without the problem" removes leftOpen only; other problems
+remain. tooFast tests compare screen durations with runs retaining the same
+faults and seed, using answers and relevance independent of clock time.
+They verify that the interruption threshold uses the resulting screen time,
+not ordinary elapsed wall time. Englobed short/long/outlier/reinterview/fault
+targets retain their own records and actual changed values. This run does
+not invent how pause-triggered relevance changes should be reconciled with
+the preliminary walk's D or demand a particular counterfactual for two
+conflicting changes on one answer.
+
+**Tests:** `faultyEnumeratorStillAppliesTooFastAndItsRecordsFollowLeftOpen`,
+`anEnglobedInterviewOfAFaultyEnumeratorKeepsItsFault`, the four englobed-problem
+tests, and `pausePreservesOrdinaryAnswersScreenDurationAndFinalisationMetadata`.
+
+### Amendment 3 build verification
+
+**Question:** Can the requested offline Maven compilation complete with the
+cached dependencies accessible from this sandbox?
+
+**Observation:** `.\mvnw.cmd -o -q test-compile` stops at `testCompile` on
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The offline `-e`
+retry confirms `java.nio.file.AccessDeniedException`. This is the previously
+recorded environment limitation; the Maven command is not a successful build.
+
+**Assumption:** The existing supplementary in-memory compiler can verify the
+new sources against compiled public APIs and cached dependency bytes without
+reading implementation source or copying a Maven repository. It successfully
+compiles the five new Java files and three existing test-support files using
+`--release 17`. No dependencies were installed, drives mapped, permissions
+changed, or build/production files modified. All probes and logs are under
+`.codex-runs/spec14-amendment3/`.
+
+**Tests:** The four new test classes. Logs are `maven-test-compile.log`,
+`maven-test-compile-detail.log`, `diagnostic-compile.log`, and
+`diagnostic-junit.log` in that directory. The final exact-command Maven retry
+is in `maven-test-compile-final.log`; a diagnostic run does not establish a
+successful Maven build.
+
+**Final diagnostic result:** All eight new/support sources compile. JUnit
+discovers and starts all 53 test invocations: 2 pass and 51 fail with assertion
+failures for the absent leftOpen behavior. No tests are skipped or aborted,
+and no container, fixture-loading, or configuration failures occur. Assertions
+after the missing-record/pause checks remain unexercised until the amendment
+is implemented. Existing committed tests are untouched; no commit was made.
