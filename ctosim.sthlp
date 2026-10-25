@@ -329,7 +329,35 @@ with SurveyCTO Collect:{p_end}
 {phang2}- {bf:short} and {bf:long}: an interview far too short (15-30% of its normal duration) or too long (3 to 6 times), for {cmd:ipacheckoutliers} on the duration;{p_end}
 {phang2}- {bf:offhours}: an interview started in the evening, outside working hours ({cmd:ipachecktimeuse});{p_end}
 {phang2}- {bf:overlap}: an enumerator's interview of another household started before the end of its previous one, sharing at least five minutes;{p_end}
-{phang2}- {bf:travel}: an impossible trip, an interview too far from the enumerator's previous one for the time between them (only when the form has a GPS question).{p_end}
+{phang2}- {bf:travel}: an impossible trip, an interview too far from the enumerator's previous one for the time between them (only when the form has a GPS question);{p_end}
+{phang2}- {bf:outlier}: one numeric answer far from the values usually drawn for its question (beyond the fences {cmd:ipacheckoutliers} uses), yet still accepted by the form's constraint at that moment, as Collect would allow, also when the constraint depends on other answers (a second income at most the first, for instance); when a question has no room for such a value, another question gets it, or a later submission.{p_end}
+
+{pstd}
+Some enumerators are also {bf:faulty}, on all their interviews, so that
+checks comparing enumerators ({cmd:ipacheckenumdb}) can find them:{p_end}
+
+{phang2}- {bf:tooFast}: the enumerator goes too fast, spending much less time on each question, with more speed violations;{p_end}
+{phang2}- {bf:skipModules}: the enumerator answers No to filter questions to skip the modules they open, and declares fewer repeat instances (a smaller household roster) than the respondent would, also in rosters built by an "add another member?" question, where it answers No earlier;{p_end}
+{phang2}- {bf:dontKnow}: the enumerator answers "don't know" or "refused" codes (the configuration's {cmd:specialValues}) where the form accepts them;{p_end}
+{phang2}- {bf:fakeRefusal}: the enumerator declares refusals to avoid interviews: on average about twice the refusals of the other enumerators (about 80% consent when the others get 90%), which the consent rate of {cmd:ipacheckenumdb} shows. It needs the consent questions (below).{p_end}
+
+{pstd}
+Each fault gets one enumerator of its own when there are enough: at least
+half of the enumerators always stay clean, so that the faulty ones stand
+out. With fewer than eight enumerators the faults are cumulated on the same
+enumerators, and a warning says so; use more enumerators (twice the number
+of faults) for one enumerator per fault, and enough submissions (at least
+ten per enumerator) for the checks to tell them apart.{p_end}
+
+{pstd}
+{bf:Consent.} Consent is simulated per interview only when the consent
+questions are named in the configuration: its {cmd:consent} key lists them
+in {cmd:fields}, in the order the form asks them ({cmd:ctosim} never
+guesses them from their names). A respondent then consents with the consent
+rate, {cmd:rate}, 0.9 (90%) by default, and answers yes to every consent
+question; a respondent who refuses answers no to the last one. {cmd:yes} and
+{cmd:no} give the choice values, 1 and 0 by default. Without the key,
+consent questions are answered like any other question.{p_end}
 
 {pstd}
 A duplicate is two submissions with the same survey id, whatever their times;
@@ -337,8 +365,10 @@ an overlap is two interviews of one enumerator with different ids whose times
 overlap. The configuration's {cmd:problems} object sets the share of
 submissions carrying each problem: {cmd:resent} and {cmd:reinterview} (0.01 by
 default), {cmd:shortDuration}, {cmd:longDuration}, {cmd:offHours},
-{cmd:overlap} and {cmd:travel} (0.02); {cmd:{c -(}{c )-}} asks for every
-problem at its default rate, {cmd:{c -(}"travel": 0{c )-}} for every problem
+{cmd:overlap}, {cmd:travel} and {cmd:outliers} (0.02); its {cmd:faults} key
+is the list of faults to give enumerators, all four by default
+({cmd:"faults": ["dontKnow"]} for one, {cmd:[]} for none);
+{cmd:{c -(}{c )-}} asks for every problem at its default rate, {cmd:{c -(}"travel": 0{c )-}} for every problem
 but travel. Option {opt problems} uses the configuration's rates when it has
 them, the defaults otherwise.{p_end}
 
@@ -352,12 +382,12 @@ with the columns:{p_end}
 {synoptset 16}{...}
 {synopt:{cmd:KEY}} the submission that carries the problem{p_end}
 {synopt:{cmd:enumerator}} its username{p_end}
-{synopt:{cmd:family}} {cmd:duplicate}, {cmd:duration}, {cmd:schedule} or {cmd:travel}{p_end}
+{synopt:{cmd:family}} {cmd:duplicate}, {cmd:duration}, {cmd:schedule}, {cmd:travel}, {cmd:outlier} or {cmd:enumerator} (faults){p_end}
 {synopt:{cmd:problem}} one of the problems above{p_end}
 {synopt:{cmd:check}} the check expected to find it ({cmd:custom} for overlaps and trips){p_end}
 {synopt:{cmd:field}} the field concerned (survey id, duration, start time, GPS){p_end}
 {synopt:{cmd:value}} its value in the submission{p_end}
-{synopt:{cmd:clean_value}} its value without the problem (durations){p_end}
+{synopt:{cmd:clean_value}} its value without the problem (the answer an ordinary enumerator would give, or the normal duration){p_end}
 {synopt:{cmd:related_KEY}} the other submission involved: the original of a duplicate, the previous interview of an overlap or a trip{p_end}
 {synopt:{cmd:kind}} {cmd:deterministic} (an exact check finds it every time) or {cmd:statistical} (an outlier test may miss it, or flag other submissions){p_end}
 
