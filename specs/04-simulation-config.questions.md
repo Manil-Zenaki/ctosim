@@ -894,3 +894,21 @@ from spec 04; no production source was opened, read, searched, or changed.
   and existing tests remain unchanged. **Dependent tests:** Full Maven test
   compilation remains unverified. Runtime tests were not requested and were
   not run. No commit was created.
+
+### Dispute 1 build verification (2026-10-24)
+
+- **Question:** Can the calling environment rerun `.\mvnw.cmd -o -q test`
+  with accessible cached dependencies? The command failed during `testCompile`;
+  an `-e` retry confirmed `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+- **Assumption:** This is an environment blocker, not evidence about the
+  disputed expectations. Build configuration and dependencies remain unchanged.
+  The existing `.codex-runs/Amendment7CompileProbe.java` compiled all 11 selected
+  test/support sources against existing production binaries and cached JUnit
+  with Java release 17 (`compiled=true`), without inspecting implementation
+  source. Logs: `.codex-runs/04-dispute-test.log`,
+  `.codex-runs/04-dispute-test-detail.log`, and
+  `.codex-runs/04-dispute-probe-compile.log`.
+- **Dependent tests:** The three disputed Amendment 7 test classes compile
+  successfully through the probe. Runtime execution and the full Maven suite
+  remain unverified; Maven did not reach test execution.

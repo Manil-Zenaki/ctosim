@@ -62,15 +62,15 @@ class ProblemRatesAmendment7Test {
         double[] r = {.1, .2, .3, .4, .5, .6, .7, .8};
         r[index] = value;
         assertThrows(IllegalArgumentException.class, () -> new ProblemRates(
-                r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], DEFAULT_FAULTS));
+                r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], LEGACY_FAULTS));
     }
 
     @Test
     void allRatesMayBeOneWithoutSumOrFaultFeasibilityConstraints() {
-        ProblemRates result = new ProblemRates(1, 1, 1, 1, 1, 1, 1, 1, DEFAULT_FAULTS);
+        ProblemRates result = new ProblemRates(1, 1, 1, 1, 1, 1, 1, 1, LEGACY_FAULTS);
         SimulationConfigProblemsSupport.assertRates(new double[]{1, 1, 1, 1, 1, 1, 1}, result);
         assertEquals(1, result.outliers());
-        assertEquals(DEFAULT_FAULTS, result.faults());
+        assertEquals(LEGACY_FAULTS, result.faults());
     }
 
     @ParameterizedTest
@@ -83,7 +83,7 @@ class ProblemRatesAmendment7Test {
     @ParameterizedTest
     @ValueSource(strings = {"tooFast", "skipModules", "dontKnow"})
     void constructorRejectsAdjacentAndSeparatedDuplicates(String fault) {
-        String other = DEFAULT_FAULTS.stream().filter(name -> !name.equals(fault)).findFirst().orElseThrow();
+        String other = LEGACY_FAULTS.stream().filter(name -> !name.equals(fault)).findFirst().orElseThrow();
         assertThrows(IllegalArgumentException.class, () -> rates(.2, List.of(fault, fault)));
         assertThrows(IllegalArgumentException.class, () -> rates(.2, List.of(fault, other, fault)));
     }
@@ -96,7 +96,7 @@ class ProblemRatesAmendment7Test {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 2})
     void nullFaultElementThrowsNullPointerException(int index) {
-        List<String> faults = new ArrayList<>(DEFAULT_FAULTS);
+        List<String> faults = new ArrayList<>(LEGACY_FAULTS);
         faults.set(index, null);
         assertThrows(NullPointerException.class, () -> rates(.2, faults));
     }

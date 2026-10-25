@@ -8,7 +8,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import static ctosim.SimulationConfigTestSupport.quote;
 
 final class SimulationConfigAmendment7Support {
-    static final List<String> DEFAULT_FAULTS = List.of("tooFast", "skipModules", "dontKnow");
+    // Amendment 8 supersedes the default; explicit Amendment 7 lists stay unchanged.
+    static final List<String> DEFAULT_FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal");
+    static final List<String> LEGACY_FAULTS = List.of("tooFast", "skipModules", "dontKnow");
 
     private SimulationConfigAmendment7Support() { }
 
@@ -28,12 +30,12 @@ final class SimulationConfigAmendment7Support {
     static Stream<List<String>> faultLists() {
         List<List<String>> result = new ArrayList<>();
         result.add(List.of());
-        for (String first : DEFAULT_FAULTS) {
+        for (String first : LEGACY_FAULTS) {
             result.add(List.of(first));
-            for (String second : DEFAULT_FAULTS) {
+            for (String second : LEGACY_FAULTS) {
                 if (first.equals(second)) continue;
                 result.add(List.of(first, second));
-                for (String third : DEFAULT_FAULTS) {
+                for (String third : LEGACY_FAULTS) {
                     if (!third.equals(first) && !third.equals(second)) result.add(List.of(first, second, third));
                 }
             }
@@ -58,10 +60,10 @@ final class SimulationConfigAmendment7Support {
                 .flatMap(token -> Stream.of(
                         Arguments.of(json("faults", "[" + token + "]"), "problems.faults[0]"),
                         Arguments.of(json("faults", "[\"dontKnow\"," + token + "]"), "problems.faults[1]")));
-        Stream<Arguments> duplicates = DEFAULT_FAULTS.stream().flatMap(fault -> Stream.of(
+        Stream<Arguments> duplicates = LEGACY_FAULTS.stream().flatMap(fault -> Stream.of(
                 Arguments.of(json("faults", array(List.of(fault, fault))), "problems.faults[1]"),
                 Arguments.of(json("faults", array(List.of(fault,
-                        DEFAULT_FAULTS.stream().filter(other -> !other.equals(fault)).findFirst().orElseThrow(), fault))),
+                        LEGACY_FAULTS.stream().filter(other -> !other.equals(fault)).findFirst().orElseThrow(), fault))),
                         "problems.faults[2]")));
         return Stream.of(outliers, wrongArrays, badElements, duplicates,
                 Stream.of(Arguments.of(json("faults", "[\"tooFast\",\"tooF\\u0061st\"]"), "problems.faults[1]")))
