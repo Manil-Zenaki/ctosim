@@ -787,3 +787,17 @@ whose engine refuses it, is answered as usual, with a warning naming
 the field and the value. A field of the list that the form does not
 hold gives a configuration warning naming it (in `configWarnings()`,
 after the others).
+
+Clarification (Amendment 11): assumptions 74–80 of the questions file
+are reviewed one by one and confirmed, with a decision on the point left
+open (74): a consent question the walker reaches is answered by this
+rule even when it already holds a default or a value set by an action;
+read-only questions and calculations are still not answered. Also
+confirmed: the refusing field is the last entry of the list, also when it
+is irrelevant or absent, and one decision covers every instance of a
+walk (75); any kind of question can be a consent question, with exact
+offered values (76); a refused consent value leaves the question to the
+usual rules, with its usual diagnostics (77); the consent draw does not
+depend on the answers' draws (78); one configuration warning per missing
+field, after the others (79); the fallback warning names the field and
+the value (80).
