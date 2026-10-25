@@ -464,3 +464,220 @@ unimplemented amendment; this run is not represented as a passing test suite.
 `diagnostic-junit.log` in the same directory. All diagnostic code and output
 remain under `.codex-runs/`; no Maven repository was copied, no drive mapped,
 no dependency installed, and no production/build configuration changed.
+
+## Amendment 2 additions (2026-10-24)
+
+This run adds only `InjectedAmendment2Support`, four new test classes
+(`RefusalTest`, `RosterTest`, `ConstraintTest`, `MovementTest`, each with the
+`InjectedAmendment2` prefix), and two XML resources under
+`src/test/resources/ctosim/injected-problems/amendment2/`. Previously committed
+tests and fixtures are preserved. Production source was not opened, searched,
+or modified; no commit was made.
+
+### B1. What happens to committed Amendment 1 expectations that Amendment 2 replaces?
+
+**Question:** Should earlier half-probability roster tests and twenty-refusal
+diagnostic tests be changed to agree with Amendment 2?
+
+**Assumption:** No: this run explicitly requires new files/classes only and
+preservation of committed tests. New tests require quarter-probability roster
+shortening and the final failed-origin warning instead of the twenty-refusal
+warning. Earlier contradictory tests need a separate authorized dispute/update.
+
+**Tests:** `countedAndEnumeratorControlledRostersAreShortenedOneQuarterOfTheTime`,
+`exclusiveRealFenceWithNoAcceptedOutlierProducesOnlyTheFinalTargetWarning`,
+`exhaustedMovementWarnsOnlyOnceAndNamesTheOriginalTarget`.
+
+### B2. How is the fake-refusal probability interpreted at rate zero?
+
+**Question:** `(1-r)/r` is undefined at zero. Should it cause an error or an
+extra problem record even though no respondent would consent?
+
+**Assumption:** The rule applies only to would-consent submissions. At zero
+there are no eligible submissions and no fake-refusal records; at one the
+replacement probability is zero. For rates at or below one half every
+would-consent interview of the assigned enumerator is converted. Natural
+refusals never acquire a fake-refusal record. These expectations follow the
+eligibility sentence without prescribing how the implementation computes it.
+
+**Tests:** `zeroAndCertainConsentProduceNoInventedRefusalRecords`,
+`onlyWouldConsentInterviewsAreConvertedAtTheSpecifiedConditionalRate`.
+
+### B3. What if a fake refusal cannot be applied to its last consent field?
+
+**Question:** What record, if any, is required when that field is absent,
+irrelevant, read-only, has no offered refusing choice, or rejects the refusal?
+What wins when dontKnow also wants to replace the same consent answer?
+
+**Assumption:** Do not invent record or same-field conflict rules. The consent
+fixtures have a reachable last field, both offered values, and no rejecting
+constraint. The combined-fault fixture has no special code on either consent
+question, and gives dontKnow its own independent field. Original consent
+refusal semantics and unchanged earlier consent answers are checked explicitly.
+Unicode values are exact, as in spec 04 Amendment 8.
+
+**Tests:** `InjectedAmendment2RefusalTest`, especially the chain, Unicode,
+canonical-assignment, ordering, and resent-copy tests. Fallback/conflict cases
+described above remain open, rather than asserting undocumented records.
+
+### B4. Which fault warnings remain when fakeRefusal has no consent configuration?
+
+**Question:** Is an inactive fakeRefusal included in the fault count used for
+assignment and cumulation warnings, and where is its missing-consent warning?
+
+**Assumption:** "The fault takes no enumerator" excludes it from active fault
+allocation. Adding it to tooFast at E=2 leaves assignments and submissions
+unchanged and adds only its one missing-consent warning. Its warning belongs
+between original-table warnings and outlier warnings. Ordering relative to
+other fault warnings and exact prose are not imposed. A sole enumerator uses
+the already clarified no-fault rule, not an additional cumulation warning.
+
+**Tests:** `withoutConsentTheFaultWarnsOnceAndDoesNotConsumeAnEnumeratorSlot`,
+`fakeRefusalAloneWithoutConsentDoesNotGuessConsentFromTheForm`,
+`missingConsentWarningSitsBetweenOriginalProblemAndOutlierWarnings`,
+`oneEnumeratorCannotBeAssignedFakeRefusal`.
+
+### B5. How should a direct cyclic add-another count be initialized?
+
+**Question:** If jr:count refers directly to a question inside that same
+repeat, how should the first instance be created before that question can be
+answered? How does this interact with Amendment 1's count-question rule?
+
+**Assumption:** Do not prescribe bootstrap semantics for this circular case.
+An initial diagnostic fixture with a direct reference created zero instances
+even with an initial row/default; it was removed rather than asserting an
+undocumented initialization rule. The committed fixtures use one or two
+calculated count nodes, initialized to a bounded count before any answers.
+They still meet the extender definition: offered choices give different
+counts, with a minimum-producing choice closing the roster. jr:count is a
+node reference, not an inline XPath expression. Ordinary counts are two,
+three or four, and every offered stopping choice can be accepted. No
+assumption is made about an all-special set of minimizing choices or a
+shorter choice the engine rejects. Direct cyclic bootstrap remains open.
+
+**Tests:** `oneOrSeveralCalculationsConnectAnAddAnotherQuestionToItsCount`,
+`replacementChoicesMinimizeCountAreUniformAndNeverUseSpecialValues`,
+`replacementChoosesTheFewestInstancesRatherThanJustAnySmallerCount`.
+
+### B6. Does a roster get a new fault draw at each extender opportunity?
+
+**Question:** Is 0.25 a probability per roster or per encountered answer? How
+are its record and counterfactual interpreted after several opportunities?
+
+**Assumption:** "When ... answers such a question" gives one opportunity per
+answer that can extend the roster. The bounded four-person fixture has three
+such opportunities: final counts 1, 2, 3, 4 have probabilities .25,
+.75*.25, .75^2*.25, .75^3. Its record is still one per roster, with final
+count and clean count 4. Tests use no other skipModules effects in these
+rosters, so disabling only roster shortening has the same count as the
+same-visit ordinary walk. Two independent rosters get separate records in
+form order. Nested repeats with ambiguous record names are left open.
+
+**Tests:** `successiveAddAnotherDecisionsStopTheRosterAndReportItsFinalCounterfactualCount`,
+`twoShortenedAddAnotherRostersGetSeparateRecordsInFormOrder`, replay tests.
+
+### B7. Does constraint-aware sampling still have to be uniform?
+
+**Question:** Amendment 2 requires an accepted value drawn from seed and
+submission, but does not specify a measure for disconnected accepted subsets,
+singleton points, or decimal precision. Does failure of the real upper
+interval also reopen the lower interval?
+
+**Assumption:** Require a value in the chosen interval that the engine accepts,
+without imposing uniformity on the accepted subset. Uniformity is tested for
+the eligible-question order, which is explicit. Normal fixtures have mean
+100, sd 10, ordinary bounds 90..110, hence upper interval [130,160] and lower
+[40,70]. Decimal narrow-interval cases have hundredth-aligned endpoints.
+Lower-tail tests explicitly eliminate the upper tail with hints. No test
+decides whether a real-engine rejection of the entire upper interval alone
+permits switching to the lower tail.
+
+**Tests:** `InjectedAmendment2ConstraintTest`, including narrow, singleton,
+nonlinear, disjoint-value, uniform-order and lower-bound cases.
+
+### B8. How can second-walk retry attempts be observed through the public API?
+
+**Question:** No public API exposes candidate order, attempted answers or a
+hook to make a constraint change specifically between probing and rewalking.
+How should a test count retries or force only the first rewalk to fail?
+
+**Assumption:** Assert observable outcomes rather than private attempt counts:
+engine-rejected questions cannot prevent an accepted question from receiving
+the outlier, accepted-question selection is uniform, accepted values agree
+with the final instance/calculations, and exhausted visits move the outlier.
+Do not invent PRNG consumption, instrument production internals, or assert a
+specific second-walk failure trace. A deliberately state-changing constraint
+with a defined public contract would be needed for that additional trace test.
+
+**Tests:** `rejectedOutlierQuestionsDoNotPreventAnotherQuestionFromReceivingTheOutlier`,
+`orderIsUniformAmongQuestionsThatPassTheRealConstraint`,
+`InjectedAmendment2MovementTest`.
+
+### B9. In which order do several failed outlier origins claim destinations?
+
+**Question:** Amendment 2 specifies ascending destination search but does not
+explicitly define the processing order of several original targets. Are failed
+destinations reserved, and may movement use a duplicate's original?
+
+**Assumption:** Avoid those unresolved choices. Single-origin tests assert the
+first later eligible unreserved destination exactly. Multi-origin fixtures
+place all possible destinations after both originals, then assert occupancy,
+uniqueness and the total final warning count; they do not require a particular
+origin to win. A final warning must name one of the actual failed original
+targets. Originally drawn table targets stay reserved; enumerator faults do
+not reserve their submissions. Movement onto duplicate originals and reuse
+of unsuccessfully tried destinations are not asserted.
+
+**Tests:** `InjectedAmendment2MovementTest`. Original targets are obtained by a
+control run with all amount questions eligible, using the spec's seed/N-only
+allocation contract. The protected survey id identifies the same visits in a
+restricted form. No seed-to-target snapshot is assumed, and every bounded
+seed search must actually exercise its requested case.
+
+### B10. What statistical tolerances and replay contracts are assumed?
+
+**Question:** No PRNG sequence, exact frequencies, or statistical tolerance is
+prescribed. How can probabilistic failures stay reliable?
+
+**Assumption:** Use fixed seeds and seven binomial standard deviations plus
+two observations, with up to 1,000 assigned-enumerator opportunities per
+roster test and 800 per consent-rate test. Exact zero/one probabilities are
+also checked directly. The ordinary comparison identifies which interviews
+would consent, so conversion probability is tested conditionally rather than
+confounded with natural refusals. Replay compares submissions, visits,
+warnings and records and verifies an unmodifiable problems list; a separate
+constraint case changes JVM locale/time zone and restores both afterward.
+
+**Tests:** Statistical, randomness and replay methods across all four new
+test classes; `rate` reuses the existing test-only tolerance helper.
+
+### Amendment 2 build verification
+
+**Question:** Can the requested offline Maven test compilation complete in
+this sandbox?
+
+**Observation:** `.\mvnw.cmd -o -q test-compile` fails in `testCompile` on the
+cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. An offline `-e`
+retry confirms `java.nio.file.AccessDeniedException`. This is the environment
+limitation recorded for earlier runs, not a successful Maven compilation.
+
+**Supplementary verification:** The existing in-memory diagnostic compiler
+was adapted under `.codex-runs/spec14-amendment2/`. It checks the five new Java
+files and eight existing test/support dependencies against compiled API
+classes and cached dependency bytes, with `--release 17` and annotation
+processing disabled. No production source or implementation was inspected.
+No repository was copied, dependency installed, permissions changed, or drive
+mapped. All temporary code and logs are under `.codex-runs/`.
+
+**Logs:** `maven-test-compile.log`, `maven-test-compile-detail.log`,
+`diagnostic-compile.log` and `diagnostic-junit.log` in
+`.codex-runs/spec14-amendment2/`.
+
+**Final result:** The supplementary compiler reports all 13 new/support
+sources compiled successfully. The diagnostic JUnit run discovers and starts
+all 61 cases: 17 pass, 44 fail, with no skipped/aborted tests, failed containers,
+or form-loading exceptions. Of the failures, 18 reject the unimplemented
+`consent` configuration, 3 reject `fakeRefusal`, and 23 are assertion failures
+for the new behavior. Assertions beyond those dependency failures remain
+unexercised. The final exact Maven command still exits 1 on the cached JAR;
+the supplementary compiler/run is not presented as a passing Maven build.

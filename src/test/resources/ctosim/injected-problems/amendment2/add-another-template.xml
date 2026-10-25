@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Add another roster</h:title><model>
+    <instance><data id="amendment2_roster"><total/><person jr:template=""><name/><more/></person><username/><meta><instanceID/></meta></data></instance>
+    __BINDS__
+    <bind nodeset="/data/person/name" type="string"/>
+    <bind nodeset="/data/person/more" type="select1"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+  </model></h:head>
+  <h:body><repeat nodeset="/data/person" jr:count="__COUNT__">
+    <input ref="/data/person/name"><label>Name</label></input>
+    <select1 ref="/data/person/more"><label>Add another?</label>__CHOICES__</select1>
+  </repeat></h:body>
+</h:html>

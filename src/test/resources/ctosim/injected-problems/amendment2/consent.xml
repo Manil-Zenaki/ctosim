@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Consent and independent modules</h:title><model>
+    <instance><data id="amendment2_consent"><understand/><agree/><interview><a/><b/><c/></interview>
+      <gate/><module><a/><b/><c/></module><code/><username/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/understand" type="select1"/>
+    <bind nodeset="/data/agree" type="select1" relevant="/data/understand = 'oui'"/>
+    <bind nodeset="/data/interview" relevant="/data/agree = 'oui'"/>
+    <bind nodeset="/data/interview/a" type="string"/><bind nodeset="/data/interview/b" type="string"/>
+    <bind nodeset="/data/interview/c" type="string"/>
+    <bind nodeset="/data/gate" type="select1"/>
+    <bind nodeset="/data/module" relevant="/data/gate = 'yes'"/>
+    <bind nodeset="/data/module/a" type="string"/><bind nodeset="/data/module/b" type="string"/>
+    <bind nodeset="/data/module/c" type="string"/><bind nodeset="/data/code" type="select1"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/understand"><label>Understood?</label><item><label>Oui</label><value>oui</value></item><item><label>Non</label><value>non</value></item></select1>
+    <select1 ref="/data/agree"><label>Consent?</label><item><label>Oui</label><value>oui</value></item><item><label>Non</label><value>non</value></item></select1>
+    <group ref="/data/interview"><input ref="/data/interview/a"><label>A</label></input><input ref="/data/interview/b"><label>B</label></input><input ref="/data/interview/c"><label>C</label></input></group>
+    <select1 ref="/data/gate"><label>Independent module?</label><item><label>Yes</label><value>yes</value></item><item><label>No</label><value>no</value></item></select1>
+    <group ref="/data/module"><input ref="/data/module/a"><label>A</label></input><input ref="/data/module/b"><label>B</label></input><input ref="/data/module/c"><label>C</label></input></group>
+    <select1 ref="/data/code"><label>Code</label><item><label>Ordinary</label><value>ok</value></item><item><label>Unknown</label><value>-99</value></item></select1>
+  </h:body>
+</h:html>
