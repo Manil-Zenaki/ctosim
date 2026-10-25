@@ -38,6 +38,8 @@ class InjectedAmendment2RosterTest {
         var f = extending(indirect, false, items(yes, no));
         var c = settings(1600, 2, "\"fields\":{\"more\":{\"value\":\"" + yes + "\"}}");
         assertEquals(2, count(new FormWalker(f, c).walk(1), "person"), "fixture starts with an extendable ordinary roster");
+        assertEquals(1, count(new FormWalker(f, settings(1, 1,
+                "\"fields\":{\"more\":{\"value\":\"no\"}}")).walk(1), "person"), "fixture stops when answered no");
         var r = run(f, c.withProblems(rates(0, "skipModules")));
         var ps = records(r, "skipModules"); rate(ps.size(), 800, .25);
         assertEquals(ps.size(), targets(r, "skipModules").size(), "one record per shortened roster, never one per answer");
@@ -52,7 +54,11 @@ class InjectedAmendment2RosterTest {
     }
 
     @Test void successiveAddAnotherDecisionsStopTheRosterAndReportItsFinalCounterfactualCount() throws Exception {
-        var r = run(extending(true, true, items("yes", "no")), settings(1600, 2, YES).withProblems(rates(0, "skipModules")));
+        var f = extending(true, true, items("yes", "no"));
+        assertEquals(4, count(new FormWalker(f, settings(1, 1, YES)).walk(1), "person"));
+        assertEquals(1, count(new FormWalker(f, settings(1, 1,
+                "\"fields\":{\"more\":{\"value\":\"no\"}}")).walk(1), "person"));
+        var r = run(f, settings(1600, 2, YES).withProblems(rates(0, "skipModules")));
         String faulty = soleEnumerator(r, "skipModules"); int[] counts = new int[4];
         for (var s : interviews(r, faulty)) counts[count(s, "person") - 1]++;
         for (int i = 0; i < 3; i++) rate(counts[i], 800, .25 * Math.pow(.75, i));
@@ -118,10 +124,11 @@ class InjectedAmendment2RosterTest {
     }
 
     @Test void replacementChoosesTheFewestInstancesRatherThanJustAnySmallerCount() throws Exception {
-        String expression = "if(/data/person[1]/more = 'no', 1, if(/data/person[1]/more = 'middle', 2, 3))";
-        var f = loadXml(text2("add-another-template").replace("__COUNT__", "/data/total")
-                .replace("__BINDS__", bind("total", "int", "calculate=\"" + expression + "\""))
-                .replace("__CHOICES__", items("yes", "middle", "no")));
+        var f = extending(false, 3, "if(../more = 'yes', 2, if(../more = 'middle', 1, 0))",
+                items("yes", "middle", "no"));
+        assertEquals(3, count(new FormWalker(f, settings(1, 1, YES)).walk(1), "person"));
+        assertEquals(1, count(new FormWalker(f, settings(1, 1,
+                "\"fields\":{\"more\":{\"value\":\"no\"}}")).walk(1), "person"));
         var r = run(f, settings(1200, 2, YES).withProblems(rates(0, "skipModules")));
         rate(records(r, "skipModules").size(), 600, .25);
         for (var p : records(r, "skipModules")) {
@@ -133,8 +140,9 @@ class InjectedAmendment2RosterTest {
     @Test void twoShortenedAddAnotherRostersGetSeparateRecordsInFormOrder() throws Exception {
         String nodes = "", binds = "", body = "";
         for (String name : List.of("z", "a")) {
-            nodes += "<total_" + name + "/><roster_" + name + " jr:template=\"\"><more_" + name + "/></roster_" + name + ">";
-            binds += bind("total_" + name, "int", "calculate=\"if(/data/roster_" + name + "[1]/more_" + name + " = 'no', 1, 2)\"")
+            nodes += "<total_" + name + "/><roster_" + name + " jr:template=\"\"><more_" + name + "/><flag/></roster_" + name + ">";
+            binds += bind("total_" + name, "int", "calculate=\"min(sum(/data/roster_" + name + "/flag) + 1, 2)\"")
+                    + bind("roster_" + name + "/flag", "int", "calculate=\"if(../more_" + name + " = 'yes', 1, 0)\"")
                     + bind("roster_" + name + "/more_" + name, "select1", "");
             body += "<repeat nodeset=\"/data/roster_" + name + "\" jr:count=\"/data/total_" + name + "\">"
                     + choices("roster_" + name + "/more_" + name, false, "yes", "no") + "</repeat>";

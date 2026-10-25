@@ -681,3 +681,27 @@ or form-loading exceptions. Of the failures, 18 reject the unimplemented
 for the new behavior. Assertions beyond those dependency failures remain
 unexercised. The final exact Maven command still exits 1 on the cached JAR;
 the supplementary compiler/run is not presented as a passing Maven build.
+
+### Dispute adjudication build verification (2026-10-25)
+
+**Question:** Can the required offline Maven suite run after adjudicating
+disputes 1-4?
+
+**Observation:** `mvnw.cmd -o -q test` again stops at `testCompile`, reporting
+the cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The full
+Maven suite could not run; no production source or build configuration was
+read or changed to address this limitation.
+
+**Assumption:** Supplementary compilation and execution against the existing
+compiled API classes can verify the edited tests, but does not establish a
+successful Maven build. The adapted diagnostic compiler compiled all 26 spec
+14 test/support sources. JUnit ran all 74 tests in the five affected classes:
+all passed, with none skipped or aborted.
+
+**Tests:** `InjectedProblemsCascadeTest`, `InjectedAmendment1SkipModulesTest`,
+`InjectedAmendment1OutlierTest`, `InjectedAmendment2RosterTest` and
+`InjectedAmendment2MovementTest`.
+
+**Logs:** `.codex-runs/spec14-adjudication-maven.log`,
+`.codex-runs/spec14-adjudication/compile.log` and
+`.codex-runs/spec14-adjudication/junit.log`.

@@ -180,3 +180,111 @@ being the spec 13 one.
 submissions (for example an `integerRange` of 10 to 21, or an `id`
 override with a range covering 12 values), or compare the warnings
 without the spec 13 id warning, keeping the assertions on movement.
+
+## Adjudication (2026-10-25)
+
+### Dispute 1: retain the previously corrected cascade tests
+
+The earlier decision still follows the spec: `relatedKey` identifies the
+original by its instanceID, so the fixture must supply distinguishable KEYs.
+Both cascade tests already add the UID-preloaded metadata and assert nonempty,
+distinct KEYs. Keep that fix and all assertions on copied cascade answers,
+original selection, visit IDs and resent visits. No further change is needed.
+
+### Dispute 2: upheld; apply Amendment 2 to the older expectations
+
+- Rename `rostersAreShortenedHalfTheTimeUniformlyBelowTheOrdinaryCount` to
+  `rostersAreShortenedOneQuarterOfTheTimeUniformlyBelowTheOrdinaryCount`, and
+  expect 0.25 in both its counted and enumerator-controlled cases. The actual
+  fixture has 600 faulty-enumerator opportunities, which remains its denominator.
+  Amendment 2 explicitly replaces 0.5 for both kinds of roster. Keep the uniform
+  choice among smaller counts, actual repeat counts, clean values and unchanged
+  ordinary-roster assertions.
+- In `countLowerBoundUsesTheSmallestAllowedWholeNumber`, likewise change only
+  the shortening probability to 0.25. Keep the permitted counts 3 and 4 and
+  their conditional 0.5 selection probability: the amendment changes how often
+  shortening happens, not how a shorter count is selected.
+- Replace `twentyRejectedOutlierDrawsFallBackToTheUsualAnswerAndNameTheQuestion`
+  with `anEngineRejectedOutlierIntervalKeepsUsualAnswersAndWarnsForEachOriginalTarget`.
+  Its constraint rejects every value of the upper interval [130,160]. Amendment
+  2 makes that question ineligible; clarification B7 does not reopen the lower
+  interval merely because the engine rejects the upper one. All six submissions
+  are reserved outlier targets, leaving no movement destination. Require no
+  outlier records, unchanged ordinary submissions and exactly six warnings
+  naming the original targets, with no twenty-refusal warning. Remove the
+  obsolete requirement that the warning name the question.
+
+Filter-module replacement tests retain their 0.5 probability, which Amendment
+2 expressly leaves unchanged.
+
+### Dispute 3: upheld as a fixture defect; retain the behavioral assertions
+
+Amendment 2 requires offered choices to change the repeat count at answer
+time. A positional expression that does not recompute in the engine cannot
+establish that precondition. Replace those expressions with per-instance
+`flag` calculations and a bounded `sum(.../flag) + 1`, including the optional
+alias calculation. Add ordinary yes/no walks that check extension and stopping.
+
+- `oneOrSeveralCalculationsConnectAnAddAnotherQuestionToItsCount` (both cases):
+  retain the 0.25 rate, one record per roster and final/clean counts 1/2. The
+  count now depends on repeat-local flags, optionally through the alias.
+- `replacementChoicesMinimizeCountAreUniformAndNeverUseSpecialValues`: retain
+  uniform selection of `no` and `later`, exclusion of `-99`, and count 1. All
+  stopping choices contribute zero; `yes` contributes one.
+- `replacementChoosesTheFewestInstancesRatherThanJustAnySmallerCount`: use
+  contributions 2, 1 and 0 for `yes`, `middle` and `no`, capped at three total
+  instances. At the first answer these give counts 3, 2 and 1. Keep the
+  requirement to choose `no`, not merely any smaller count, and clean count 3.
+- `sameSeedReplaysRosterDecisionsAndNewSeedsCanChangeThem`: retain the replay
+  and seed-variation checks on the repaired shared fixture. Randomness remains
+  governed by the spec, with no prescribed random sequence.
+- `successiveAddAnotherDecisionsStopTheRosterAndReportItsFinalCounterfactualCount`:
+  cap the flag-sum count at four. Retain the per-opportunity 0.25 stopping
+  probabilities, one record per shortened roster and counterfactual count 4;
+  clarification B6 explicitly confirms those expectations.
+- `twoShortenedAddAnotherRostersGetSeparateRecordsInFormOrder`: give each
+  roster its own flag sum capped at two. Keep separate records in form order,
+  their counts 1/2, and the requirement to exercise two shortened rosters in
+  one submission.
+
+The shared fixture repair also applies to the existing no-change cases;
+their assertions remain intact. No unsupported requirement is imposed on
+direct cyclic-count bootstrap (clarification B5).
+
+### Dispute 4: upheld; provide a unique ID for every movement-test visit
+
+Spec 13's "Survey ids", incorporated by spec 14, requires the capacity warning
+and reuse when K < N. The old 10..20 range has only 11 integers, so demanding
+no such warning for 12 submissions was wrong. Repeated IDs also invalidate
+the tests' mapping from eligibility expressions to individual visits; merely
+filtering the warning would not repair that mapping.
+
+`config2` now supplies an ID-only min/max override with exactly N integers,
+10 through N+9. The amount distribution stays U[10,20], preserving its outlier
+interval [25,35]. The eligibility helper asserts that control IDs are distinct.
+Keep all movement and warning assertions in:
+
+- `aFailedTargetMovesToTheNextSubmissionThatCanAcceptAnOutlier` (both cases);
+- `movementContinuesPastSeveralIneligibleVisitsUntilTheFirstSuccess` (both cases);
+- `theLastSubmissionIsAnEligibleDestination`;
+- `exhaustedMovementWarnsOnlyOnceAndNamesTheOriginalTarget`;
+- `twoMovedOutliersNeverClaimTheSameDestinationOrAnOriginalOutlierTarget`.
+
+The remaining movement tests use the same repaired configuration helper and
+retain their assertions. The changes fix prerequisites without weakening
+destination ordering, reservation, clean-value or warning requirements.
+
+No production source was read or changed, and no commit was made.
+
+**Verification:** `mvnw.cmd -o -q test` reached `testCompile` but failed on
+the cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`; the full
+Maven suite therefore did not run. The existing diagnostic compiler, adapted
+under `.codex-runs/spec14-adjudication/`, successfully compiled all 26 spec 14
+test/support sources against compiled public API classes and cached dependencies.
+The separate JUnit run of `InjectedProblemsCascadeTest`,
+`InjectedAmendment1SkipModulesTest`, `InjectedAmendment1OutlierTest`,
+`InjectedAmendment2RosterTest` and `InjectedAmendment2MovementTest` discovered
+and passed all 74 tests, with no failures, skips or aborts. Logs:
+`.codex-runs/spec14-adjudication-maven.log`,
+`.codex-runs/spec14-adjudication/compile.log` and
+`.codex-runs/spec14-adjudication/junit.log`.

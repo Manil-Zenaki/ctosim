@@ -23,11 +23,16 @@ final class InjectedAmendment2Support {
         }
     }
     static LoadedForm extending(boolean indirect, boolean chain, String codes) throws Exception {
-        String expression = chain ? "if(/data/person[1]/more = 'no', 1, if(/data/person[2]/more = 'no', 2, if(/data/person[3]/more = 'no', 3, 4)))"
-                : "if(string(/data/person[1]/more) = '' or /data/person[1]/more = 'yes', 2, 1)";
+        return extending(indirect, chain ? 4 : 2, "if(../more = 'yes', 1, 0)", codes);
+    }
+    static LoadedForm extending(boolean indirect, int limit, String contribution, String codes) throws Exception {
+        // Per-instance calculations keep the count responsive as each repeat answer changes.
+        String expression = "min(sum(/data/person/flag) + 1, " + limit + ")";
         String binds = bind("total", "int", "calculate=\"" + expression + "\"")
+                + bind("person/flag", "int", "calculate=\"" + contribution + "\"")
                 + (indirect ? bind("alias", "int", "calculate=\"/data/total\"") : "");
         String xml = text2("add-another-template").replace("<total/>", "<total/><alias/>")
+                .replace("<more/>", "<more/><flag/>")
                 .replace("__COUNT__", indirect ? "/data/alias" : "/data/total")
                 .replace("__BINDS__", binds).replace("__CHOICES__", codes);
         return loadXml(xml);

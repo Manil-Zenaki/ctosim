@@ -118,10 +118,10 @@ class InjectedAmendment1SkipModulesTest {
         assertTrue(r.plan().problems().isEmpty());
     }
     @ParameterizedTest @ValueSource(booleans = {false, true})
-    void rostersAreShortenedHalfTheTimeUniformlyBelowTheOrdinaryCount(boolean counted) throws Exception {
+    void rostersAreShortenedOneQuarterOfTheTimeUniformlyBelowTheOrdinaryCount(boolean counted) throws Exception {
         String extra = counted ? "\"fields\":{\"size\":{\"value\":5}}" : "\"repeats\":{\"min\":5,\"max\":5}";
         var r = run(roster(counted, ""), settings(1200, 2, extra).withProblems(rates(0, "skipModules")));
-        var ps = records(r, "skipModules"); rate(ps.size(), 600, .5); int[] bins = new int[4];
+        var ps = records(r, "skipModules"); rate(ps.size(), 600, .25); int[] bins = new int[4];
         for (var p : ps) {
             assertEquals(counted ? "size" : "person", p.field()); assertEquals("5", p.cleanValue());
             int n = Integer.parseInt(p.value()); assertTrue(n >= 1 && n <= 4); bins[n - 1]++;
@@ -134,7 +134,7 @@ class InjectedAmendment1SkipModulesTest {
     @Test void countLowerBoundUsesTheSmallestAllowedWholeNumber() throws Exception {
         var r = run(roster(true, "constraint=\". &gt; 2.2\""), settings(800, 2,
                 "\"fields\":{\"size\":{\"value\":5}}").withProblems(rates(0, "skipModules")));
-        var ps = records(r, "skipModules"); rate(ps.size(), 400, .5);
+        var ps = records(r, "skipModules"); rate(ps.size(), 400, .25);
         for (var p : ps) assertTrue(Set.of("3", "4").contains(p.value()));
         rate((int) ps.stream().filter(p -> p.value().equals("3")).count(), ps.size(), .5);
     }

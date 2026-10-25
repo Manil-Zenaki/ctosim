@@ -21,9 +21,13 @@ class InjectedAmendment2MovementTest {
                 input("id") + input("amount"));
     }
     private static SimulationConfig config2(int n, ProblemRates problems) throws Exception {
-        return settings(n, 2, "\"id\":\"id\"").withProblems(problems);
+        // Give each visit a distinct id without changing amount's distribution.
+        return settings(n, 2, "\"id\":\"id\",\"fields\":{\"id\":{\"min\":10,\"max\":" + (n + 9) + "}}")
+                .withProblems(problems);
     }
     private static String eligibility(Run control, Collection<Integer> numbers) throws Exception {
+        Set<String> ids = new HashSet<>();
+        for (var s : control.submissions()) assertTrue(ids.add(value(s, "id")), "fixture ids must identify distinct visits");
         List<String> terms = new ArrayList<>();
         for (int n : numbers) terms.add("/data/id = '" + value(control.submissions().get(n - 1), "id") + "'");
         return terms.isEmpty() ? "false()" : String.join(" or ", terms);

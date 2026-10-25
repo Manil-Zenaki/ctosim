@@ -87,12 +87,13 @@ class InjectedAmendment1OutlierTest {
         assertTrue(records(r, "outlier").isEmpty()); assertEquals(8, r.plan().warnings().size());
         for (var s : r.submissions()) { double x = Double.parseDouble(value(s, "amount")); assertTrue(x >= 100 && x <= 200); }
     }
-    @Test void twentyRejectedOutlierDrawsFallBackToTheUsualAnswerAndNameTheQuestion() throws Exception {
+    @Test void anEngineRejectedOutlierIntervalKeepsUsualAnswersAndWarnsForEachOriginalTarget() throws Exception {
         // Nonlinear arithmetic yields no hint, but every [130,160] draw fails the engine constraint.
         var r = run(number("int", "constraint=\". * 2 &lt; 240\""), settings(6, 2, NORMAL).withProblems(rates(1)));
         assertTrue(records(r, "outlier").isEmpty()); assertEquals(6, r.plan().warnings().size());
-        for (int n = 1; n <= 6; n++) { assertWarning(r, "amount", n); ordinary(r, n); }
-        // Exact internal retry count is not observable via the public API; the documented fallback is.
+        // Every submission is a reserved target, so no later destination can take an outlier.
+        for (int n = 1; n <= 6; n++) { assertWarning(r, "", n); ordinary(r, n); }
+        for (String warning : r.plan().warnings()) assertFalse(warning.matches("(?s).*\\b20\\b.*"), warning);
     }
     @Test void oneEligibleQuestionIsChosenUniformlyAndOnlyItsAnswerIsOutsideTheOrdinaryRange() throws Exception {
         var f = fixture("<z/><a/><m/>", bind("m", "decimal", "") + bind("a", "decimal", "") + bind("z", "decimal", ""),
