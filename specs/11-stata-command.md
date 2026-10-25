@@ -406,3 +406,9 @@ interview only when the questions are named), the fault `fakeRefusal`
 the others', found by `ipacheckenumdb`'s consent rate), the shortening of
 rosters built by "add another" questions, and outliers placed where the
 form's constraint, even one that depends on other answers, accepts them.
+
+Clarification (Amendment 10): assumptions J1–J3 of the questions file are
+reviewed one by one and confirmed: the help is checked lexically for the
+topics the amendment lists, without fixed wording (J1); the depth required
+is the amendment's list (J2); the help oracle follows the earlier help
+tests' infrastructure (J3).
