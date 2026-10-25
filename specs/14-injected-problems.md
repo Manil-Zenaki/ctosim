@@ -690,3 +690,15 @@ always injected.
 As "Start records" (one per field of type `start`, or one record with
 `field` `""`), with `relatedKey` the KEY of `B`, or `""` without an
 englobed interview.
+
+Clarification (Amendment 3): assumptions C1–C6 of the questions file are
+reviewed one by one and confirmed: the pause comes after the handling of
+its question and before the next control, a one-question form pausing
+after its only question (C1); a target with no screen time, or whose
+pause would begin after its next-day resumption, is not prescribed (C2);
+a submission drawn for a schedule or travel problem is excluded as `B`
+even when that problem could not be injected, the defined next interview
+is the only candidate, and an unsuccessful `resent` target's role is not
+prescribed (C3); `B` is checked only against the end of work, not the
+daily quota, and `A` keeps its visit's point (C4); no random sequence is
+prescribed (C5); the clean duration removes `leftOpen` only (C6).

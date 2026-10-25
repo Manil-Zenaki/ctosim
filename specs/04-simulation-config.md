@@ -559,3 +559,9 @@ public record ProblemRates(double resent, double reinterview,
   0.02.
 - The rules of Amendment 6 for a rate apply to `leftOpen` (an error at
   `problems.leftOpen`; the constructor rejects a value outside 0 to 1).
+
+Clarification (Amendment 9): assumptions 51–54 of the questions file are
+reviewed one by one and confirmed: a configuration without `problems`
+still has none (51); `leftOpen` is independent of the other settings (52);
+the number and diagnostic conventions of the earlier rates apply (53);
+the immutability and copy rules survive the extra component (54).

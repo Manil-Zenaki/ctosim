@@ -422,3 +422,9 @@ interruption comes late in the day or no interview follows), the
 configuration key `leftOpen`, and the difference between `duration`,
 the time on the screen, and the interval from `starttime` to `endtime`
 (spec 07, Amendment 12), with the check that compares them.
+
+Clarification (Amendment 11): assumptions K1–K3 of the questions file
+are reviewed one by one and confirmed: lexical checks of the help without
+fixed wording (K1); the topics the amendment lists, the comparison check
+being described in prose since its `check` is `custom` (K2); the help
+oracle follows the earlier infrastructure (K3).

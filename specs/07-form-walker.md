@@ -821,3 +821,14 @@ is unchanged; without a pause, nothing changes.
 - `duration()` returns the whole seconds of screen time, wherever it is
   evaluated (in a calculation recomputed at the end of the interview,
   spec 07 Amendment 1, or in a `calculate_here` field).
+
+Clarification (Amendment 12): assumptions 81–86 of the questions file
+are reviewed one by one and confirmed: a pause is observed through the
+fieldwork plan's `leftOpen` (81); a direct `walk` never pauses, and
+pauses without screen time, several pauses or other lengths are not
+prescribed (82); `duration()` is the observable screen counter, and a
+pause comes after the handling of its question and before the next one
+(83); the advances of rule 7, as adjusted by the earlier amendments, are
+the screen time, and nothing else adds to it (84); every evaluation of
+`duration()` sees screen time, and dates and times follow the clock (85);
+the upload delay is drawn as before and follows the end (86).
