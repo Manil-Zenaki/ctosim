@@ -1,0 +1,23 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Consent chain</h:title><model>
+    <instance><data id="consent-chain"><questions_answered/><understood/><consent/><consent_copy/><followup/></data></instance>
+    <bind nodeset="/data/questions_answered" type="string"/>
+    <bind nodeset="/data/understood" type="string" relevant="/data/questions_answered = '1'"/>
+    <bind nodeset="/data/consent" type="string" relevant="/data/understood = '1'"/>
+    <bind nodeset="/data/consent_copy" type="string" calculate="/data/consent"/>
+    <bind nodeset="/data/followup" type="string" relevant="/data/consent = '1'"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/questions_answered"><label>Questions answered?</label>
+      <item><label>No</label><value>0</value></item><item><label>Yes</label><value>1</value></item>
+    </select1>
+    <select1 ref="/data/understood"><label>Understood?</label>
+      <item><label>No</label><value>0</value></item><item><label>Yes</label><value>1</value></item>
+    </select1>
+    <select1 ref="/data/consent"><label>Consent?</label>
+      <item><label>No</label><value>0</value></item><item><label>Yes</label><value>1</value></item>
+    </select1>
+    <input ref="/data/followup"><label>Followup</label></input>
+  </h:body>
+</h:html>

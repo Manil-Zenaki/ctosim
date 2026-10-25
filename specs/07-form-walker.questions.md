@@ -1505,3 +1505,136 @@ of the walker; no walker internals or replacement production stubs are used.
   a successful Maven suite run. Logs: `.codex-runs/walker-dispute7-maven-test.log`,
   `.codex-runs/walker-dispute7-compile.log`, and
   `.codex-runs/walker-dispute7-junit.log`.
+
+## Amendment 11: consent
+
+Coverage is added in four new `FormWalkerAmendment11*Test` classes, with
+`FormWalkerAmendment11Support` and the three fixtures under
+`src/test/resources/ctosim/form-walker/amendment11/`. Existing tests and
+fixtures are preserved. Expectations come from spec 07 Amendment 11 and
+its referenced consent configuration contract in spec 04 Amendment 8.
+No production source was opened, searched, or changed.
+
+74. **Question:** Does naming a consent field override a kept default or
+    a value established by an action/calculation before the question is reached?
+    **Assumption:** The text says "every consent question the walker answers"
+    and replaces draws, overrides and missing rates, but does not explicitly
+    replace the existing-value rule. No test decides whether the consent list
+    itself makes a kept value overridden. Tests that require a consent answer
+    start that question empty. Read-only questions and control-free calculations
+    still are not answered; irrelevant questions are not visited. The precedence
+    of calculate-here and unsupported controls is not newly asserted here.
+    **Tests:** `consentDoesNotTurnReadOnlyAndCalculatedFieldsIntoAnsweredQuestions`,
+    `anIrrelevantLastFieldDoesNotTransferRefusalToTheLastVisibleQuestion`, and
+    the initially empty answer fixtures throughout the new classes.
+
+75. **Question:** Is the refusing field the last literal list entry, or the
+    last entry actually encountered? Is consent redrawn inside repeats?
+    **Assumption:** "The last field of the list" means that literal entry,
+    including when it is missing or irrelevant; no refusal moves to an earlier
+    question. "For each walk" means one shared decision for every instance,
+    including repeated occurrences of the last field. No validation of lists
+    deliberately out of body order is imposed because spec 04 asks for body order.
+    **Tests:** The irrelevant-last and absent-last tests, both repeat tests,
+    `aRelevantChainOnlyRefusesAtItsLastListedField`, and
+    `fallbackOnAnEarlierFieldDoesNotChangeTheLastFieldsRefusal`.
+
+76. **Question:** Are consent answers restricted to select-one controls, and
+    what is an unavailable or refused value?
+    **Assumption:** The amendment imposes no control restriction. Tests cover
+    string and integer inputs as well as select-one. Select membership uses
+    exact current offered values after filtering, not labels, case folding,
+    or the unfiltered list. A value that cannot convert to an integer also
+    cannot be accepted and falls back with the consent warning. Unicode codes
+    are exact. Whitespace-only choice codes, compound select-multiple consent,
+    and capture/acknowledge controls are left untested because their meaning
+    as consent codes is not explained.
+    **Tests:** `ordinaryInputsUseTheConfiguredConsentValuesToo`, custom-code,
+    exact-membership, filtered/empty-choice, and conversion-fallback tests.
+
+77. **Question:** What does "answered as usual" retain after rejection of
+    the attempted consent code? Does that rejection itself exhaust a constraint?
+    **Assumption:** Resume ordinary generation using the original effective
+    override, ordinary missingness, conversion, retries and search. A successful
+    fallback counts as one accepted answer and advances the clock once; the
+    preliminary consent attempt is not a separate question. Rejection alone
+    does not create an UnsatisfiedConstraint or FormError. Ordinary exhaustion
+    still creates its constraint record and, if required, its required warning.
+    We do not assert an exact retry/RNG budget for the preliminary proposal.
+    Engine-expression exceptions retain Amendment 10; whether they should also
+    trigger consent fallback is left untested. Similarly, if a consent value
+    becomes invalid only at final checking, no new repair precedence is assumed.
+    **Tests:** `FormWalkerAmendment11FallbackTest`, especially accepted,
+    missing, search, and impossible-constraint fallback cases.
+
+78. **Question:** What does drawing consent "apart from the answers' own
+    draws" guarantee, and what statistical tolerance is appropriate?
+    **Assumption:** Extra preceding answers/repeat draws cannot change the
+    consent decision for a seed and number. A consent decision for a read-only
+    field cannot consume answer randomness. Tests do not impose a particular
+    random algorithm or equality of later answer draws when consent replaces
+    a real draw. They also do not impose cross-setting equality of unrelated
+    clock, profile, device, upload, or repeat sequences. Complete replay with
+    identical settings remains required. Frequencies use 900 submissions per
+    rate, a fixed seed, and the established seven-binomial-standard-deviations
+    plus two-count tolerance; endpoint tests are exact. Tests at 0.2, 0.7 and
+    default 0.9 distinguish a submission rate from multiplied chain rates.
+    **Tests:** `FormWalkerAmendment11RandomnessTest` and the rate endpoint tests.
+
+79. **Question:** What ordering, scope and multiplicity are required for
+    consent configuration warnings?
+    **Assumption:** One warning per missing listed field, appended after
+    pre-existing warnings. Order among those new warnings is unspecified, so
+    tests compare membership without sorting expectations. Names are exact;
+    a field in a repeat template exists even with no concrete instances.
+    A known field does not need an ordinary `fields` override. Existing
+    unmodifiable-list and stable-result contracts continue to apply. The tests
+    do not decide how to deduplicate a name missing both as an ordinary override
+    and as consent, whether secondary-only names count as present, or whether
+    an existing non-question field deserves an additional configuration warning.
+    **Tests:** `FormWalkerAmendment11WarningsTest`. Its overlap-free missing-name
+    fixture checks all earlier warnings remain the prefix of the result.
+
+80. **Question:** What is the exact new fallback warning wording and count?
+    **Assumption:** Assert the common `submission N:` prefix and the exact field
+    and attempted consent code, without prescribing prose. One warning per
+    failed consent proposal is expected in the fixture where ordinary fallback
+    succeeds without other diagnostics. Warnings follow actual question order
+    and remain stable across later walks. Tests with ordinary failure diagnostics
+    do not impose a total warning count.
+    **Tests:** `consentWarning11`, fallback tests, and
+    `fallbackWarningsFollowQuestionOrderAndRemainStableAcrossWalks`.
+
+### Amendment 11 build and validation (2026-10-24)
+
+- **Question:** Can the requested offline Maven test compilation complete
+  with the cached dependencies accessible to this sandbox?
+  **Observation:** `.\mvnw.cmd -o -q test-compile` failed during
+  `maven-compiler-plugin:3.15.0:testCompile` on the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. A diagnostic
+  `-e` retry confirmed `java.nio.file.AccessDeniedException` before source
+  diagnostics. **Assumption:** This is the same environment blocker recorded
+  for earlier amendments; no dependency/cache copy, installation, permission
+  change, drive mapping, or build-configuration edit was attempted.
+  **Dependent tests:** Full Maven test compilation remains unverified.
+  Logs: `.codex-runs/walker-amendment11-test-compile.log` and
+  `.codex-runs/walker-amendment11-test-compile-detail.log`.
+- **Independent compilation:** The existing offline compiler-probe approach
+  compiled all 57 FormWalker test/support sources, including these five new
+  Java files, with Java release 17 against actual `target/classes` and cached
+  JavaRosa/JUnit APIs. Reading class/JAR bytes through an in-memory file manager
+  avoids the archive-access failure without inspecting production source or
+  replacing production classes. Result: `compiled=true`. This verifies source
+  compilation, not a successful Maven invocation. Probe and log:
+  `.codex-runs/WalkerAmendment11CompileProbe.java` and
+  `.codex-runs/walker-amendment11-probe-compile.log`.
+- **Execution:** The offline JUnit probe found and executed 53 cases: one
+  passed (ordinary behavior without consent); 52 failed because the current
+  configuration parser rejects the new `consent` setting. There were no
+  skipped/aborted tests, failed containers, or fixture-loading errors. These
+  are expected dependency-implementation failures, and assertions after
+  consent configuration parsing remain unvalidated until that dependency and
+  Amendment 11 are implemented. Log: `.codex-runs/walker-amendment11-junit.log`.
+- Existing tests/fixtures, production code, specs other than this questions
+  file, and build settings remain unchanged. No commit was made. All temporary
+  probes and logs are under `.codex-runs/`.

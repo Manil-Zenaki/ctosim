@@ -1,0 +1,21 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms">
+  <h:head><h:title>Only currently offered consent choices count</h:title><model>
+    <instance><data id="consent-filter"><allowed>backup</allowed><answer/><after/></data></instance>
+    <instance id="codes"><root>
+      <item><code>YES</code><label>Yes</label></item>
+      <item><code>NO</code><label>No</label></item>
+      <item><code>backup</code><label>Backup</label></item>
+    </root></instance>
+    <bind nodeset="/data/allowed" type="string"/>
+    <bind nodeset="/data/answer" type="string"/>
+    <bind nodeset="/data/after" type="string"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/answer"><label>Consent</label>
+      <itemset nodeset="instance('codes')/root/item[code = /data/allowed]">
+        <label ref="label"/><value ref="code"/>
+      </itemset>
+    </select1>
+    <input ref="/data/after"><label>Continue</label></input>
+  </h:body>
+</h:html>

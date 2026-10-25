@@ -1,0 +1,17 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Consent in repeat instances</h:title><model>
+    <instance><data id="consent-repeats"><size>3</size><row jr:template=""><understood/><consent/></row></data></instance>
+    <bind nodeset="/data/size" type="int"/>
+    <bind nodeset="/data/row/understood" type="string"/>
+    <bind nodeset="/data/row/consent" type="string"/>
+  </model></h:head>
+  <h:body><repeat nodeset="/data/row" jr:count="/data/size">
+    <select1 ref="/data/row/understood"><label>Understood?</label>
+      <item><label>Yes</label><value>1</value></item><item><label>No</label><value>0</value></item>
+    </select1>
+    <select1 ref="/data/row/consent"><label>Consent?</label>
+      <item><label>Yes</label><value>1</value></item><item><label>No</label><value>0</value></item>
+    </select1>
+  </repeat></h:body>
+</h:html>
