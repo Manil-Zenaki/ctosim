@@ -1,0 +1,14 @@
+{
+  "problems": {
+    "outliers": 0.88,
+    "leftOpen": 0.99,
+    "travel": 0.77,
+    "overlap": 0.66,
+    "resent": 0.11,
+    "reinterview": 0.22,
+    "shortDuration": 0.33,
+    "longDuration": 0.44,
+    "offHours": 0.55,
+    "faults": ["fakeRefusal", "tooFast"]
+  }
+}

@@ -912,3 +912,86 @@ from spec 04; no production source was opened, read, searched, or changed.
 - **Dependent tests:** The three disputed Amendment 7 test classes compile
   successfully through the probe. Runtime execution and the full Maven suite
   remain unverified; Maven did not reach test execution.
+
+## Amendment 9: a form left open
+
+New coverage is in `ProblemRatesAmendment9Test`,
+`SimulationConfigAmendment9ParsingTest`, and
+`SimulationConfigAmendment9CopiesTest`, with
+`SimulationConfigAmendment9Support` and `amendment-9-left-open.json`.
+Existing tests, fixtures, and questions are preserved. Expectations come only
+from spec 04; no production source was opened, read, searched, or changed.
+
+51. **Does the new default enable problems when the entire object is absent,
+    or change either legacy constructor's behavior?**
+    - **Assumption:** No. `defaults()` in Amendment 9 refers to
+      `ProblemRates.defaults()`. An omitted problems object stays absent;
+      every present problems object defaults omitted `leftOpen` to 0.02,
+      even when all its explicitly configured rates are zero. Both legacy
+      constructors supply zero for leftOpen; the nine-argument constructor
+      preserves outliers/faults, while the seven-argument one disables them.
+      Explicit zero is preserved rather than replaced with the default.
+    - **Dependent tests:** Default, omission, zero-rate, and legacy-constructor
+      tests in the Amendment 9 classes; `omittedKeyInputs` and copy chains.
+
+52. **Does leftOpen impose a relationship with overlap, travel, capacity,
+    faults, or consent, or become a valid fault name?**
+    - **Assumption:** No. Amendment 6's confirmed independence rule applies.
+      Each rate is independently in 0..1; no sum or feasibility constraint
+      is introduced. Only the problems object's schema gains this member;
+      `leftOpen` remains legal as an arbitrary field/profile/choice/id name
+      and does not join the fault-name set. Event timing, number of generated
+      problems, feasibility, and statistical frequencies belong to spec 14,
+      so no tests here generate interviews or make statistical assertions.
+    - **Dependent tests:** `leftOpenMayBeTheOnlyEnabledProblemWithoutOtherConfigurationPrerequisites`,
+      both `allNine...` tests, `unknownKeys`, arbitrary-name coverage,
+      and the canonical-constructor fault validation tests.
+
+53. **Do earlier precision and diagnostic conventions apply to the new rate?**
+    - **Assumption:** Yes. Ordinary fractions/exponents and inclusive endpoints
+      are accepted, including numeric equality of either sign of zero.
+      Constructor validation rejects NaN, infinities, and the immediately
+      adjacent doubles outside the interval. JSON rounding onto endpoints,
+      underflow and overflowing exponents remain untested as in questions
+      7, 19, and 39. Invalid values require source, `problems.leftOpen`, and
+      a reason, without prescribed wording. Duplicate keys retain question
+      2's syntax-versus-validation flexibility; syntax failures require the
+      failing line and a retained cause. JSON escapes are decoded before
+      recognition/duplicate detection, and the existing BOM rules apply.
+    - **Dependent tests:** Numeric constructor and parse/load cases,
+      `invalidInputs`, `duplicateInputs`, `malformedInputs`, and
+      `bomAndEscapedKeyAreAccepted`.
+
+54. **Must existing immutability and copy rules survive the extra component?**
+    - **Assumption:** Yes: the new canonical constructor must still copy and
+      protect faults, validate the earlier components, and preserve argument
+      positions. All configuration copies retain leftOpen unless replacing
+      or clearing problems; replacing problems with a legacy-constructor
+      value deliberately sets leftOpen to zero. Unchanged copies are distinct
+      configurations. No identity requirement is imposed on ProblemRates.
+    - **Dependent tests:** Canonical-constructor validation/snapshot tests,
+      fixture member-order test, and all Amendment 9 copy tests.
+
+### Amendment 9 build verification (2026-10-25)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile`, followed by an `-e`
+  diagnostic retry. Both reached `maven-compiler-plugin:3.15.0:testCompile`
+  and failed with `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac closed
+  its archive file manager. Logs: `.codex-runs/04-amendment9-test-compile.log`
+  and `.codex-runs/04-amendment9-test-compile-detail.log`.
+- All four new Java files and their existing test-source dependencies compiled
+  successfully with Java release 17 against the actual `target/classes`
+  binaries and cached JUnit 5.11.4 API (ten source files total). The existing
+  compiler-probe approach reads class entries in memory to avoid the archive
+  access failure. It does not inspect production source, copy repositories,
+  change permissions, or install dependencies. Probe:
+  `.codex-runs/Amendment9CompileProbe.java`; result:
+  `.codex-runs/04-amendment9-probe-compile.log` (`compiled=true`). This verifies
+  the added sources compile, but does not make Maven successful.
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** This is an environment
+  blocker; production, build configuration, dependencies, and existing tests
+  remain unchanged. **Dependent tests:** Full Maven test compilation remains
+  unverified. Runtime tests were not requested and were not run. No commit
+  was created.
