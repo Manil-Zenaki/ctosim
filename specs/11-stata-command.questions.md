@@ -530,3 +530,28 @@ The schedule test deliberately omits id from both the command and configuration,
 **Tests:** `consent-help-check.do`, `build-consent-help-fixtures.ps1`, `fixtures/ConsentHelpChecks.java`, and all seven new test do-files.
 
 **Validation (2026-10-25):** Ran `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`: Stata started successfully; 109 tests ran, with 18 failures (6 new Amendment 10 help checks and 12 existing tests). The new configuration check passed. The six new failures are content assertions for per-interview consent, the consent rate, fake-refusal naming/meaning, its connection to `ipacheckenumdb`, add-another rosters, and dependent constraints; they are not compilation or launch failures. The Java oracle compiles for Java 8 and passes its synthetic wording/SMCL checks, 17 clause omissions, and semantic counterexamples. After broadening accepted activation wording, the final code was rebuilt and all seven new do-files were rechecked in fresh Stata working directories under `.codex-runs/stata-consent-recheck-20261025-095248/`, with the same 1 pass / 6 failures. Existing tests were not changed.
+## Amendment 11: forms left open in the help
+
+### K1. Free-form prose and the help oracle
+
+**Question:** How should tests establish the amendment's documentation requirements without prescribing sentences, headings, or SMCL layout?
+
+**Assumption:** Follow the earlier help-test infrastructure and use lexical smoke checks of visible English text. Strip SMCL comments/directives, retain nested visible text, normalize wrapping and typographic punctuation, and accept alternative vocabulary within a 240-character proximity window. Prose matching is case-insensitive; the identifiers `leftOpen`, `duration`, `starttime`, and `endtime` retain their documented spelling. The proximity window is a test heuristic, not a specification limit. Equivalent prose outside the vocabulary or with more separated explanations may need an oracle adjustment. These tests cannot prove arbitrary prose semantics or reliably detect negations/contradictions; semantic review remains necessary. Synthetic positive variants, independent clause omissions, empty/comment-only help, and selected incorrect descriptions check the oracle without using production help to derive expectations.
+
+**Tests:** All seven new `test_left_open_help_*.do` files; `fixtures/LeftOpenHelpChecks.java`.
+
+### K2. Documentation depth and the comparison check
+
+**Question:** Does the reference to spec 14 Amendment 3 and spec 07 Amendment 12 require documenting every scheduling rule, a particular check command, or an executable example?
+
+**Assumption:** Require the topics explicitly listed in Amendment 11: the `leftOpen` problem and configuration key; interruption, another interview in between, and finishing the original; next-morning completion both for late interruptions and when no interview follows; screen-only `duration`; the elapsed interval between `starttime` (first opening) and `endtime` (final completion); and a check comparing that interval with duration. The endpoint meanings and exclusion of pauses follow the expressly referenced specifications. Defining duration as screen time suffices without requiring the word "only" or a separate pause-exclusion sentence. No default rate, JSON example, exact nested configuration path, pause fraction, travel-time range, answer-key columns, command-name requirement, numerical detection threshold, or executable checking code is imposed. In particular, the referenced problem table calls the check `custom`, so the test accepts a prose comparison instead of inventing an `ipacheck` command. Each next-morning branch has its own test so one cannot substitute for the other. The command is unchanged; no simulator behavior or statistical tests are added.
+
+**Tests:** `test_left_open_help_problem.do`, `test_left_open_help_configuration.do`, `test_left_open_help_late_day.do`, `test_left_open_help_no_following.do`, `test_left_open_help_duration.do`, `test_left_open_help_interval.do`, `test_left_open_help_detection.do`.
+
+### K3. Infrastructure and failure propagation
+
+**Question:** Can new tests reuse the established Java help-oracle pattern while keeping every committed test unchanged?
+
+**Assumption:** Add an independent Java 8-compatible oracle and a new `build-*.ps1` script discovered by the unchanged runner. Each standalone do-file finds the public `ctosim.sthlp` artifact and calls the new oracle through a shared new helper. `findfile`, Java errors, and nonzero oracle results propagate as Stata errors; content failures print a short requirement diagnostic. The source fixture lives under `src/test/stata/fixtures`; build products and diagnostics live under `.codex-runs/stata-support/`. The required unmodified runner also creates its normal working directories/logs under `target/stata-tests/`. Existing tests, helpers, fixtures, production code, build configuration, and specifications remain unchanged; this questions file is the only existing file edited.
+
+**Tests:** `left-open-help-check.do`, `build-left-open-help-fixtures.ps1`, `fixtures/LeftOpenHelpChecks.java`, and the seven new do-files.
