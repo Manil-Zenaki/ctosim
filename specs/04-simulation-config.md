@@ -518,3 +518,14 @@ public java.util.Optional<Consent> consent();   // empty when the key is absent
   `fakeRefusal`; so is `ProblemRates.defaults().faults()`.
 - The rules of "Strictness" and "Errors" apply, with errors at their
   paths (`consent.fields[1]`, `consent.rate`); copies keep `consent()`.
+
+Clarification (Amendment 8): assumptions 46–50 of the questions file are
+reviewed one by one and confirmed: names and codes are exact strings,
+field names follow the name rule of `id` while choice codes need only be
+non-empty and distinct, also from the other code's default (46); errors
+follow the conventions of Amendment 7, a missing member or a collision
+being reported at `consent` or below (47); `consent` and `fakeRefusal`
+need nothing else in the configuration (48); the number, immutability
+and copy rules of the earlier amendments apply (49); only the default
+fault list gains `fakeRefusal`, and the earlier tests of the three-fault
+default are superseded and go through a dispute (50).
