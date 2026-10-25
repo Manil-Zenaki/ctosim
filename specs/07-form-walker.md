@@ -760,3 +760,30 @@ by functions of the engine (an invalid regular expression) are form
 errors too (71); records compare as values and do not change after later
 walks (72); a failing repeat count is a calculated field referred to by
 `jr:count` (73).
+
+## Amendment 11: consent
+
+When the configuration names the form's consent questions (spec 04,
+Amendment 8), the walker draws, for each submission, whether the
+respondent consents, instead of drawing each consent question on its
+own: with several consent questions in a chain (the respondent's
+questions answered, understanding, consent), independent draws would
+give far fewer consents than the rate. Without the setting, nothing
+changes. The simulator never guesses which questions hold consent.
+
+For each walk, the respondent **consents** with probability
+`config.consent().rate()`, drawn from `config.seed()` and the
+submission number, apart from the answers' own draws.
+
+- When the respondent consents, every consent question the walker
+  answers gets the consenting value (`yes`).
+- When the respondent refuses, every consent question gets the
+  consenting value except the last field of the list, which gets the
+  refusing value (`no`).
+
+These answers replace the question's usual draw, its override and its
+missing rate. A consent question that does not offer the value, or
+whose engine refuses it, is answered as usual, with a warning naming
+the field and the value. A field of the list that the form does not
+hold gives a configuration warning naming it (in `configWarnings()`,
+after the others).

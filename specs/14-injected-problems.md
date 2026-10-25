@@ -521,3 +521,89 @@ answer fixed by an override can be replaced by a fault (A4); without a
 count question, `low` is 1 and the configured repeat range does not
 apply to shortening (A5); the twenty refusals are observed through the
 fallback (A8); no random sequence is prescribed (A9).
+
+## Amendment 2: consent refusals, rosters, and outliers that respect the real constraint
+
+Checking Amendment 1 on the IPA household form showed three gaps: the
+faulty enumerator of `skipModules` mostly answered "No" to consent (a
+fake refusal, a fault of its own); rosters built by an "add another
+member?" question were never shortened; and outliers were rarely placed,
+because many interviews had no eligible question and because constraints
+that depend on another answer (`. <= ${first_income}`) refused the values
+drawn. Everything not mentioned here is unchanged.
+
+### A fourth fault: `fakeRefusal`
+
+| `problem` | `family` | `check` | deterministic |
+|---|---|---|---|
+| `fakeRefusal` | `enumerator` | `ipacheckenumdb` | no |
+
+It comes after `dontKnow` in the order of faults (and of the problems'
+table). It needs consent questions (spec 07, Amendment 11): when the
+configuration names none, no `fakeRefusal` is injected, the fault takes
+no enumerator, and `warnings()` holds one warning that says so, among
+the faults' warnings.
+
+A faulty enumerator turns a submission whose respondent would consent
+(spec 07, Amendment 11) into a refusal with probability
+min(1, (1 − r) / r), where `r` is the consent rate: on average its
+refusals are twice those of the others (with `r` 0.9, it gets about 80 %
+consents instead of 90 %). The draw comes from `config.seed()` and the
+submission number, apart from the answers' own draws. The refusal is
+given as spec 07 Amendment 11 gives a refusal. Record: `field` the last
+consent field, `value` the configuration's refusing value, `cleanValue`
+its consenting value.
+
+`skipModules` never changes a consent question.
+
+### Rosters built by "add another" questions
+
+A `select_one` question inside a repeat **extends** that repeat when the
+repeat's number of instances (its `jr:count`) depends on the question's
+answers, directly or through calculations, and, at the moment the walker
+answers it, two of the choices it offers give different numbers of
+instances.
+
+When a faulty enumerator of `skipModules` answers such a question with
+an answer `a` drawn as usual that gives more instances than another
+offered choice, with probability 0.25 (drawn as for `skipModules`) the
+answer is replaced by a choice, drawn uniformly among the offered ones
+other than the configuration's special values, that gives the fewest
+instances. Record (one per roster the fault shortened, not one per answer):
+`field` the repeat's name, `value` the number of instances of the
+repeat at the end of the walk, `cleanValue` that number when the same
+visit is walked without this fault's roster shortening.
+
+### Roster shortening is less frequent
+
+The probability with which `skipModules` declares fewer instances, for
+a count question and for a repeat whose number of instances the
+enumerator controls (Amendment 1), is 0.25 instead of 0.5. The
+probability of answering a filter question so that its modules stay
+closed is unchanged (0.5).
+
+### Outliers within the real constraint
+
+The **outlier interval** of a question is the interval of Amendment 1
+("in [upper fence, ...], within the hints; when that is empty, in
+[lower fence − ..., lower fence], within the hints"). A question is now
+eligible only when, at the moment the walker answers it, the engine
+accepts at least one value of its outlier interval, with the other
+answers as they are; its constraint is so taken into account even when
+it depends on other answers. The outlier value is a value of the
+interval that the engine accepts then, drawn from `config.seed()` and
+the submission number.
+
+The eligible questions of the target (its walk as usual) are tried in an
+order drawn uniformly: the target is walked again with the first one
+answered by an outlier value; when the engine accepts no value of its
+interval in that walk, with the next one; and so on. The first walk
+that gives an outlier value is the submission.
+
+When no question of the target gets an outlier value, the outlier
+**moves** to the next submission, in number order, that is the target
+of no problem of the table and to which no outlier has moved, and is
+tried there the same way. When no later submission can take it,
+`warnings()` holds one warning naming the submission where it was
+drawn. The warning about 20 refused draws of Amendment 1 is no longer
+given.

@@ -481,3 +481,40 @@ invalid or repeated entry is reported at its zero-based index, the second
 occurrence for a repeat (43); the constructor copies the list, and
 `faults()` cannot be changed (44); the number, schema, independence and
 copy rules of Amendment 6 apply to both new keys (45).
+
+## Amendment 8: consent questions, and the fault `fakeRefusal`
+
+One top-level key is added (used by spec 07 Amendment 11 and spec 14
+Amendment 2), and `faults` accepts one more name; everything else is
+unchanged.
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `consent` | object, see below | none | The form's consent questions and the consent rate. Without it, consent is not simulated apart from other questions. |
+
+The `consent` object:
+
+| Key | Type | Default | Constraint |
+|---|---|---|---|
+| `fields` | array of strings | required | at least one; distinct; each non-empty, without white space at its ends; in the order the form asks them |
+| `rate` | number | `0.9` | 0 to 1: share of respondents who consent |
+| `yes` | string | `"1"` | non-empty: the consenting choice value |
+| `no` | string | `"0"` | non-empty, different from `yes`: the refusing choice value |
+
+Public type and accessor added:
+
+```java
+public record Consent(java.util.List<String> fields, double rate, String yes, String no) { }
+
+// added to SimulationConfig:
+public java.util.Optional<Consent> consent();   // empty when the key is absent
+```
+
+- `fields()` is unmodifiable and keeps the file's order. The record's
+  constructor throws `IllegalArgumentException` for a value the file may
+  not hold, and `NullPointerException` for a null component or element.
+- `faults` (Amendment 7) accepts `fakeRefusal` too, and its default is
+  the four faults, in the order `tooFast`, `skipModules`, `dontKnow`,
+  `fakeRefusal`; so is `ProblemRates.defaults().faults()`.
+- The rules of "Strictness" and "Errors" apply, with errors at their
+  paths (`consent.fields[1]`, `consent.rate`); copies keep `consent()`.

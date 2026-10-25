@@ -235,6 +235,11 @@ public final class SimulationConfig {
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems);
     }
 
+    /** The form's consent questions; empty when the configuration names none. See Amendment 8. */
+    public java.util.Optional<Consent> consent() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
     public java.util.Optional<ProblemRates> problems() {
         return java.util.Optional.ofNullable(problems);

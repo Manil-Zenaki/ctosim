@@ -395,3 +395,14 @@ to skip modules and fewer repeat instances declared, "don't know" codes), how ma
 (one per fault while at least half stay clean; more enumerators for one
 per fault), outliers within the constraints, and the configuration keys
 `outliers` and `faults`.
+
+## Amendment 10: the help on consent and fake refusals
+
+The command is unchanged; its help file documents the configuration's
+`consent` key (spec 04, Amendment 8: the consent questions, named by the
+user, and the consent rate, 90 % by default; consent is simulated per
+interview only when the questions are named), the fault `fakeRefusal`
+(spec 14, Amendment 2: refusals declared to avoid interviews, about twice
+the others', found by `ipacheckenumdb`'s consent rate), the shortening of
+rosters built by "add another" questions, and outliers placed where the
+form's constraint, even one that depends on other answers, accepts them.
