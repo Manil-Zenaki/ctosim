@@ -1,0 +1,8 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa" xmlns:ct="urn:ctosim:xforms">
+  <h:head><h:title>Screen time and pauses</h:title><model>
+    <instance><data id="walker-screen-time">__INSTANCE__</data></instance>
+    __BINDS__
+  </model></h:head>
+  <h:body>__BODY__</h:body>
+</h:html>

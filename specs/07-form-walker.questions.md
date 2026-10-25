@@ -1638,3 +1638,125 @@ No production source was opened, searched, or changed.
 - Existing tests/fixtures, production code, specs other than this questions
   file, and build settings remain unchanged. No commit was made. All temporary
   probes and logs are under `.codex-runs/`.
+
+## Amendment 12: screen time and pauses
+
+81. **Question:** How can a test request a pause when Amendment 12 adds no
+    public walker method for one?
+    **Assumption:** Use the documented `Fieldwork.walkAll()` API of spec 13
+    and the `leftOpen` problem of spec 14 Amendment 3. Configure it through
+    the public `ProblemRates` constructor (spec 04 Amendment 9), avoiding a
+    dependency on JSON parsing of the new setting. No private methods,
+    reflection into production classes, or invented pause overloads are used.
+    A single submission with one enumerator and leftOpen=1 has no englobed
+    interview and resumes the next working day. The tests use that path to
+    produce a real pause; they do not attempt to duplicate spec 14's target
+    selection, schedule, answer-key or englobed-interview tests.
+    **Tests:** `FormWalkerAmendment12PauseTest`, the paused cases in
+    `FormWalkerAmendment12AdjustedTimeTest`, and their new support class.
+
+82. **Question:** Does configuring `leftOpen` implicitly pause a direct
+    `FormWalker.walk` call? Can a pause occur before any question or be
+    requested with zero or negative length?
+    **Assumption:** Only the fieldwork plan asks for a pause, as stated in
+    the amendment. Both public direct-walk overloads retain ordinary timing
+    even with a problems configuration. No tests invent validation rules for
+    a pause parameter that is not public. Placement for an entirely empty
+    form or a form with zero screen duration is not prescribed clearly by
+    spec 14's "first question" threshold, so zero-duration *paused* walks,
+    multiple pauses, and externally supplied pause lengths are left untested.
+    Zero-duration unpaused forms are covered.
+    **Tests:** `directWalksDoNotPauseJustBecauseTheConfigurationRequestsLeftOpenProblems`,
+    `screenTimeStartsAtZeroForAFormWithNoQuestions`, and the skipped-question cases.
+
+83. **Question:** Where is screen time observed, and does a snapshot directly
+    after the triggering question occur before or after the pause?
+    **Assumption:** `duration()` is the observable screen counter; no new
+    Submission accessor is assumed. The spec 14 pause occurs after the
+    triggering question's handling and before the next body question,
+    including a `calculate_here` observation. Calculate-here observations
+    consume no time and retain their values through finalisation. Snapshots
+    of `now()` and `duration()` at the same position therefore differ by
+    cumulative off-screen time. Whole-second clock advances and whole-second
+    fixture starts permit exact comparisons; no fractional pause rounding
+    rule or RNG implementation is imposed.
+    **Tests:** `calculateHereSeesCumulativeScreenTimeOnBothSidesOfThePause`,
+    the ordinary timeline and minimum-time tests, and repeat snapshot tests.
+
+84. **Question:** Which handling outcomes and timing adjustments contribute
+    to the screen-time sum?
+    **Assumption:** Amendment 12 explicitly sums rule 7's advances with prior
+    amendments unchanged. Accepted, blank, unconvertible and exhausted
+    answers each advance once; constraint search adds no extra advance.
+    Read-only, kept, irrelevant, unsupported and control-free fields and
+    calculate-here observations add nothing. Final constraint repair or
+    clearing adds nothing. Repeat instances share the submission's counter.
+    Duration factors apply before per-question rounding and minimum clamping;
+    the resulting advances, not the unscaled draws, enter screen time. For
+    fixed minimums above all unscaled draws the sum is exact, even over midnight.
+    Factor tests compare the same visit and submission number using the
+    unchanged-answer/randomness guarantees of spec 14. No arbitrary change
+    of seeds or settings is required to preserve all random sequences.
+    **Tests:** `FormWalkerAmendment12ScreenTimeTest` and
+    `FormWalkerAmendment12AdjustedTimeTest`, plus failed/blank paused handling.
+
+85. **Question:** Does "wherever it is evaluated" include expressions other
+    than a bare final `duration()` calculation? How are clock-dependent
+    date and time answers checked without assuming their random values?
+    **Assumption:** Wrapped duration calls, rule conditions and override
+    expressions see the same screen counter. `once(duration())` retains its
+    opening value, final duration recalculation updates dependents, and
+    calculate-here snapshots are not final totals. Date, time and datetime
+    questions use deterministic override expressions based on `now()` to
+    observe the clock after resumption without prescribing a date/time RNG
+    sequence. A paired unpaused case checks those fixtures and conversions
+    independently of pause support. Default date-range sampling and finite
+    search-date distributions are not duplicated from the generator tests.
+    **Tests:** `durationInAnOverrideConditionAndExpressionAlsoExcludesThePause`,
+    `datesTimesAndNowFollowClockAdvancesAndPauses`, final totals assertions,
+    and repeated-plan/reloaded-form replay tests.
+
+86. **Question:** Does upload delay change when a pause changes end time?
+    **Assumption:** Amendment 2 still draws the delay from seed and submission
+    number alone; a pause shifts the finalisation and upload timestamps by
+    the same amount. End metadata follows wall time, while duration excludes
+    the pause. Tests use the same planned visit to compare delays and avoid
+    assuming that independently built clean and interrupted plans have the
+    same schedules. Screen counters and pause state reset between walks and
+    replay deterministically for equal inputs.
+    **Tests:** `endMetadataAndUploadFollowTheResumedClock`,
+    `screenCounterResetsForEveryWalkRegardlessOfCallOrder`, and
+    `repeatedPlansAndIndependentLoadsReplayScreenAndWallTimeWithoutLeakingAPause`.
+
+### Amendment 12 build and validation (2026-10-25)
+
+- **Question:** Can the requested offline Maven compilation complete in
+  this sandbox?
+  **Observation:** `.\mvnw.cmd -o -q test-compile` reaches the compiler's
+  testCompile goal, then fails on the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, before reporting
+  source diagnostics. An `-e` retry confirms `java.nio.file.AccessDeniedException`
+  on that archive and is saved alongside the ordinary log.
+  **Assumption:** This is the cached-archive access blocker documented in
+  earlier runs, not permission to copy dependencies or change the build.
+  **Dependent tests:** Full Maven test compilation remains unverified.
+  Logs: `.codex-runs/walker-amendment12-test-compile.log` and
+  `.codex-runs/walker-amendment12-test-compile-detail.log`.
+- **Independent compilation:** The existing in-memory file-manager probe
+  approach compiled all 61 FormWalker test/support sources with Java release
+  17 against actual `target/classes` and cached JavaRosa/JUnit APIs:
+  `compiled=true`. This checks the new sources without reading production
+  source or replacing production classes; it is not a successful Maven run.
+  Probe and log: `.codex-runs/WalkerAmendment12CompileProbe.java` and
+  `.codex-runs/walker-amendment12-probe-compile.log`.
+- **Execution:** The offline JUnit probe executed all 39 new cases: 26 passed
+  and 13 failed. All failures are assertions that the configured left-open
+  pause actually occurs (missing leftOpen records or no wall-time extension).
+  No tests or containers were skipped or aborted; all containers succeeded.
+  No fixture loading or configuration parsing errors remain. Assertions
+  after the pause prerequisite cannot yet be validated against a working
+  pause implementation. Log: `.codex-runs/walker-amendment12-junit.log`.
+- Only three new test classes, one new support class, one new resource
+  template, and this appended questions section were added. Existing tests,
+  fixtures, production source and build configuration were kept. No commit
+  was made; all probes and logs are under `.codex-runs/`.
