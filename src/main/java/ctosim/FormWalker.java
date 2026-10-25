@@ -192,6 +192,12 @@ public final class FormWalker {
         boolean shortenRosters = true;
         /** The repeats whose roster this walk shortened. */
         final Set<String> shortened = new java.util.LinkedHashSet<>();
+        /** Screen seconds after which the walk pauses once (leftOpen), or NaN for no pause. */
+        double pauseAt = Double.NaN;
+        /** How long the pause lasts. */
+        Duration pauseLength = Duration.ZERO;
+        /** When the pause began, once it has. */
+        LocalDateTime pausedAt;
 
         Injection(double timeFactor, boolean keepLocations, Map<String, String> answers) {
             this.timeFactor = timeFactor;
@@ -220,6 +226,8 @@ public final class FormWalker {
             copy.outlierField = outlierField;
             copy.refuse = refuse;
             copy.shortenRosters = shortenRosters;
+            copy.pauseAt = pauseAt;
+            copy.pauseLength = pauseLength;
             return copy;
         }
     }
@@ -664,6 +672,8 @@ public final class FormWalker {
         /** Counts the answers seen by faults, so that each has its own draws (spec 14, Amendment 1). */
         private int adjusted;
         private boolean outlierDone;
+        /** Screen seconds so far (spec 07, Amendment 12). */
+        private long screen;
 
         Walk(int number, Visit visit, IdHistory history, Injection injection) {
             this.injection = injection;
@@ -1454,6 +1464,11 @@ public final class FormWalker {
                 seconds = Math.max(seconds, (long) Math.ceil(minimum));
             }
             clock.advance(Duration.ofSeconds(seconds));
+            screen += seconds;
+            if (injection.pausedAt == null && screen >= injection.pauseAt) { // false while pauseAt is NaN
+                injection.pausedAt = clock.now();
+                clock.pause(injection.pauseLength);
+            }
         }
 
         /** Sets the speed-violation count and list fields from the violations recorded. */

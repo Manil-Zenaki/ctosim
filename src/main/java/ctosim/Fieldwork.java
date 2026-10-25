@@ -105,6 +105,7 @@ public final class Fieldwork {
         List<Visit> planned = new ArrayList<>(n);
         List<InjectedProblem> injected = new ArrayList<>();
         List<Integer> movedOutliers = new ArrayList<>(); // outlier targets whose outlier could not be placed yet
+        Map<Integer, OpenForm> open = new HashMap<>(); // by enumerator: a form left open, waiting for its interview
         Set<Integer> copies = new HashSet<>(); // resent copies, which take no place in the plan
         for (int number = 1; number <= n; number++) {
             int enumerator = (number - 1) % e + 1;
@@ -184,6 +185,23 @@ public final class Fieldwork {
                     problem = null;
                 }
             }
+            OpenForm pending = open.get(enumerator);
+            if (pending != null && pending.englobed() == number) { // done while a form is left open (spec 14, A3)
+                LocalDateTime candidate = pending.pausedAt().plusMinutes(gap);
+                if (!candidate.isAfter(dayStart(pending.day()).plusMinutes(WORK_MINUTES))) {
+                    day[enumerator] = pending.day();
+                    start = candidate;
+                } else { // the form stays open overnight
+                    int next = pending.day() + 1;
+                    while (dayStart(next).plusMinutes(first).isBefore(pending.pausedAt().plusMinutes(MIN_GAP_MINUTES))) {
+                        next++;
+                    }
+                    day[enumerator] = next;
+                    today[enumerator] = 0;
+                    start = dayStart(next).plusMinutes(first);
+                }
+                point = household(number, village(enumerator, day[enumerator]));
+            }
             if (start == null) { // an ordinary visit (spec 13)
                 if (lastEnd[enumerator] == null) {
                     day[enumerator] = 0;
@@ -254,6 +272,25 @@ public final class Fieldwork {
                     movedOutliers.add(number);
                 }
             }
+            if (LEFT_OPEN.equals(problem)) {
+                Submission plain = walker.walk(number, visit, copy(before), injection.with(injection.timeFactor()));
+                double f = 0.2 + 0.6 * new SplittableRandom(FormWalker.seed(config.seed(), number, 31)).nextDouble();
+                injection.pauseAt = f * seconds(plain);
+                FormWalker.Injection probe = injection.with(injection.timeFactor());
+                walker.walk(number, visit, copy(before), probe);
+                LocalDateTime pausedAt = probe.pausedAt != null ? probe.pausedAt : plain.end();
+                int englobed = englobed(number, e, n, plan);
+                if (englobed > 0) { // finished after that interview, below
+                    open.put(enumerator, new OpenForm(number, visit, injection, before, pausedAt, day[enumerator],
+                            englobed, factor, fast));
+                    submissions.add(null);
+                    planned.add(visit);
+                    continue;
+                }
+                LocalDateTime resume = dayStart(day[enumerator] + 1).plusMinutes(new SplittableRandom(
+                        FormWalker.seed(config.seed(), number, 32)).nextInt(FIRST_START_MINUTES + 1));
+                injection.pauseLength = java.time.Duration.between(pausedAt, resume.isAfter(pausedAt) ? resume : pausedAt);
+            }
             Submission s = walker.walk(number, visit, history, injection);
             submissions.add(s);
             planned.add(visit);
@@ -276,32 +313,10 @@ public final class Fieldwork {
                 injected.addAll(startRecords(s, visit, problem, key(last[enumerator])));
             } else if (TRAVEL.equals(problem)) {
                 injected.addAll(travelRecords(s, visit, key(last[enumerator])));
+            } else if (LEFT_OPEN.equals(problem)) {
+                injected.addAll(startRecords(s, visit, problem, ""));
             }
-            injected.addAll(changes(s, visit, injection, OUTLIER));
-            if (fast) {
-                FormWalker.Injection without = injection.with(factor);
-                without.violationFactor = 1;
-                Submission clean = walker.walk(number, visit, copy(before), without);
-                injected.addAll(durationRecords(s, clean, visit, TOO_FAST));
-            }
-            injected.addAll(changes(s, visit, injection, SKIP_MODULES));
-            if (!injection.shortened.isEmpty()) {
-                FormWalker.Injection without = injection.with(injection.timeFactor());
-                without.shortenRosters = false;
-                Submission clean = walker.walk(number, visit, copy(before), without);
-                for (String repeat : injection.shortened) {
-                    injected.add(record(s, visit, SKIP_MODULES, repeat, Integer.toString(instances(s, repeat)),
-                            Integer.toString(instances(clean, repeat)), ""));
-                }
-            }
-            injected.addAll(changes(s, visit, injection, DONT_KNOW));
-            Consent consent = config.consent().orElse(null);
-            if (injection.refuse && consent != null) {
-                String lastField = consent.fields().get(consent.fields().size() - 1);
-                if (consent.no().equals(value(s.instanceXml(), lastField))) {
-                    injected.add(record(s, visit, FAKE_REFUSAL, lastField, consent.no(), consent.yes(), ""));
-                }
-            }
+            injected.addAll(answerRecords(number, s, visit, injection, before, factor, fast));
 
             if (OVERLAP.equals(problem)) {
                 lastEnd[enumerator] = s.end().isAfter(lastEnd[enumerator]) ? s.end() : lastEnd[enumerator];
@@ -311,9 +326,29 @@ public final class Fieldwork {
             if (OFFHOURS.equals(problem) || TRAVEL.equals(problem)) {
                 dayOver[enumerator] = true;
             }
+            if (LEFT_OPEN.equals(problem)) { // finished the next morning
+                day[enumerator]++;
+                today[enumerator] = 0;
+            }
             last[enumerator] = s;
             lastVisit[enumerator] = visit;
             today[enumerator]++;
+            OpenForm form = open.get(enumerator);
+            if (form != null && form.englobed() == number) { // the form left open is finished now
+                open.remove(enumerator);
+                LocalDateTime resume = s.end().plusMinutes(MIN_GAP_MINUTES + new SplittableRandom(FormWalker.seed(
+                        config.seed(), form.number(), 32)).nextInt(MAX_GAP_MINUTES - MIN_GAP_MINUTES + 1));
+                form.injection().pauseLength = java.time.Duration.between(form.pausedAt(), resume);
+                Submission a = walker.walk(form.number(), form.visit(), history, form.injection());
+                submissions.set(form.number() - 1, a);
+                injected.addAll(startRecords(a, form.visit(), LEFT_OPEN, key(s)));
+                injected.addAll(answerRecords(form.number(), a, form.visit(), form.injection(), form.before(),
+                        form.factor(), form.fast()));
+                lastEnd[enumerator] = a.end();
+                last[enumerator] = a;
+                lastVisit[enumerator] = form.visit();
+                today[enumerator]++;
+            }
             lastDay = Math.max(lastDay, day[enumerator]);
         }
         if (lastDay + 1 > days) {
@@ -334,6 +369,8 @@ public final class Fieldwork {
         }
         this.visits = Collections.unmodifiableList(planned);
         this.warnings = List.copyOf(planWarnings);
+        injected.sort(java.util.Comparator.comparingInt(InjectedProblem::submission)
+                .thenComparingInt(p -> RECORD_ORDER.indexOf(p.problem()))); // stable within a problem
         this.problems = List.copyOf(injected);
         return Collections.unmodifiableList(submissions);
     }
@@ -682,12 +719,16 @@ public final class Fieldwork {
     static final String SKIP_MODULES = "skipModules";
     static final String DONT_KNOW = "dontKnow";
     static final String FAKE_REFUSAL = "fakeRefusal";
+    static final String LEFT_OPEN = "leftOpen";
     private static final List<String> PROBLEMS = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP, TRAVEL,
-            OUTLIER);
+            OUTLIER, LEFT_OPEN);
+    /** The order of the records of a submission: the table, then the faults. */
+    private static final List<String> RECORD_ORDER = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP,
+            TRAVEL, OUTLIER, LEFT_OPEN, "tooFast", "skipModules", "dontKnow", "fakeRefusal");
     /** Where the warnings of faulty enumerators come, between those of travel and of outliers. */
     private static final String FAULTS = "faults";
     private static final List<String> WARNING_ORDER = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP,
-            TRAVEL, FAULTS, OUTLIER);
+            TRAVEL, FAULTS, OUTLIER, LEFT_OPEN);
     private static final double FAST_FACTOR = 0.4;
     private static final double FAST_VIOLATIONS = 3;
     /** Fewer submissions than this and a faulty enumerator cannot be told from the others. */
@@ -705,7 +746,7 @@ public final class Fieldwork {
 
         Problems(ProblemRates rates, int n, int e) {
             double[] shares = {rates.resent(), rates.reinterview(), rates.shortDuration(), rates.longDuration(),
-                rates.offHours(), rates.overlap(), rates.travel(), rates.outliers()};
+                rates.offHours(), rates.overlap(), rates.travel(), rates.outliers(), rates.leftOpen()};
             warnings.put(FAULTS, new ArrayList<>());
             SplittableRandom random = new SplittableRandom(FormWalker.seed(config.seed(), n, 16));
             for (int k = 0; k < PROBLEMS.size(); k++) {
@@ -716,7 +757,8 @@ public final class Fieldwork {
                     continue;
                 }
                 List<Integer> eligible = new ArrayList<>();
-                int from = SHORT.equals(problem) || LONG.equals(problem) || OUTLIER.equals(problem) ? 1 : e + 1;
+                int from = SHORT.equals(problem) || LONG.equals(problem) || OUTLIER.equals(problem)
+                        || LEFT_OPEN.equals(problem) ? 1 : e + 1;
                 for (int number = from; number <= n; number++) {
                     if (!targets.containsKey(number)) {
                         eligible.add(number);
@@ -783,6 +825,11 @@ public final class Fieldwork {
             for (int k = 0; k < faults.size(); k++) {
                 faulty.computeIfAbsent(all.get(k % m), x -> new java.util.LinkedHashSet<>()).add(faults.get(k));
             }
+        }
+
+        /** The problem a submission was drawn for, or null. */
+        String targetOf(int number) {
+            return targets.get(number);
         }
 
         /** Makes a submission the target of a problem (an outlier moved to it). */
@@ -891,7 +938,7 @@ public final class Fieldwork {
         return switch (problem) {
             case RESENT, REINTERVIEW -> "duplicate";
             case SHORT, LONG -> "duration";
-            case OFFHOURS, OVERLAP -> "schedule";
+            case OFFHOURS, OVERLAP, LEFT_OPEN -> "schedule";
             case OUTLIER -> "outlier";
             case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL -> "enumerator";
             default -> "travel";
@@ -907,6 +954,57 @@ public final class Fieldwork {
             default -> "custom";
         };
     }
+
+    /** The records of the faults and the outlier of a walked submission (spec 14, Amendments 1 and 2). */
+    private List<InjectedProblem> answerRecords(int number, Submission s, Visit visit, FormWalker.Injection injection,
+                                                FormWalker.IdHistory before, double factor, boolean fast) {
+        List<InjectedProblem> records = new ArrayList<>();
+        records.addAll(changes(s, visit, injection, OUTLIER));
+        if (fast) {
+            FormWalker.Injection without = injection.with(factor);
+            without.violationFactor = 1;
+            Submission clean = walker.walk(number, visit, copy(before), without);
+            records.addAll(durationRecords(s, clean, visit, TOO_FAST));
+        }
+        records.addAll(changes(s, visit, injection, SKIP_MODULES));
+        if (!injection.shortened.isEmpty()) {
+            FormWalker.Injection without = injection.with(injection.timeFactor());
+            without.shortenRosters = false;
+            Submission clean = walker.walk(number, visit, copy(before), without);
+            for (String repeat : injection.shortened) {
+                records.add(record(s, visit, SKIP_MODULES, repeat, Integer.toString(instances(s, repeat)),
+                        Integer.toString(instances(clean, repeat)), ""));
+            }
+        }
+        records.addAll(changes(s, visit, injection, DONT_KNOW));
+        Consent consent = config.consent().orElse(null);
+        if (injection.refuse && consent != null) {
+            String lastField = consent.fields().get(consent.fields().size() - 1);
+            if (consent.no().equals(value(s.instanceXml(), lastField))) {
+                records.add(record(s, visit, FAKE_REFUSAL, lastField, consent.no(), consent.yes(), ""));
+            }
+        }
+        return records;
+    }
+
+    /**
+     * The interview a form left open contains: the enumerator's next submission that is not a resent
+     * copy, unless it is the target of a schedule or travel problem; 0 when there is none.
+     */
+    private static int englobed(int number, int e, int n, Problems plan) {
+        for (int m = number + e; m <= n; m += e) {
+            String problem = plan.targetOf(m);
+            if (RESENT.equals(problem)) {
+                continue;
+            }
+            return problem != null && Set.of(OFFHOURS, OVERLAP, TRAVEL, LEFT_OPEN).contains(problem) ? 0 : m;
+        }
+        return 0;
+    }
+
+    /** A form left open, finished after the interview it contains (spec 14, Amendment 3). */
+    private record OpenForm(int number, Visit visit, FormWalker.Injection injection, FormWalker.IdHistory before,
+                            LocalDateTime pausedAt, int day, int englobed, double factor, boolean fast) { }
 
     /** The records of what a walk's faults or outlier changed, for one problem, in walk order. */
     private List<InjectedProblem> changes(Submission s, Visit visit, FormWalker.Injection injection, String problem) {

@@ -13,7 +13,8 @@ public record ProblemRates(double resent, double reinterview, double shortDurati
     /** The faults a faulty enumerator can carry, in their order (spec 14, Amendment 1). */
     static final List<String> FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal");
 
-    private static final ProblemRates DEFAULTS = new ProblemRates(0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, FAULTS);
+    private static final ProblemRates DEFAULTS = new ProblemRates(0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02,
+            FAULTS);
 
     public ProblemRates {
         check(resent, "resent");
@@ -23,6 +24,7 @@ public record ProblemRates(double resent, double reinterview, double shortDurati
         check(offHours, "offHours");
         check(overlap, "overlap");
         check(travel, "travel");
+        check(leftOpen, "leftOpen");
         check(outliers, "outliers");
         java.util.Objects.requireNonNull(faults, "faults");
         List<String> copy = List.copyOf(faults); // rejects null elements

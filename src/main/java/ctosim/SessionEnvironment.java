@@ -58,8 +58,9 @@ final class SessionEnvironment {
         ec.addFunctionHandler(function(NOW, () -> toDate(clock.now())));
         ec.addFunctionHandler(keyed(RANDOM, (args, e) -> draws.next("random", args, e).nextDouble()));
         ec.addFunctionHandler(keyed(UUID, (args, e) -> uuid(draws.next("uuid", args, e))));
-        ec.addFunctionHandler(function("duration",
-                () -> (double) Math.floorDiv(Duration.between(opened, clock.now()).toNanos(), 1_000_000_000L)));
+        ec.addFunctionHandler(function("duration", // screen time: pauses do not count (spec 07, Amendment 12)
+                () -> (double) Math.floorDiv(Duration.between(opened, clock.now()).minus(clock.paused()).toNanos(),
+                        1_000_000_000L)));
 
         ec.addFunctionHandler(function("username", () -> properties.getOrDefault("username", "")));
 

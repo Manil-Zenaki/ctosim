@@ -171,6 +171,7 @@ final class ConfigParser {
         JsonNode problems = object(node, "problems");
         Set<String> keys = new HashSet<>(PROBLEM_KEYS);
         keys.add("outliers");
+        keys.add("leftOpen");
         keys.add("faults");
         checkKeys(problems, "problems", keys);
         ProblemRates d = ProblemRates.defaults();
@@ -184,7 +185,9 @@ final class ConfigParser {
         }
         double outliers = problems.has("outliers") ? rate(problems.get("outliers"), "problems.outliers") : d.outliers();
         List<String> faults = problems.has("faults") ? faults(problems.get("faults")) : d.faults();
-        return new ProblemRates(rates[0], rates[1], rates[2], rates[3], rates[4], rates[5], rates[6], outliers, faults);
+        double leftOpen = problems.has("leftOpen") ? rate(problems.get("leftOpen"), "problems.leftOpen") : d.leftOpen();
+        return new ProblemRates(rates[0], rates[1], rates[2], rates[3], rates[4], rates[5], rates[6], leftOpen, outliers,
+                faults);
     }
 
     /** The faults of faulty enumerators (spec 04, Amendment 7): distinct known names, in file order. */
