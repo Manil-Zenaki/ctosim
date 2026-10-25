@@ -18,6 +18,8 @@
     "longDuration": 0,
     "offHours": 0,
     "overlap": 0,
-    "travel": 0
+    "travel": 0,
+    "outliers": 0,
+    "faults": []
   }
 }

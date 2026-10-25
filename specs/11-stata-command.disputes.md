@@ -643,3 +643,103 @@ problem" (resp. 11) where the tests assert other counts.
 **Requested change:** add `"outliers": 0` and `"faults": []` to the
 `problems` objects of `injected_zero.json` and `injected_short.json`,
 keeping every assertion.
+
+## Adjudication (2026-10-25)
+
+### Dispute 1 - prior correction retained
+
+The default output directory follows the form basename, and an existing
+report requires error 602 without `replace`. The current options-paths test
+uses distinct numeric suffixes, so its directories do not depend on filesystem
+case sensitivity. Keep it unchanged.
+
+### Dispute 2 - prior correction retained
+
+Amendment 1 requires ordered selection of an eligible Java 17 or newer,
+superseding unconditional use of Stata's Java. The runtime-selection test
+already omits that obsolete assertion and retains its Python checks. Keep it.
+
+### Dispute 3 (compiled support jars) - prior correction retained
+
+The spec requires runnable batch tests, not committed compiled support jars.
+The runner builds both support jars from their sources under
+`.codex-runs/stata-support/`; neither jar is in the fixture directory.
+No further infrastructure change is needed.
+
+### Dispute 3 (prompt-prefixed assert example) - prior correction retained
+
+Amendment 3 requires an answer-constraint assertion but does not forbid a
+displayed Stata prompt. The current matcher accepts the optional prompt and
+retains the answer-predicate check. Keep it unchanged.
+
+### Dispute 4 - prior correction retained
+
+The simulator fixture explicitly sets stdout and stderr to UTF-8, matching
+the referenced simulator contract. Keep its Unicode and strict-decoding
+assertions unchanged.
+
+### Dispute 5 - prior correction retained
+
+The spec promises returned results when `ctosim` finishes, not after another
+caller command replaces `r()`. All five disputed sites already read the
+results before closing their logs. Keep the result and log checks unchanged.
+
+### Dispute 6 - prior correction retained
+
+Step 4 requires Stata's default import naming. The schedule test already
+uses `gpslatitude` and `gpslongitude`, preserving its timing and distance
+checks without imposing underscore-separated names. Keep it unchanged.
+
+### Dispute 7 - prior correction retained
+
+Amendment 8 requires the problem summary after the warnings, while confirmed
+H2 leaves the displayed path free. The oracle now stops at the first matching
+warning-count line, so a later summary path containing "warnings" does not
+replace that cursor. Keep the original directory names, count combinations,
+warning-order checks and summary checks.
+
+### Dispute 8 - accepted; explicitly disable the new problem defaults
+
+Spec 11 passes `config()` to the simulator and refers to spec 04 for its
+meaning. Spec 04 Amendment 7 gives omitted `problems.outliers` a default of
+0.02 and omitted `problems.faults` the default fault list; Amendment 8 extends
+that list to four faults. Setting only the seven original rates to zero
+therefore no longer disables every problem. The seven-argument Java
+constructor's compatibility defaults do not apply to these JSON files.
+
+Added `"outliers": 0` and `"faults": []` to both `injected_zero.json` and
+`injected_short.json`. The former now explicitly disables all problems while
+keeping injection enabled, as spec 11 Amendment 8/H1 requires for the zero
+count and header-only answer key. The latter enables only `shortDuration`
+at 0.25, preserving the intended five targets among twenty submissions.
+
+Every assertion in `test_injected_problems_real_zero.do` and
+`test_injected_problems_real_config.do` is retained: both configuration-only
+and explicit-option runs, returned counts and paths, key schema and contents,
+submission count, KEY-based merge, separation of the key from loaded data,
+and equality of the two configured runs. This corrects fixture inputs to
+match their stated scenarios; no command expectation is relaxed.
+
+### Validation for this adjudication
+
+Ran `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`.
+All test-support fixtures compiled and their oracle self-checks passed.
+Both corrected real-simulator tests passed with their do-files unchanged,
+including both configuration-only and explicit-option iterations. All sixteen
+`test_injected_problems_*.do` files passed. The previously disputed
+options-paths, runtime-selection, advanced-help, fake-preload display and
+template-failure, form-problem, and GPS schedule tests also passed.
+
+Full-suite result: **109 do-files, 97 passed, 12 failed** (runner exit status 1).
+The seven `test_amendment_*.do` and five `test_converter_name_*.do` failures
+occur during launcher cleanup, before child command assertions run: removing
+pre-existing `temp/hsperfdata_manil` directories is denied. Current launcher
+logs under `.codex-runs/stata-amendment/` and
+`.codex-runs/stata-converter-name/` show the same environmental failure as
+earlier adjudications. No unrelated cleanup logic or permissions were changed.
+Per-do-file runner logs are under `target/stata-tests/`.
+
+Also ran `.venv\Scripts\python -B src/test/stata/fixtures/help_use_cases_oracle_tests.py`:
+**16 tests passed**. `git diff --check` passed. Only the two disputed JSON
+fixtures and this disputes file were changed. No production implementation
+was read or modified, and no commit was made.
