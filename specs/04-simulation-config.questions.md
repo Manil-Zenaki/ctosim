@@ -783,3 +783,114 @@ no production source was opened, read, searched, or changed.
   blocker; production, build configuration, dependencies, and existing tests
   remain unchanged. **Dependent tests:** Full Maven test compilation remains
   unverified. Runtime tests were not requested and were not run.
+
+## Amendment 8: consent questions and fakeRefusal
+
+New coverage is in `ConsentAmendment8Test`, `ProblemRatesAmendment8Test`,
+`SimulationConfigAmendment8ParsingTest`, `SimulationConfigAmendment8IoTest`,
+and `SimulationConfigAmendment8CopiesTest`, with
+`SimulationConfigAmendment8Support` and `amendment-8-consent.json`.
+Existing tests, fixtures, and questions are preserved. Expectations come only
+from spec 04; no production source was opened, read, searched, or changed.
+
+46. **How are consent names and choice codes compared, and what counts as
+    forbidden whitespace?**
+    - **Assumption:** Names and codes are compared as exact decoded strings,
+      without trimming, case folding, sorting, or Unicode normalization.
+      Consent field names follow the same stated nonempty/no-edge-whitespace
+      restriction as earlier field and id names. Tests reject space, tab, CR,
+      LF, and form feed at either edge, accept Unicode and internal spaces,
+      and do not impose an identifier grammar or consult a form. Choice codes
+      have only the stated nonempty/distinct constraints, so whitespace-only
+      and edge-whitespace codes are accepted and preserved. A supplied code
+      must also differ from the other code's default when that other member
+      is absent. The precise Unicode whitespace boundary is left untested.
+    - **Dependent tests:** `acceptedFields`, `invalidNames`, `invalidConsent`,
+      their parse/load/constructor consumers, `exactCodes`,
+      `choiceCodesAreExactNonemptyStringsWithoutFieldNameWhitespaceRestrictions`,
+      and `constructorRejectsEqualChoiceCodes`.
+
+47. **Which path must diagnose missing fields, equal codes, or duplicate
+    field names?**
+    - **Assumption:** A missing required member or a cross-member collision
+      may identify `consent` or a more specific child. Invalid array entries
+      identify their zero-based bracket index; a repeated field identifies
+      the second occurrence, following the confirmed Amendment 7 convention.
+      Single-value errors require their complete path. Duplicate object keys
+      retain question 2's syntax-versus-schema flexibility. All errors require
+      source attribution and an explanation; syntax errors also retain their
+      cause and failing line. No exact wording or constructor message is
+      imposed.
+    - **Dependent tests:** `invalidConsent`, `duplicateKeys`, parse/load
+      diagnostics, and syntax-error tests in the Amendment 8 classes.
+
+48. **Do consent and fakeRefusal impose cross-setting or form prerequisites?**
+    - **Assumption:** No new prerequisite is stated. An absent consent key
+      stays absent even with fakeRefusal or a field override named consent;
+      consent does not enable problems. Its rate is independent of other
+      rates. Explicit overrides and special-value codes are retained without
+      resolving generator precedence. FakeRefusal can be selected without
+      consent and with all problem rates zero. Only the consent schema and
+      accepted fault-name set change; arbitrary field, profile, and choice
+      names remain valid. Actual consent simulation, refusal assignment,
+      form order/existence checks, and statistical frequencies belong to
+      specs 07 and 14 and are not tested here.
+    - **Dependent tests:** `omissionDoesNotInferConsentFromFaultsOrAnOverride`,
+      `requiredFieldsAloneSupplyOnlyTheDocumentedConsentDefaults`,
+      `consentIsIndependentOfOtherProbabilitiesNamesAndOverrides`,
+      `fakeRefusalDoesNotRequireConsentOrAnyPositiveProblemRate`, `unknownKeys`,
+      and every ordered-subset test containing fakeRefusal.
+
+49. **What numeric precision and immutability conventions apply to Consent?**
+    - **Assumption:** The prior number-valued rate conventions apply, including
+      inclusive endpoints, ordinary exponent forms, and numeric equality of
+      either sign of zero. Constructor validation covers the Java double
+      boundaries, NaN, and infinities. JSON values that round onto endpoints,
+      underflow, or overflow remain untested as in questions 7, 19, and 39.
+      The constructor takes a defensive snapshot of fields: retaining a
+      caller-owned mutable list would violate the immutable configuration
+      contract. Mutation attempts which change a list must throw
+      UnsupportedOperationException, including iterators and views. No list
+      or Consent identity requirement is inferred. Raw, heap-polluted Java
+      lists are not tested; wrong JSON element types are tested.
+    - **Dependent tests:** Consent rate and constructor tests, all consent
+      list mutation/snapshot tests, `mutations`, and the copy tests.
+
+50. **Does the new fault default change explicitly configured or legacy
+    fault lists, and should older committed tests be rewritten?**
+    - **Assumption:** Only the default fault list gains fakeRefusal. Explicit
+      arrays preserve exactly their members and order, including empty lists.
+      The seven-rate constructor still has no faults. Every existing copy API
+      preserves consent, including absence, zero rate, unchanged assignments,
+      and clearing problems. Older tests asserting the Amendment 7 three-fault
+      default may conflict with Amendment 8 at runtime; they remain unchanged
+      as explicitly requested for this run. The new tests assert four defaults.
+    - **Dependent tests:** `defaultsAppendFakeRefusalAfterTheThreeExistingFaults`,
+      `omittedFaultsInAnyPresentProblemsObjectUseAllFourDefaults`,
+      `explicitlySelectedLegacyFaultsDoNotAutomaticallyAcquireFakeRefusal`,
+      `sevenRateConstructorStillDisablesEveryFaultIncludingFakeRefusal`, and
+      all Amendment 8 copy tests.
+
+### Amendment 8 build verification (2026-10-24)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile`, followed by an `-e`
+  diagnostic retry. Both reached `maven-compiler-plugin:3.15.0:testCompile`
+  and failed with `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs:
+  `.codex-runs/04-amendment8-test-compile.log` and
+  `.codex-runs/04-amendment8-test-compile-detail.log`.
+- All six new Java files and their existing test-source dependencies compiled
+  successfully with Java release 17 against the actual `target/classes`
+  binaries and cached JUnit 5.11.4 API (twelve source files total). The
+  existing compiler-probe approach reads class entries in memory to avoid
+  the archive-access failure. It does not inspect production implementation,
+  copy repositories, alter permissions, or install dependencies. Probe:
+  `.codex-runs/Amendment8CompileProbe.java`; result:
+  `.codex-runs/04-amendment8-probe-compile.log` (`compiled=true`). This verifies
+  compilation of the added sources, but does not make Maven successful.
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** The access failure is
+  an environment blocker; production, build configuration, dependencies,
+  and existing tests remain unchanged. **Dependent tests:** Full Maven test
+  compilation remains unverified. Runtime tests were not requested and were
+  not run. No commit was created.

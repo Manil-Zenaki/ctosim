@@ -1,0 +1,9 @@
+{
+  "consent": {
+    "fields": ["z_consent", "同意", "accord_é"],
+    "rate": 0.625,
+    "yes": "はい",
+    "no": "non"
+  },
+  "problems": {"faults": ["fakeRefusal", "dontKnow", "tooFast"]}
+}
