@@ -607,3 +607,21 @@ tried there the same way. When no later submission can take it,
 `warnings()` holds one warning naming the submission where it was
 drawn. The warning about 20 refused draws of Amendment 1 is no longer
 given.
+
+Clarification (Amendment 2): assumptions B1–B10 of the questions file
+are reviewed one by one and confirmed, with decisions on the points left
+open: the earlier tests of the half-probability roster shortening and of
+the twenty-refusal warning are superseded and go through a dispute (B1);
+a fake refusal that the last consent field cannot take gives no record,
+and conflicts on a consent answer are not prescribed (B3); the 0.25 draw
+is made at each answer that could extend the roster, with one record per
+roster (B6); an outlier interval is the upper one unless the hints leave
+it empty, as in Amendment 1, whatever the engine accepts (B7); outliers
+that could not be placed move in the order of their targets' numbers
+(B9). Also confirmed: rates at or below one half turn every interview of
+the faulty enumerator that would consent into a refusal, and rate 0
+gives none (B2); an inactive `fakeRefusal` takes no enumerator and gives
+one warning among the faults' (B4); the bootstrap of a roster whose count
+refers directly to a question of the same repeat is not prescribed (B5);
+retries are observed through their outcomes (B8); no random sequence is
+prescribed (B10).
