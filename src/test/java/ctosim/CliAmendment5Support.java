@@ -36,6 +36,9 @@ final class CliAmendment5Support {
     static ObjectNode only(String name, double rate) {
         ObjectNode rates = JSON.createObjectNode();
         RATE_NAMES.forEach(key -> rates.put(key, 0));
+        // Spec 04 Amendment 7 defaults omitted keys to outliers and enumerator faults.
+        rates.put("outliers", 0);
+        rates.putArray("faults");
         if (name != null) rates.put(name, rate);
         return rates;
     }

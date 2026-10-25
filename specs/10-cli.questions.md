@@ -865,3 +865,20 @@ unchanged. No production source was opened, searched, or modified.
   permissions changed, production code read/modified, or commit created.
   Existing test files are retained. Temporary probes and logs are confined
   to `.codex-runs/`.
+
+## Dispute 7 validation (2026-10-24)
+
+No new contract questions arose. The `only(name, rate)` test helper now
+explicitly disables outliers and enumerator faults as required to isolate
+the original problem settings under spec 04 Amendment 7.
+
+`mvnw.cmd -o -q test` could not complete test compilation; an `-e` retry
+confirmed `AccessDeniedException` for the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The existing
+diagnostic compiler successfully compiled all 26 CLI/support sources,
+and the diagnostic JUnit launcher ran all 50 Amendment 5 tests successfully.
+These are supplementary checks, not a successful Maven build. Logs:
+`.codex-runs/cli-dispute7-maven.log`,
+`.codex-runs/cli-dispute7-maven-detail.log`,
+`.codex-runs/cli-dispute7-compile.log`, and
+`.codex-runs/cli-dispute7-junit.log`.

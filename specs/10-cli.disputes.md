@@ -273,3 +273,71 @@ the configuration asks for no outliers and no faults.
 **Requested change:** make `only(name, rate)` also set `"outliers": 0`
 and `"faults": []` (unless the test means to inject them), keeping every
 assertion.
+
+## Adjudication of Dispute 7 (2026-10-24)
+
+Accept the fixture correction for every disputed case; keep all assertions.
+Spec 04 Amendment 7 adds default-enabled outliers and enumerator faults to
+the JSON `problems` object. Its clarification applies the existing default
+rules to the new keys. The compatibility constructor with seven rates
+disables those additions, but these tests construct JSON, so that constructor
+rule does not apply. Spec 14 Amendment 1 injects the additional problems;
+spec 10 Amendment 5 still reports all records from the resulting plan.
+Consequently, setting only the seven original rates to zero no longer
+requests a run without injected problems.
+
+Changed `CliAmendment5Support.only(name, rate)` to set `outliers` to 0 and
+`faults` to an empty array before applying the named rate. This restores
+the helper's intended isolation of the original fieldwork problems.
+
+- `allZeroRatesStillWriteHeaderAndZeroSummariesEvenWithFlag` (both cases):
+  retain the header-only key, zero summaries, clean-export comparison and
+  file-list checks. Spec 10 Amendment 5 explicitly requires an enabled
+  all-zero configuration to write a key and report zero; the corrected
+  fixture now explicitly disables every problem, including faults.
+- `rerunReplacesExistingKeyThenZeroRatesTruncateItToHeader`: retain the
+  replacement, truncation, zero-summary and unrelated-file assertions.
+  The second run now requests no problems, while keeping injection enabled.
+- `effectiveSeedCountAndIdReachTheProblemPlanAndAllExports` (both cases):
+  retain the effective-option, public-plan, export, summary and household
+  field assertions. The fixture intends only reinterviews; default faults
+  would add records for other fields and invalidate that premise.
+- `enabledButIneligibleProblemsWriteHeaderAndReportActualZeroWithWarnings`:
+  retain the empty key, zero count and warnings assertions. The single
+  submission cannot supply a resent pair, and the corrected configuration
+  no longer enables other eligible problems.
+- `fallbackWarningsAreRetainedAfterSubmissionWarningsAndDoNotCountAsInjectedProblems`:
+  retain the empty key, zero count and exact warning-order comparisons.
+  The fixture enables only reinterview and travel, whose prerequisites it
+  lacks; unrelated faults must be disabled for that premise to hold.
+- `summaryCountsDistinctAffectedSubmissionsRatherThanDurationRecords`
+  (all three cases): retain the two duration records per affected
+  submission, distinct-submission counts, ordering, summary and file-list
+  checks. The corrected fixture enables only short-duration problems;
+  `tooFast` records are no longer implicitly requested.
+
+Other callers of this helper also intend isolated original problems and
+receive the same correction. Tests that intentionally exercise defaults,
+including empty/partial JSON objects and the flag with no `problems`
+setting, do not use this helper and remain unchanged. No new specification
+assumptions are needed. Earlier adjudications remain unchanged.
+
+### Validation
+
+- `mvnw.cmd -o -q test` stopped during test compilation. An `-e` retry
+  confirmed `java.nio.file.AccessDeniedException` for the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs:
+  `.codex-runs/cli-dispute7-maven.log` and
+  `.codex-runs/cli-dispute7-maven-detail.log`.
+- The existing diagnostic compiler compiled all 26 CLI/support sources
+  with `--release 17` against cached binary dependencies. Log:
+  `.codex-runs/cli-dispute7-compile.log`.
+- The existing diagnostic JUnit launcher executed all three Amendment 5
+  test classes: 50 tests passed, none failed, skipped or aborted, and no
+  container failures. This includes every disputed case and the unchanged
+  default-activation tests. Log: `.codex-runs/cli-dispute7-junit.log`.
+- `git diff --check` passed. Diagnostic compilation and execution are
+  supplementary validation, not a successful Maven build or full-suite run.
+
+No production source was read or modified, no dependency or build
+configuration was changed, and no commit was made.
