@@ -615,3 +615,31 @@ Also ran `.venv\Scripts\python -B src/test/stata/fixtures/help_use_cases_oracle_
 **16 tests passed**. `git diff --check` passed. Only the Amendment 8 test
 fixture and this disputes file were changed. No production implementation
 was read or modified, and no commit was made.
+
+## Dispute 8: problem settings that only name the seven fieldwork rates (Amendment 8, superseded by spec 04 Amendments 7 and 8)
+
+**Tests:** `src/test/stata/test_injected_problems_real_zero.do` and
+`src/test/stata/test_injected_problems_real_config.do`, through their
+fixtures `src/test/stata/fixtures/injected_zero.json` and
+`injected_short.json`.
+
+**Spec:** spec 04 Amendment 7 adds `outliers` (default 0.02) and `faults`
+(default all faults) to the `problems` object; Amendment 8 makes the
+default the four faults. A key left out of the object takes its default,
+so `"problems": {"resent": 0, ..., "travel": 0}` asks for outliers and
+faulty enumerators. Spec 14 Amendments 1 and 2 inject them. The same
+change superseded the CLI tests of spec 10 Amendment 5 (spec 10, Dispute
+7, accepted).
+
+**What the tests do:** the fixtures set the seven rates of Amendment 6
+(all 0, or `shortDuration` 0.25) and leave `outliers` and `faults` out.
+The tests then expect what was true before Amendment 7: zero affected
+submissions and a header-only key for `injected_zero.json`, only the
+short-duration targets for `injected_short.json`. The runs now hold
+faulty enumerators and outliers: the logs show the warning "3 faults are
+cumulated on 1 enumerators" and "14 submissions with an injected
+problem" (resp. 11) where the tests assert other counts.
+
+**Requested change:** add `"outliers": 0` and `"faults": []` to the
+`problems` objects of `injected_zero.json` and `injected_short.json`,
+keeping every assertion.
