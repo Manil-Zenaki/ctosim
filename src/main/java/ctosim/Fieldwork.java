@@ -104,6 +104,7 @@ public final class Fieldwork {
         List<Submission> submissions = new ArrayList<>(n);
         List<Visit> planned = new ArrayList<>(n);
         List<InjectedProblem> injected = new ArrayList<>();
+        List<Integer> movedOutliers = new ArrayList<>(); // outlier targets whose outlier could not be placed yet
         Set<Integer> copies = new HashSet<>(); // resent copies, which take no place in the plan
         for (int number = 1; number <= n; number++) {
             int enumerator = (number - 1) % e + 1;
@@ -236,26 +237,26 @@ public final class Fieldwork {
             injection.violationFactor = fast ? FAST_VIOLATIONS : 1;
             injection.skipModules = faults.contains(SKIP_MODULES);
             injection.dontKnow = faults.contains(DONT_KNOW);
-            if (OUTLIER.equals(problem)) {
-                FormWalker.Injection probe = injection.with(injection.timeFactor());
-                probe.collectEligible = true;
-                walker.walk(number, visit, copy(before), probe);
-                if (probe.eligible.isEmpty()) {
-                    plan.warn(OUTLIER, "problems: outlier: submission " + number + " has no question that can get an"
-                            + " outlier within its constraint; it carries no outlier");
-                } else {
-                    injection.outlierField = probe.eligible.get(new SplittableRandom(
-                            FormWalker.seed(config.seed(), number, 26)).nextInt(probe.eligible.size()));
+            if (faults.contains(FAKE_REFUSAL) && FormWalker.consents(config, number)) {
+                double r = config.consent().get().rate();
+                double p = r <= 0 ? 0 : Math.min(1, (1 - r) / r);
+                injection.refuse = new SplittableRandom(FormWalker.seed(config.seed(), number, 28)).nextDouble() < p;
+            }
+            if (OUTLIER.equals(problem) || problem == null && !movedOutliers.isEmpty()) {
+                String field = outlierField(number, visit, before, injection);
+                if (field != null) {
+                    injection.outlierField = field;
+                    if (problem == null) { // an outlier moved here from an earlier target
+                        movedOutliers.remove(0);
+                        plan.reserve(number, OUTLIER);
+                    }
+                } else if (OUTLIER.equals(problem)) {
+                    movedOutliers.add(number);
                 }
             }
             Submission s = walker.walk(number, visit, history, injection);
             submissions.add(s);
             planned.add(visit);
-            if (injection.outlierRefused) {
-                plan.warn(OUTLIER, "problems: outlier: submission " + number + ": the engine refused "
-                        + FormWalker.OUTLIER_ATTEMPTS + " outlier values for '" + injection.outlierField
-                        + "'; answered as usual");
-            }
 
             if (REINTERVIEW.equals(problem)) {
                 if (originalId.equals(value(s.instanceXml(), idField))) {
@@ -284,7 +285,23 @@ public final class Fieldwork {
                 injected.addAll(durationRecords(s, clean, visit, TOO_FAST));
             }
             injected.addAll(changes(s, visit, injection, SKIP_MODULES));
+            if (!injection.shortened.isEmpty()) {
+                FormWalker.Injection without = injection.with(injection.timeFactor());
+                without.shortenRosters = false;
+                Submission clean = walker.walk(number, visit, copy(before), without);
+                for (String repeat : injection.shortened) {
+                    injected.add(record(s, visit, SKIP_MODULES, repeat, Integer.toString(instances(s, repeat)),
+                            Integer.toString(instances(clean, repeat)), ""));
+                }
+            }
             injected.addAll(changes(s, visit, injection, DONT_KNOW));
+            Consent consent = config.consent().orElse(null);
+            if (injection.refuse && consent != null) {
+                String lastField = consent.fields().get(consent.fields().size() - 1);
+                if (consent.no().equals(value(s.instanceXml(), lastField))) {
+                    injected.add(record(s, visit, FAKE_REFUSAL, lastField, consent.no(), consent.yes(), ""));
+                }
+            }
 
             if (OVERLAP.equals(problem)) {
                 lastEnd[enumerator] = s.end().isAfter(lastEnd[enumerator]) ? s.end() : lastEnd[enumerator];
@@ -308,6 +325,10 @@ public final class Fieldwork {
                     + "' that an earlier submission had received; the offered choices ran out");
         }
         if (plan != null) {
+            for (int from : movedOutliers) {
+                plan.warn(OUTLIER, "problems: outlier: the outlier drawn for submission " + from + " found no question"
+                        + " whose constraint accepts it, there or in a later submission; it was not injected");
+            }
             plan.smallSamples(planned, copies);
             planWarnings.addAll(plan.warnings());
         }
@@ -660,6 +681,7 @@ public final class Fieldwork {
     static final String TOO_FAST = "tooFast";
     static final String SKIP_MODULES = "skipModules";
     static final String DONT_KNOW = "dontKnow";
+    static final String FAKE_REFUSAL = "fakeRefusal";
     private static final List<String> PROBLEMS = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP, TRAVEL,
             OUTLIER);
     /** Where the warnings of faulty enumerators come, between those of travel and of outliers. */
@@ -730,6 +752,12 @@ public final class Fieldwork {
                     faults.add(fault);
                 }
             }
+            if (faults.remove(FAKE_REFUSAL) && config.consent().isEmpty()) {
+                warn(FAULTS, "problems: faults: fakeRefusal needs the form's consent questions (consent in the"
+                        + " configuration); no fakeRefusal was injected");
+            } else if (rates.faults().contains(FAKE_REFUSAL)) {
+                faults.add(FAKE_REFUSAL);
+            }
             if (faults.isEmpty()) {
                 return;
             }
@@ -755,6 +783,11 @@ public final class Fieldwork {
             for (int k = 0; k < faults.size(); k++) {
                 faulty.computeIfAbsent(all.get(k % m), x -> new java.util.LinkedHashSet<>()).add(faults.get(k));
             }
+        }
+
+        /** Makes a submission the target of a problem (an outlier moved to it). */
+        void reserve(int number, String problem) {
+            targets.put(number, problem);
         }
 
         Set<String> faultsOf(int enumerator) {
@@ -851,7 +884,7 @@ public final class Fieldwork {
         return new InjectedProblem(s.number(), key(s), FormWalker.username(visit.enumerator(), config.enumerators()),
                 family(problem), problem, check(problem), field, value, cleanValue, related,
                 !SHORT.equals(problem) && !LONG.equals(problem) && !OUTLIER.equals(problem) && !TOO_FAST.equals(problem)
-                        && !SKIP_MODULES.equals(problem) && !DONT_KNOW.equals(problem));
+                        && !SKIP_MODULES.equals(problem) && !DONT_KNOW.equals(problem) && !FAKE_REFUSAL.equals(problem));
     }
 
     private static String family(String problem) {
@@ -860,7 +893,7 @@ public final class Fieldwork {
             case SHORT, LONG -> "duration";
             case OFFHOURS, OVERLAP -> "schedule";
             case OUTLIER -> "outlier";
-            case TOO_FAST, SKIP_MODULES, DONT_KNOW -> "enumerator";
+            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL -> "enumerator";
             default -> "travel";
         };
     }
@@ -870,7 +903,7 @@ public final class Fieldwork {
             case RESENT, REINTERVIEW -> "ipacheckids";
             case SHORT, LONG, OUTLIER -> "ipacheckoutliers";
             case OFFHOURS -> "ipachecktimeuse";
-            case TOO_FAST, SKIP_MODULES, DONT_KNOW -> "ipacheckenumdb";
+            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL -> "ipacheckenumdb";
             default -> "custom";
         };
     }
@@ -884,6 +917,37 @@ public final class Fieldwork {
             }
         }
         return records;
+    }
+
+    /**
+     * The question that gets the submission's outlier (spec 14, Amendment 2): its eligible questions,
+     * tried in a drawn order, until a walk gives one an outlier value; null when none does.
+     */
+    private String outlierField(int number, Visit visit, FormWalker.IdHistory before, FormWalker.Injection injection) {
+        FormWalker.Injection probe = injection.with(injection.timeFactor());
+        probe.collectEligible = true;
+        walker.walk(number, visit, copy(before), probe);
+        List<String> order = new ArrayList<>(new java.util.LinkedHashSet<>(probe.eligible));
+        SplittableRandom random = new SplittableRandom(FormWalker.seed(config.seed(), number, 26));
+        for (int i = order.size() - 1; i > 0; i--) {
+            Collections.swap(order, i, random.nextInt(i + 1));
+        }
+        for (String field : order) {
+            FormWalker.Injection attempt = injection.with(injection.timeFactor());
+            attempt.outlierField = field;
+            walker.walk(number, visit, copy(before), attempt);
+            for (FormWalker.Change change : attempt.changes) {
+                if (change.problem().equals(OUTLIER)) {
+                    return field;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** The number of instances of a repeat in a submission. */
+    private static int instances(Submission s, String repeat) {
+        return parse(s.instanceXml()).getElementsByTagNameNS("*", repeat).getLength();
     }
 
     private static FormWalker.IdHistory copy(FormWalker.IdHistory history) {

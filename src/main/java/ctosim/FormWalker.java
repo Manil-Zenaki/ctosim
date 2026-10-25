@@ -73,6 +73,8 @@ public final class FormWalker {
     private final Set<String> countQuestions;
     /** The modules of the form (spec 14, Amendment 1). */
     private final List<Module> modules;
+    /** The select_one questions of a repeat that its count depends on, by generic path (spec 14, Amendment 2). */
+    private final Map<String, Extender> extenders;
     /** Generic path of each field name of the form (its first occurrence), for ${name} in expressions. */
     private final Map<String, String> paths = new HashMap<>();
 
@@ -85,6 +87,7 @@ public final class FormWalker {
         List<Module> found = new ArrayList<>();
         modules(form.newEntryController().getModel().getForm(), found);
         this.modules = List.copyOf(found);
+        this.extenders = extenders(form);
 
         Set<String> names = new HashSet<>();
         collectNames(form.newEntryController().getModel().getForm().getMainInstance().getRoot(), names);
@@ -112,6 +115,12 @@ public final class FormWalker {
             }
         }
         warnings.sort(null);
+        for (String field : config.consent().map(Consent::fields).orElse(List.of())) {
+            if (!names.contains(field)) { // spec 07, Amendment 11
+                warnings.add("configuration: consent field '" + field + "' does not name any element of form '"
+                        + form.formId() + "'");
+            }
+        }
         this.configWarnings = List.copyOf(warnings);
     }
 
@@ -175,8 +184,14 @@ public final class FormWalker {
         final List<String> eligible = new ArrayList<>();
         /** What faults and the outlier changed, in walk order. */
         final List<Change> changes = new ArrayList<>();
-        /** Set when the engine refused every outlier value. */
+        /** Set when the outlier question got no value of its interval that the engine accepts. */
         boolean outlierRefused;
+        /** The respondent refuses although they would consent (fakeRefusal). */
+        boolean refuse;
+        /** Shortens rosters built by "add another" questions (skipModules); off for their clean walk. */
+        boolean shortenRosters = true;
+        /** The repeats whose roster this walk shortened. */
+        final Set<String> shortened = new java.util.LinkedHashSet<>();
 
         Injection(double timeFactor, boolean keepLocations, Map<String, String> answers) {
             this.timeFactor = timeFactor;
@@ -203,6 +218,8 @@ public final class FormWalker {
             copy.skipModules = skipModules;
             copy.dontKnow = dontKnow;
             copy.outlierField = outlierField;
+            copy.refuse = refuse;
+            copy.shortenRosters = shortenRosters;
             return copy;
         }
     }
@@ -212,6 +229,15 @@ public final class FormWalker {
 
     /** A group or repeat holding at least three questions (spec 14, Amendment 1). */
     private record Module(TreeReference ref, boolean repeat) { }
+
+    /** A repeat whose number of instances a question inside it extends, and the node of that number. */
+    private record Extender(String repeat, TreeReference count) { }
+
+    /** Whether the respondent of a submission consents (spec 07, Amendment 11); true without consent questions. */
+    static boolean consents(SimulationConfig config, int number) {
+        return config.consent().map(c -> new SplittableRandom(seed(config.seed(), number, 27)).nextDouble() < c.rate())
+                .orElse(true);
+    }
 
     /**
      * An upper question of the id's cascade: the question below it, whose search() call
@@ -306,6 +332,78 @@ public final class FormWalker {
         names.add(element.getName());
         for (int i = 0; i < element.getNumChildren(); i++) {
             collectNames(element.getChildAt(i), names);
+        }
+    }
+
+    /**
+     * The select_one questions inside a counted repeat whose count depends on them, through
+     * calculations (spec 14, Amendment 2).
+     */
+    private static Map<String, Extender> extenders(LoadedForm form) {
+        FormDef def = form.newEntryController().getModel().getForm();
+        Map<String, String> calculations = form.calculations();
+        Map<String, Integer> questions = new HashMap<>();
+        scanForm(def, questions, new ArrayDeque<>());
+        List<GroupDef> repeats = new ArrayList<>();
+        countedRepeats(def, repeats);
+        Map<String, Extender> result = new HashMap<>();
+        for (GroupDef repeat : repeats) {
+            TreeReference repeatRef = ((TreeReference) repeat.getBind().getReference()).genericize();
+            String prefix = repeatRef.toString(false) + "/";
+            TreeReference count = (TreeReference) repeat.getCountReference().getReference();
+            try {
+                count = count.isAbsolute() ? count : count.anchor(repeatRef);
+            } catch (RuntimeException e) {
+                continue;
+            }
+            Deque<TreeReference> pending = new ArrayDeque<>(List.of(count));
+            Set<String> seen = new HashSet<>();
+            while (!pending.isEmpty()) {
+                TreeReference ref = pending.pop().genericize();
+                String path = ref.toString(false);
+                if (!seen.add(path)) {
+                    continue;
+                }
+                Integer control = questions.get(path);
+                if (control != null) {
+                    if (control == Constants.CONTROL_SELECT_ONE && path.startsWith(prefix)) {
+                        result.put(path, new Extender(repeatRef.getNameLast(), count.genericize()));
+                    }
+                    continue;
+                }
+                String expression = calculations.get(path);
+                if (expression == null) {
+                    continue;
+                }
+                List<TreeReference> mentioned = new ArrayList<>();
+                try {
+                    collectReferences(XPathParseTool.parseXPath(expression), mentioned, false);
+                } catch (XPathSyntaxException e) {
+                    continue;
+                }
+                for (TreeReference mention : mentioned) {
+                    try {
+                        TreeReference absolute = mention.isAbsolute() ? mention : mention.anchor(ref);
+                        if (absolute != null && absolute.getInstanceName() == null) {
+                            pending.push(absolute);
+                        }
+                    } catch (RuntimeException e) {
+                        // a reference the engine cannot place
+                    }
+                }
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static void countedRepeats(IFormElement element, List<GroupDef> out) {
+        if (element instanceof GroupDef g && g.getRepeat() && g.getCountReference() != null && g.getBind() != null) {
+            out.add(g);
+        }
+        if (element.getChildren() != null) {
+            for (IFormElement child : element.getChildren()) {
+                countedRepeats(child, out);
+            }
         }
     }
 
@@ -522,6 +620,10 @@ public final class FormWalker {
     /** Mixes the configuration seed, the submission number and a stream id into one seed. */
     static final double SKIP_PROBABILITY = 0.5;
     static final double DONT_KNOW_PROBABILITY = 0.25;
+    /** How often skipModules declares fewer repeat instances (spec 14, Amendment 2). */
+    static final double ROSTER_PROBABILITY = 0.25;
+    /** Values of an outlier interval tried when random draws are refused. */
+    private static final int OUTLIER_GRID = 200;
     static final int OUTLIER_ATTEMPTS = 20;
     /** The standard normal quantile of 0.75. */
     private static final double QUARTILE_Z = 0.6744897501960817;
@@ -713,6 +815,10 @@ public final class FormWalker {
             if (prompt.isReadOnly()) {
                 return;
             }
+            Consent consent = config.consent().orElse(null);
+            if (consent != null && consent.fields().contains(name) && giveConsent(prompt, ref, name, path, consent)) {
+                return;
+            }
             String given = injection.answers().get(name);
             if (given != null && give(prompt, ref, name, path, given)) {
                 return;
@@ -792,6 +898,19 @@ public final class FormWalker {
                 return true;
             }
             warn("field '" + name + "' (" + path + "): the survey id '" + visit.id()
+                    + "' is not accepted by this question; answered as usual");
+            return false;
+        }
+
+        /** Answers a consent question (spec 07, Amendment 11); false, with a warning, when it is not accepted. */
+        private boolean giveConsent(FormEntryPrompt prompt, TreeReference ref, String name, String path, Consent consent) {
+            boolean refusing = !consents(config, number) || injection.refuse;
+            String last = consent.fields().get(consent.fields().size() - 1);
+            String value = refusing && name.equals(last) ? consent.no() : consent.yes();
+            if (answerWith(prompt, ref, name, path, value)) {
+                return true;
+            }
+            warn("field '" + name + "' (" + path + "): the consent value '" + value
                     + "' is not accepted by this question; answered as usual");
             return false;
         }
@@ -1372,7 +1491,7 @@ public final class FormWalker {
                 return count;
             }
             SplittableRandom random = new SplittableRandom(seed(config.seed(), number, 30 + adjusted++));
-            if (random.nextDouble() >= SKIP_PROBABILITY || count <= 1) {
+            if (random.nextDouble() >= ROSTER_PROBABILITY || count <= 1) {
                 return count;
             }
             int fewer = 1 + random.nextInt(count - 1);
@@ -1396,7 +1515,7 @@ public final class FormWalker {
             boolean count = countQuestions.contains(ref.genericize().toString(false));
             boolean numeric = kind == QuestionKind.INTEGER || kind == QuestionKind.DECIMAL;
             if (numeric && !count && firstInstance(ref)) {
-                if (injection.collectEligible && outlierInterval(name, kind, question) != null) {
+                if (injection.collectEligible && accepted(prompt, kind, loaded, name, question, a) != null) {
                     injection.eligible.add(name);
                 }
                 if (name.equals(injection.outlierField) && !outlierDone) {
@@ -1407,6 +1526,11 @@ public final class FormWalker {
                 }
             }
             if (injection.skipModules && count && shorten(prompt, kind, loaded, name, question, a, random)) {
+                return;
+            }
+            Extender extender = kind == QuestionKind.SELECT_ONE ? extenders.get(ref.genericize().toString(false)) : null;
+            if (injection.skipModules && injection.shortenRosters && extender != null
+                    && stopRoster(prompt, ref, kind, loaded, name, question, a, random, extender)) {
                 return;
             }
             if (injection.skipModules && kind == QuestionKind.SELECT_ONE
@@ -1421,6 +1545,7 @@ public final class FormWalker {
         /** The survey id, the upper questions of its cascade and answers given by a reinterview. */
         private boolean leftAlone(String name) {
             return config.id().isPresent() && config.id().get().equals(name)
+                    || config.consent().isPresent() && config.consent().get().fields().contains(name)
                     || history != null && history.uppers.containsKey(name)
                     || injection.answers().containsKey(name);
         }
@@ -1454,31 +1579,53 @@ public final class FormWalker {
             return data != null && session.answerQuestion(data, true) == FormEntryController.ANSWER_OK;
         }
 
-        /** Gives an outlier value; false, with the usual answer back, when the engine refuses 20 draws. */
+        /** Gives an outlier value the engine accepts; false, with the usual answer back, when there is none. */
         private boolean outlier(FormEntryPrompt prompt, QuestionKind kind, List<String> loaded, String name,
                                 Question question, String a) {
-            double[] interval = outlierInterval(name, kind, question);
-            if (interval == null) {
-                return false;
-            }
-            SplittableRandom random = new SplittableRandom(seed(config.seed(), number, 24));
-            for (int attempt = 0; attempt < OUTLIER_ATTEMPTS; attempt++) {
-                String value;
-                if (kind == QuestionKind.INTEGER) {
-                    long lo = (long) interval[0];
-                    long hi = (long) interval[1];
-                    value = Long.toString(lo + random.nextLong(hi - lo + 1));
-                } else {
-                    value = AnswerGenerator.formatDecimal(interval[0] + random.nextDouble() * (interval[1] - interval[0]));
-                }
-                if (answer(prompt, kind, loaded, value)) {
-                    injection.changes.add(new Change("outlier", name, stored(), a));
-                    return true;
-                }
+            String value = accepted(prompt, kind, loaded, name, question, a);
+            if (value != null && answer(prompt, kind, loaded, value)) {
+                injection.changes.add(new Change("outlier", name, stored(), a));
+                return true;
             }
             answer(prompt, kind, loaded, a);
             injection.outlierRefused = true;
             return false;
+        }
+
+        /**
+         * A value of the question's outlier interval that the engine accepts now, drawn from the seed and
+         * the submission number; null when it accepts none. The usual answer {@code a} is given back.
+         */
+        private String accepted(FormEntryPrompt prompt, QuestionKind kind, List<String> loaded, String name,
+                                Question question, String a) {
+            double[] interval = outlierInterval(name, kind, question);
+            if (interval == null) {
+                return null;
+            }
+            SplittableRandom random = new SplittableRandom(seed(config.seed(), number, 24));
+            String found = null;
+            for (int attempt = 0; attempt < OUTLIER_ATTEMPTS && found == null; attempt++) {
+                String value = outlierValue(kind, interval[0] + random.nextDouble() * (interval[1] - interval[0]));
+                if (answer(prompt, kind, loaded, value)) {
+                    found = value;
+                }
+            }
+            if (found == null) { // a constraint that depends on other answers: look over the whole interval
+                List<String> accepted = new ArrayList<>();
+                for (int k = 0; k <= OUTLIER_GRID; k++) {
+                    String value = outlierValue(kind, interval[0] + k * (interval[1] - interval[0]) / OUTLIER_GRID);
+                    if (!accepted.contains(value) && answer(prompt, kind, loaded, value)) {
+                        accepted.add(value);
+                    }
+                }
+                found = accepted.isEmpty() ? null : accepted.get(random.nextInt(accepted.size()));
+            }
+            answer(prompt, kind, loaded, a);
+            return found;
+        }
+
+        private static String outlierValue(QuestionKind kind, double x) {
+            return kind == QuestionKind.INTEGER ? Long.toString(Math.round(x)) : AnswerGenerator.formatDecimal(x);
         }
 
         /**
@@ -1541,7 +1688,7 @@ public final class FormWalker {
         /** A faulty enumerator declares fewer instances in a count question (skipModules). */
         private boolean shorten(FormEntryPrompt prompt, QuestionKind kind, List<String> loaded, String name,
                                 Question question, String a, SplittableRandom random) {
-            if (random.nextDouble() >= SKIP_PROBABILITY) {
+            if (random.nextDouble() >= ROSTER_PROBABILITY) {
                 return false;
             }
             long count;
@@ -1621,6 +1768,75 @@ public final class FormWalker {
             }
             answer(prompt, kind, loaded, a);
             return false;
+        }
+
+        /**
+         * A faulty enumerator answers an "add another" question so that the roster stops growing (spec 14,
+         * Amendment 2); true when the answer was replaced.
+         */
+        private boolean stopRoster(FormEntryPrompt prompt, TreeReference ref, QuestionKind kind, List<String> loaded,
+                                   String name, Question question, String a, SplittableRandom random, Extender extender) {
+            double u = random.nextDouble();
+            List<String> offered = new ArrayList<>(new java.util.LinkedHashSet<>(question.choices()));
+            offered.remove("");
+            FormDef def = session.getModel().getForm();
+            IAnswerData original = def.getMainInstance().resolveReference(ref).getValue();
+            Map<String, Double> counts = new LinkedHashMap<>();
+            for (String c : offered) {
+                IAnswerData data = loaded == null ? convert(prompt, c) : convertLoaded(kind, c, loaded);
+                if (data == null) {
+                    continue;
+                }
+                def.setValue(data, ref, true);
+                Double n = number(def, extender.count().contextualize(ref));
+                if (n != null) {
+                    counts.put(c, n);
+                }
+            }
+            def.setValue(original, ref, true);
+            if (!counts.containsKey(a) || u >= ROSTER_PROBABILITY) {
+                return false;
+            }
+            double fewest = Double.POSITIVE_INFINITY;
+            for (Map.Entry<String, Double> e : counts.entrySet()) {
+                if (!config.specialValues().contains(e.getKey())) {
+                    fewest = Math.min(fewest, e.getValue());
+                }
+            }
+            if (!(counts.get(a) > fewest)) {
+                return false;
+            }
+            List<String> stopping = new ArrayList<>();
+            for (Map.Entry<String, Double> e : counts.entrySet()) {
+                if (!config.specialValues().contains(e.getKey()) && e.getValue() == fewest) {
+                    stopping.add(e.getKey());
+                }
+            }
+            if (answer(prompt, kind, loaded, stopping.get(random.nextInt(stopping.size())))) {
+                injection.shortened.add(extender.repeat());
+                return true;
+            }
+            answer(prompt, kind, loaded, a);
+            return false;
+        }
+
+        /** The number held by a node now, or null. */
+        private static Double number(FormDef def, TreeReference at) {
+            for (int i = 0; i < at.size(); i++) {
+                if (at.getMultiplicity(i) == TreeReference.INDEX_UNBOUND) {
+                    at.setMultiplicity(i, 0);
+                }
+            }
+            TreeElement element = def.getMainInstance().resolveReference(at);
+            IAnswerData value = element == null ? null : element.getValue();
+            if (value == null) {
+                return null;
+            }
+            try {
+                return Double.parseDouble(value.uncast().getString().strip());
+            } catch (NumberFormatException e) {
+                return null;
+            }
         }
 
         /** The indices of the modules that are relevant now, in the context of {@code ref}. */

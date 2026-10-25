@@ -40,7 +40,7 @@ final class ConfigParser {
 
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
             "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
-            "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay", "problems");
+            "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay", "problems", "consent");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
             "distribution", "expr", "area", "when");
@@ -121,7 +121,49 @@ final class ConfigParser {
         return new SimulationConfig(seed, submissions, start, days, missing, special, specialValues,
                 repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations,
                 profiles, area, pools, id, interviewsPerDay,
-                root.has("problems") ? problems(root.get("problems")) : null);
+                root.has("problems") ? problems(root.get("problems")) : null,
+                root.has("consent") ? consent(root.get("consent")) : null);
+    }
+
+    /** The form's consent questions (spec 04, Amendment 8). */
+    private Consent consent(JsonNode node) throws ConfigException {
+        JsonNode consent = object(node, "consent");
+        checkKeys(consent, "consent", Set.of("fields", "rate", "yes", "no"));
+        if (!consent.has("fields")) {
+            throw error("consent", "needs \"fields\", the consent questions");
+        }
+        JsonNode list = consent.get("fields");
+        if (!list.isArray() || list.size() == 0) {
+            throw error("consent.fields", "must be a non-empty array of question names");
+        }
+        List<String> fields = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            String path = "consent.fields[" + i + "]";
+            String name = string(list.get(i), path);
+            if (name.isEmpty()) {
+                throw error(path, "must not be empty");
+            }
+            if (EDGE_SPACE.matcher(name).find()) {
+                throw error(path, "must not start or end with white space: \"" + name + "\"");
+            }
+            if (fields.contains(name)) {
+                throw error(path, "names the field '" + name + "' twice");
+            }
+            fields.add(name);
+        }
+        double rate = consent.has("rate") ? rate(consent.get("rate"), "consent.rate") : Consent.DEFAULT_RATE;
+        String yes = consent.has("yes") ? string(consent.get("yes"), "consent.yes") : Consent.DEFAULT_YES;
+        String no = consent.has("no") ? string(consent.get("no"), "consent.no") : Consent.DEFAULT_NO;
+        if (yes.isEmpty()) {
+            throw error("consent.yes", "must not be empty");
+        }
+        if (no.isEmpty()) {
+            throw error("consent.no", "must not be empty");
+        }
+        if (yes.equals(no)) {
+            throw error("consent", "the consenting and refusing values must differ, not both '" + yes + "'");
+        }
+        return new Consent(fields, rate, yes, no);
     }
 
     /** The rates of injected problems (spec 04, Amendment 6); absent keys take their defaults. */
