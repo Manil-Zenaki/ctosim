@@ -248,6 +248,35 @@ flag other submissions (`statistical`). A problem that cannot be placed
 (an interview too short to overlap, an area too small for a trip) is not
 injected, and a warning says so.
 
+Problems in the answers (spec 14, Amendments 1 and 2): `outliers` (0.02
+by default) gives one number of a submission a value far beyond the
+fences `ipacheckoutliers` uses, yet accepted by the form's constraint at
+that moment (a constraint that depends on other answers included; the
+outlier moves to another question or a later submission when there is no
+room). `faults` lists the faults of **faulty enumerators**, all four by
+default: `tooFast` (time per question x0.4, three times the speed
+violations), `skipModules` (answers filter questions so that the modules
+they open stay closed, half the time; declares fewer repeat instances, a
+quarter of the time, also for rosters built by "add another" questions),
+`dontKnow` (a "don't know / refused" code of `specialValues` where the
+form accepts one, a quarter of the time) and `fakeRefusal` (refusals
+declared to avoid interviews: about twice the others'). A faulty
+enumerator applies its faults to all its interviews; one enumerator per
+fault while at least half of them stay clean, otherwise faults are
+cumulated and a warning says so.
+
+Consent (spec 07, Amendment 11) is simulated per interview only when the
+configuration names the consent questions, in the order the form asks
+them; the simulator never guesses them from names:
+
+```json
+"consent": {"fields": ["c_consent_qs_ans", "c_consent_understand", "c_consent"],
+            "rate": 0.9, "yes": "1", "no": "0"}
+```
+
+A refusing respondent answers "yes" to every consent question but the
+last, which gets "no". `fakeRefusal` needs this setting.
+
 #### Constraints
 
 Generated answers always satisfy their question's constraint when the

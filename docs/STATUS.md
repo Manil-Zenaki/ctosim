@@ -1,6 +1,6 @@
 # Project status and hand-over notes
 
-Last updated: 2026-10-23 (evening). Read `CLAUDE.md`, `docs/WORKFLOW.md` and
+Last updated: 2026-10-25. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
 `docs/ARCHITECTURE.md` first; this file records where the work stands and
 what was learnt along the way.
 
@@ -21,7 +21,7 @@ what was learnt along the way.
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 | 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17: `--fake-attachments`, Stata `fakepreload`; disputes adjudicated |
 | 13 | Fieldwork plan (`Fieldwork`) | done 2026-10-23: Amendments 1-3 (quota, cascade ids, steering); CLI `--id`, Stata `id()` |
-| 14 | Injected problems (`AnswerKey`) | phase 2a, 2026-10-23: duplicates, durations, off hours, overlaps, travel; CLI `--problems`, Stata `problems`; disputes 14/1 and 11/7 accepted |
+| 14 | Injected problems (`AnswerKey`) | phase 2a 2026-10-23 (duplicates, durations, off hours, overlaps, travel; CLI `--problems`, Stata `problems`); phase 2b 2026-10-25 (Amendments 1-2: faulty enumerators, outliers within constraints, consent and fake refusals) |
 
 Suite (2026-10-18): 1083 Python, 7919 Java and 66 Stata tests, all green.
 
@@ -194,6 +194,29 @@ numbers; outliers within constraints, detected automatically). Later
 problem types agreed with the owner: a form left open (long and
 overlapping) and a wrong survey id (typo); located villages from a
 preloaded file for travel.
+
+2026-10-24/25, phase 2b (problems in the answers), designed with the
+owner: spec 14 Amendments 1 and 2, spec 04 Amendments 7 and 8, spec 07
+Amendment 11, spec 11 Amendments 9 and 10. Faults are carried by
+enumerators (`tooFast`, `skipModules`, `dontKnow`, `fakeRefusal`), one per
+fault while at least half the enumerators stay clean; outliers are
+placed where the engine's constraint accepts them; consent is simulated
+per interview only for the questions the configuration names (owner: the
+simulator must not guess them), 90 % by default; rounding of numbers was
+dropped (owner: round amounts are normal). Disputes 04/1, 10/7,
+11/8 and 14/2-4 accepted (superseded tests; a roster fixture whose positional
+count JavaRosa never recomputes; 11 ids for 12 submissions). Java 10767
+tests and Stata 109 tests, all green. End-to-end check on the IPA household form (20
+enumerators, 400 submissions, consent questions named): the too-fast
+enumerator's median duration 31 min against about 78, the "don't know"
+enumerator 10 % codes against 2 %, outliers 8 of 8 placed (one an age of
+196, which the form's constraint allows for the first member), the fake
+refusals 70 % consent against 75-100 % (weak with 20 interviews each, as
+the owner's mild dosage implies), rosters 1.25 persons against 1.4-2.6.
+Without consent weights, the IPA form's three consent questions give 11 %
+consent, hence its bimodal durations seen in phase 2a. **Next**: owner's
+choice; agreed later problem types: a form left open (long and
+overlapping), a wrong survey id, located villages for travel.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
