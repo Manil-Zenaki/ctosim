@@ -277,6 +277,15 @@ them; the simulator never guesses them from names:
 A refusing respondent answers "yes" to every consent question but the
 last, which gets "no". `fakeRefusal` needs this setting.
 
+`leftOpen` (0.02 by default; spec 14 Amendment 3) interrupts a form: the
+enumerator does its next interview during the pause and finishes the
+form afterwards (the next morning when the pause comes late in the day,
+or when no interview follows). The walker keeps screen time apart from
+the clock (spec 07 Amendment 12): `duration()` is the time on the
+screen, while `starttime`/`endtime` follow the clock, so a form left open
+has an interval from start to end far longer than its duration, and
+contains the other interview.
+
 #### Constraints
 
 Generated answers always satisfy their question's constraint when the
