@@ -502,3 +502,31 @@ The schedule test deliberately omits id from both the command and configuration,
 **Assumption:** Amendment 9 requires the two exact key spellings in help that discusses configuration; it does not prescribe an additional JSON example, table, defaults, or full key paths. Tests require the visible words `outliers` and `faults` plus configuration/JSON/settings context and nearby descriptions of their roles: an outlier rate and a selection/list of enumerator faults, as specified by the expressly referenced spec 14 Amendment 1. This avoids treating unexplained names alone as documentation. The other areas check the associated concepts. The new source-only Java oracle follows the existing help-test `javacall` pattern and is compiled for Java 8 by a new `build-*.ps1` script discovered by the unchanged runner. Build products and diagnostics are under `.codex-runs/stata-support/`; the prescribed runner itself writes logs under `target/stata-tests/`. Any `findfile` or oracle error propagates from the do-file. No existing tests, helpers, fixtures, production code, or build configuration are rewritten.
 
 **Tests:** `test_faulty_enumerators_help_configuration.do`, `build-faulty-enumerators-help-fixtures.ps1`, and the common new help checker.
+
+## Amendment 10: consent and fake refusals in the help
+
+### J1. Free-form documentation and lexical coverage
+
+**Question:** How should tests check the amendment's prose without prescribing wording, headings, or SMCL layout?
+
+**Assumption:** As in previous help amendments, use lexical smoke checks of visible English prose with alternative wording and nearby related concepts. The checker strips SMCL comments and directives, preserves nested visible text, and normalizes whitespace and typographic punctuation. Configuration/fault/check identifiers retain their documented case; prose is case-insensitive. No heading, exact sentence, JSON example, or particular markup is required. These checks do not prove prose semantics: equivalent wording or unusually separated explanations may require adapting the checker. Independent synthetic positives, clause omissions, empty/comment-only documents, and incorrect descriptions validate the oracle without reading production help to derive expectations.
+
+**Tests:** All seven new `test_consent_help_*.do` files; `fixtures/ConsentHelpChecks.java`.
+
+### J2. Depth of the referenced configuration and injection specifications
+
+**Question:** Does referencing spec 04 Amendment 8 and spec 14 Amendment 2 require documenting every nested key, validation rule, formula, probability, warning, and injection algorithm in the Stata help?
+
+**Assumption:** Require the topics expressly enumerated in spec 11 Amendment 10: the exact `consent` configuration key, user-named consent questions, the consent rate with a 90 percent (or 0.9) default, per-interview consent simulation only with named questions, the exact `fakeRefusal` fault name and refusals to avoid interviews, approximately twice the other enumerators' refusals, detection through `ipacheckenumdb`'s consent rate, shortening add-another rosters, and outliers accepted by constraints even when those depend on other answers. No new JSON example, `fields`/`rate`/`yes`/`no` table, probability formula, 80 percent example, roster probability, answer-key format, or placement algorithm is required. The doubling is documented as approximate/on average, rather than an exact finite-sample guarantee. The command is expressly unchanged, so no runtime, statistical, or configuration-validation tests are added in this run.
+
+**Tests:** `test_consent_help_configuration.do`, `test_consent_help_rate.do`, `test_consent_help_activation.do`, `test_consent_help_fake_refusals.do`, `test_consent_help_detection.do`, `test_consent_help_rosters.do`, `test_consent_help_outliers.do`.
+
+### J3. Test infrastructure and failure propagation
+
+**Question:** Can the existing help-test infrastructure pattern be used without rewriting any committed tests or helpers?
+
+**Assumption:** Add a separate Java 8-compatible help oracle, a new build script discovered by the existing runner, and a new Stata helper. Each test finds `ctosim.sthlp` on the ado-path, calls the oracle via `javacall`, and rethrows its nonzero result after showing a diagnostic. Missing help or Java failures also stop the do-file. The source-only fixture is under `src/test/stata/fixtures`; generated classes, jar, and diagnostics use `.codex-runs/stata-support/`. The prescribed unchanged runner writes its own logs under `target/stata-tests/`. Production code and help were not opened or searched to derive expectations. Existing tests, helpers, fixtures and build configuration remain unchanged.
+
+**Tests:** `consent-help-check.do`, `build-consent-help-fixtures.ps1`, `fixtures/ConsentHelpChecks.java`, and all seven new test do-files.
+
+**Validation (2026-10-25):** Ran `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`: Stata started successfully; 109 tests ran, with 18 failures (6 new Amendment 10 help checks and 12 existing tests). The new configuration check passed. The six new failures are content assertions for per-interview consent, the consent rate, fake-refusal naming/meaning, its connection to `ipacheckenumdb`, add-another rosters, and dependent constraints; they are not compilation or launch failures. The Java oracle compiles for Java 8 and passes its synthetic wording/SMCL checks, 17 clause omissions, and semantic counterexamples. After broadening accepted activation wording, the final code was rebuilt and all seven new do-files were rechecked in fresh Stata working directories under `.codex-runs/stata-consent-recheck-20261025-095248/`, with the same 1 pass / 6 failures. Existing tests were not changed.
