@@ -363,3 +363,68 @@ counts, header-only keys and records the tests expect no longer hold.
 
 **Requested change:** make `only(name, rate)` also set `"leftOpen": 0`
 (unless the test means to inject it), keeping every assertion.
+
+## Adjudication of Dispute 8 (2026-10-25)
+
+Accept the fixture correction for all disputed cases; keep every assertion.
+Spec 04 Amendment 9 explicitly gives a JSON `problems` object without
+`leftOpen` the rate 0.02. Its compatibility constructors give 0, but these
+tests build JSON, so that exception does not apply. Spec 14 Amendment 3
+injects the new problem and produces answer-key records. Spec 10 Amendment
+5 still reports all problems from the fieldwork plan and counts distinct
+affected submissions. The omitted key therefore invalidated the fixtures'
+premise that only the named problems were enabled.
+
+Changed `CliAmendment5Support.only(name, rate)` to put `leftOpen: 0` before
+applying the named rate. This disables the new default while still allowing
+an explicit `only("leftOpen", rate)` call to request it.
+
+- `allZeroRatesStillWriteHeaderAndZeroSummariesEvenWithFlag` (both cases):
+  keep the header-only key, zero summaries, clean-export comparison and
+  file-list check. The fixture now explicitly disables every problem,
+  matching Amendment 5's all-zero rule even when the flag is present.
+- `effectiveSeedCountAndIdReachTheProblemPlanAndAllExports` (both cases):
+  keep the effective-option, public-plan, export, count and household-field
+  assertions. The fixture requests only reinterviews; an implicit
+  `leftOpen` problem would produce records for a different field.
+- `rerunReplacesExistingKeyThenZeroRatesTruncateItToHeader`: keep key
+  replacement and truncation, zero summaries and preservation of the
+  unrelated file. The second run now actually requests zero problems.
+- `enabledButIneligibleProblemsWriteHeaderAndReportActualZeroWithWarnings`:
+  keep the header-only key, zero count and warning checks. The single
+  submission cannot provide a resent pair; no additional eligible problem
+  should be enabled by this fixture.
+- `fallbackWarningsAreRetainedAfterSubmissionWarningsAndDoNotCountAsInjectedProblems`:
+  keep the empty key, zero summaries and exact warning-order comparisons.
+  The fixture enables only reinterview and travel and lacks their
+  prerequisites. An unrelated `leftOpen` target would defeat that premise.
+- `summaryCountsDistinctAffectedSubmissionsRatherThanDurationRecords`
+  (all three cases): keep the two duration records per affected submission,
+  distinct-submission count, record order, summaries and file-list checks.
+  The fixture now isolates short-duration problems as intended.
+
+Other helper callers also isolate named problems and receive the same
+correction. Default-activation tests using an empty or partial JSON object,
+or the flag without a `problems` setting, remain unchanged and continue to
+exercise the current defaults. Earlier adjudications remain unchanged;
+no new contract assumptions are needed.
+
+### Validation
+
+- `mvnw.cmd -o -q test` stopped during test compilation. An `-e` retry
+  confirmed `java.nio.file.AccessDeniedException` for the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs:
+  `.codex-runs/cli-dispute8-maven.log` and
+  `.codex-runs/cli-dispute8-maven-detail.log`.
+- The existing diagnostic compiler compiled all 26 CLI/support sources
+  with `--release 17` against cached binary dependencies. Log:
+  `.codex-runs/cli-dispute8-compile.log`.
+- The existing diagnostic JUnit launcher ran all three Amendment 5 test
+  classes: 50 tests passed, none failed, skipped or aborted, and no
+  container failures. This includes every disputed case and the unchanged
+  default-activation tests. Log: `.codex-runs/cli-dispute8-junit.log`.
+- `git diff --check` passed. Diagnostic compilation and execution are
+  supplementary validation, not a successful Maven build or full-suite run.
+
+No production source was read or modified, no dependencies or build
+configuration were changed, and no commit was made.

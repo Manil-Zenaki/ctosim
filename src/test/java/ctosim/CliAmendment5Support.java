@@ -39,6 +39,8 @@ final class CliAmendment5Support {
         // Spec 04 Amendment 7 defaults omitted keys to outliers and enumerator faults.
         rates.put("outliers", 0);
         rates.putArray("faults");
+        // Spec 04 Amendment 9 defaults an omitted leftOpen rate to 0.02.
+        rates.put("leftOpen", 0);
         if (name != null) rates.put(name, rate);
         return rates;
     }

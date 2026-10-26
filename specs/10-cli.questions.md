@@ -882,3 +882,19 @@ These are supplementary checks, not a successful Maven build. Logs:
 `.codex-runs/cli-dispute7-maven-detail.log`,
 `.codex-runs/cli-dispute7-compile.log`, and
 `.codex-runs/cli-dispute7-junit.log`.
+
+## Dispute 8 validation (2026-10-25)
+
+No new contract questions arose. The `only(name, rate)` helper now sets
+`leftOpen` to 0 to isolate the requested problems under spec 04 Amendment 9.
+
+`mvnw.cmd -o -q test` could not complete test compilation; an `-e` retry
+confirmed `AccessDeniedException` for the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The existing
+diagnostic compiler successfully compiled all 26 CLI/support sources,
+and the diagnostic JUnit launcher ran all 50 Amendment 5 tests successfully.
+These are supplementary checks, not a successful Maven build. Logs:
+`.codex-runs/cli-dispute8-maven.log`,
+`.codex-runs/cli-dispute8-maven-detail.log`,
+`.codex-runs/cli-dispute8-compile.log`, and
+`.codex-runs/cli-dispute8-junit.log`.
