@@ -223,12 +223,11 @@ skipped: the form stays open overnight when the pause comes late, and is
 finished the next morning when no interview follows), with `duration()`
 as screen time (spec 07 Amendment 12, spec 14 Amendment 3, spec 04
 Amendment 9, spec 11 Amendment 11). The wrong-survey-id problem was
-dropped (owner). Java 11138 tests; the 8 CLI tests of dispute 10/8 and
-the 2 Stata tests of dispute 11/9 (configurations without `leftOpen`)
-wait for Codex. IPA check: the 8 forms left open are exactly those whose
+dropped (owner). Disputes 10/8 and 11/9 (configurations without
+`leftOpen`) accepted; Java 11138 and Stata 116 tests, all green. IPA check: the 8 forms left open are exactly those whose
 `endtime - starttime` exceeds `duration` by more than ten minutes, and
-every overlap of different ids is explained by the key. **Next**: the
-two disputes, republish; then located villages (owner to say how the
+every overlap of different ids is explained by the key. **Next**:
+located villages (owner to say how the
 teams' preload files hold coordinates).
 
 Still not observed: speed-violation fields when no violation occurred,
