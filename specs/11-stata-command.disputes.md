@@ -759,3 +759,120 @@ inject forms left open where the tests expect none.
 
 **Requested change:** add `"leftOpen": 0` to both fixtures' `problems`
 objects, keeping every assertion.
+
+## Adjudication (2026-10-25, Dispute 9 review)
+
+### Dispute 1 - prior correction retained
+
+The default output directory follows the form basename, and an existing
+report requires error 602 without `replace`. `test_options_paths.do` already
+uses distinct numeric suffixes rather than relying on case-sensitive paths.
+Keep it unchanged.
+
+### Dispute 2 - prior correction retained
+
+Amendment 1 replaces unconditional use of Stata's Java with ordered selection
+of an eligible Java 17 or newer. `test_runtime_selection.do` already omits
+the obsolete assertion and keeps its configured-Python checks. Keep it.
+
+### Dispute 3 (compiled support jars) - prior correction retained
+
+The spec requires runnable batch tests, not versioned compiled fixtures.
+The runner builds both support jars from source under
+`.codex-runs/stata-support/`; neither is present in the fixture directory.
+No further change is needed.
+
+### Dispute 3 (prompt-prefixed assert example) - prior correction retained
+
+Amendment 3 requires an answer-constraint assertion without forbidding a
+displayed Stata prompt. The matcher already accepts the optional prompt and
+retains the answer-predicate check. Keep it unchanged.
+
+### Dispute 4 - prior correction retained
+
+The fixture explicitly encodes stdout and stderr as UTF-8, matching the
+referenced simulator contract. Its Unicode display, strict-decoding and
+template-failure assertions remain valid. Keep them unchanged.
+
+### Dispute 5 - prior correction retained
+
+The spec promises results when `ctosim` returns, not after a caller command
+replaces `r()`. All five disputed sites already check results before closing
+their logs. Keep the result checks and log checks unchanged.
+
+### Dispute 6 - prior correction retained
+
+Step 4 requires Stata's default import naming. The schedule test already
+uses `gpslatitude` and `gpslongitude` and retains its timing and distance
+checks. Keep it unchanged.
+
+### Dispute 7 - prior correction retained
+
+Amendment 8 places the problem summary after the warnings, and confirmed H2
+leaves the displayed path free. The oracle now stops at the first matching
+warning-count line, so a later summary path containing "warnings" does not
+replace the cursor. Keep its warning-order and summary assertions, original
+directory names, and count combinations.
+
+### Dispute 8 - prior correction retained
+
+Spec 04 Amendments 7 and 8 give omitted `outliers` and `faults` nonzero
+defaults. Both fixtures already explicitly set `outliers` to 0 and `faults`
+to `[]`, correctly isolating their intended scenarios. Keep those settings
+and every do-file assertion.
+
+### Dispute 9 - accepted; explicitly disable forms left open
+
+Spec 11 passes `config()` to the simulator using spec 04's configuration
+contract. Spec 04 Amendment 9 explicitly says that a `problems` object
+without `leftOpen` has a rate of 0.02. The compatibility constructors that
+default this component to zero do not apply to JSON configuration files.
+Omitting the key therefore no longer describes either an all-zero scenario
+or a short-duration-only scenario.
+
+Added `"leftOpen": 0` to `injected_zero.json` and `injected_short.json`.
+The former now disables every problem while keeping injection enabled,
+preserving Amendment 8/H1's zero count and header-only answer key. The latter
+enables only `shortDuration` at 0.25, preserving its five targets among
+twenty submissions.
+
+Both disputed do-files remain unchanged, including their configuration-only
+and explicit-option iterations, returned counts and file paths, submission
+counts, answer-key schema/content, KEY-based merge, separation of the key
+from the loaded data, and equality of the configured runs. This is a fixture
+correction; no command assertion is relaxed and no production change is
+warranted.
+
+### Validation for this adjudication
+
+Ran `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1`.
+All test-support fixtures compiled and their oracle self-checks passed.
+Stata started successfully and ran the suite: **116 do-files, 102 passed,
+14 failed** (runner exit status 1).
+
+Both corrected real-simulator tests reached their first `ctosim` call, but
+the prebuilt simulator rejected their configuration with
+`problems.leftOpen is not a known setting`; the child command returned
+`r(498)` and the parent harness reported `r(9)`. Their post-run assertions
+and second iterations were therefore not reached. This is not a Stata
+syntax/import failure. Spec 04 Amendment 9 explicitly requires the key,
+so the fixtures remain corrected despite this failure of the available
+package. The simulator was not rebuilt or inspected. Child logs are under
+`.codex-runs/stata-command/test_injected_problems_real_config/child.log` and
+`.codex-runs/stata-command/test_injected_problems_real_zero/child.log`.
+
+The other twelve failures are the seven `test_amendment_*.do` and five
+`test_converter_name_*.do` launchers. Current logs show access denied while
+removing pre-existing `temp/hsperfdata_manil` directories, before child
+command assertions run, as in prior adjudications. No unrelated cleanup
+logic or directory permissions were changed. The other fourteen
+`test_injected_problems_*.do` files passed, as did the previously disputed
+options-paths, runtime-selection, advanced-help, fake-preload display and
+template-failure, form-problem, and GPS schedule tests.
+
+The runner transcript is `.codex-runs/stata-dispute9/suite.log`; per-do-file
+runner logs are under `target/stata-tests/`. Also ran
+`.venv\Scripts\python -B src/test/stata/fixtures/help_use_cases_oracle_tests.py`:
+**16 tests passed**. `git diff --check` passed. Only the two JSON fixtures and
+this disputes file were changed. No production implementation was read or
+modified, and no commit was made.
