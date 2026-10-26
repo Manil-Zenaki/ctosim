@@ -331,6 +331,7 @@ with SurveyCTO Collect:{p_end}
 {phang2}- {bf:overlap}: an enumerator's interview of another household started before the end of its previous one, sharing at least five minutes;{p_end}
 {phang2}- {bf:travel}: an impossible trip, an interview too far from the enumerator's previous one for the time between them (only when the form has a GPS question);{p_end}
 {phang2}- {bf:outlier}: one numeric answer far from the values usually drawn for its question (beyond the fences {cmd:ipacheckoutliers} uses), yet still accepted by the form's constraint at that moment, as Collect would allow, also when the constraint depends on other answers (a second income at most the first, for instance); when a question has no room for such a value, another question gets it, or a later submission.{p_end}
+{phang2}- {bf:leftOpen}: a form left open. The enumerator interrupts an interview, does another interview in between, then comes back to finish the interrupted form; when the interruption comes too late in the day, the form stays open overnight and is finished the next morning, after that other interview; when no interview follows, the form is finished the next morning.{p_end}
 
 {pstd}
 Some enumerators are also {bf:faulty}, on all their interviews, so that
@@ -350,6 +351,17 @@ of faults) for one enumerator per fault, and enough submissions (at least
 ten per enumerator) for the checks to tell them apart.{p_end}
 
 {pstd}
+{bf:Duration and the time from start to end.} The variable {cmd:duration}
+is the time the form was on the screen, as in SurveyCTO, while
+{cmd:starttime} is when the form was first opened and {cmd:endtime} when it
+was finalised. For a form left open, the time elapsed between {cmd:starttime}
+and {cmd:endtime} is far longer than {cmd:duration}: the interruption counts
+in the interval, not on the screen. A check that compares {cmd:duration} with
+the interval from {cmd:starttime} to {cmd:endtime} finds such forms (the
+difference is the interruption), and a check of overlaps finds the other
+interview done in between.{p_end}
+
+{pstd}
 {bf:Consent.} Consent is simulated per interview only when the consent
 questions are named in the configuration: its {cmd:consent} key lists them
 in {cmd:fields}, in the order the form asks them ({cmd:ctosim} never
@@ -365,7 +377,7 @@ an overlap is two interviews of one enumerator with different ids whose times
 overlap. The configuration's {cmd:problems} object sets the share of
 submissions carrying each problem: {cmd:resent} and {cmd:reinterview} (0.01 by
 default), {cmd:shortDuration}, {cmd:longDuration}, {cmd:offHours},
-{cmd:overlap}, {cmd:travel} and {cmd:outliers} (0.02); its {cmd:faults} key
+{cmd:overlap}, {cmd:travel}, {cmd:leftOpen} and {cmd:outliers} (0.02); its {cmd:faults} key
 is the list of faults to give enumerators, all four by default
 ({cmd:"faults": ["dontKnow"]} for one, {cmd:[]} for none);
 {cmd:{c -(}{c )-}} asks for every problem at its default rate, {cmd:{c -(}"travel": 0{c )-}} for every problem
