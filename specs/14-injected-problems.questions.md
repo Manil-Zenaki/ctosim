@@ -873,3 +873,153 @@ failures for the absent leftOpen behavior. No tests are skipped or aborted,
 and no container, fixture-loading, or configuration failures occur. Assertions
 after the missing-record/pause checks remain unexercised until the amendment
 is implemented. Existing committed tests are untouched; no commit was made.
+
+## Amendment 4 questions and test assumptions
+
+### D1. Village-first wording versus form order
+
+**Question:** The records paragraph says "one for the village question ...;
+then one for each location question", but ends with "all in the form's
+order". Which wins when a location question precedes the village?
+
+**Assumption:** The explicit final ordering rule wins. Records are in
+instance/form order, including a location asked before the village. Only
+the village record gets the previous interview's village as `cleanValue`;
+the location records retain the earlier travel rule's empty `cleanValue`.
+The previous interview means the same enumerator's actual predecessor,
+including when that predecessor is itself a travel target.
+
+**Tests:** `recordsUseFormOrderActualValuesAndThePreviousVillagesCleanValue`,
+`travelRelatesToItsOwnEnumeratorsPreviousInterviewAndRecordsAreSorted`, and
+`consecutiveTravelTargetsMeasureFromTheActualPreviousVillage`.
+
+### D2. What is uniformly drawn: viable places or ordinary weighted choices?
+
+**Question:** Do ordinary district/village weights restrict the travel
+candidate pool or change its probabilities? Do exhausted or special-only
+household pools count as candidates?
+
+**Assumption:** "Candidate" retains spec 13 Amendment 4's offered-and-viable
+place definition. Ordinary zero weights do not remove offered choices.
+The explicit uniform travel draw overrides ordinary weights and nearest
+village selection. Exhausted, empty, and special-only household pools are
+not viable. The fixtures have one unambiguous place per village, so they
+do not assume how duplicate place paths or duplicate village codes would
+be weighted. Village override `value`/`texts`/expression/rule conflicts,
+location area overrides, and village questions in repeats are not tested.
+
+**Tests:** `locatedVillagesEnableTravelWithOrWithoutGpsAndIgnoreTheDailyQuota`,
+`eligibleVillagesAreUniformDespiteTheirOrdinaryChoiceWeightsAndDifferentDistances`,
+and `aDistantVillageWhoseHouseholdsHaveAlreadyBeenReceivedIsNotACandidate`.
+
+### D3. Which route applies when village coordinates are unusable?
+
+**Question:** With both GPS and a configured village question, may travel
+fall back to the old arbitrary-point route when the previous village is
+unlocated or no distant candidate exists?
+
+**Assumption:** No. The amendment explicitly prescribes an ordinary visit
+and a submission-specific warning in those cases. The old GPS route is
+retained only when there is no village question or no villages setting.
+No exact warning prose is assumed. Failure warnings must name the target;
+the global unsupported-form warning must name travel and occur once.
+Unrelated config warnings are not counted as travel warnings.
+
+**Tests:** `InjectedAmendment4FallbackTest`.
+
+### D4. First-day reinterviews and the scope of village preference
+
+**Question:** Does "the original's place is the enumerator's place of the
+day" establish the day from the original? Does village preference also
+apply without `config.villages()`?
+
+**Assumption:** A first interview that is a reinterview establishes the
+original's entire place (district and village), which subsequent ordinary
+interviews retain while viable. The reinterview subsection requires a
+village question, not coordinate configuration, so it applies with and
+without locations. A later different-village reinterview neither replaces
+the day's place nor charges a move, including on returning to that place.
+Preference does not override the exclusion of problem targets or reuse an
+original. The tests use ample free IDs, short forms, and no exhaustion on
+these paths, so a later move is not required for another reason.
+
+**Tests:** `InjectedAmendment4ReinterviewTest`, including parameterized
+located/unlocated cases and a mixed short-duration/reinterview scenario
+where the only same-day predecessor is a reserved target.
+
+### D5. Observing that travel is not a move
+
+**Question:** How can the unchanged place of the travel day be tested when
+the next ordinary interview is expressly on the next day?
+
+**Assumption:** Test observable consequences: no move surcharge, same-day
+travel despite quota, a newly drawn ordinary place the following day,
+and distances/clean values based on the actual previous interview. Do not
+inspect hidden planner state or require an ordinary interview later on the
+travel day. Consecutive travel targets retain their explicit same-day rule
+even though an ordinary successor would start the next day.
+
+**Tests:** `locatedVillagesEnableTravelWithOrWithoutGpsAndIgnoreTheDailyQuota`,
+`theNextInterviewStartsTheNextDayWithANewOrdinaryPlace`, and
+`consecutiveTravelTargetsMeasureFromTheActualPreviousVillage`.
+
+### D6. Boundaries and seed-dependent draws without a prescribed PRNG
+
+**Question:** How should tests exercise boundary distances and closing time
+without assuming specific random outputs or testing floating-point noise?
+
+**Assumption:** Gap draws depend on seed/submission number, as required by
+the inherited travel rule. Observe the gap first, then change only a
+village coordinate or a question's minimum time. The distance cases place
+the only eligible destination one metre below, at, and one metre above
+the resulting fence; at equality, advance longitude by machine ulps if
+needed so the independent great-circle oracle is not below the fence.
+Closing is tested exactly and one second later. Candidate comparisons use
+village coordinates, not jittered GPS answers. The unchanged seed/number
+draws also justify comparing forms with and without GPS when the same
+candidate pool is offered.
+
+Scenario searches use fixed seeds 100 through 339, fail if no scenario is
+found, and never skip. The uniform-candidate test uses 320 independent
+fixed seeds with tolerance seven binomial standard deviations plus two.
+The gap-dependent candidate test uses 160 fixed seeds and explicitly
+requires observations on both sides of its 15-minute cutoff. Preference
+tests use 80 fixed seeds and require mixed candidate pools to be observed.
+No exact target permutation, random stream, or seed snapshot is asserted.
+
+**Tests:** The distance/closing boundary tests in
+`InjectedAmendment4TravelTest`, `InjectedAmendment4RandomnessTest`, and
+tests using `InjectedAmendment4Support.find`.
+
+### Amendment 4 build verification
+
+**Question:** Can the requested offline Maven compilation run in this
+sandbox with the existing cached dependencies?
+
+**Observation:** `.\mvnw.cmd -o -q test-compile` stops in `testCompile` at
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The `-e` retry
+confirms `java.nio.file.AccessDeniedException`. This is an environment
+failure, not a successful Maven build.
+
+**Assumption:** Use the existing supplementary in-memory Java compiler
+approach to check the new tests and their test helpers against compiled
+public APIs and the cached dependency bytes, with `--release 17`. This
+does not replace the requested Maven result. No production sources are
+read or changed, dependencies installed, repositories copied, or drives
+mapped. Probes and logs are confined to `.codex-runs/spec14-amendment4/`.
+
+**Tests:** The four new Amendment 4 test classes and their new support
+class. The supplementary compiler also compiles six unchanged supporting
+test sources. Diagnostic runtime failures at configuration parsing are
+expected for the current unimplemented `villages` prerequisite and do not
+validate assertions beyond that point.
+
+**Final result:** All eleven new/support sources compile with the
+supplementary compiler. JUnit discovers and starts 42 invocations: 3 pass,
+2 fail on reinterview behavior assertions, and 37 fail because the current
+parser reports `villages is not a known setting`. No tests or containers
+are skipped or aborted, and no containers fail. The final exact-command
+Maven retry still fails on the cached JAR access described above. See
+`diagnostic-compile.log`, `diagnostic-junit.log`,
+`maven-test-compile-detail.log`, and `maven-test-compile-final.log` in the
+run directory. Existing committed tests are unchanged; no commit was made.

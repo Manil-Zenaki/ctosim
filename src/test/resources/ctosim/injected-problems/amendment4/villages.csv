@@ -1,0 +1,8 @@
+code,district,lat_col,lon_col
+A,D1,0,0
+N,D1,0,0.1
+B,D1,0,2
+U,D1,not-a-number,3
+X,D1,0,5
+Z,D2,0,6
+C,D2,0,4
