@@ -449,3 +449,19 @@ The candidates, the nearest one and the time of a move depend on the
 answers and on the coordinates; every draw comes from `config.seed()`
 and the submission number, and the results are reproducible as in
 "Randomness".
+
+Clarification (Amendment 4): assumptions 34–40 of the questions file are
+reviewed one by one and confirmed: a place of the day's answer that is no
+longer offered is not reused, and what replaces it is not prescribed
+beyond the move rule (34); the first row of the whole file holding the
+choice's value gives the coordinates, values compared as strings, and an
+unusable cell leaves the choice unlocated without a warning (35); only
+constant rules are tested for disabling the village, which also disables
+its coordinates (36); the time of a move is added to the usual gap, an
+interview pushed to the next day draws that day's place afresh, and a
+start exactly at the end of work is still that day (37); ties follow the
+offered order, upper questions first, and only located candidates
+compete when the village of the day is located (38); no radial
+distribution is prescribed, and standalone walks keep no place (39); the
+warnings' wording and the order of the two column warnings are not
+prescribed, and an unreadable file needs no column warning (40).

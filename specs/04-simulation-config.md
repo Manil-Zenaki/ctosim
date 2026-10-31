@@ -598,3 +598,12 @@ public java.util.Optional<Villages> villages();   // empty when the key is absen
   component.
 - The rules of "Strictness" and "Errors" apply, with errors at their
   paths (`villages`, `villages.latitude`); copies keep `villages()`.
+
+Clarification (Amendment 10): assumptions 55–58 of the questions file are
+reviewed one by one and confirmed: the names are exact strings, checked
+only for being non-empty, without white space at their ends (as for `id`
+and `consent`, non-ASCII white space not prescribed) and distinct (55);
+errors follow the conventions of Amendments 7 and 8, a missing member or
+equal names being reported at `villages` or below (56); `villages` needs
+nothing else in the configuration and implies nothing else (57); every
+copy keeps `villages()` (58).

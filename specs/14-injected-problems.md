@@ -765,3 +765,16 @@ look like a trip:
 The target is not a move (spec 13, Amendment 4) even when its village
 differs from the village of the day; the village of the day is then
 unchanged.
+
+Clarification (Amendment 4): assumptions D1–D6 of the questions file are
+reviewed one by one and confirmed: the records follow the form's order,
+only the village record has a `cleanValue`, and the previous interview is
+the enumerator's actual predecessor, even a travel target (D1); the
+candidates are those of spec 13 Amendment 4, drawn uniformly whatever
+the choices' weights (D2); with a village question and `villages`, an
+unlocated previous village or no far candidate gives an ordinary visit,
+never the earlier GPS rule (D3); a first interview of the day that is a
+reinterview sets the place of the day, and the village preference of a
+reinterview needs a village question only, not coordinates (D4); that a
+trip is not a move is observed through its consequences (D5); no random
+sequence is prescribed (D6).
