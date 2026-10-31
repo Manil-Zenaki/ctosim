@@ -1,6 +1,6 @@
 # Project status and hand-over notes
 
-Last updated: 2026-10-25. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
+Last updated: 2026-10-31. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
 `docs/ARCHITECTURE.md` first; this file records where the work stands and
 what was learnt along the way.
 
@@ -20,8 +20,8 @@ what was learnt along the way.
 | 10 | CLI | done: `ctosim.cmd FORM [options]` / `java -jar target/ctosim.jar` (build with `mvnw package`) |
 | 11 | Stata command | done: `ctosim using FORM, ...` (`stata/`), 35 Stata tests; published on the `stata-package` branch |
 | 12 | Fictitious attachments (`fakepreload`) | done 2026-10-17: `--fake-attachments`, Stata `fakepreload`; disputes adjudicated |
-| 13 | Fieldwork plan (`Fieldwork`) | done 2026-10-23: Amendments 1-3 (quota, cascade ids, steering); CLI `--id`, Stata `id()` |
-| 14 | Injected problems (`AnswerKey`) | phase 2a 2026-10-23 (duplicates, durations, off hours, overlaps, travel; CLI `--problems`, Stata `problems`); phase 2b 2026-10-25 (Amendments 1-2: faulty enumerators, outliers within constraints, consent and fake refusals); Amendment 3 (form left open, `duration()` as screen time) |
+| 13 | Fieldwork plan (`Fieldwork`) | done 2026-10-23: Amendments 1-3 (quota, cascade ids, steering); CLI `--id`, Stata `id()`; Amendment 4 2026-10-31 (village of the day, located villages) |
+| 14 | Injected problems (`AnswerKey`) | phase 2a 2026-10-23 (duplicates, durations, off hours, overlaps, travel; CLI `--problems`, Stata `problems`); phase 2b 2026-10-25 (Amendments 1-2: faulty enumerators, outliers within constraints, consent and fake refusals); Amendment 3 (form left open, `duration()` as screen time); Amendment 4 2026-10-31 (travel through located villages, without GPS) |
 
 Suite (2026-10-18): 1083 Python, 7919 Java and 66 Stata tests, all green.
 
@@ -229,6 +229,24 @@ dropped (owner). Disputes 10/8 and 11/9 (configurations without
 every overlap of different ids is explained by the key. **Next**:
 located villages (owner to say how the
 teams' preload files hold coordinates).
+
+2026-10-31, located villages (owner: the coordinates are in the same
+preloaded list as the villages; teams do not check travel without GPS
+today; the owner accepted every proposal). Spec 13 Amendment 4 (the
+cascade's village question follows the enumerator's village of the day,
+moving to the nearest village with free households, +2 min per km;
+interviews within 1.5 km of the village's coordinates), spec 14
+Amendment 4 (travel through located villages, with or without GPS; a
+reinterview's original in the village of the day), spec 04 Amendment 10
+(`villages`: the latitude and longitude columns, named by the user) and
+spec 11 Amendment 12 (help, the check in prose). Java 11645 tests, one
+disputed (spec 13 Dispute 4: a reuse count that depends on an ordinary
+draw, as Dispute 3; to run with `-Dispute` once Codex's usage limit
+resets); Stata 123, all green. IPA check (9 villages added to
+`household_preloads.csv` with coordinates): a no-GPS check (successive
+interviews of an enumerator in villages more than 20 km apart at more
+than 60 km/h) flags the 8 injected trips and nothing else; every GPS
+answer is within 1.5 km of its declared village.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not

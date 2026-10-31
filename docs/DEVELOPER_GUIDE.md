@@ -286,6 +286,27 @@ screen, while `starttime`/`endtime` follow the clock, so a form left open
 has an interval from start to end far longer than its duration, and
 contains the other interview.
 
+Villages (spec 13 Amendment 4, spec 14 Amendment 4). When the survey id
+is chosen through a cascade of preloaded lists (district, village,
+household), the village question is the id's upper question, and it
+follows the enumerator's **village of the day**: every interview of the
+day keeps the same place while it has free households, then the
+enumerator moves to the nearest village that has some, and the next
+interview starts later by 2 minutes per km. When the village list holds
+coordinates, the configuration names their columns (never guessed):
+
+```json
+"villages": {"latitude": "kg_lat", "longitude": "kg_lon"}
+```
+
+Interviews then take place within 1.5 km of their village's coordinates
+(`VillageMap` reads them: first row of each village value), and `travel`
+works without GPS: the target declares a village at least
+`max(20 km, 2 km x minutes)` from the previous interview's. Its key has a
+record for the village question (`clean_value`: the previous village).
+A reinterview's original is drawn in the enumerator's village of the
+day when possible, so that it does not look like a trip.
+
 #### Constraints
 
 Generated answers always satisfy their question's constraint when the
