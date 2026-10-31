@@ -442,3 +442,9 @@ coordinates), and the problem `travel` without GPS (spec 14, Amendment
 the time between them), with the check that finds it: the distance
 between the coordinates of the villages of an enumerator's successive
 interviews compared with the time between them.
+
+Clarification (Amendment 12): assumptions L1–L3 of the questions file
+are reviewed one by one and confirmed: lexical checks of the help without
+fixed wording (L1); the topics the amendment lists, the check being
+described in prose, without a command or an executable example (L2); the
+help oracle follows the earlier infrastructure (L3).
