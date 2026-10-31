@@ -1,0 +1,6 @@
+code,district,lat_col,lon_col
+A,D1,10,20
+B,D1,10,20.2
+X,D1,10,20.00001
+C,D2,10,20.01
+U,D3,invalid,20

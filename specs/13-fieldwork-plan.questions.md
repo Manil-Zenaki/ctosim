@@ -785,3 +785,165 @@ now checks seven submissions, the number of distinct eligible IDs reachable
 under R1. It no longer assumes that an ordinary draw after exhaustion must
 avoid the empty branch. The reasoning is recorded in the Dispute 3
 adjudication; no new behavioral assumption was made.
+
+## Amendment 4 assumptions and questions (2026-10-31)
+
+### 34. What happens when a remembered place is no longer offered?
+
+**Question:** The reuse rule requires an answer to be both offered and
+viable, but the move rule specifically describes exhaustion. What route
+should be chosen if earlier answers simply stop offering yesterday's
+answer within the same work day?
+
+**Assumption:** Do not prescribe a route, nearest-candidate selection, or
+travel charge for that case. Require only that the answer is currently
+offered. Days use the original work-day index, not midnight; a place is
+maintained separately for each enumerator, including interleaved visits.
+
+**Tests:** `aRememberedVillageIsNotReusedWhenItIsNoLongerOffered`, the
+enumerator/day and midnight cases in `FieldworkAmendment4PlaceTest`.
+
+### 35. Which duplicate CSV row supplies the coordinates?
+
+**Question:** Does "the first row ... among those whose placeholder column
+holds the choice's value" mean the entire file, or the currently filtered
+choice rows? Can a later valid row repair an invalid first row?
+
+**Assumption:** Read the wording literally: the first matching code in the
+whole CSV supplies both coordinate cells, even outside the active filter.
+A later duplicate does not repair it. Codes are matched as strings, using
+the actual placeholder column, without dropping leading zeros. No tests
+prescribe extra numeric syntax such as localized decimal separators.
+Blank, nonnumeric, nonfinite and out-of-range cells are unlocated; they
+are not missing columns and do not themselves create column warnings.
+
+**Tests:** The duplicate-row, filtered-row, exact-code and invalid-cell
+cases in `FieldworkAmendment4LocationTest`.
+
+### 36. When can a rule disable the village for configuration diagnostics?
+
+**Question:** A rule can depend on answers that are not known when
+`configWarnings()` is called. Should a rule that applies only to some
+submissions produce a configuration warning, and what happens to an
+existing place when the rule switches on or off?
+
+**Assumption:** Leave answer-dependent rule transitions and their warning
+timing untested. Constant `true()` rules are applicable, and constant
+`false()` rules are not, following Amendment 3's clarification. Test
+`value`, `texts`, expression and constant-applicable-rule exclusions. An
+excluded village also disables located placement, because "nothing of
+this amendment applies". No new precedence is imposed on overrides of
+higher upper questions.
+
+**Tests:** `anUnsteeredVillageWarnsAndDisablesCoordinatePlacement`,
+`anInapplicableRuleDoesNotDisableTheVillageOrItsCoordinates`.
+
+### 37. Which time and distance are used for a move?
+
+**Question:** Is travel added to the normal rest/travel gap or substituted
+for it? Does an attempted move that rolls to a new day consume a household
+or carry the old candidate to the new day?
+
+**Assumption:** "Later ... by" adds the ceiling of two minutes per
+great-circle kilometre between CSV coordinates to the existing gap.
+Controlled two-village fixtures compare with an otherwise identical
+unlocated plan, whose time draws have the same seed and submission number.
+The attempted candidate is not an interview and receives no household ID;
+the next day draws its place afresh. There is no inter-day travel charge.
+Exactly closing time is allowed; one minute later starts a new day.
+
+**Tests:** `FieldworkAmendment4MoveTest`. Closing-time tests use ten-minute
+minimum times on all three questions to retain whole-minute schedules,
+then derive equatorial coordinates from the observed baseline gap. The
+distance is a quarter-minute away from a rounding boundary, avoiding
+floating-point ties. No internal PRNG sequence is assumed.
+
+### 38. How are ties and partially located candidates handled?
+
+**Question:** Is order for equal-distance candidates global CSV order or
+the order of the offered cascade choices, and are unlocated candidates
+eligible to displace located candidates?
+
+**Assumption:** Use the stated order, upper questions first, then village
+choices. Identical coordinates produce exact ties without a tolerance
+policy. A located origin with located viable candidates chooses among
+those candidates, irrespective of ordinary weights on other branches.
+If the origin or every candidate is unlocated, Amendment 3 applies. Tests
+do not prescribe extra travel behavior after every candidate is exhausted.
+
+**Tests:** Tie, cross-district, high-latitude, antimeridian, unavailable
+candidate and absent-location cases in `FieldworkAmendment4MoveTest`;
+the deeper cascade case in `FieldworkAmendment4PlaceTest`.
+
+### 39. What distribution and reproducibility are promised?
+
+**Question:** Does the 1.5 km location rule prescribe a radial distribution?
+Does the original standalone-walk equality apply unchanged to a cascade
+whose choices and received-ID history exist only inside `walkAll()`?
+
+**Assumption:** No uniform disk or radial density is prescribed, so test
+distance bounds, variation and deterministic replay only. Preserve
+Amendments 2 and 3's explicit standalone behavior: a standalone walk uses
+its supplied visit and has no shared place or ID history. Full submission
+replay comparisons are between plans, fresh loads and repeated calls.
+Located points for the same village depend on seed and submission number,
+not on enumerator/day assignment. GPS rounding allows 0.16 m beyond the
+30 m bound, as in existing location tests; unrounded visits allow 0.000001 m.
+
+**Tests:** `FieldworkAmendment4RandomnessTest` and location-bound tests.
+First-day and new-day unweighted and 1:3 weighted draws use 320 fixed-seed
+trials, each with enough free households, and the existing seven-standard-
+deviation binomial tolerance. Day changes must sometimes change the place,
+but no particular switch frequency or PRNG is required.
+
+### 40. What wording and ordering are required for new warnings?
+
+**Question:** The spec gives diagnostic content and the placement of
+missing-column warnings, but not exact prose or ordering between the two
+coordinate-column warnings. What happens if the CSV itself cannot be read?
+
+**Assumption:** Check one inapplicability configuration warning mentioning
+village, and one runtime warning per missing column/file pair identifying
+both. Check that column warnings follow overflow and reused-ID warnings,
+without imposing latitude-before-longitude ordering. Do not require a
+missing-column warning for an unreadable/missing file; that distinction
+is left open. Constant configuration diagnostics exist before walking;
+runtime diagnostics start empty and reset on each walk.
+
+**Tests:** `FieldworkAmendment4WarningsTest`.
+
+### Amendment 4 build verification (2026-10-31)
+
+**Question:** Can the requested offline Maven test compilation complete in
+this sandbox, and have the added sources been checked separately?
+
+**Observation:** The final `.\mvnw.cmd -o -q test-compile` exits 1 during
+`testCompile`. A diagnostic `-e` run identifies
+`java.nio.file.AccessDeniedException` on
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+Logs are `.codex-runs/fieldwork-amendment4/test-compile-final.log` and
+`test-compile-detail.log`. No repository, dependency, drive mapping or
+build configuration was changed to bypass this failure.
+
+**Independent compilation:** The existing in-memory compiler probe was
+adapted under `.codex-runs/fieldwork-amendment4/`. With `--release 17`, it
+successfully compiled all six new sources and their four existing support
+sources against the compiled project APIs and cached JUnit/JavaRosa
+classes, without reading production sources or introducing replacement
+production stubs. `memory-compile.log` records `compiled=true`. This is
+not a successful Maven build.
+
+**Execution and limits:** The diagnostic JUnit run found 94 cases: 6
+passed and 88 failed, with no skipped/aborted tests or failed containers.
+Of the failures, 86 are configuration errors because the existing
+compiled configuration API rejects the new `villages` key; 2 are
+assertion failures detecting changes of village within one enumerator's
+day without coordinates configured. The log is `junit.log`. Assertions
+after these failures, including most located behavior and statistical
+draw checks, remain unexercised until the corresponding implementation
+is available. No expectation was weakened to match these failures.
+
+Existing committed tests and fixtures were kept unchanged. All additions
+are Amendment 4 test/support classes and fixtures, plus this appended
+questions section. Temporary probes and logs are under `.codex-runs/`;
+no commit was made.
