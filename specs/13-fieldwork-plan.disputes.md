@@ -234,3 +234,29 @@ in that diagnostic directory.
 
 No production source was read or changed, no dependency or build configuration
 was changed, and no commit was made.
+
+## Dispute 4: a reuse count that depends on an ordinary draw (Amendment 4)
+
+`FieldworkAmendment4WarningsTest.twoMissingColumnsProduceTwoWarningsAfterOverflowAndReusedIdWarnings`
+(line 39) runs 3 submissions, one enumerator, one interview a day, with
+`single-village.csv` (village `A` in district `D1` only) and
+`two-households.csv` (`A01` in `A`, `B01` in `B`, which no district
+offers). Only one id, `A01`, is reachable. The test expects the reuse
+warning to give 2, i.e. submissions 2 and 3 both reuse `A01`. The other
+assertions (overflow warning first, two column warnings last, four
+warnings, unmodifiable list) pass.
+
+Submissions 2 and 3 are each the first interview of a new day, so their
+place is drawn as in Amendment 3; no district is viable, so the district
+is "answered as before", an ordinary draw among `D1`, `D2` and `D3`. The
+seeded draw gives `D1` for submission 2 (village `A`, id `A01` reused)
+and `D2` for submission 3: `D2` offers no village, so the id question
+offers no choice, no id is received and none is reused (Clarification of
+Amendment 2, point 21). The warning then gives 1. Whether it gives 1 or 2
+depends on that ordinary draw, which no amendment prescribes. This is
+the situation of Dispute 3.
+
+Requested: keep the warning's position (second, after the overflow
+warning) and its field, but check its count against the submissions
+themselves (the number of submissions whose id was received by an
+earlier one), or accept 1 or 2; keep every other assertion.
