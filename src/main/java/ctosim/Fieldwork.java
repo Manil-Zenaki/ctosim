@@ -44,6 +44,8 @@ public final class Fieldwork {
     private final List<String> startPaths;
     private final List<String> durationPaths;
     private final List<String> locationPaths;
+    /** The generic paths of the instance's elements, in document order. */
+    private final List<String> instanceOrder;
     private final boolean hasLocation;
 
     public Fieldwork(LoadedForm form, SimulationConfig config) {
@@ -62,19 +64,71 @@ public final class Fieldwork {
         this.idField = name;
         this.idQuestion = name == null ? null : question(def, name);
         this.idType = idQuestion == null ? Constants.DATATYPE_NULL : dataType(def, idQuestion);
+        this.definition = def;
+        this.form = form;
+        if (idAtQuestion()) {
+            cascade(template);
+            if (!template.levels.isEmpty() && !steered(template.levels.get(template.levels.size() - 1))) {
+                template.levels.clear(); // a village fixed by the configuration: no place of the day
+            }
+        }
+        if (config.villages().isPresent() && template.levels.isEmpty()) {
+            configured.add("configuration: villages: the form has no village question (a select_one loaded by"
+                    + " search() that filters the survey id's choices) whose answer the plan chooses; no village"
+                    + " is located");
+        }
         Set<String> order = new LinkedHashSet<>();
         instancePaths(def.getMainInstance().getRoot(), order);
+        this.instanceOrder = List.copyOf(order);
         this.startPaths = startPaths(form, order);
         this.durationPaths = durationPaths(form, order);
         this.locationPaths = locationPaths(def, order);
         this.hasLocation = !locationPaths.isEmpty();
         this.configWarnings = List.copyOf(configured);
-        this.definition = def;
-        this.form = form;
     }
 
     private final FormDef definition;
     private final LoadedForm form;
+    /** The id's cascade, found once; each plan starts from a copy. */
+    private final FormWalker.IdHistory template = new FormWalker.IdHistory();
+    /** The village question's appearance and choices, set by {@link #cascade}. */
+    private String villageAppearance;
+    private String villagePath;
+    private List<String> villageChoices = List.of();
+
+    /** Whether the plan chooses the answers of the upper question {@code name} (spec 13, Amendment 3). */
+    private boolean steered(String name) {
+        FieldOverride override = config.field(name).orElse(null);
+        if (override == null) {
+            return true;
+        }
+        if (override.value().isPresent() || !override.texts().isEmpty() || override.expression().isPresent()) {
+            return false;
+        }
+        for (OverrideRule rule : override.rules()) {
+            String condition = rule.condition();
+            if (condition.contains("/") || condition.contains("$") || condition.contains(".")) {
+                continue; // depends on the answers: decided at each interview
+            }
+            try {
+                Object value = org.javarosa.xpath.XPathParseTool.parseXPath(condition).eval(
+                        definition.getMainInstance(), new org.javarosa.core.model.condition.EvaluationContext(
+                                definition.getEvaluationContext(), definition.getMainInstance().getRoot().getRef()));
+                if (org.javarosa.xpath.expr.XPathFuncExpr.toBoolean(
+                        org.javarosa.xpath.expr.XPathFuncExpr.unpack(value))) {
+                    return false;
+                }
+            } catch (Exception e) {
+                // an expression that cannot be evaluated here does not disable the plan's choice
+            }
+        }
+        return true;
+    }
+
+    /** Whether a trip can be seen: in location answers, or in located villages (spec 14, Amendment 4). */
+    private boolean canTravel() {
+        return hasLocation || config.villages().isPresent() && !template.levels.isEmpty();
+    }
 
     public List<String> configWarnings() {
         return configWarnings;
@@ -88,10 +142,19 @@ public final class Fieldwork {
         List<String> planWarnings = new ArrayList<>();
         boolean atQuestion = idAtQuestion();
         List<String> ids = atQuestion ? null : surveyIds(n, planWarnings);
-        FormWalker.IdHistory history = atQuestion ? new FormWalker.IdHistory() : null;
-        if (history != null) {
-            cascade(history);
+        FormWalker.IdHistory history = atQuestion ? template.copy() : null;
+        VillageMap villages = null;
+        if (history != null && !history.levels.isEmpty() && config.villages().isPresent()) {
+            villages = new VillageMap(villageAppearance, villageChoices, config.villages().get(), form.attachments());
         }
+        if (history != null) {
+            history.villages = villages;
+        }
+        boolean routed = history != null && !history.levels.isEmpty();
+        String villageField = routed ? history.levels.get(history.levels.size() - 1) : null;
+        @SuppressWarnings("unchecked")
+        Map<String, String>[] place = new Map[e + 1]; // each enumerator's place of the day (spec 13, A4)
+        int[] placeDay = new int[e + 1];
         Problems plan = config.problems().map(rates -> new Problems(rates, n, e)).orElse(null);
 
         LocalDateTime[] lastEnd = new LocalDateTime[e + 1];
@@ -116,7 +179,15 @@ public final class Fieldwork {
 
             Integer original = null;
             if (RESENT.equals(problem) || REINTERVIEW.equals(problem)) {
-                original = plan.original(number, problem);
+                java.util.function.IntPredicate preferred = null;
+                if (REINTERVIEW.equals(problem) && routed && place[enumerator] != null
+                        && placeDay[enumerator] == day[enumerator] && sameDay(lastEnd[enumerator], gap,
+                        dayOver[enumerator], today[enumerator], quota, day[enumerator])) {
+                    String village = place[enumerator].get(villageField);
+                    preferred = m -> submissions.get(m - 1) != null
+                            && village.equals(value(submissions.get(m - 1).instanceXml(), villageField));
+                }
+                original = plan.original(number, problem, preferred);
                 if (original == null) {
                     problem = null;
                 }
@@ -141,6 +212,8 @@ public final class Fieldwork {
 
             LocalDateTime start = null;
             double[] point = null;
+            double[] travelFrom = null;
+            boolean ordinary = false;
             if (OFFHOURS.equals(problem) || OVERLAP.equals(problem) || TRAVEL.equals(problem)) {
                 Submission previous = last[enumerator];
                 String why = previous == null ? "its enumerator has no interview before it" : null;
@@ -170,6 +243,14 @@ public final class Fieldwork {
                     LocalDateTime candidate = lastEnd[enumerator].plusMinutes(gap);
                     if (candidate.isAfter(dayStart(day[enumerator]).plusMinutes(WORK_MINUTES))) {
                         why = "it would start after the end of work";
+                    } else if (villages != null) { // through the villages (spec 14, Amendment 4)
+                        travelFrom = villages.of(value(previous.instanceXml(), villageField));
+                        if (travelFrom == null) {
+                            why = "the previous interview's village is not located";
+                        } else {
+                            start = candidate;
+                            point = household(number, village(enumerator, day[enumerator]));
+                        }
                     } else {
                         point = farAway(number, lastVisit[enumerator], Math.max(20_000, 2_000.0 * gap));
                         if (point == null) {
@@ -224,10 +305,11 @@ public final class Fieldwork {
                     }
                 }
                 point = household(number, village(enumerator, day[enumerator]));
+                ordinary = true;
             }
 
             String id = ids == null ? null : ids.get(number - 1);
-            Map<String, String> given = Map.of();
+            Map<String, String> givenAnswers = Map.of();
             if (REINTERVIEW.equals(problem)) {
                 id = originalId;
                 if (history != null) {
@@ -238,7 +320,7 @@ public final class Fieldwork {
                             uppers.put(upper, v);
                         }
                     }
-                    given = uppers;
+                    givenAnswers = uppers;
                 }
             }
             double factor = 1;
@@ -250,6 +332,7 @@ public final class Fieldwork {
             boolean fast = faults.contains(TOO_FAST);
             Visit visit = new Visit(enumerator, start, point[0], point[1], id);
             FormWalker.IdHistory before = history == null ? null : history.copy();
+            Map<String, String> given = givenAnswers;
             FormWalker.Injection injection = new FormWalker.Injection(factor * (fast ? FAST_FACTOR : 1),
                     TRAVEL.equals(problem), given);
             injection.violationFactor = fast ? FAST_VIOLATIONS : 1;
@@ -259,6 +342,56 @@ public final class Fieldwork {
                 double r = config.consent().get().rate();
                 double p = r <= 0 ? 0 : Math.min(1, (1 - r) / r);
                 injection.refuse = new SplittableRandom(FormWalker.seed(config.seed(), number, 28)).nextDouble() < p;
+            }
+            boolean firstOfDay = !routed || place[enumerator] == null || placeDay[enumerator] != day[enumerator];
+            if (routed) {
+                injection.route = new FormWalker.Route(firstOfDay ? null : place[enumerator], travelFrom,
+                        travelFrom == null ? 0 : Math.max(20_000, 2_000.0 * gap));
+            }
+            if (villages != null) { // where the walk takes the enumerator decides when and where it starts
+                FormWalker.Injection probe = injection.with(injection.timeFactor());
+                Submission walked = walker.walk(number, visit, copy(before), probe);
+                if (TRAVEL.equals(problem) && probe.route.noCandidate) {
+                    plan.warn(problem, "problems: travel: submission " + number + " was walked as an ordinary"
+                            + " interview: no located village is far enough from the previous interview's");
+                    problem = null;
+                    injection = new FormWalker.Injection(injection.timeFactor(), false, given);
+                    copySettings(injection, probe);
+                    injection.route = new FormWalker.Route(firstOfDay ? null : place[enumerator], null, 0);
+                    probe = injection.with(injection.timeFactor());
+                    walked = walker.walk(number, visit, copy(before), probe);
+                }
+                double[] from = firstOfDay ? null : villages.of(place[enumerator].get(villageField));
+                double[] to = villages.of(value(walked.instanceXml(), villageField));
+                if (ordinary && probe.route.moved && from != null && to != null) { // the time of a move
+                    long travel = (long) Math.ceil(2 * distance(from[0], from[1], to[0], to[1]) / 1000);
+                    LocalDateTime later = start.plusMinutes(travel);
+                    if (!later.isAfter(dayStart(day[enumerator]).plusMinutes(WORK_MINUTES))) {
+                        start = later;
+                    } else { // too late: the first interview of the next day, in a new place
+                        int next = day[enumerator] + 1;
+                        LocalDateTime earliest = lastEnd[enumerator].plusMinutes(MIN_GAP_MINUTES);
+                        while (dayStart(next).plusMinutes(first).isBefore(earliest)) {
+                            next++;
+                        }
+                        day[enumerator] = next;
+                        today[enumerator] = 0;
+                        dayOver[enumerator] = false;
+                        start = dayStart(next).plusMinutes(first);
+                        firstOfDay = true;
+                        injection.route = new FormWalker.Route(null, null, 0);
+                        probe = injection.with(injection.timeFactor());
+                        walked = walker.walk(number, new Visit(enumerator, start, point[0], point[1], id),
+                                copy(before), probe);
+                        to = villages.of(value(walked.instanceXml(), villageField));
+                    }
+                }
+                if (to != null) {
+                    point = nearVillage(number, to);
+                } else {
+                    point = household(number, village(enumerator, day[enumerator]));
+                }
+                visit = new Visit(enumerator, start, point[0], point[1], id);
             }
             if (OUTLIER.equals(problem) || problem == null && !movedOutliers.isEmpty()) {
                 String field = outlierField(number, visit, before, injection);
@@ -294,6 +427,19 @@ public final class Fieldwork {
             Submission s = walker.walk(number, visit, history, injection);
             submissions.add(s);
             planned.add(visit);
+            if (routed && !TRAVEL.equals(problem) && !(REINTERVIEW.equals(problem) && !firstOfDay)) {
+                Map<String, String> answers = new java.util.LinkedHashMap<>();
+                for (String level : history.levels) {
+                    String answer = value(s.instanceXml(), level);
+                    if (answer == null) {
+                        answers = null;
+                        break;
+                    }
+                    answers.put(level, answer);
+                }
+                place[enumerator] = answers;
+                placeDay[enumerator] = day[enumerator];
+            }
 
             if (REINTERVIEW.equals(problem)) {
                 if (originalId.equals(value(s.instanceXml(), idField))) {
@@ -312,7 +458,8 @@ public final class Fieldwork {
             } else if (OVERLAP.equals(problem)) {
                 injected.addAll(startRecords(s, visit, problem, key(last[enumerator])));
             } else if (TRAVEL.equals(problem)) {
-                injected.addAll(travelRecords(s, visit, key(last[enumerator])));
+                injected.addAll(travelRecords(s, visit, key(last[enumerator]), travelFrom == null ? null
+                        : new String[] {villagePath, value(last[enumerator].instanceXml(), villageField)}));
             } else if (LEFT_OPEN.equals(problem)) {
                 injected.addAll(startRecords(s, visit, problem, ""));
             }
@@ -367,6 +514,9 @@ public final class Fieldwork {
             plan.smallSamples(planned, copies);
             planWarnings.addAll(plan.warnings());
         }
+        if (villages != null) {
+            planWarnings.addAll(villages.warnings());
+        }
         this.visits = Collections.unmodifiableList(planned);
         this.warnings = List.copyOf(planWarnings);
         injected.sort(java.util.Comparator.comparingInt(InjectedProblem::submission)
@@ -417,6 +567,34 @@ public final class Fieldwork {
         double lat = clamp(village[0] + dLat, area.minLatitude(), area.maxLatitude());
         double lon = clamp(village[1] + dLon, area.minLongitude(), area.maxLongitude());
         return new double[] {lat, lon};
+    }
+
+    /** Whether an enumerator's next ordinary interview is on the same day as its previous one (spec 13, "When"). */
+    private boolean sameDay(LocalDateTime lastEnd, int gap, boolean dayOver, long today, long quota, int day) {
+        return lastEnd != null && !dayOver && today < quota
+                && !lastEnd.plusMinutes(gap).isAfter(dayStart(day).plusMinutes(WORK_MINUTES));
+    }
+
+    /** A point within {@link #VILLAGE_METRES} of a located village's coordinates (spec 13, Amendment 4). */
+    private double[] nearVillage(int number, double[] village) {
+        SplittableRandom random = new SplittableRandom(FormWalker.seed(config.seed(), number, 12));
+        double distance = VILLAGE_METRES * Math.sqrt(random.nextDouble());
+        double bearing = random.nextDouble() * 2 * Math.PI;
+        double dLat = Math.toDegrees(distance * Math.cos(bearing) / FormWalker.EARTH_RADIUS_METRES);
+        double cos = Math.max(Math.cos(Math.toRadians(village[0])), 1e-6);
+        double dLon = Math.toDegrees(distance * Math.sin(bearing) / FormWalker.EARTH_RADIUS_METRES) / cos;
+        double lat = clamp(village[0] + dLat, -90, 90);
+        double lon = village[1] + dLon;
+        lon = ((lon + 180) % 360 + 360) % 360 - 180;
+        return new double[] {lat, lon};
+    }
+
+    /** Copies the fault settings of {@code from} to {@code to}. */
+    private static void copySettings(FormWalker.Injection to, FormWalker.Injection from) {
+        to.violationFactor = from.violationFactor;
+        to.skipModules = from.skipModules;
+        to.dontKnow = from.dontKnow;
+        to.refuse = from.refuse;
     }
 
     private Area area() {
@@ -517,6 +695,15 @@ public final class Fieldwork {
                 return;
             }
             String upperName = ((TreeReference) upper.getBind().getReference()).getNameLast();
+            if (history.levels.contains(upperName)) {
+                return;
+            }
+            if (history.levels.isEmpty()) {
+                villagePath = ((TreeReference) upper.getBind().getReference()).genericize().toString(false);
+                villageAppearance = upper.getAppearanceAttr();
+                villageChoices = SurveyCtoExporter.choiceValues(definition, upper);
+            }
+            history.levels.add(0, upperName);
             history.uppers.put(upperName, new FormWalker.Upper(belowName, below == idQuestion, below.getAppearanceAttr(),
                     SurveyCtoExporter.choiceValues(definition, below), reference));
             below = upper;
@@ -778,9 +965,9 @@ public final class Fieldwork {
                     warn(problem, "problems: reinterview: no survey id is configured, or the form has none;"
                             + " no reinterview was injected");
                 }
-                if (TRAVEL.equals(problem) && !hasLocation) {
-                    warn(problem, "problems: travel: the form has no geopoint, geotrace or geoshape question;"
-                            + " no travel problem was injected");
+                if (TRAVEL.equals(problem) && !canTravel()) {
+                    warn(problem, "problems: travel: the form has no geopoint, geotrace or geoshape question, and"
+                            + " no located villages; no travel problem was injected");
                 }
             }
             faulty(rates, e);
@@ -863,16 +1050,22 @@ public final class Fieldwork {
 
         String problemOf(int number) {
             String problem = targets.get(number);
-            boolean impossible = TRAVEL.equals(problem) && !hasLocation || REINTERVIEW.equals(problem) && idField == null;
+            boolean impossible = TRAVEL.equals(problem) && !canTravel() || REINTERVIEW.equals(problem) && idField == null;
             return impossible ? null : problem; // the target stays reserved, walked as an ordinary visit
         }
 
         /** The original of a duplicate, drawn among earlier submissions that are no target and no original. */
-        Integer original(int number, String problem) {
+        Integer original(int number, String problem, java.util.function.IntPredicate preferred) {
             List<Integer> candidates = new ArrayList<>();
             for (int m = 1; m < number; m++) {
                 if (!targets.containsKey(m) && !originals.contains(m)) {
                     candidates.add(m);
+                }
+            }
+            if (preferred != null) { // in the enumerator's village of the day (spec 14, Amendment 4)
+                List<Integer> there = candidates.stream().filter(preferred::test).toList();
+                if (!there.isEmpty()) {
+                    candidates = there;
                 }
             }
             if (candidates.isEmpty()) {
@@ -1085,12 +1278,24 @@ public final class Fieldwork {
         return records;
     }
 
-    private List<InjectedProblem> travelRecords(Submission s, Visit visit, String related) {
+    /**
+     * The records of a trip: each location answer and, through the villages, the village answer with the
+     * previous interview's ({@code village}: the question's path and that answer), in the form's order.
+     */
+    private List<InjectedProblem> travelRecords(Submission s, Visit visit, String related, String[] village) {
         List<InjectedProblem> records = new ArrayList<>();
-        for (String path : locationPaths) {
+        for (String path : instanceOrder) {
+            String clean;
+            if (village != null && path.equals(village[0])) {
+                clean = village[1] == null ? "" : village[1];
+            } else if (locationPaths.contains(path)) {
+                clean = "";
+            } else {
+                continue;
+            }
             String value = valueAt(s.instanceXml(), path);
             if (value != null) {
-                records.add(record(s, visit, TRAVEL, lastStep(path), value, "", related));
+                records.add(record(s, visit, TRAVEL, lastStep(path), value, clean, related));
             }
         }
         return records;
@@ -1110,7 +1315,7 @@ public final class Fieldwork {
         return null;
     }
 
-    private static double distance(double lat1, double lon1, double lat2, double lon2) {
+    static double distance(double lat1, double lon1, double lat2, double lon2) {
         double p1 = Math.toRadians(lat1);
         double p2 = Math.toRadians(lat2);
         double h = Math.pow(Math.sin((p2 - p1) / 2), 2)

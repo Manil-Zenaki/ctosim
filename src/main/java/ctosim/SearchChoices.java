@@ -150,6 +150,12 @@ final class SearchChoices {
         return args;
     }
 
+    /** The CSV column holding the choice values: the placeholder's value, or null without one. */
+    static String valueColumn(List<String> choices) {
+        int placeholder = placeholder(choices);
+        return placeholder < 0 ? null : choices.get(placeholder);
+    }
+
     /** The position of the first choice whose value is not a number, or -1. */
     private static int placeholder(List<String> choices) {
         for (int i = 0; i < choices.size(); i++) {

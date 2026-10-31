@@ -151,6 +151,10 @@ public final class FormWalker {
         int reused;
         /** The upper questions of the id's cascade, by name (spec 13, Amendment 3). */
         final Map<String, Upper> uppers = new HashMap<>();
+        /** The questions of a place, the highest first and the village question last (spec 13, Amendment 4). */
+        final List<String> levels = new ArrayList<>();
+        /** The located villages, or null. */
+        VillageMap villages;
 
         /** A copy whose received ids can change without changing this history's. */
         IdHistory copy() {
@@ -158,7 +162,38 @@ public final class FormWalker {
             copy.received.addAll(received);
             copy.reused = reused;
             copy.uppers.putAll(uppers);
+            copy.levels.addAll(levels);
+            copy.villages = villages;
             return copy;
+        }
+    }
+
+    /**
+     * An enumerator's place of the day, given to one walk, and what the walk did with it (spec 13,
+     * Amendment 4; spec 14, Amendment 4). Use a fresh route for each walk.
+     */
+    static final class Route {
+        /** The place of the day to keep, by question; null for the enumerator's first interview of a day. */
+        final Map<String, String> place;
+        /** For a trip: the coordinates of the previous interview's village, and how far the village must be. */
+        final double[] travelFrom;
+        final double travelMetres;
+        /** The place the walk answers, once decided at the first question of the place; null: drawn as usual. */
+        Map<String, String> plan;
+        boolean decided;
+        /** Set when the village of the day was no longer viable. */
+        boolean moved;
+        /** Set when a trip found no village far enough. */
+        boolean noCandidate;
+
+        Route(Map<String, String> place, double[] travelFrom, double travelMetres) {
+            this.place = place;
+            this.travelFrom = travelFrom;
+            this.travelMetres = travelMetres;
+        }
+
+        Route fresh() {
+            return new Route(place, travelFrom, travelMetres);
         }
     }
 
@@ -198,6 +233,8 @@ public final class FormWalker {
         Duration pauseLength = Duration.ZERO;
         /** When the pause began, once it has. */
         LocalDateTime pausedAt;
+        /** The place of the day, or null outside the fieldwork plan's villages. */
+        Route route;
 
         Injection(double timeFactor, boolean keepLocations, Map<String, String> answers) {
             this.timeFactor = timeFactor;
@@ -228,6 +265,7 @@ public final class FormWalker {
             copy.shortenRosters = shortenRosters;
             copy.pauseAt = pauseAt;
             copy.pauseLength = pauseLength;
+            copy.route = route == null ? null : route.fresh();
             return copy;
         }
     }
@@ -1013,15 +1051,25 @@ public final class FormWalker {
             if (viable.isEmpty()) {
                 return false;
             }
+            Route route = injection.route;
+            if (route != null && history.levels.contains(name) && !route.decided) {
+                route.decided = true;
+                route.plan = decide(name, prepared.question().choices(), ref, route);
+            }
+            String planned = route == null || route.plan == null ? null : route.plan.get(name);
             SplittableRandom random = new SplittableRandom(seed(config.seed(), number, 15));
             String value = null;
             double total = 0;
-            if (override != null) {
+            if (planned != null && viable.contains(planned)) {
+                value = planned;
+            } else if (override != null) {
                 for (String c : viable) {
                     total += override.weights().getOrDefault(c, 0.0);
                 }
             }
-            if (total > 0) {
+            if (value != null) {
+                // the place of the day, a move or a trip
+            } else if (total > 0) {
                 double target = random.nextDouble() * total;
                 for (String c : viable) {
                     double w = override.weights().getOrDefault(c, 0.0);
@@ -1043,6 +1091,127 @@ public final class FormWalker {
             answered++;
             handled(ref, minimumSeconds(prompt));
             return true;
+        }
+
+        /**
+         * The place to answer, decided at its first question {@code top}, which offers {@code offered}: the
+         * place of the day while its village is viable; when it is not, the nearest candidate; for a trip, a
+         * far candidate. Null when the place is drawn as usual (spec 13 and 14, Amendment 4).
+         */
+        private Map<String, String> decide(String top, List<String> offered, TreeReference ref, Route route) {
+            List<String> levels = history.levels.subList(history.levels.indexOf(top), history.levels.size());
+            String village = levels.get(levels.size() - 1);
+            VillageMap villages = history.villages;
+            if (route.travelFrom != null) {
+                List<Map<String, String>> far = new ArrayList<>();
+                for (Map<String, String> candidate : candidates(levels, offered, ref)) {
+                    double[] at = villages == null ? null : villages.of(candidate.get(village));
+                    if (at != null && Fieldwork.distance(at[0], at[1], route.travelFrom[0], route.travelFrom[1])
+                            >= route.travelMetres) {
+                        far.add(candidate);
+                    }
+                }
+                if (far.isEmpty()) {
+                    route.noCandidate = true;
+                    return null;
+                }
+                return far.get(new SplittableRandom(seed(config.seed(), number, 33)).nextInt(far.size()));
+            }
+            if (route.place == null) {
+                return null;
+            }
+            if (stillViable(levels, offered, route.place, ref)) {
+                return route.place;
+            }
+            route.moved = true;
+            double[] origin = villages == null ? null : villages.of(route.place.get(village));
+            if (origin == null) {
+                return null;
+            }
+            Map<String, String> nearest = null;
+            double best = Double.POSITIVE_INFINITY;
+            for (Map<String, String> candidate : candidates(levels, offered, ref)) {
+                double[] at = villages.of(candidate.get(village));
+                if (at != null) {
+                    double d = Fieldwork.distance(origin[0], origin[1], at[0], at[1]);
+                    if (d < best) {
+                        best = d;
+                        nearest = candidate;
+                    }
+                }
+            }
+            return nearest;
+        }
+
+        /** Whether each answer of {@code place} is offered given those above it, and its village is viable. */
+        private boolean stillViable(List<String> levels, List<String> offered, Map<String, String> place,
+                                    TreeReference ref) {
+            Map<String, String> substituted = new HashMap<>();
+            List<String> choices = offered;
+            for (String level : levels) {
+                String answer = place.get(level);
+                if (answer == null || !choices.contains(answer)) {
+                    return false;
+                }
+                Upper upper = history.uppers.get(level);
+                substituted.put(upper.reference().strip(), answer);
+                SearchChoices.Result below = below(upper, substituted, ref);
+                if (below == null) {
+                    return false;
+                }
+                choices = below.choices();
+            }
+            return free(choices);
+        }
+
+        /** Every place reachable from the offered choices of {@code levels.get(0)} whose village is viable, in order. */
+        private List<Map<String, String>> candidates(List<String> levels, List<String> offered, TreeReference ref) {
+            List<Map<String, String>> out = new ArrayList<>();
+            candidates(levels, 0, offered, new HashMap<>(), new java.util.LinkedHashMap<>(), ref, out);
+            return out;
+        }
+
+        private void candidates(List<String> levels, int i, List<String> offered, Map<String, String> substituted,
+                                Map<String, String> chosen, TreeReference ref, List<Map<String, String>> out) {
+            Upper upper = history.uppers.get(levels.get(i));
+            for (String choice : new java.util.LinkedHashSet<>(offered)) {
+                if (choice.isEmpty()) {
+                    continue;
+                }
+                Map<String, String> more = new HashMap<>(substituted);
+                more.put(upper.reference().strip(), choice);
+                SearchChoices.Result below = below(upper, more, ref);
+                if (below == null) {
+                    continue;
+                }
+                Map<String, String> place = new java.util.LinkedHashMap<>(chosen);
+                place.put(levels.get(i), choice);
+                if (i == levels.size() - 1) {
+                    if (free(below.choices())) {
+                        out.add(place);
+                    }
+                } else {
+                    candidates(levels, i + 1, below.choices(), more, place, ref, out);
+                }
+            }
+        }
+
+        /** The choices of the question below {@code upper}, with the answers {@code substituted} by reference. */
+        private SearchChoices.Result below(Upper upper, Map<String, String> substituted, TreeReference ref) {
+            return SearchChoices.load(upper.appearance(), upper.formChoices(),
+                    expression -> substituted.containsKey(expression.strip()) ? substituted.get(expression.strip())
+                            : evaluate(expression, ref),
+                    form.attachments());
+        }
+
+        /** Whether the id question's choices hold an id, other than a special value, not yet received. */
+        private boolean free(List<String> ids) {
+            for (String c : ids) {
+                if (!c.isEmpty() && !config.specialValues().contains(c) && !history.received.contains(c)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /** Whether the upper question {@code name} answered {@code choice} still leads to an id not yet received. */
