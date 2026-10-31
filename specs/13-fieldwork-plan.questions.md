@@ -947,3 +947,22 @@ Existing committed tests and fixtures were kept unchanged. All additions
 are Amendment 4 test/support classes and fixtures, plus this appended
 questions section. Temporary probes and logs are under `.codex-runs/`;
 no commit was made.
+
+### Dispute 4 build verification (2026-10-31)
+
+**Question:** Can the corrected warning test compile and run through the
+required offline Maven build in this sandbox?
+
+**Observation:** `.\mvnw.cmd -o -q test` exits 1 at `testCompile`.
+A diagnostic `-e test-compile` run confirms `java.nio.file.AccessDeniedException`
+for `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+
+**Verification and limits:** The existing offline diagnostic compiler and
+JUnit launcher were adapted under `.codex-runs/fieldwork-dispute4/`.
+All ten Amendment 4 test/support sources compiled with `--release 17`
+against existing compiled project APIs, and all 94 Amendment 4 test cases
+passed, with none skipped or aborted and no failed containers. This verifies
+the changed test separately; it does not establish a successful Maven build.
+The directory contains `maven-test.log`, `maven-detail.log`,
+`memory-compile.log` and `junit.log`. No production source was read, no
+dependency or build configuration was changed, and no commit was made.

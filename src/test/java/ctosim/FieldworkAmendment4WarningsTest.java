@@ -31,8 +31,12 @@ class FieldworkAmendment4WarningsTest extends FieldworkAmendment4Support {
     @Test void twoMissingColumnsProduceTwoWarningsAfterOverflowAndReusedIdWarnings() throws Exception {
         tables("single-village.csv", "two-households.csv");
         replaceTable("villages", "lat_col,lon_col", "other_lat,other_lon");
-        var plan = new Fieldwork(cascade(), config4(3, 1, 1, LOCATED + ",\"fieldworkDays\":1"));
-        plan.walkAll();
+        // After exhaustion, ordinary district draws could select an empty branch.
+        // Fix only the district so the village stays steered and both later IDs are reused.
+        var plan = new Fieldwork(cascade(), config4(3, 1, 1, LOCATED + ",\"fieldworkDays\":1"
+                + ",\"fields\":{\"district\":{\"value\":\"D1\"}}"));
+        var submissions = plan.walkAll();
+        assertEquals(List.of("A01", "A01", "A01"), column(submissions, "answer"));
         var warnings = plan.warnings();
         assertEquals(4, warnings.size(), warnings.toString());
         warning(List.of(warnings.get(0)), null, 3, 1);

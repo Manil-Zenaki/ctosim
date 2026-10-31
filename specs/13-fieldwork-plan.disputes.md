@@ -260,3 +260,59 @@ Requested: keep the warning's position (second, after the overflow
 warning) and its field, but check its count against the submissions
 themselves (the number of submissions whose id was received by an
 earlier one), or accept 1 or 2; keep every other assertion.
+
+## Adjudication of Dispute 4 (2026-10-31)
+
+### Reuse count after exhaustion: upheld; make the warning scenario deterministic
+
+The original unconditional count of two reused IDs is wrong. Amendment 4
+starts each new day's place as in Amendment 3, which restores ordinary
+answering when no offered choice is viable. Amendment 2 clarification (21)
+says that an empty offered list receives no ID; clarification (22) counts
+only an accepted answer. Exhausting the reachable pool therefore does not
+itself imply that each later submission reuses an ID.
+
+The fixtures confirm that districts D1, D2 and D3 are offered, but only D1
+has a village (A), whose only household is A01. B01 belongs to village B,
+which is never offered. After A01 has been received, an ordinary district
+draw may reach an empty branch. The spec prescribes neither the reported
+seed's particular draws nor a minimum of one reuse: both later draws could
+reach empty branches. Merely accepting one or two would retain an unsupported
+assumption, as would requiring four warnings without ensuring a reuse occurs.
+
+Changed only this test's configuration to give district a fixed value of D1,
+and added an assertion that the three accepted ID answers are A01, A01, A01.
+Amendment 3 clarification (32) disables steering only on the overridden
+question. The village has no such override, so Amendment 4 still applies
+and its missing-coordinate-column diagnostics remain required. With D1
+fixed, the village offers A and the ID offers A01 on every submission,
+making exactly two reused submissions a consequence of the fixture and spec.
+
+All original warning assertions are retained: four warnings, overflow first
+with three actual days and one configured day, the answer-field reuse warning
+second with count two, exactly one warning for each missing column/file pair
+afterward, and an unmodifiable warnings list. No production-specific draw
+sequence or warning wording is assumed. The existing adjudications of
+Disputes 1, 2 and 3 remain unchanged; no new spec ambiguity or fixture change
+is needed.
+
+### Verification
+
+Ran `.\mvnw.cmd -o -q test`; it exited 1 at `testCompile`. A diagnostic
+`-e test-compile` run confirmed `java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The full Maven suite
+could not run; this limitation is also recorded in the questions file.
+
+Adapted the existing offline diagnostic compiler and JUnit launcher under
+`.codex-runs/fieldwork-dispute4/`. All ten Amendment 4 test/support sources
+compiled successfully with `--release 17` against existing compiled project
+APIs. JUnit ran all 94 cases in `FieldworkAmendment4PlaceTest`,
+`FieldworkAmendment4MoveTest`, `FieldworkAmendment4LocationTest`,
+`FieldworkAmendment4WarningsTest` and `FieldworkAmendment4RandomnessTest`:
+94 passed, none failed, skipped or aborted, and no containers failed.
+This supplements, but does not establish, a successful Maven build. Logs are
+`maven-test.log`, `maven-detail.log`, `memory-compile.log` and `junit.log`
+in that diagnostic directory.
+
+No production source was read or changed, no dependency or build configuration
+was changed, and no commit was made.
