@@ -52,6 +52,7 @@ public final class SimulationConfig {
     private final int interviewsPerDay;
     private final ProblemRates problems;
     private final Consent consent;
+    private final Villages villages;
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
@@ -99,6 +100,18 @@ public final class SimulationConfig {
                      ZoneId timeZone, int enumerators, double speedViolationRate,
                      Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id,
                      int interviewsPerDay, ProblemRates problems, Consent consent) {
+        this(seed, submissions, start, fieldworkDays, missingRate, specialRate, specialValues, repeatMin, repeatMax,
+                integerRange, decimalRange, fields, timeZone, enumerators, speedViolationRate, profiles, area, textPools,
+                id, interviewsPerDay, problems, consent, null);
+    }
+
+    SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
+                     double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
+                     NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
+                     ZoneId timeZone, int enumerators, double speedViolationRate,
+                     Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id,
+                     int interviewsPerDay, ProblemRates problems, Consent consent, Villages villages) {
+        this.villages = villages;
         this.consent = consent;
         this.problems = problems;
         this.id = id;
@@ -245,7 +258,7 @@ public final class SimulationConfig {
     SimulationConfig withId(String id) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
     }
 
     /** The form's consent questions; empty when the configuration names none. See Amendment 8. */
@@ -255,7 +268,7 @@ public final class SimulationConfig {
 
     /** The coordinate columns of the preloaded village list; empty when none are named. See Amendment 10. */
     public java.util.Optional<Villages> villages() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return java.util.Optional.ofNullable(villages);
     }
 
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
@@ -267,7 +280,7 @@ public final class SimulationConfig {
     public SimulationConfig withProblems(ProblemRates problems) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
     }
 
     /** Text pools in file order; empty when not set. */
@@ -288,13 +301,13 @@ public final class SimulationConfig {
         more.put(name, override);
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, more,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
     }
 
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
@@ -303,6 +316,6 @@ public final class SimulationConfig {
         }
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
     }
 }

@@ -40,7 +40,8 @@ final class ConfigParser {
 
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
             "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
-            "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay", "problems", "consent");
+            "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay", "problems", "consent",
+            "villages");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
             "distribution", "expr", "area", "when");
@@ -122,7 +123,34 @@ final class ConfigParser {
                 repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations,
                 profiles, area, pools, id, interviewsPerDay,
                 root.has("problems") ? problems(root.get("problems")) : null,
-                root.has("consent") ? consent(root.get("consent")) : null);
+                root.has("consent") ? consent(root.get("consent")) : null,
+                root.has("villages") ? villages(root.get("villages")) : null);
+    }
+
+    /** The coordinate columns of the preloaded village list (spec 04, Amendment 10). */
+    private Villages villages(JsonNode node) throws ConfigException {
+        JsonNode villages = object(node, "villages");
+        checkKeys(villages, "villages", Set.of("latitude", "longitude"));
+        String[] columns = new String[2];
+        String[] keys = {"latitude", "longitude"};
+        for (int i = 0; i < 2; i++) {
+            String path = "villages." + keys[i];
+            if (!villages.has(keys[i])) {
+                throw error("villages", "needs \"" + keys[i] + "\", the name of the column holding " + keys[i] + "s");
+            }
+            String name = string(villages.get(keys[i]), path);
+            if (name.isEmpty()) {
+                throw error(path, "must not be empty");
+            }
+            if (EDGE_SPACE.matcher(name).find()) {
+                throw error(path, "must not start or end with white space: \"" + name + "\"");
+            }
+            columns[i] = name;
+        }
+        if (columns[0].equals(columns[1])) {
+            throw error("villages", "the latitude and longitude columns must differ, not both '" + columns[0] + "'");
+        }
+        return new Villages(columns[0], columns[1]);
     }
 
     /** The form's consent questions (spec 04, Amendment 8). */
