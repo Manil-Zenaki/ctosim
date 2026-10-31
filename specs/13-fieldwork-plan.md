@@ -356,3 +356,96 @@ not yet received among the choices actually offered, and looking ahead
 neither receives nor reserves an id (30); an override disables steering
 only on its own question, and standalone walks never steer (32); draws
 depend on the seed and the submission number (33).
+
+## Amendment 4: one village a day in the answers, and located villages
+
+The plan gives each enumerator one village a day ("Where"), but until
+now that village was only a point used for the GPS answers: the village
+question of a cascade (Amendment 3) was drawn at each interview, so one
+enumerator declared several villages, possibly far apart, in a single
+day, and a check of the villages visited by an enumerator in a day
+flagged clean data. With this amendment the declared village follows the
+enumerator's day, and, when the configuration names the columns of the
+preloaded village list that hold coordinates (spec 04, Amendment 10),
+the interviews take place at the villages' coordinates. Everything not
+mentioned here is unchanged.
+
+### The village question
+
+When the id question has an upper question (Amendment 3), that upper
+question is the **village question**. An interview's **place** is its
+answers to the village question and to the village question's own upper
+questions (in the IPA form: `a_district_id` and `a_kg_id`). A form whose
+id question has no upper question has no village question, and nothing
+of this amendment applies to it.
+
+A village question whose override has a `value`, `texts` or an
+expression, or whose rules apply, is not steered (Amendment 3): nothing
+of this amendment applies to it either.
+
+### The village of the day
+
+During `walkAll()`, each enumerator has, on each day it works, a **place
+of the day**, whose village is its **village of the day**:
+
+- The enumerator's first interview of a day answers the village question
+  and its upper questions as in Amendment 3 (drawn among the viable
+  choices). The place it gets is the enumerator's place of the day.
+- Each next interview of the enumerator on that day answers each
+  question of the place with the place of the day's answer, when that
+  answer is offered and viable (Amendment 3) at that point of the
+  interview.
+- When the village of the day is no longer viable (all the households it
+  offers have been received), the enumerator **moves** to another
+  village: the place is answered with a **candidate** (an answer to each
+  question of the place, each offered and viable given the answers above
+  it). When the village of the day and at least one candidate's village
+  are located (below), the candidate is the one whose village is nearest
+  to the village of the day among the candidates whose village is
+  located, the first one in the order of the offered choices, upper
+  questions first, when two are equally near; otherwise the place is
+  answered as in Amendment 3. The new place is the enumerator's place of
+  the day from then on.
+- When no candidate exists, the place is answered as in Amendment 3.
+
+A new day starts a new place of the day, drawn as for the first day.
+
+**The time of a move.** When an enumerator moves within a day and both
+villages are located, the interview starts later than "When" gives, by
+two minutes per kilometre between the two villages' coordinates (30 km/h),
+rounded up to a whole minute. When that start is after the end of work,
+the interview is instead the first interview of the enumerator's next
+day ("When"), and its place is that day's new place.
+
+### Located villages
+
+When `config.villages()` (spec 04, Amendment 10) is present, a choice of
+the village question is **located** when the first row of the CSV file
+the question's `search()` reads (spec 07, Amendment 3), among those whose
+placeholder column holds the choice's value, has, in the column named by
+`latitude()`, a number between −90 and 90 and, in the column named by
+`longitude()`, a number between −180 and 180. These numbers are its
+**coordinates**. Without `config.villages()`, no village is located.
+
+An interview whose village answer is located takes place at a point
+drawn from `config.seed()` and its submission number, within 1.5 km of
+its village's coordinates: that point is its visit's `latitude()` and
+`longitude()` in `visits()`, and its location answers follow it as in
+"Walking one visit", whether the form asks them before or after the
+village question. `config.area()` does not apply to such a point. An
+interview whose village is not located takes place as in "Where".
+
+### Warnings
+
+When `config.villages()` is present and the form has no village question
+(or one that is not steered), `configWarnings()` holds one warning that
+says so. When the file read by the village question has no column of
+one of the names given, `warnings()` holds one warning that names the
+column and the file, once for each such pair, after the other warnings.
+
+### Randomness
+
+The candidates, the nearest one and the time of a move depend on the
+answers and on the coordinates; every draw comes from `config.seed()`
+and the submission number, and the results are reproducible as in
+"Randomness".

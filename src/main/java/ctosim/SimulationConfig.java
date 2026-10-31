@@ -253,6 +253,11 @@ public final class SimulationConfig {
         return java.util.Optional.ofNullable(consent);
     }
 
+    /** The coordinate columns of the preloaded village list; empty when none are named. See Amendment 10. */
+    public java.util.Optional<Villages> villages() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
     public java.util.Optional<ProblemRates> problems() {
         return java.util.Optional.ofNullable(problems);

@@ -428,3 +428,17 @@ are reviewed one by one and confirmed: lexical checks of the help without
 fixed wording (K1); the topics the amendment lists, the comparison check
 being described in prose since its `check` is `custom` (K2); the help
 oracle follows the earlier infrastructure (K3).
+
+## Amendment 12: the help on villages
+
+The command is unchanged; its help file documents the village of the
+day (spec 13, Amendment 4: an enumerator declares one village a day,
+moving to the nearest village with free households when its village has
+none left), the configuration's `villages` key (spec 04, Amendment 10:
+the latitude and longitude columns of the preloaded village list, named
+by the user; the interviews then take place at the villages'
+coordinates), and the problem `travel` without GPS (spec 14, Amendment
+4: an interview declared in a village too far from the previous one for
+the time between them), with the check that finds it: the distance
+between the coordinates of the villages of an enumerator's successive
+interviews compared with the time between them.

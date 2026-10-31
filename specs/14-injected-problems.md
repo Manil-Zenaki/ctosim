@@ -702,3 +702,66 @@ is the only candidate, and an unsuccessful `resent` target's role is not
 prescribed (C3); `B` is checked only against the end of work, not the
 daily quota, and `A` keeps its visit's point (C4); no random sequence is
 prescribed (C5); the clean duration removes `leftOpen` only (C6).
+
+## Amendment 4: impossible travel through located villages
+
+Until now an impossible trip could only be seen in GPS answers. With
+the villages located in the preloaded list (spec 13, Amendment 4), it can
+be seen without GPS: an interview declared in a village too far from the
+village of the enumerator's previous interview to be reached in the time
+between them, as when an interview is made up. Everything not mentioned
+here is unchanged.
+
+### `travel` through the villages
+
+When the form has a village question and `config.villages()` is present
+(spec 13, Amendment 4), the `travel` target is planned as in "`travel`:
+an impossible trip" (same day as the previous interview, ten to forty
+minutes after its end, the next interview being the first of the next
+day), except where it takes place:
+
+- its place (spec 13, Amendment 4) is answered with a candidate drawn
+  from `config.seed()` and its number, uniformly among the candidates
+  whose village is located and at least `max(20 km, 2 km × g)` from the
+  coordinates of the previous interview's village, `g` being the number
+  of minutes between the end of the previous interview and the start of
+  the target;
+- it takes place at a point within 1.5 km of that village's coordinates
+  (spec 13, Amendment 4), so its location answers, if the form has any,
+  are far from the previous interview's too;
+- it is not a move: the enumerator's place of the day is unchanged, and
+  the time of a move does not apply.
+
+This holds whether or not the form has a geopoint, geotrace or geoshape
+question. When the previous interview's village is not located, or no
+candidate is far enough, the target is walked as an ordinary visit,
+carries no problem, and `warnings()` holds a warning that names the
+submission. A form with location questions but no village question, or
+without `config.villages()`, keeps the rule of "`travel`: an impossible
+trip". When the form has neither location questions nor a village
+question with `config.villages()`, no `travel` problem is injected, and
+`warnings()` holds one warning that says so.
+
+Its records: one for the village question, with `value` the target's
+village answer, as written in the wide export, and `cleanValue` the
+previous interview's; then one for each location question answered in
+the submission, as in "`travel`: an impossible trip"; all in the form's
+order, each with `relatedKey` the previous interview's KEY.
+
+### `reinterview` and the village of the day
+
+A `reinterview` target answers the place of its original (the id
+question's upper questions, as in "`reinterview`"). So that this does not
+look like a trip:
+
+- when the target is not its enumerator's first interview of its day
+  and the form has a village question, its original is drawn as in "The
+  original of a duplicate", but among the eligible submissions whose
+  village answer is the enumerator's village of the day, when there is
+  at least one; otherwise among all eligible submissions, as before;
+- when the target is its enumerator's first interview of its day, the
+  original's place is the enumerator's place of the day.
+
+The target is not a move (spec 13, Amendment 4) even when its village
+differs from the village of the day; the village of the day is then
+unchanged.

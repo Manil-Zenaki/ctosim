@@ -565,3 +565,36 @@ reviewed one by one and confirmed: a configuration without `problems`
 still has none (51); `leftOpen` is independent of the other settings (52);
 the number and diagnostic conventions of the earlier rates apply (53);
 the immutability and copy rules survive the extra component (54).
+
+## Amendment 10: located villages
+
+One top-level key is added (used by spec 13 Amendment 4 and spec 14
+Amendment 4); everything else is unchanged.
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `villages` | object, see below | none | The columns of the preloaded village list that hold the villages' coordinates. Without it, no village is located. |
+
+The `villages` object:
+
+| Key | Type | Default | Constraint |
+|---|---|---|---|
+| `latitude` | string | required | non-empty, without white space at its ends: the name of the column holding latitudes |
+| `longitude` | string | required | non-empty, without white space at its ends, different from `latitude`: the name of the column holding longitudes |
+
+Public type and accessor added:
+
+```java
+public record Villages(String latitude, String longitude) { }
+
+// added to SimulationConfig:
+public java.util.Optional<Villages> villages();   // empty when the key is absent
+```
+
+- Column names are exact strings: they are compared with the CSV header
+  as written, case included.
+- The record's constructor throws `IllegalArgumentException` for a value
+  the file may not hold, and `NullPointerException` for a null
+  component.
+- The rules of "Strictness" and "Errors" apply, with errors at their
+  paths (`villages`, `villages.latitude`); copies keep `villages()`.
