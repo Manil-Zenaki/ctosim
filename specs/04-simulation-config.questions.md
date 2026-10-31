@@ -995,3 +995,98 @@ from spec 04; no production source was opened, read, searched, or changed.
   remain unchanged. **Dependent tests:** Full Maven test compilation remains
   unverified. Runtime tests were not requested and were not run. No commit
   was created.
+
+## Amendment 10: located villages
+
+New coverage is in `VillagesAmendment10Test`,
+`SimulationConfigAmendment10ParsingTest`, and
+`SimulationConfigAmendment10CopiesTest`, with
+`SimulationConfigAmendment10Support` and `amendment-10-villages.json`.
+Existing tests, fixtures, and questions are preserved. Expectations come only
+from spec 04; no production source was opened, read, searched, or changed.
+
+55. **What column-name grammar and definition of whitespace apply?**
+    - **Assumption:** The stated nonempty/no-edge-whitespace rule is the whole
+      validation rule. Names retain case, Unicode spelling (including composed
+      versus decomposed forms), punctuation, quotes, backslashes, and internal
+      whitespace. They are not restricted to form identifiers, conventional
+      latitude/longitude names, or existing CSV headers. Distinctness compares
+      decoded strings, not object identity, case-folded text, or normalized
+      Unicode. A single-character name is valid. Space, tab, CR, LF, and form
+      feed at either edge are rejected, following the confirmed conventions
+      for id and consent names. No name-length limit is inferred.
+    - **Unresolved:** The exact Unicode definition of edge whitespace is not
+      specified; non-ASCII edge whitespace and other control characters are
+      not tested.
+    - **Dependent tests:** `acceptedNames`, `invalidNames`, their constructor
+      and parse/load consumers, the decoded-equality invalid cases, and
+      `constructorRejectsEqualNamesEvenWhenTheyAreDifferentStringInstances`.
+
+56. **Where should missing members, equal names, and duplicate keys be reported?**
+    - **Assumption:** Missing-member and equal-name errors may identify
+      `villages` or a more specific child, since these span the object rather
+      than a uniquely invalid value. A wrong-type, empty, or whitespace-invalid
+      member must identify `villages.latitude` or `villages.longitude` as
+      applicable. All failures require ConfigException, source attribution,
+      and explanatory text, without fixing the wording. Duplicate object keys
+      retain question 2's confirmed syntax-versus-schema flexibility. Syntax
+      errors require the failing line and retained cause. Constructor tests
+      require the documented exception type without fixing messages or the
+      precedence of multiple different invalid inputs. Both-null constructor
+      inputs must throw NullPointerException.
+    - **Dependent tests:** `invalidVillagesReportConfigExceptionSourceLocationAndReason`,
+      duplicate/unknown-key tests, `malformedVillagesJsonReportsFailingLineAndRetainsCause`,
+      and constructor rejection tests.
+
+57. **Does villages require or infer other configuration, or reserve names elsewhere?**
+    - **Assumption:** No new prerequisite is specified. The two columns alone
+      suffice; loading this setting requires no form, CSV, area, problems,
+      consent, text pool, or id setting. Conversely these other settings do not
+      infer villages. The extension is only the top-level villages object and
+      its two members; arbitrary field/profile/choice/id names remain legal.
+      Every earlier setting is preserved when villages is added. CSV header
+      lookup, coordinate parsing, village location, and their statistical use
+      belong to the consumer modules and are not tested here.
+    - **Dependent tests:** Omission tests, schema-placement tests,
+      `newSchemaNamesRemainLegalAsArbitraryNames`,
+      `villagesAloneDoNotEnableProblemsConsentOrChangeOtherDefaults`, and
+      `addingVillagesPreservesAllEarlierNondefaultSettings`.
+
+58. **Which copies preserve villages, and is record identity significant?**
+    - **Assumption:** Every existing copy API (withSeed, withSubmissions,
+      withProblems) retains both presence/absence and exact component strings.
+      This includes unchanged assignments, boundary values, replacing problems
+      with defaults or a legacy-constructor value, and clearing problems.
+      Receivers remain unchanged; copies are distinct configurations under the
+      previously confirmed contract. No separate identity requirement is
+      imposed on the immutable Villages record. Independently parsed configs
+      must not share mutable setting state. BOM, UTF-8, JSON escapes, and
+      parse/load validation retain the existing contract.
+    - **Dependent tests:** All Amendment 10 copy tests, UTF-8 fixture and
+      BOM/escape tests, and both-entry-point parameterizations. No new random
+      generation or statistical behavior belongs to this amendment's module.
+
+### Amendment 10 build verification (2026-10-31)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile`; Maven reached
+  `maven-compiler-plugin:3.15.0:testCompile` and failed on the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. An `-e`
+  diagnostic retry confirmed `java.nio.file.AccessDeniedException` while javac
+  closed its archive file manager. Logs:
+  `.codex-runs/04-amendment10-test-compile.log` and
+  `.codex-runs/04-amendment10-test-compile-detail.log`.
+- All four new Java files and their existing test-source dependencies compiled
+  successfully with Java release 17 against the actual `target/classes`
+  binaries and cached JUnit 5.11.4 API (ten source files total). The existing
+  compiler-probe approach reads class entries in memory to avoid the archive
+  access failure. It does not inspect production source, copy repositories,
+  change permissions, or install dependencies. Probe:
+  `.codex-runs/Amendment10CompileProbe.java`; result:
+  `.codex-runs/04-amendment10-probe-compile.log` (`compiled=true`). This verifies
+  compilation of the added sources, but does not make Maven successful.
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** This is an environment
+  blocker; production, build configuration, dependencies, and existing tests
+  remain unchanged. **Dependent tests:** Full Maven test compilation remains
+  unverified. Runtime tests were not requested and were not run. No commit
+  was created.
