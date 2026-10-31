@@ -555,3 +555,31 @@ The schedule test deliberately omits id from both the command and configuration,
 **Assumption:** Add an independent Java 8-compatible oracle and a new `build-*.ps1` script discovered by the unchanged runner. Each standalone do-file finds the public `ctosim.sthlp` artifact and calls the new oracle through a shared new helper. `findfile`, Java errors, and nonzero oracle results propagate as Stata errors; content failures print a short requirement diagnostic. The source fixture lives under `src/test/stata/fixtures`; build products and diagnostics live under `.codex-runs/stata-support/`. The required unmodified runner also creates its normal working directories/logs under `target/stata-tests/`. Existing tests, helpers, fixtures, production code, build configuration, and specifications remain unchanged; this questions file is the only existing file edited.
 
 **Tests:** `left-open-help-check.do`, `build-left-open-help-fixtures.ps1`, `fixtures/LeftOpenHelpChecks.java`, and the seven new do-files.
+
+## Amendment 12: villages in the help
+
+### L1. Free-form prose and lexical assertions
+
+**Question:** How can automated tests check the documentation without requiring particular sentences, headings, or SMCL formatting?
+
+**Assumption:** Follow the established help-test pattern: check visible English prose with alternative vocabulary, strip SMCL comments/directives, preserve nested visible text, and normalize line wrapping and typographic punctuation. The exact identifiers `villages` and `travel` are checked where they are documented as a configuration key and problem name; prose matching is case-insensitive. Related concepts must occur within a 300-character window, a test heuristic rather than a specification limit. Equivalent wording outside the vocabulary or more widely separated explanations may need an oracle adjustment. Lexical checks cannot prove arbitrary prose semantics or reliably detect every negation or contradiction; semantic review remains necessary. Synthetic positive variants, clause omissions, empty/comment-only help, and selected incorrect descriptions check the oracle independently. Production help was not read or searched to derive expectations.
+
+**Tests:** All seven new `test_villages_help_*.do` files; `fixtures/VillagesHelpChecks.java`.
+
+### L2. Depth of the referenced amendments and the travel check
+
+**Question:** Does Amendment 12 require the help to repeat every algorithm, validation rule, threshold, and warning from specs 04, 13, and 14, or prescribe a named checking command?
+
+**Assumption:** Require the topics explicitly listed in spec 11 Amendment 12: each enumerator declares one village per day; household exhaustion triggers moving to the nearest village with free households; `villages` configures user-named latitude and longitude columns of a preloaded village list; interviews use the villages' coordinates; `travel` can be seen without GPS, through a declared village too far from the previous interview's village for the available time; and detection compares village-coordinate distance with the time between successive interviews of an enumerator. Accept a prose check, with no invented command name or executable example. Interview locations at or near the village coordinates both satisfy the help requirement, consistent with the referenced spec 13's 1.5 km vicinity. Do not demand exact equality of GPS and village coordinates, a JSON example, defaults, full nested-key paths, coordinate ranges, tie-breaking, travel speeds, warning rules, answer-key rows, or injection formulas. The command is unchanged, so no simulation, statistical, or new option tests are added.
+
+**Tests:** `test_villages_help_daily_village.do`, `test_villages_help_relocation.do`, `test_villages_help_configuration.do`, `test_villages_help_coordinates.do`, `test_villages_help_travel.do`, `test_villages_help_no_gps.do`, and `test_villages_help_detection.do`.
+
+### L3. Existing tests and standalone failure propagation
+
+**Question:** How can new checks run independently while keeping every committed test and helper unchanged?
+
+**Assumption:** Add a separate Java 8-compatible help oracle, a new `build-*.ps1` script discovered by the unchanged runner, and a new Stata helper. Each standalone test finds the public `ctosim.sthlp` artifact on the ado-path, then calls the oracle through `javacall`; missing help, Java failures, and content assertion failures stop the do-file with an error. Content failures print a requirement diagnostic. Source fixtures are under `src/test/stata/fixtures`; all new generated classes, jar, and diagnostics are under `.codex-runs/stata-support/`. The prescribed unmodified runner writes its usual logs under `target/stata-tests/`. No production code, existing tests/helpers/fixtures, specifications, or build configuration are changed; this questions file is the only existing file edited.
+
+**Tests:** `villages-help-check.do`, `build-villages-help-fixtures.ps1`, `fixtures/VillagesHelpChecks.java`, and the seven new test do-files.
+
+**Independent validation (2026-10-31):** The Java fixture compiled for Java 8 and passed its seven-area self-check: 33 independent clause omissions, alternative wording, nested SMCL, wrapped lines, typographic punctuation, empty/comment-only help, and selected incorrect descriptions. A separate Stata batch probe ran all seven delivered do-files against complete synthetic help (all ran to the end), then against incomplete synthetic help (all seven propagated nonzero errors). Probe files and its success marker are in `.codex-runs/villages-help-probe/probe.log`. These checks validate the test infrastructure independently of the production help; they do not claim that production satisfies the new amendment.
