@@ -296,6 +296,12 @@ the configuration's {cmd:start} for nine hours (an interview may end later);{p_e
 {phang2}- an enumerator works in one village a day: its interviews that day are
 at most 3 km apart, and the GPS answers of an interview are within 30 m of the
 household (inside the configuration's {cmd:area}, when it has one);{p_end}
+{phang2}- when the survey id is chosen through a cascade of preloaded lists
+(district, then village, then household), the village answered is the
+enumerator's village of the day too: every interview of that day declares the
+same village, and when no household of that village is left to interview, the
+enumerator moves to the nearest village that still has some, which delays the
+next interview by the time of the trip;{p_end}
 {phang2}- an enumerator does at most {cmd:interviewsPerDay} interviews a day (4 by
 default, set in the configuration), fewer when the form is long.{p_end}
 
@@ -329,7 +335,7 @@ with SurveyCTO Collect:{p_end}
 {phang2}- {bf:short} and {bf:long}: an interview far too short (15-30% of its normal duration) or too long (3 to 6 times), for {cmd:ipacheckoutliers} on the duration;{p_end}
 {phang2}- {bf:offhours}: an interview started in the evening, outside working hours ({cmd:ipachecktimeuse});{p_end}
 {phang2}- {bf:overlap}: an enumerator's interview of another household started before the end of its previous one, sharing at least five minutes;{p_end}
-{phang2}- {bf:travel}: an impossible trip, an interview too far from the enumerator's previous one for the time between them (only when the form has a GPS question);{p_end}
+{phang2}- {bf:travel}: an impossible trip, an interview too far from the enumerator's previous one for the time between them (when the form has a GPS question, or without GPS through located villages, below);{p_end}
 {phang2}- {bf:outlier}: one numeric answer far from the values usually drawn for its question (beyond the fences {cmd:ipacheckoutliers} uses), yet still accepted by the form's constraint at that moment, as Collect would allow, also when the constraint depends on other answers (a second income at most the first, for instance); when a question has no room for such a value, another question gets it, or a later submission.{p_end}
 {phang2}- {bf:leftOpen}: a form left open. The enumerator interrupts an interview, does another interview in between, then comes back to finish the interrupted form; when the interruption comes too late in the day, the form stays open overnight and is finished the next morning, after that other interview; when no interview follows, the form is finished the next morning.{p_end}
 
@@ -372,6 +378,21 @@ question; a respondent who refuses answers no to the last one. {cmd:yes} and
 consent questions are answered like any other question.{p_end}
 
 {pstd}
+{bf:Located villages.} When the preloaded village list holds the villages'
+coordinates, name its latitude and longitude columns in the configuration's
+{cmd:villages} key, {cmd:latitude} and {cmd:longitude} ({cmd:ctosim} never
+guesses them from their names). Each interview then takes place at its
+village's coordinates (within 1.5 km), and the GPS answers follow. A
+{bf:travel} problem is then possible without GPS: an interview declared in a
+village too far from the village of the enumerator's previous interview to be
+reached in the time between them, as when an interview is made up. To find
+it, merge the village list into the data on the village answer, then, for each
+enumerator's successive interviews, compare the distance between the two
+villages' coordinates with the time between the end of one and the start of
+the next. The answer key gives the declared village in {cmd:value} and the
+previous interview's village in {cmd:clean_value}.{p_end}
+
+{pstd}
 A duplicate is two submissions with the same survey id, whatever their times;
 an overlap is two interviews of one enumerator with different ids whose times
 overlap. The configuration's {cmd:problems} object sets the share of
@@ -397,7 +418,7 @@ with the columns:{p_end}
 {synopt:{cmd:family}} {cmd:duplicate}, {cmd:duration}, {cmd:schedule}, {cmd:travel}, {cmd:outlier} or {cmd:enumerator} (faults){p_end}
 {synopt:{cmd:problem}} one of the problems above{p_end}
 {synopt:{cmd:check}} the check expected to find it ({cmd:custom} for overlaps and trips){p_end}
-{synopt:{cmd:field}} the field concerned (survey id, duration, start time, GPS){p_end}
+{synopt:{cmd:field}} the field concerned (survey id, duration, start time, GPS, village){p_end}
 {synopt:{cmd:value}} its value in the submission{p_end}
 {synopt:{cmd:clean_value}} its value without the problem (the answer an ordinary enumerator would give, or the normal duration){p_end}
 {synopt:{cmd:related_KEY}} the other submission involved: the original of a duplicate, the previous interview of an overlap or a trip{p_end}
