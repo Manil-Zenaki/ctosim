@@ -583,3 +583,35 @@ The schedule test deliberately omits id from both the command and configuration,
 **Tests:** `villages-help-check.do`, `build-villages-help-fixtures.ps1`, `fixtures/VillagesHelpChecks.java`, and the seven new test do-files.
 
 **Independent validation (2026-10-31):** The Java fixture compiled for Java 8 and passed its seven-area self-check: 33 independent clause omissions, alternative wording, nested SMCL, wrapped lines, typographic punctuation, empty/comment-only help, and selected incorrect descriptions. A separate Stata batch probe ran all seven delivered do-files against complete synthetic help (all ran to the end), then against incomplete synthetic help (all seven propagated nonzero errors). Probe files and its success marker are in `.codex-runs/villages-help-probe/probe.log`. These checks validate the test infrastructure independently of the production help; they do not claim that production satisfies the new amendment.
+
+## Amendment 13: the help on user-named don't-know codes
+
+### M1. Free-form help prose
+
+**Question:** How can tests check the documentation without prescribing sentences, headings, or SMCL formatting?
+
+**Assumption:** Follow the established help-test pattern: lexical smoke checks of visible English prose, with alternative wording, comment/directive stripping, nested visible text, whitespace normalization, and typographic punctuation normalization. The exact identifiers `dontKnowCodes` and `dontKnow` retain their documented case; prose is case-insensitive. Related concepts must occur within a 300-character window, a heuristic rather than a specification limit. Equivalent wording outside the accepted vocabulary or unusually separated explanations may require adjusting the oracle. These checks cannot prove arbitrary prose semantics or detect all contradictions; semantic review remains necessary. Synthetic positive variants, independent clause omissions, comment-only/empty help, and selected incorrect descriptions validate the checker without reading production help to derive expectations.
+
+**Tests:** All six new `test_dont_know_codes_help_*.do` files; `fixtures/DontKnowCodesHelpChecks.java`.
+
+The fault-source check additionally looks for an active or passive use/draw/select phrase within one sentence, with up to 100 characters between its parts. This keeps a nearby statement that the *team* uses codes from substituting for documentation that the *fault* uses them. This is another lexical heuristic, not a required prose format; a different but equivalent grammatical construction may need an oracle adjustment.
+
+### M2. Required documentation depth and conditional injection
+
+**Question:** Does the reference to spec 04 Amendment 11 and spec 14 Amendment 5 require every validation, code-selection, warning, and enumerator-allocation detail in the help?
+
+**Assumption:** Require only the topics expressly listed in spec 11 Amendment 13: the exact configuration key `dontKnowCodes`; values for both don't-know and refused answers; users naming their team's values; the exact fault `dontKnow` using those configured codes; and injection only when codes are named. A necessary-condition statement (only when/if, requires) or its equivalent absent-codes statement (without codes, no fault) suffices; do not require both. Merely saying injection happens "when" codes are supplied does not establish "only when". Do not require a JSON example, array syntax, numeric examples, `specialValues` independence, validation rules, fallback algorithms, warning wording, or enumerator-allocation details. The command is unchanged, so no new simulation, statistical, or command-option tests are added.
+
+**Tests:** `test_dont_know_codes_help_configuration.do`, `test_dont_know_codes_help_unknown_answers.do`, `test_dont_know_codes_help_refused_answers.do`, `test_dont_know_codes_help_user_values.do`, `test_dont_know_codes_help_fault_source.do`, and `test_dont_know_codes_help_activation.do`.
+
+### M3. Standalone tests and unchanged existing infrastructure
+
+**Question:** How can the new tests propagate failures while leaving all committed tests and helpers intact?
+
+**Assumption:** Add a separate Java 8-compatible oracle, a new build script discovered by the unchanged runner, and a new Stata helper. Each standalone test finds the public `ctosim.sthlp` artifact on the ado-path and invokes the oracle using `javacall`. Missing help, Java failures, and content assertion failures propagate as Stata errors; the latter display a requirement diagnostic. Source fixtures live under `src/test/stata/fixtures`; new generated classes, jar, logs, and probes use `.codex-runs/`. The prescribed unchanged runner writes its usual working directories/logs under `target/stata-tests/`. No production code, committed tests/helpers/fixtures, specifications, or build configuration are changed; this questions file is the only existing file edited.
+
+**Tests:** `dont-know-codes-help-check.do`, `build-dont-know-codes-help-fixtures.ps1`, `fixtures/DontKnowCodesHelpChecks.java`, and all six new do-files.
+
+**Independent validation (2026-10-31):** The Java fixture compiles for Java 8 and passes its six-area self-check: 19 independent clause omissions, alternative wording, active/passive code-source descriptions, nested SMCL, wrapped lines, typographic punctuation, empty/comment-only help, and selected incorrect descriptions. A separate Stata batch probe ran all six delivered do-files against complete synthetic help (all reached the end), then against incomplete synthetic help (all six propagated nonzero errors). The probe and its completion marker are under `.codex-runs/dont-know-codes-help-probe/`. These checks validate the test infrastructure independently of whether production help satisfies Amendment 13.
+
+**Required suite validation (2026-10-31):** Ran `powershell -ExecutionPolicy Bypass -File scripts/stata-tests.ps1` to completion: 129 tests, 111 passed, 18 failed (exit 1). Stata started successfully. All six new Amendment 13 tests failed with help-content assertions: the exact `dontKnowCodes` configuration key, its unknown/refused answer meanings and user-supplied values, its use by `dontKnow`, and the named-codes prerequisite for injection. These are expected missing-documentation failures, not compilation or launch failures. The other 12 failures are in existing tests; they were left unchanged. The full runner output is `.codex-runs/stata-amendment13-run.log`, with per-test logs under the runner's normal `target/stata-tests/` directory. `git diff --check` passed; no commits were made.
