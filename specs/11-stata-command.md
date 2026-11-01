@@ -448,3 +448,11 @@ are reviewed one by one and confirmed: lexical checks of the help without
 fixed wording (L1); the topics the amendment lists, the check being
 described in prose, without a command or an executable example (L2); the
 help oracle follows the earlier infrastructure (L3).
+
+## Amendment 13: the help on "don't know" codes
+
+The command is unchanged; its help file documents the configuration's
+`dontKnowCodes` key (spec 04, Amendment 11: the values the team uses for
+"don't know" and "refused", named by the user) and that the fault
+`dontKnow` uses those codes and is injected only when they are named
+(spec 14, Amendment 5).

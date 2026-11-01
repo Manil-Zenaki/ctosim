@@ -271,6 +271,11 @@ public final class SimulationConfig {
         return java.util.Optional.ofNullable(villages);
     }
 
+    /** The team's "don't know" and "refused" codes; empty when none are named. See Amendment 11. */
+    public java.util.List<String> dontKnowCodes() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
     public java.util.Optional<ProblemRates> problems() {
         return java.util.Optional.ofNullable(problems);

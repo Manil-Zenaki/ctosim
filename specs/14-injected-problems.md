@@ -778,3 +778,30 @@ reinterview sets the place of the day, and the village preference of a
 reinterview needs a village question only, not coordinates (D4); that a
 trip is not a move is observed through its consequences (D5); no random
 sequence is prescribed (D6).
+
+## Amendment 5: "don't know" codes named by the user
+
+Trying the simulator on teams' forms showed that a code drawn from the
+configuration's `specialValues` can mean something else in a form ("97"
+is often "Other"), or be a code the form never uses: a numeric "don't
+know" then makes a later question impossible to answer (`. <= ${B04}`
+after `B04` = `-888`). The simulator cannot tell what a code means, so
+the user names the team's codes. Everything not mentioned here is
+unchanged.
+
+The fault `dontKnow` (Amendment 1) draws its codes from
+`config.dontKnowCodes()` (spec 04, Amendment 11) instead of
+`specialValues`, with the same rules otherwise: for a `select_one` or
+`select_multiple` question, one of those codes among the offered choices;
+for an integer or decimal question, one of those codes that are numbers
+and that the engine accepts; otherwise, or when there is none, the
+answer drawn as usual is kept.
+
+When `config.dontKnowCodes()` is empty, no `dontKnow` is injected, the
+fault takes no enumerator, and `warnings()` holds one warning that says
+so, among the faults' warnings, as for `fakeRefusal` without consent
+questions (Amendment 2).
+
+`specialValues` keeps its other uses, unchanged (among them the ordinary
+special answers of spec 05, and the choices a shortened roster avoids,
+Amendment 2).

@@ -607,3 +607,28 @@ errors follow the conventions of Amendments 7 and 8, a missing member or
 equal names being reported at `villages` or below (56); `villages` needs
 nothing else in the configuration and implies nothing else (57); every
 copy keeps `villages()` (58).
+
+## Amendment 11: the team's "don't know" codes
+
+One top-level key is added (used by spec 14 Amendment 5); everything else
+is unchanged.
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `dontKnowCodes` | array of strings | none | The values the form's team uses for "don't know" and "refused" answers. Without it, the fault `dontKnow` is not injected. |
+
+Each code is a non-empty string; the codes are distinct, and there is at
+least one. They are exact strings: the simulator does not interpret them,
+and `specialValues` is independent of them.
+
+Public accessor added:
+
+```java
+// added to SimulationConfig:
+public java.util.List<String> dontKnowCodes();   // empty when the key is absent
+```
+
+- `dontKnowCodes()` is unmodifiable and keeps the file's order.
+- The rules of "Strictness" and "Errors" apply, with errors at their
+  paths (`dontKnowCodes`, `dontKnowCodes[1]`); copies keep
+  `dontKnowCodes()`.
