@@ -456,3 +456,11 @@ The command is unchanged; its help file documents the configuration's
 "don't know" and "refused", named by the user) and that the fault
 `dontKnow` uses those codes and is injected only when they are named
 (spec 14, Amendment 5).
+
+Clarification (Amendment 13): assumptions M1–M3 of the questions file are
+reviewed one by one and confirmed: lexical checks of the help without fixed
+wording (M1); the topics the amendment lists, an "only when" or "without
+codes, no fault" statement sufficing (M2), the refused answers among them
+being superseded by Amendment 14; the help oracle follows the earlier
+infrastructure (M3).
+
