@@ -1023,3 +1023,150 @@ Maven retry still fails on the cached JAR access described above. See
 `diagnostic-compile.log`, `diagnostic-junit.log`,
 `maven-test-compile-detail.log`, and `maven-test-compile-final.log` in the
 run directory. Existing committed tests are unchanged; no commit was made.
+
+## Amendment 5: user-named don't-know codes
+
+Only new `InjectedAmendment5*` test classes and a new filtered-choice fixture
+are added for this amendment. Existing committed tests remain unchanged.
+Expectations use Amendment 5, the inherited fault rules in Amendments 1 and
+2, and the explicitly referenced specs 04 Amendment 11 and 05. No production
+sources were opened, searched, or changed.
+
+### E1. How is an empty code list represented, and what about earlier tests?
+
+**Question:** Amendment 5 describes an empty `dontKnowCodes()` list, while
+spec 04 Amendment 11 rejects an explicitly supplied empty JSON array. How
+should inactivity be exercised? Earlier committed tests inject `dontKnow`
+using only `specialValues`; should those be changed in this run?
+
+**Assumption:** Omit `dontKnowCodes` to get the empty accessor list. Explicit
+empty-array validation belongs to spec 04 and is not retested here. The
+user explicitly requires keeping earlier tests, so this run does not revise
+them, even where their pre-Amendment-5 configuration no longer activates
+`dontKnow`. Those tests would require separate adjudication or updating.
+
+**Tests:** `InjectedAmendment5DisabledTest`, especially
+`omittedCodesDisableTheFaultAndWarnOnceWithoutReservingAnEnumerator`.
+
+### E2. What is removed when an inactive fault takes no enumerator?
+
+**Question:** Does an inactive `dontKnow` remain in the fault list used to
+compute `m`, wrap assignments, or issue cumulation and small-sample warnings?
+Does a nonempty list that happens to be unusable in this form also disable it?
+
+**Assumption:** As for inactive `fakeRefusal`, remove the inactive fault before
+assignment and its associated diagnostics. The active faults behave as in
+the configuration with that inactive fault omitted. A nonempty code list is
+still active even if no question in this form can use it; the amendment's
+disabling condition is specifically that the configuration list is empty.
+If the fault is not requested, absence of codes is not a warning condition.
+Supplying codes alone does not enable any problems.
+
+**Tests:** `aDisabledDontKnowDoesNotCauseCumulationOrExtraSmallSampleWarnings`,
+`laterFaultsAreAssignedAsIfTheInactiveDontKnowWereAbsent`,
+`twoInactiveFaultsProduceOnlyTheirOwnConfigurationWarnings`,
+`aNonemptyButUnusableCodeListStillReservesItsFaultyEnumerator`, and the two
+opt-in tests in `InjectedAmendment5DisabledTest`.
+
+### E3. Numeric spelling, constraints, and later questions
+
+**Question:** Must a numeric record preserve the literal spelling of its
+configured code? Are fractional codes coerced to integers? Must a code also
+leave all future dependent questions answerable?
+
+**Assumption:** Numeric assertions compare numeric values where spelling
+is not prescribed; select codes use exact strings (case, leading zeros,
+and Unicode included). A fractional code is not silently rounded to an
+unlisted integer code. The engine must accept the code for the question
+being answered, including its constraint referencing a preceding answer.
+The ordinary numeric drawing range is not an eligibility constraint for
+the fault. Future-constraint lookahead is not required by this amendment,
+so it is not tested. Whitespace, exponent spelling, nonfinite numeric text,
+and several different spellings of the same numeric value are left open.
+
+**Tests:** The numeric, fractional, out-of-range, and exact-string cases in
+`InjectedAmendment5CodesTest`. The constraint fixture references an earlier
+read-only value so it cannot itself be changed by the fault. The filtered
+choice fixture checks offered choices at answer time, not the entire list.
+
+### E4. Warning content and ordering
+
+**Question:** What exact warning text is required, and where inside the
+fault-warning block must the missing-codes warning appear?
+
+**Assumption:** Require one warning identifiable by `dontKnow` when the
+requested fault is disabled. Do not prescribe prose, order relative to
+other fault warnings, or a literal `outlier` token in an outlier warning
+(the latter is only required to name its submission). Check the specified
+placement after original-table warnings and before failed-outlier warnings.
+Small fixtures with sufficient fieldwork days avoid unrelated warnings;
+comparisons involving other faults retain their pre-existing warnings.
+
+**Tests:** `theMissingCodesWarningAppearsAfterTableWarningsAndBeforeOutlierWarnings`
+and the warning-count/allocation tests in `InjectedAmendment5DisabledTest`.
+
+### E5. What does unchanged use of specialValues require?
+
+**Question:** Does naming a code in `dontKnowCodes` also classify it as
+special for ordinary answers or make roster shortening avoid it?
+
+**Assumption:** No. The lists are independent. Ordinary special-answer draws
+still use only `specialValues`; a nonspecial team code remains an ordinary
+choice. Roster shortening may use that code when it is a count-minimizing
+non-special choice, but must avoid `specialValues` even when the team names
+different codes. Ordinary generation with an identical random-generator
+state is unchanged merely by supplying `dontKnowCodes`. The lists may overlap;
+membership in `specialValues` does not disqualify a configured fault code.
+
+**Tests:** `InjectedAmendment5SpecialValuesTest`,
+`aCodeMayBelongToBothListsWithoutBeingExcludedFromTheFault`, and
+`aSingleTeamCodeWorksEvenWhenSpecialValuesIsEmpty`.
+
+### E6. Random draws and counterfactual records
+
+**Question:** Which random sequence and exact number of replacements should
+tests require? How are ordinary answers and records compared?
+
+**Assumption:** No PRNG sequence is prescribed. Fixed-seed statistical tests
+use 200-800 eligible faulty-enumerator opportunities per field and the
+existing seven-binomial-standard-deviations-plus-two tolerance. Uniform code
+choice is measured only among accepted/offered configured codes. Fixtures
+with fixed ordinary answers make every replacement observable and avoid
+ordinary matches hiding probability events. Separate tests cover matching
+codes (no record), blank answers, and independent ordinary numeric draws.
+Clean values come from the same actual visit walked without the fault;
+record values, KEYs, enumerators, and field order are checked against returned
+submissions. Replay checks compare snapshots, fresh plans, locales and time
+zones; an eight-seed check requires different target patterns without fixing
+any pattern. Resent copies must preserve codes but gain no fault record.
+
+**Tests:** `InjectedAmendment5CodesTest`, `InjectedAmendment5RecordsTest`, and
+the statistical roster and ordinary-special regression tests.
+
+### Amendment 5 build verification
+
+**Question:** Can the requested offline Maven compilation run here?
+
+**Observation:** Both the baseline and the post-addition invocation of
+`.\mvnw.cmd -o -q test-compile` fail in `testCompile` accessing
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. This is a build
+environment failure, not a Java source diagnostic. The `-e` retry confirms
+`java.nio.file.AccessDeniedException`; its trace is recorded in
+`maven-test-compile-detail.log` in the run directory.
+
+**Assumption:** Use the existing supplementary in-memory Java compiler
+approach, with `--release 17`, to check all five new Java files and six
+unchanged test support files against compiled public APIs and cached
+dependency bytes. This does not replace a successful requested Maven build.
+No dependencies are installed or repositories copied, and all probes/logs
+are under `.codex-runs/spec14-amendment5/`.
+
+**Result:** The supplementary compilation succeeds for all eleven sources.
+The diagnostic JUnit run discovers and starts 52 invocations: 3 pass and 49
+fail, with no skips, aborts, or container failures. Of those failures, 41
+report the unimplemented `dontKnowCodes` configuration key, 3 report an
+unimplemented accessor, and 5 fail assertions about disabled faults. These
+expected failures do not validate the code-dependent assertions beyond
+configuration parsing. See `diagnostic-compile.log`, `diagnostic-junit.log`,
+and `maven-test-compile.log` in the run directory. Existing tests are kept;
+no commit is made.
