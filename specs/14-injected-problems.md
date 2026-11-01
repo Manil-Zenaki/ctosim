@@ -847,3 +847,23 @@ faults, `dontKnow` applies first; `refuse` applies only to an answer that
 When `config.refuseCodes()` is empty, no `refuse` is injected, the fault
 takes no enumerator, and `warnings()` holds one warning that says so,
 among the faults' warnings, as for `dontKnow` without codes.
+
+Clarification (Amendment 6): assumptions F1–F7 of the questions file are
+reviewed one by one and confirmed: only an empty `refuseCodes()` disables
+the fault, removed before enumerators are assigned, while a non-empty list
+stays active even when no question can use it (F1); "left unchanged" means
+the answer itself, per answer, so a "don't know" draw that finds no usable
+code or gives the answer already there does not block `refuse` (F2);
+`refuse`'s draws are independent of `dontKnow`'s, adding `refuse` does not
+change `dontKnow`'s draws, and no random sequence is prescribed (F3); the
+eligible questions and the protections of `dontKnow` all carry over,
+repeat counts and the answers that control them, reinterview copies,
+resent submissions and answers already changed by `skipModules` or an
+outlier included (F4); numeric codes are compared as numbers and select
+codes as exact strings, drawn uniformly among the usable codes, with no
+fallback to another list (F5); a `refuse` record's `cleanValue` is the
+answer it replaced, and the `cleanValue` of a `dontKnow` record in a run
+with both faults is not prescribed; records are grouped by fault, then
+follow the form's order (F6); the warning is identified by `refuse`, in the
+faults' warnings, without prescribed wording, and five cumulated faults
+need ten enumerators (F7).
