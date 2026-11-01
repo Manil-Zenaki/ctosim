@@ -867,3 +867,36 @@ with both faults is not prescribed; records are grouped by fault, then
 follow the form's order (F6); the warning is identified by `refuse`, in the
 faults' warnings, without prescribed wording, and five cumulated faults
 need ten enumerators (F7).
+
+## Amendment 7: team codes in text questions, and the questions left alone
+
+Teams write their "don't know" and "refused" codes in text questions too
+(an enumerator types "-999" where the respondent does not know a name or
+an amount written as text), which is why `ipacheckenumdb` takes each code
+both as a number and as a string. Everything not mentioned here is
+unchanged.
+
+A faulty enumerator of `dontKnow` or `refuse` (Amendments 1, 5 and 6) also
+answers a `text` question with one of the team's codes, with the same
+probability, draws, precedence and exclusions as for the other questions:
+one of the fault's codes, drawn uniformly among those the engine accepts
+for that question at that moment (its constraint, a `regex()` included);
+when the engine accepts none, the answer drawn as usual is kept. Records
+are as for the other questions (`value` the code, `cleanValue` the answer
+it replaced). An "other, specify" text question is answered only when it
+is relevant, so it receives a code only when the enumerator chose "other".
+
+The questions these faults never change are, whatever the configuration:
+`date`, `time` and `datetime`; `geopoint`, `geotrace` and `geoshape`;
+`barcode`; `image`, `audio`, `video` and `file` questions (signatures and
+drawings included); `range` questions, even though their value is a
+number; `rank`; `acknowledge` and notes; calculations and read-only
+questions; and, as before, the survey id and the upper questions of its
+cascade, repeat counts and the answers that control them, consent
+questions, answers copied by a reinterview, and answers already changed
+by another fault or an outlier. The questions they may change are thus
+`select_one`, `select_multiple`, `integer`, `decimal` (other than `range`)
+and `text`.
+
+Earlier tests that expect a text question to keep its answer under these
+faults are superseded and go through a dispute.

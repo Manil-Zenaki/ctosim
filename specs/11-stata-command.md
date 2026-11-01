@@ -485,3 +485,12 @@ refusal rate of `refuse` not to be confused with the consent of
 `fakeRefusal` (N2); the Amendment 13 test of the "refused" topic is
 superseded and goes through a dispute, the new tests following the earlier
 infrastructure (N3).
+
+## Amendment 15: the help on codes in text questions
+
+The command is unchanged; its help file documents that the faults
+`dontKnow` and `refuse` also write the team's codes in text questions
+(spec 14, Amendment 7), and that `ipacheckenumdb` should therefore be
+given each code both as a number and as a string, as in
+`dontknow(-999, "-999")`; with the number alone it stops on a type
+mismatch as soon as the data hold a text variable.
