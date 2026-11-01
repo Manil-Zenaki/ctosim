@@ -6,7 +6,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
 final class SimulationConfigAmendment8Support {
-    static final List<String> DEFAULT_FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal");
+    // Amendment 12 supersedes the default; explicit Amendment 8 lists stay unchanged.
+    static final List<String> DEFAULT_FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse");
+    private static final List<String> AMENDMENT_8_FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal");
 
     private SimulationConfigAmendment8Support() { }
 
@@ -125,7 +127,7 @@ final class SimulationConfigAmendment8Support {
 
     private static void collectOrders(List<String> prefix, List<List<String>> result) {
         if (prefix.contains("fakeRefusal")) result.add(List.copyOf(prefix));
-        for (String fault : DEFAULT_FAULTS) {
+        for (String fault : AMENDMENT_8_FAULTS) {
             if (!prefix.contains(fault)) {
                 prefix.add(fault);
                 collectOrders(prefix, result);

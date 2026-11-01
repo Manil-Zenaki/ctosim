@@ -106,3 +106,67 @@ inside a `ProblemRates[...]` comparison).
 default list is checked, keeping every other assertion (rates, absent
 `problems`, consent, copies, immutability, numeric forms). A test whose
 name says "four" may keep its name or be renamed.
+
+## Adjudication (2026-11-01)
+
+**Dispute 2 upheld: correct every disputed four-fault default expectation.**
+Amendment 12 explicitly requires `[tooFast, skipModules, dontKnow,
+fakeRefusal, refuse]`, in that order, for `ProblemRates.defaults()` and
+for a present `problems` object whose `faults` member is omitted. Its
+clarification 66 changes only the default list; explicit lists retain
+their supplied contents and order. Dispute 1's historical ruling remains
+correct under Amendment 8, but its four-fault expectation is now superseded.
+
+- `ProblemRatesAmendment7Test.defaultsIncludeOutliersAndAllFaultsInTheSpecifiedOrder`
+  and `defaultFaultsAreUnmodifiableAndUnchangedByCustomInstances`: use the
+  five-fault default. Keep all rate and immutability assertions; the new
+  fault does not change those requirements.
+- `ProblemRatesAmendment8Test.defaultsAppendFakeRefusalAfterTheThreeExistingFaults`
+  and `omittedFaultsInAnyPresentProblemsObjectUseAllFourDefaults` (four cases):
+  use the five-fault default because neither default construction nor
+  overriding an unrelated rate supplies an explicit fault list. Rename
+  them to `defaultsIncludeAllFiveFaultsInTheSpecifiedOrder` and
+  `omittedFaultsInAnyPresentProblemsObjectUseAllFiveDefaults`; keep the
+  original rate assertions and inputs.
+- `ProblemRatesAmendment9Test.defaultsEnableLeftOpenWithoutChangingAnyEarlierDefault`:
+  change only the expected record's fault list. Amendment 12 leaves all
+  nine default rates, including `leftOpen`, unchanged.
+- `SimulationConfigAmendment7IoTest.loadAcceptsOutlierBoundsAndNumericRepresentations`
+  (ten cases) and
+  `loadDistinguishesAbsentProblemsFromNewDefaultsAndExplicitlyDisabledNewComponents`:
+  use five faults when a present `problems` object omits `faults`. Keep
+  numeric expectations, absent `problems`, and explicitly empty lists.
+- `SimulationConfigAmendment7ParsingTest.emptyProblemsEnableBothNewDefaultsAndKeepTheSevenOriginalDefaults`,
+  `explicitOutlierRatesAreRetainedWithoutChangingOtherDefaults` (ten cases),
+  and `originalRateOverridesStillDefaultBothNewComponents`: use five default
+  faults. Empty objects and unrelated rate overrides use the current
+  default; keep every rate assertion.
+- `SimulationConfigAmendment8IoTest.loadDistinguishesAbsentConsentFromRequiredFieldsWithDefaults`:
+  change the omitted-faults expectation to five faults. Keep all consent
+  and absent-problems assertions because Amendment 12 does not alter them.
+- `SimulationConfigAmendment9ParsingTest.parseAndLoadAcceptNumericFormsAndInclusiveEndpoints`
+  (twenty cases): change only the expected record's default fault list.
+  Keep the numeric forms, inclusive endpoints, other rates, and both input
+  paths; setting `leftOpen` does not supply an explicit fault list.
+
+These corrections are implemented in the three Amendment 7, 8 and 9
+support classes' `DEFAULT_FAULTS` constants. The Amendment 8 permutation
+provider now uses a separate `AMENDMENT_8_FAULTS` constant containing its
+original four names, so explicit-list cases remain identical. Amendment 7's
+`LEGACY_FAULTS`, constructor inputs, fixtures, copy tests and all other
+assertions are unchanged. No implementation source was read or modified.
+
+Validation: `.\mvnw.cmd -o -q test` failed at `testCompile`; an `-e` retry
+confirmed `AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs are
+`.codex-runs/04-dispute2-test.log` and
+`.codex-runs/04-dispute2-test-detail.log`. Using the existing compiler-probe
+approach, 21 test/support sources compiled successfully with Java release
+17 against `target/classes` and cached JUnit APIs
+(`.codex-runs/04-dispute2-probe-compile.log`). The direct JUnit fallback
+then ran all eleven selected Amendment 7-9 ProblemRates and SimulationConfig
+test classes, including every disputed test and the copy tests: **1,201 tests
+passed, zero failed; all 81 containers passed**
+(`.codex-runs/04-dispute2-junit.log`). Maven itself remains blocked by the
+cached-JAR access failure. No dependencies, build configuration or production
+files were changed, and no commit was made.

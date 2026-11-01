@@ -1286,3 +1286,20 @@ searched, or changed.
   remain unchanged. **Dependent tests:** Full Maven test compilation remains
   unverified. Runtime tests were not requested and were not run. No commit
   was created.
+
+### Dispute 2 build verification (2026-11-01)
+
+- **Question:** Can the calling environment rerun `.\mvnw.cmd -o -q test`
+  with accessible cached dependencies? The command and an `-e` diagnostic
+  retry failed at `testCompile` with `AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+- **Assumption:** This is an environment blocker, not grounds to change
+  the tests, production code, dependency cache or build configuration.
+- **Dependent tests:** Full Maven execution remains unverified. A fallback
+  compiler probe successfully compiled 21 test/support sources, including
+  all disputed classes, against existing production binaries. Direct JUnit
+  execution of the eleven selected Amendment 7-9 test classes passed all
+  1,201 tests and all 81 containers. Logs: `.codex-runs/04-dispute2-test.log`,
+  `.codex-runs/04-dispute2-test-detail.log`,
+  `.codex-runs/04-dispute2-probe-compile.log`, and
+  `.codex-runs/04-dispute2-junit.log`.
