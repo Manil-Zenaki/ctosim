@@ -632,3 +632,13 @@ public java.util.List<String> dontKnowCodes();   // empty when the key is absent
 - The rules of "Strictness" and "Errors" apply, with errors at their
   paths (`dontKnowCodes`, `dontKnowCodes[1]`); copies keep
   `dontKnowCodes()`.
+
+Clarification (Amendment 11): assumptions 59–62 of the questions file are
+reviewed one by one and confirmed: codes are exact strings checked only
+for being non-empty and distinct, as the consent codes are, with no
+trimming or numeric reading (59); errors follow the conventions of
+Amendments 7 and 8, an element at its zero-based index, a repeat at its
+second occurrence, an empty or ill-typed list at `dontKnowCodes` (60);
+the key needs and implies nothing else in the configuration, and is
+independent of `specialValues` (61); every copy keeps `dontKnowCodes()`
+and the list cannot be changed (62).
