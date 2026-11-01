@@ -453,3 +453,75 @@ no skips or aborts. `git diff --check` also passed.
 Logs: `.codex-runs/spec14-disputes-20261101-maven.log` and
 `.codex-runs/spec14-adjudication-20261101/{compile-final.log,junit.log,junit-empty-codes.log}`.
 The Maven limitation is also recorded in the questions file.
+
+## Dispute 7: tests that expect text to keep its answer (2026-11-01)
+
+**Tests:** in `InjectedAmendment1AssignmentTest`:
+`faultsUseAtMostHalfTheEnumeratorsAndWrapInCanonicalOrder` (6 cases); in
+`InjectedAmendment1DontKnowTest`: `repeatCountQuestionsAreExcludedFromDontKnow`,
+`textAndDateQuestionsAreNotReplacedEvenWhenTheirTeamCodesWouldBeValid`; in
+`InjectedAmendment1InteractionsTest`:
+`faultsAndOriginalDurationTargetsCoexistAndFaultRecordsStayAfterDurationRecords`;
+in `InjectedAmendment5CodesTest` and `InjectedAmendment6CodesTest`:
+`textAndDatesKeepTheirOrdinaryAnswersDespiteMatchingTeamCodeKinds`; in
+`InjectedAmendment5DisabledTest` and `InjectedAmendment6DisabledTest`:
+`aNonemptyButUnusableCodeListStillReservesItsFaultyEnumerator`; in
+`InjectedAmendment5RecordsTest` and `InjectedAmendment6RecordsTest`:
+`teamCodesStillLeaveIdsReadOnlyCalculationsAndRepeatCountsAlone`; in
+`InjectedAmendment6AssignmentTest`:
+`fifthFaultUsesCanonicalRoundRobinAssignmentAndLeavesAtLeastHalfClean`
+(6 cases); in `InjectedAmendment6CodesTest`:
+`irrelevantNumericQuestionsAreNeitherAnsweredNorRecorded`; in
+`InjectedAmendment6PrecedenceTest`:
+`answersAlreadyChangedBySkipModulesAreProtectedFromRefuse`; in
+`InjectedAmendment6RecordsTest`:
+`refusalDoesNotChangeAnAddAnotherAnswerThatControlsAnIndirectRepeatCount`.
+
+**Spec:** Amendment 7: a faulty enumerator of `dontKnow` or `refuse` also
+answers a `text` question with one of the team's codes the engine accepts;
+"earlier tests that expect a text question to keep its answer under these
+faults are superseded and go through a dispute". Clarification G7.
+
+**What the tests do:** each form holds an ordinary text question (a
+roster's `person/name`, an `answer` or module question of type string, a
+text companion) and the test expects no record on it, an empty or
+ordinary value, records on the numeric or select field only, or no
+record at all for a code list that no select or number can use (a text
+question can). The failures read, for example, `expected: <> but was:
+<-99>`, `expected: <amount> but was: <name>`, `expected: <yes> but was:
+<q2 8033>` (the `cleanValue` of a record on the text question `q2`, not on
+the gate), or `expected: <true> but was: <false>` for "no records". In the
+add-another, skipModules and repeat-count tests the protected answers
+(the `more` choice, the gate, the count) are left alone; the new records
+are on the roster's or module's text questions.
+
+**Requested change:** keep each test's purpose and assertions on the
+protected or numeric/select fields, and either let the text questions
+receive codes (excluding them from the "no record" or "unchanged"
+checks, or asserting their codes as Amendment 7 does), or fix their
+answer to a value no team code equals while making them ineligible some
+other way the spec allows (for example, a text question whose
+`constraint` rejects the codes). For the date part of
+`textAndDate...` tests, keep the assertion that dates keep their answers.
+
+## Dispute 8: a text survey id without possible values (2026-11-01)
+
+**Tests:** `InjectedAmendment7ExclusionsTest.textSurveyIdsRemainUniqueAndUnchanged`
+(both cases).
+
+**Spec:** spec 13, "Survey ids": a text id question without a list of
+texts has no possible values; "its answers are drawn as usual and may
+repeat", with a warning. This is the situation of Disputes 4 and 6,
+upheld.
+
+**What the test does:** `"id":"survey_id"` on a string question with no
+`texts` override, 240 submissions, and it requires every id to be
+distinct (line 81). The walk without any fault already repeats ids (4
+duplicates in 240, checked with the public API outside the test tree),
+with the warning `the survey id 'survey_id' has no possible values; its
+answers are drawn as usual and may repeat`; the assertion that each id
+equals its clean walk's id passes.
+
+**Requested change:** give the id question at least 240 possible values
+(a `texts` override, or an integer id with a wide enough range), keeping
+the other assertions.
