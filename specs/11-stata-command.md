@@ -494,3 +494,10 @@ The command is unchanged; its help file documents that the faults
 given each code both as a number and as a string, as in
 `dontknow(-999, "-999")`; with the number alone it stops on a type
 mismatch as soon as the data hold a text variable.
+
+Clarification (Amendment 15): assumptions O1–O3 of the questions file are
+reviewed one by one and confirmed: lexical checks of the visible help
+without fixed wording, each fault's link with text questions stated in a
+sentence (O1); the topics the amendment lists only, -999 being an example
+of a code given in both forms (O2); the help oracle follows the earlier
+infrastructure (O3).
