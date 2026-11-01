@@ -271,6 +271,21 @@ a number only it compares text variables to it and stops on a type
 mismatch) gives the faulty enumerators 2.76 % "don't know" and 1.84 %
 refusals, against at most 0.29 % and 0.16 % for the other 19.
 
+2026-11-01, codes in text questions (owner: teams use the same codes in
+text questions, hence IPA's double check). Spec 14 Amendment 7: `dontKnow`
+and `refuse` also write the team's codes in text questions; dates and
+times, GPS, barcodes, media, sliders (`range`, which used to receive
+codes as numbers) and rankings are never changed, nor any question that
+controls a repeat count, whatever its type (a text question feeding a
+count through a calculation was not protected). Spec 11 Amendment 15
+(help: both forms of a code for `ipacheckenumdb`). Disputes 14/7-8 (tests
+predating the codes in text; a text survey id without a list of values)
+upheld. Java 12647 and Stata 144 tests, all green. IPA check rerun: the
+faulty enumerators have 3.05 % "don't know" and 1.98 % refusals, against
+at most 0.27 % and 0.17 % for the others. Teams' codes read from their
+choices sheets (Mauritania, whose codes differ by question, and SARGIL
+ASSET, in Bengali, left out).
+
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
 correctness): web submissions (`deviceid` `(web)`, no audio audit,
