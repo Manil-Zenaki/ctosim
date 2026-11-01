@@ -132,10 +132,15 @@ class InjectedAmendment6CodesTest {
         unchanged(run);
     }
 
-    @Test void textAndDatesKeepTheirOrdinaryAnswersDespiteMatchingTeamCodeKinds() throws Exception {
+    @Test void textReceivesTeamCodesWhileDatesKeepTheirOrdinaryAnswers() throws Exception {
         var form = fixture("<text/><date/>", bind("text", "string", "") + bind("date", "date", ""),
                 input("text") + input("date"));
-        unchanged(faulty(form, 100, codes("refused", "2026-01-01")));
+        var run = faulty(form, 600, codes("refused", "2026-01-01") + "," + fixed("text", "ordinary"));
+        rate(records(run, "refuse").size(), 300, .25);
+        truthfulCodeRecords(run, "text", "ordinary", List.of("refused", "2026-01-01"));
+        for (var submission : run.submissions()) {
+            assertEquals(value(run.clean(submission.number()), "date"), value(submission, "date"));
+        }
     }
 
     @Test void currentlyFilteredOutCodesAreNeverUsedByTheFault() throws Exception {
@@ -157,8 +162,9 @@ class InjectedAmendment6CodesTest {
     @Test void irrelevantNumericQuestionsAreNeitherAnsweredNorRecorded() throws Exception {
         var form = fixture("<amount/><answer/>", bind("amount", "int", "relevant=\"false()\"")
                 + bind("answer", "string", ""), input("amount") + input("answer"));
-        var run = faulty(form, 120, codes("-888"));
-        unchanged(run);
+        var run = faulty(form, 600, codes("-888") + "," + fixed("answer", "ordinary"));
+        rate(records(run, "refuse").size(), 300, .25);
+        truthfulCodeRecords(run, "answer", "ordinary", List.of("-888"));
         for (var submission : run.submissions()) assertEquals("", value(submission, "amount"));
     }
 }

@@ -132,10 +132,15 @@ class InjectedAmendment5CodesTest {
         unchanged(run);
     }
 
-    @Test void textAndDatesKeepTheirOrdinaryAnswersDespiteMatchingTeamCodeKinds() throws Exception {
+    @Test void textReceivesTeamCodesWhileDatesKeepTheirOrdinaryAnswers() throws Exception {
         var form = fixture("<text/><date/>", bind("text", "string", "") + bind("date", "date", ""),
                 input("text") + input("date"));
-        unchanged(faulty(form, 100, codes("refused", "2026-01-01")));
+        var run = faulty(form, 600, codes("refused", "2026-01-01") + "," + fixed("text", "ordinary"));
+        rate(records(run, "dontKnow").size(), 300, .25);
+        truthfulCodeRecords(run, "text", "ordinary", List.of("refused", "2026-01-01"));
+        for (var submission : run.submissions()) {
+            assertEquals(value(run.clean(submission.number()), "date"), value(submission, "date"));
+        }
     }
 
     @Test void currentlyFilteredOutCodesAreNeverUsedByTheFault() throws Exception {

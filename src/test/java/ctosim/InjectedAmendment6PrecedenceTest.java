@@ -141,9 +141,12 @@ class InjectedAmendment6PrecedenceTest {
         var skipped = targets(run, "skipModules");
         assertFalse(skipped.isEmpty());
         assertFalse(records(run, "refuse").isEmpty());
+        assertTrue(records(run, "refuse").stream().anyMatch(p -> p.field().equals("gate")),
+                "exercise a gate replacement on an answer skipModules left unchanged");
         for (var p : records(run, "refuse")) {
             assertFalse(skipped.contains(p.submission()));
-            assertEquals("yes", p.cleanValue());
+            if (p.field().equals("gate")) assertEquals("yes", p.cleanValue());
+            else assertTrue(Set.of("q0", "q1", "q2").contains(p.field()), "only module text is also eligible");
             assertEquals("REF", p.value());
         }
         for (var p : records(run, "skipModules")) assertEquals("no", value(run.target(p), "gate"));

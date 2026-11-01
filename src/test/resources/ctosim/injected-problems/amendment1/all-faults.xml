@@ -7,9 +7,10 @@
     </data></instance>
     <bind nodeset="/data/gate" type="select1"/>
     <bind nodeset="/data/module" relevant="/data/gate = 'yes'"/>
-    <bind nodeset="/data/module/q0" type="string"/>
-    <bind nodeset="/data/module/q1" type="string"/>
-    <bind nodeset="/data/module/q2" type="string"/>
+    <!-- Keep team-code opportunities on code while these questions exercise module skipping. -->
+    <bind nodeset="/data/module/q0" type="string" constraint=". != '-99'"/>
+    <bind nodeset="/data/module/q1" type="string" constraint=". != '-99'"/>
+    <bind nodeset="/data/module/q2" type="string" constraint=". != '-99'"/>
     <bind nodeset="/data/code" type="select1"/>
     <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
     <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>

@@ -105,7 +105,7 @@ class InjectedAmendment6DisabledTest {
 
     @Test void aNonemptyButUnusableCodeListStillReservesItsFaultyEnumerator() throws Exception {
         // The disabling rule is about the empty configuration list, not form eligibility.
-        var run = run(singleTimed(0), settings(40, 2, codes("not-a-text-fault"))
+        var run = run(number("int", ""), settings(40, 2, codes("not-a-number"))
                 .withProblems(rates(0, "tooFast", "refuse")));
         assertTrue(records(run, "refuse").isEmpty());
         assertFalse(records(run, "tooFast").isEmpty());

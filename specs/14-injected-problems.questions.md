@@ -1579,3 +1579,24 @@ See `diagnostic-compile-final.log`, `diagnostic-junit-final.log`,
 `maven-test-compile.log`, and `maven-test-compile-detail.log` under
 `.codex-runs/spec14-amendment7/`. The requested Maven compilation remains
 blocked; supplementary compilation does not replace it. No commit was made.
+
+### Disputes 7–8 build verification (2026-11-01)
+
+**Question:** Can the required offline Maven test run verify these adjudicated
+tests in this sandbox?
+
+**Observation:** `mvnw.cmd -o -q test`, with `MAVEN_USER_HOME` set to
+`.tools/maven-home`, fails at `testCompile` on the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. It does not reach
+JUnit. See `.codex-runs/spec14-disputes-7-8-maven.log`.
+
+**Assumption:** Retain the existing supplementary compiler and JUnit approach,
+using compiled public API classes and cached dependencies, without reading
+production sources, copying repositories or changing build configuration.
+All temporary probes and logs are under `.codex-runs/spec14-disputes-7-8/`.
+The supplementary compiler successfully compiles all 56 spec 14 test/support
+sources with `--release 17`; this does not establish a successful Maven run.
+
+**Tests:** The 12 classes containing the tests in Disputes 7–8, including
+the assignment and interaction classes affected by shared fixture changes.
+Runtime results are recorded at the end of the disputes file.

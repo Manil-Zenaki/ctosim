@@ -525,3 +525,110 @@ equals its clean walk's id passes.
 **Requested change:** give the id question at least 240 possible values
 (a `texts` override, or an integer id with a wide enough range), keeping
 the other assertions.
+
+## Adjudication of Disputes 7 and 8 (2026-11-01)
+
+### Earlier decisions: retain the corrections for Disputes 1–6
+
+The prior decisions remain consistent with the spec: duplicate lookup needs
+distinct KEYs; Amendment 2 supersedes the old roster probability and
+twenty-refusal warning; add-another fixtures must actually extend and stop;
+ID uniqueness needs enough possible values; and an active `dontKnow` needs
+`dontKnowCodes`. Keep those corrections. The additional text eligibility
+introduced by Amendment 7 requires the changes below to some of the same
+tests, without reversing the earlier decisions.
+
+### Dispute 7: upheld; ordinary text is eligible, protected answers remain protected
+
+Amendment 7 and clarification G7 expressly supersede expectations that
+ordinary text keeps its answer. Its 0.25 replacement probability and
+engine-accepted codes apply to text, including text in groups and repeats.
+The same amendment explicitly preserves the exclusions for dates, IDs,
+read-only fields, calculations, repeat counts and their controlling answers,
+and answers already changed by another fault. Therefore whole-run no-change
+assertions must not treat eligible text as protected.
+
+- `InjectedAmendment1AssignmentTest.faultsUseAtMostHalfTheEnumeratorsAndWrapInCanonicalOrder`
+  (six cases) and
+  `InjectedAmendment1InteractionsTest.faultsAndOriginalDurationTargetsCoexistAndFaultRecordsStayAfterDurationRecords`:
+  retain every assertion. The shared `amendment1/all-faults.xml` fixture now
+  rejects `-99` in its three module text questions. Those remain ordinary
+  questions for timing and module skipping; the `code` select remains eligible
+  for `dontKnow`. This isolates the existing assignment, duration, metadata
+  and ordering checks using Amendment 7's engine-acceptance rule.
+- `InjectedAmendment1DontKnowTest.repeatCountQuestionsAreExcludedFromDontKnow`:
+  keep count answer 3 and three roster instances. Replace the whole-run
+  no-record assertion with actual replacements restricted to `name`, using
+  one of the configured codes `1` and `2`. The count still cannot have a record.
+- `InjectedAmendment1DontKnowTest.textAndDateQuestionsAreNotReplacedEvenWhenTheirTeamCodesWouldBeValid`
+  and `textAndDatesKeepTheirOrdinaryAnswersDespiteMatchingTeamCodeKinds` in
+  `InjectedAmendment5CodesTest` and `InjectedAmendment6CodesTest`:
+  rename to describe text replacements and unchanged dates. Fix the ordinary
+  text to `ordinary`, use 600 submissions, and check the 0.25 rate among 300
+  faulty-enumerator opportunities, allowed text codes, clean values, recorded
+  and unrecorded answers, and metadata. Compare every date with the same
+  visit's clean date; only the text may have a replacement record.
+- `aNonemptyButUnusableCodeListStillReservesItsFaultyEnumerator` in
+  `InjectedAmendment5DisabledTest` and `InjectedAmendment6DisabledTest`:
+  replace the text-only fixture with an integer question and the nonnumeric
+  code `not-a-number`. The list is now truly unusable. Keep no code records,
+  actual `tooFast` records, and the single cumulation warning requiring four
+  enumerators. Clarifications E2 and F1 still require an active assignment
+  for a nonempty list, even without an eligible question.
+- `teamCodesStillLeaveIdsReadOnlyCalculationsAndRepeatCountsAlone` in
+  `InjectedAmendment5RecordsTest` and `InjectedAmendment6RecordsTest`:
+  make the roster's text constraint reject `1` and `2`. Keep all assertions
+  on unique IDs and clean IDs, read-only value 17, calculated value 42,
+  count 3, three members, and actual records confined to `amount`. Keep the
+  sufficient ID range introduced for Dispute 6.
+- `InjectedAmendment6AssignmentTest.fifthFaultUsesCanonicalRoundRobinAssignmentAndLeavesAtLeastHalfClean`
+  (six cases): retain every assertion. The shared `amendment6/five-faults.xml`
+  fixture now rejects both `-99` and `REF` in its interview and module text
+  questions. The select question still accepts both codes. Canonical fault
+  assignment, wraparound, clean-half, warning and ordering checks are unchanged.
+- `InjectedAmendment6CodesTest.irrelevantNumericQuestionsAreNeitherAnsweredNorRecorded`:
+  retain the blank numeric answer and absence of records on it. The ordinary
+  text companion now positively exercises `refuse`, with fixed ordinary text,
+  a 0.25 rate and truthful records restricted to `answer`.
+- `InjectedAmendment6PrecedenceTest.answersAlreadyChangedBySkipModulesAreProtectedFromRefuse`:
+  retain that skipped submissions receive no refusal record and their gate
+  stays `no`. Require an observed gate refusal, whose clean value remains
+  `yes`; also allow records on the three eligible module text fields. All
+  refusal records must still use `REF`. A module text record cannot be required
+  to have the gate's clean value.
+- `InjectedAmendment6RecordsTest.refusalDoesNotChangeAnAddAnotherAnswerThatControlsAnIndirectRepeatCount`:
+  allow actual `REF` replacements only on `name`. Keep two roster instances
+  and require `yes` on both instances' `more` answers. This checks the
+  controlling answers' protection while exercising an active text fault.
+
+Shared fixture changes also apply to their existing replay and interaction
+tests. No assignment, probability, protected-field or ordering rule is relaxed.
+
+### Dispute 8: upheld; provide a finite pool for the text survey ID
+
+Spec 13's "Survey ids", incorporated by spec 14, defines possible text IDs
+through an override's `texts` list. Without that list, an ordinary text draw
+need not be unique. Amendment 7 protects the ID from faults; it does not
+create a uniqueness guarantee for unconfigured text draws.
+
+`InjectedAmendment7ExclusionsTest.textSurveyIdsRemainUniqueAndUnchanged`
+now supplies exactly 240 distinct text IDs (`household-1` through
+`household-240`) for 240 submissions. Both `dontKnow` and `refuse` cases keep
+the text ID type, uniqueness assertion, comparison with each clean visit's
+ID, positive control on the ordinary text companion, and records restricted
+to that companion. No assertion was removed.
+
+No production source was read or changed, and no commit was made.
+
+**Verification:** The required `mvnw.cmd -o -q test` failed at `testCompile`
+on the cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, before
+JUnit could run. The supplementary compiler successfully compiled all 56
+spec 14 test/support sources with `--release 17` against existing compiled
+API classes and cached dependencies. The supplementary JUnit run of all
+12 affected classes discovered and passed 213 tests, with no failures,
+skips or aborts. `git diff --check` passed. These results verify the changed
+tests, but do not establish a successful full Maven suite.
+
+Logs: `.codex-runs/spec14-disputes-7-8-maven.log` and
+`.codex-runs/spec14-disputes-7-8/{compile.log,junit.log}`. The Maven limitation
+is also recorded in the questions file.

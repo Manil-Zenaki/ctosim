@@ -50,7 +50,7 @@ class InjectedAmendment5RecordsTest {
         var form = fixture("<id/><readonly>17</readonly><calculated/><size/><person jr:template=\"\"><name/></person><amount/>",
                 bind("id", "int", "") + bind("readonly", "int", "readonly=\"true()\"")
                         + bind("calculated", "int", "calculate=\"42\"") + bind("size", "int", "")
-                        + bind("person/name", "string", "") + bind("amount", "int", ""),
+                        + bind("person/name", "string", "constraint=\". != '1' and . != '2'\"") + bind("amount", "int", ""),
                 input("id") + input("readonly") + input("size")
                         + "<repeat nodeset=\"/data/person\" jr:count=\"/data/size\">" + input("person/name") + "</repeat>"
                         + input("amount"));

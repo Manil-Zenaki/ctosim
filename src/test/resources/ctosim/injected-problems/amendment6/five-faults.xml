@@ -7,12 +7,16 @@
     <bind nodeset="/data/understand" type="select1"/>
     <bind nodeset="/data/agree" type="select1" relevant="/data/understand = 'oui'"/>
     <bind nodeset="/data/interview" relevant="/data/agree = 'oui'"/>
-    <bind nodeset="/data/interview/a" type="string"/><bind nodeset="/data/interview/b" type="string"/>
-    <bind nodeset="/data/interview/c" type="string"/>
+    <!-- Keep team-code opportunities on code; these questions exercise consent and module skipping. -->
+    <bind nodeset="/data/interview/a" type="string" constraint=". != '-99' and . != 'REF'"/>
+    <bind nodeset="/data/interview/b" type="string" constraint=". != '-99' and . != 'REF'"/>
+    <bind nodeset="/data/interview/c" type="string" constraint=". != '-99' and . != 'REF'"/>
     <bind nodeset="/data/gate" type="select1"/>
     <bind nodeset="/data/module" relevant="/data/gate = 'yes'"/>
-    <bind nodeset="/data/module/a" type="string"/><bind nodeset="/data/module/b" type="string"/>
-    <bind nodeset="/data/module/c" type="string"/><bind nodeset="/data/code" type="select1"/>
+    <bind nodeset="/data/module/a" type="string" constraint=". != '-99' and . != 'REF'"/>
+    <bind nodeset="/data/module/b" type="string" constraint=". != '-99' and . != 'REF'"/>
+    <bind nodeset="/data/module/c" type="string" constraint=". != '-99' and . != 'REF'"/>
+    <bind nodeset="/data/code" type="select1"/>
     <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
     <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
   </model></h:head>

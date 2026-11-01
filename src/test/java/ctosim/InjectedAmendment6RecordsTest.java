@@ -41,10 +41,15 @@ class InjectedAmendment6RecordsTest {
     @Test void refusalDoesNotChangeAnAddAnotherAnswerThatControlsAnIndirectRepeatCount() throws Exception {
         var form = extending(true, false, items("yes", "REF"));
         var run = faulty(form, 200, codes("REF") + "," + fixed("more", "yes"));
-        assertTrue(records(run, "refuse").isEmpty());
+        assertFalse(records(run, "refuse").isEmpty(), "the roster's ordinary text remains eligible");
+        for (var record : records(run, "refuse")) {
+            assertEquals("name", record.field());
+            assertEquals("REF", record.value());
+        }
         for (var submission : run.submissions()) {
             assertEquals(2, count(submission, "person"));
             assertEquals("yes", value(submission, "person[1]/more"));
+            assertEquals("yes", value(submission, "person[2]/more"));
         }
     }
 
@@ -79,7 +84,7 @@ class InjectedAmendment6RecordsTest {
         var form = fixture("<id/><readonly>17</readonly><calculated/><size/><person jr:template=\"\"><name/></person><amount/>",
                 bind("id", "int", "") + bind("readonly", "int", "readonly=\"true()\"")
                         + bind("calculated", "int", "calculate=\"42\"") + bind("size", "int", "")
-                        + bind("person/name", "string", "") + bind("amount", "int", ""),
+                        + bind("person/name", "string", "constraint=\". != '1' and . != '2'\"") + bind("amount", "int", ""),
                 input("id") + input("readonly") + input("size")
                         + "<repeat nodeset=\"/data/person\" jr:count=\"/data/size\">" + input("person/name") + "</repeat>"
                         + input("amount"));

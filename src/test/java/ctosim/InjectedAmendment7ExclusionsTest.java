@@ -72,8 +72,11 @@ class InjectedAmendment7ExclusionsTest {
     void textSurveyIdsRemainUniqueAndUnchanged(String fault) throws Exception {
         var f = fixture("<survey_id/><answer/>", bind("survey_id", "string", "") + bind("answer", "string", ""),
                 input("survey_id") + input("answer"));
+        String possibleIds = java.util.stream.IntStream.rangeClosed(1, 240)
+                .mapToObj(n -> SimulationConfigTestSupport.quote("household-" + n))
+                .collect(java.util.stream.Collectors.joining(",", "[", "]"));
         var r = textRun(fault, f, 240, teamCodes(fault, "-999") + ",\"id\":\"survey_id\","
-                + fixedText("answer", "ordinary"));
+                + "\"fields\":{\"survey_id\":{\"texts\":" + possibleIds + "},\"answer\":{\"value\":\"ordinary\"}}");
         assertFalse(records(r, fault).isEmpty());
         Set<String> ids = new HashSet<>();
         for (var s : r.submissions()) {

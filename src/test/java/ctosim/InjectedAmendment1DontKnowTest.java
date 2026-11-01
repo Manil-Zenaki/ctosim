@@ -83,15 +83,22 @@ class InjectedAmendment1DontKnowTest {
         var r = run(number("decimal", ""), config);
         assertTrue(r.plan().problems().isEmpty()); for (var s : r.submissions()) ordinary(r, s.number());
     }
-    @Test void textAndDateQuestionsAreNotReplacedEvenWhenTheirTeamCodesWouldBeValid() throws Exception {
+    @Test void textReceivesTeamCodesWhileDateQuestionsKeepTheirOrdinaryAnswers() throws Exception {
         var f = fixture("<text/><date/>", bind("text", "string", "") + bind("date", "date", ""), input("text") + input("date"));
-        var r = run(f, settings(100, 2, "\"dontKnowCodes\":[\"refused\",\"2026-01-01\"]").withProblems(rates(0, "dontKnow")));
-        assertTrue(r.plan().problems().isEmpty()); for (var s : r.submissions()) ordinary(r, s.number());
+        var r = run(f, settings(600, 2, "\"dontKnowCodes\":[\"refused\",\"2026-01-01\"],"
+                + "\"fields\":{\"text\":{\"value\":\"ordinary\"}}").withProblems(rates(0, "dontKnow")));
+        rate(records(r, "dontKnow").size(), 300, .25);
+        InjectedAmendment7Support.textRecords(r, "dontKnow", "text", "ordinary", List.of("refused", "2026-01-01"));
+        for (var s : r.submissions()) assertEquals(value(r.clean(s.number()), "date"), value(s, "date"));
     }
     @Test void repeatCountQuestionsAreExcludedFromDontKnow() throws Exception {
         var r = run(roster(true, ""), settings(100, 2,
                 "\"fields\":{\"size\":{\"value\":3}},\"dontKnowCodes\":[\"1\",\"2\"]").withProblems(rates(0, "dontKnow")));
-        assertTrue(r.plan().problems().isEmpty());
+        assertFalse(records(r, "dontKnow").isEmpty(), "the roster's ordinary text remains eligible");
+        for (var p : records(r, "dontKnow")) {
+            assertEquals("name", p.field());
+            assertTrue(Set.of("1", "2").contains(p.value()));
+        }
         for (var s : r.submissions()) { assertEquals("3", value(s, "size")); assertEquals(3, count(s, "person")); }
     }
     @Test void readOnlyAndCalculatedNumericAnswersAreExcluded() throws Exception {
