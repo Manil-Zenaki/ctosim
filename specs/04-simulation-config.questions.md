@@ -1179,3 +1179,110 @@ no production source was opened, read, searched, or changed.
   remain unchanged. **Dependent tests:** Full Maven test compilation remains
   unverified. Runtime tests were not requested and were not run. No commit
   was created.
+
+## Amendment 12: refused answers apart from "don't know"
+
+New coverage is in `SimulationConfigAmendment12ParsingTest`,
+`SimulationConfigAmendment12SeparationTest`,
+`SimulationConfigAmendment12CopiesTest`, and `ProblemRatesAmendment12Test`,
+with `SimulationConfigAmendment12Support` and
+`amendment-12-refuse-codes.json`. Existing tests and fixtures are preserved.
+Expectations come only from spec 04; no production source was opened, read,
+searched, or changed.
+
+63. **Does refusal-code equality use decoded strings, including for overlap?**
+    - **Assumption:** The confirmed exact-string rules of Amendment 11 apply
+      unchanged. Codes are nonempty, but can contain whitespace, punctuation,
+      Unicode, or numeric-looking text. There is no trimming, case folding,
+      numeric interpretation, or Unicode normalization. JSON escapes are
+      decoded before checking duplicates within a list or overlap across
+      lists. Different exact spellings remain distinct. No undocumented size,
+      performance, or unpaired-surrogate requirements are tested.
+    - **Dependent tests:** `codesAreNonemptyExactStringsPreservedInFileOrder`,
+      `invalidCodesReportConfigExceptionSourceLocationAndReason`,
+      `overlapComparesDecodedStringsRatherThanTheirJsonSpelling`,
+      `distinctExactStringsMayBeSplitAcrossTheTwoLists`, fixture and BOM tests.
+
+64. **Where are collisions reported, and does root-key order matter?**
+    - **Assumption:** Each overlap identifies its zero-based position in
+      `refuseCodes`, regardless of which top-level key comes first or which
+      position holds the matching don't-know code. This is explicit in the
+      amendment. Within-list duplicates identify the second occurrence, as in
+      Amendment 11. The tests arrange a single distinct error and do not
+      prescribe error precedence for several simultaneous overlaps or other
+      failures. Diagnostics retain source, path, and explanatory text without
+      fixing wording. Duplicate object keys retain question 2's flexibility;
+      actual syntax errors require a line number and retained cause.
+    - **Dependent tests:** `anOverlapAlwaysReportsItsRefusalIndexRegardlessOfRootKeyOrder`,
+      `overlapComparesDecodedStringsRatherThanTheirJsonSpelling`,
+      `invalidCodesReportConfigExceptionSourceLocationAndReason`,
+      duplicate-key and malformed-JSON tests.
+
+65. **Do either list or the new fault require, infer, or modify other settings?**
+    - **Assumption:** Codes remain independent of `specialValues`, and either
+      list may overlap `specialValues`. Only overlap between `dontKnowCodes`
+      and `refuseCodes` is forbidden. That validation applies even when
+      problems are absent or both faults are disabled. Neither code list
+      populates the other, enables problems, nor adds/removes faults.
+      Selecting `refuse` requires no consent or code configuration here;
+      actual injection without codes belongs to the consumer module.
+      Only `refuseCodes` at the top level and `refuse` as a fault name
+      extend the schema. Arbitrary field/profile/choice names remain legal.
+    - **Dependent tests:** All separation tests; omission, schema-placement,
+      arbitrary-name, default-preservation and special-value independence tests;
+      `explicitFaultSelectionKeepsOrderAndNeverAddsOrConflatesRefuseAndFakeRefusal`
+      and `refuseIsAFaultNameAndDoesNotIntroduceANewRateKey`.
+      No generation or statistical tests are added for this parsing module.
+
+66. **Which constructors and defaults gain the new fault?**
+    - **Assumption:** Both existing list-taking `ProblemRates` constructors
+      accept exact `refuse` and keep the supplied order, including alongside
+      the distinct `fakeRefusal` and `dontKnow` names. Existing duplicate,
+      unknown-name, null, defensive-copy and immutability rules apply.
+      Only omitted/default faults gain the fifth entry; an explicit empty
+      list and the seven-rate constructor still have no faults. Default
+      numerical rates are unchanged.
+    - **Dependent tests:** Constructor, parsing, default and immutable-fault
+      tests in `ProblemRatesAmendment12Test`.
+    - **Existing-test conflict:** The amendment explicitly supersedes the
+      four-fault default. This run keeps those committed tests unchanged,
+      as requested, and asserts the new five-fault default in a new class.
+      Adjudicating or editing old tests is left to the stated dispute process.
+
+67. **Which copies preserve refusal codes and how is immutability checked?**
+    - **Assumption:** All three copy APIs keep present or absent refusal codes,
+      their exact order, the separate don't-know list, and all unrelated
+      settings. This includes unchanged assignments, endpoint values,
+      replacing/clearing problems and chained copies. Copies are distinct
+      configurations and leave receivers unchanged under the confirmed
+      contract; immutable list identity is unspecified. Mutations that would
+      change lists or their views throw UnsupportedOperationException;
+      empty lists are tested by adding rather than no-op mutation calls.
+    - **Dependent tests:** All `SimulationConfigAmendment12CopiesTest` tests,
+      `parsedFaultListsRemainUnmodifiableAfterEveryCopy`, and
+      `installingConstructorSuppliedRefusePreservesRatesAndCodesWithoutChangingTheReceiver`.
+
+### Amendment 12 build verification (2026-10-31)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile` and an `-e` diagnostic
+  retry. Maven reached `maven-compiler-plugin:3.15.0:testCompile` but failed
+  with `java.nio.file.AccessDeniedException` for the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac
+  closed its archive file manager. Logs:
+  `.codex-runs/04-amendment12-test-compile.log` and
+  `.codex-runs/04-amendment12-test-compile-detail.log`.
+- All five new Java files and their existing test-source dependencies
+  compiled successfully with Java release 17 against the actual
+  `target/classes` binaries and cached JUnit 5.11.4 API (eleven source
+  files total). The existing compiler-probe approach reads class entries
+  in memory to avoid the archive access failure. It does not inspect
+  production source, copy repositories, change permissions, or install
+  dependencies. Probe: `.codex-runs/Amendment12CompileProbe.java`; result:
+  `.codex-runs/04-amendment12-probe-compile.log` (`compiled=true`).
+  This verifies the added sources compile, but does not make Maven successful.
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** This is an environment
+  blocker; production, build configuration, dependencies and existing tests
+  remain unchanged. **Dependent tests:** Full Maven test compilation remains
+  unverified. Runtime tests were not requested and were not run. No commit
+  was created.
