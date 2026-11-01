@@ -338,6 +338,7 @@ public final class Fieldwork {
             injection.violationFactor = fast ? FAST_VIOLATIONS : 1;
             injection.skipModules = faults.contains(SKIP_MODULES);
             injection.dontKnow = faults.contains(DONT_KNOW);
+            injection.refuseAnswers = faults.contains(REFUSE);
             if (faults.contains(FAKE_REFUSAL) && FormWalker.consents(config, number)) {
                 double r = config.consent().get().rate();
                 double p = r <= 0 ? 0 : Math.min(1, (1 - r) / r);
@@ -906,12 +907,13 @@ public final class Fieldwork {
     static final String SKIP_MODULES = "skipModules";
     static final String DONT_KNOW = "dontKnow";
     static final String FAKE_REFUSAL = "fakeRefusal";
+    static final String REFUSE = "refuse";
     static final String LEFT_OPEN = "leftOpen";
     private static final List<String> PROBLEMS = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP, TRAVEL,
             OUTLIER, LEFT_OPEN);
     /** The order of the records of a submission: the table, then the faults. */
     private static final List<String> RECORD_ORDER = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP,
-            TRAVEL, OUTLIER, LEFT_OPEN, "tooFast", "skipModules", "dontKnow", "fakeRefusal");
+            TRAVEL, OUTLIER, LEFT_OPEN, "tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse");
     /** Where the warnings of faulty enumerators come, between those of travel and of outliers. */
     private static final String FAULTS = "faults";
     private static final List<String> WARNING_ORDER = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP,
@@ -981,18 +983,27 @@ public final class Fieldwork {
                     faults.add(fault);
                 }
             }
-            if (faults.remove(FAKE_REFUSAL) && config.consent().isEmpty()) {
+            if (faults.contains(DONT_KNOW) && config.dontKnowCodes().isEmpty()) {
+                faults.remove(DONT_KNOW);
+                warn(FAULTS, "problems: faults: dontKnow needs the team's \"don't know\" codes (dontKnowCodes in the"
+                        + " configuration); no dontKnow was injected");
+            }
+            if (faults.contains(FAKE_REFUSAL) && config.consent().isEmpty()) {
+                faults.remove(FAKE_REFUSAL);
                 warn(FAULTS, "problems: faults: fakeRefusal needs the form's consent questions (consent in the"
                         + " configuration); no fakeRefusal was injected");
-            } else if (rates.faults().contains(FAKE_REFUSAL)) {
-                faults.add(FAKE_REFUSAL);
+            }
+            if (faults.contains(REFUSE) && config.refuseCodes().isEmpty()) {
+                faults.remove(REFUSE);
+                warn(FAULTS, "problems: faults: refuse needs the team's \"refused\" codes (refuseCodes in the"
+                        + " configuration); no refuse was injected");
             }
             if (faults.isEmpty()) {
                 return;
             }
             int m = Math.min(faults.size(), e / 2);
             if (m == 0) {
-                warn(FAULTS, "problems: faults: no fault was injected: with one enumerator, a faulty enumerator could"
+                warn(FAULTS, "problems: faults: no fault was injected: with 1 enumerator, a faulty enumerator could"
                         + " not be compared with others");
                 return;
             }
@@ -1124,7 +1135,8 @@ public final class Fieldwork {
         return new InjectedProblem(s.number(), key(s), FormWalker.username(visit.enumerator(), config.enumerators()),
                 family(problem), problem, check(problem), field, value, cleanValue, related,
                 !SHORT.equals(problem) && !LONG.equals(problem) && !OUTLIER.equals(problem) && !TOO_FAST.equals(problem)
-                        && !SKIP_MODULES.equals(problem) && !DONT_KNOW.equals(problem) && !FAKE_REFUSAL.equals(problem));
+                        && !SKIP_MODULES.equals(problem) && !DONT_KNOW.equals(problem) && !FAKE_REFUSAL.equals(problem)
+                        && !REFUSE.equals(problem));
     }
 
     private static String family(String problem) {
@@ -1133,7 +1145,7 @@ public final class Fieldwork {
             case SHORT, LONG -> "duration";
             case OFFHOURS, OVERLAP, LEFT_OPEN -> "schedule";
             case OUTLIER -> "outlier";
-            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL -> "enumerator";
+            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL, REFUSE -> "enumerator";
             default -> "travel";
         };
     }
@@ -1143,7 +1155,7 @@ public final class Fieldwork {
             case RESENT, REINTERVIEW -> "ipacheckids";
             case SHORT, LONG, OUTLIER -> "ipacheckoutliers";
             case OFFHOURS -> "ipachecktimeuse";
-            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL -> "ipacheckenumdb";
+            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL, REFUSE -> "ipacheckenumdb";
             default -> "custom";
         };
     }
@@ -1177,6 +1189,7 @@ public final class Fieldwork {
                 records.add(record(s, visit, FAKE_REFUSAL, lastField, consent.no(), consent.yes(), ""));
             }
         }
+        records.addAll(changes(s, visit, injection, REFUSE));
         return records;
     }
 

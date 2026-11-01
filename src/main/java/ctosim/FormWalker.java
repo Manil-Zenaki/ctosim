@@ -212,6 +212,8 @@ public final class FormWalker {
         double violationFactor = 1;
         boolean skipModules;
         boolean dontKnow;
+        /** Answers with the team's "refused" codes (refuse). */
+        boolean refuseAnswers;
         /** The question that gets an outlier value at its first instance, or null. */
         String outlierField;
         /** When set, the questions that could get an outlier are listed in {@link #eligible}. */
@@ -260,6 +262,7 @@ public final class FormWalker {
             copy.violationFactor = violationFactor;
             copy.skipModules = skipModules;
             copy.dontKnow = dontKnow;
+            copy.refuseAnswers = refuseAnswers;
             copy.outlierField = outlierField;
             copy.refuse = refuse;
             copy.shortenRosters = shortenRosters;
@@ -1695,7 +1698,8 @@ public final class FormWalker {
             if (a == null || a.isEmpty()) {
                 return;
             }
-            SplittableRandom random = new SplittableRandom(seed(config.seed(), number, 30 + adjusted++));
+            long questionSeed = seed(config.seed(), number, 30 + adjusted++);
+            SplittableRandom random = new SplittableRandom(questionSeed);
             boolean count = countQuestions.contains(ref.genericize().toString(false));
             boolean numeric = kind == QuestionKind.INTEGER || kind == QuestionKind.DECIMAL;
             if (numeric && !count && firstInstance(ref)) {
@@ -1721,8 +1725,14 @@ public final class FormWalker {
                     && skip(prompt, ref, kind, loaded, name, question, a, random)) {
                 return;
             }
-            if (injection.dontKnow && !count) {
-                dontKnow(prompt, kind, loaded, name, question, a, random);
+            // repeat counts and the answers that extend a roster are left to skipModules
+            boolean controls = count || extender != null;
+            boolean replaced = injection.dontKnow && !controls
+                    && code(prompt, kind, loaded, name, question, a, random, config.dontKnowCodes(), "dontKnow");
+            if (injection.refuseAnswers && !controls && !replaced) {
+                // drawn apart from dontKnow's draws (spec 14, Amendment 6)
+                code(prompt, kind, loaded, name, question, a, new SplittableRandom(seed(questionSeed, 0, 1)),
+                        config.refuseCodes(), "refuse");
             }
         }
 
@@ -2054,21 +2064,25 @@ public final class FormWalker {
             return relevant;
         }
 
-        /** A faulty enumerator answers with a "don't know / refused" code where the form allows one. */
-        private void dontKnow(FormEntryPrompt prompt, QuestionKind kind, List<String> loaded, String name,
-                              Question question, String a, SplittableRandom random) {
+        /**
+         * A faulty enumerator answers with one of the team's codes (dontKnow or refuse) where the form allows one;
+         * true when the answer changed.
+         */
+        private boolean code(FormEntryPrompt prompt, QuestionKind kind, List<String> loaded, String name,
+                             Question question, String a, SplittableRandom random, List<String> teamCodes,
+                             String problem) {
             if (random.nextDouble() >= DONT_KNOW_PROBABILITY) {
-                return;
+                return false;
             }
             List<String> codes = new ArrayList<>();
             if (kind == QuestionKind.SELECT_ONE || kind == QuestionKind.SELECT_MULTIPLE) {
                 for (String c : new java.util.LinkedHashSet<>(question.choices())) {
-                    if (config.specialValues().contains(c)) {
+                    if (teamCodes.contains(c)) {
                         codes.add(c);
                     }
                 }
             } else if (kind == QuestionKind.INTEGER || kind == QuestionKind.DECIMAL) {
-                for (String v : config.specialValues()) {
+                for (String v : teamCodes) {
                     try {
                         Double.parseDouble(v);
                         codes.add(v);
@@ -2083,13 +2097,27 @@ public final class FormWalker {
             for (String code : codes) {
                 if (answer(prompt, kind, loaded, code)) {
                     String given = stored();
-                    if (!given.equals(a)) {
-                        injection.changes.add(new Change("dontKnow", name, given, a));
+                    if (!same(kind, given, a)) {
+                        injection.changes.add(new Change(problem, name, given, a));
+                        return true;
                     }
-                    return;
+                    return false;
                 }
             }
             answer(prompt, kind, loaded, a);
+            return false;
+        }
+
+        /** Numeric answers are compared as numbers, others as exact strings. */
+        private static boolean same(QuestionKind kind, String given, String a) {
+            if (kind == QuestionKind.INTEGER || kind == QuestionKind.DECIMAL) {
+                try {
+                    return Double.parseDouble(given) == Double.parseDouble(a);
+                } catch (NumberFormatException e) {
+                    return given.equals(a);
+                }
+            }
+            return given.equals(a);
         }
 
         private int drawRepeatCount(String repeatName) {
