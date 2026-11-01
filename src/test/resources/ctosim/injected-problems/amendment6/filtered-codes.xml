@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Only currently offered team codes</h:title><model>
+    <instance><data id="amendment6_filtered"><region>north</region><answer/><username/><meta><instanceID/></meta></data></instance>
+    <instance id="codes"><root>
+      <item><region>north</region><name>ok</name><label>Ordinary</label></item>
+      <item><region>north</region><name>REF</name><label>Refused</label></item>
+      <item><region>south</region><name>hidden</name><label>Unavailable code</label></item>
+    </root></instance>
+    <bind nodeset="/data/region" type="string" readonly="true()"/>
+    <bind nodeset="/data/answer" type="select1"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/answer"><label>Answer</label>
+      <itemset nodeset="instance('codes')/root/item[region = /data/region]">
+        <label ref="label"/><value ref="name"/>
+      </itemset>
+    </select1>
+  </h:body>
+</h:html>

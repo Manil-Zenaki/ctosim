@@ -1170,3 +1170,190 @@ expected failures do not validate the code-dependent assertions beyond
 configuration parsing. See `diagnostic-compile.log`, `diagnostic-junit.log`,
 and `maven-test-compile.log` in the run directory. Existing tests are kept;
 no commit is made.
+
+## Amendment 6: refused answers as a separate fault
+
+This addition covers Amendment 6 only, using the inherited fault contracts
+in Amendments 1, 2, and 5 and the configuration contract of spec 04
+Amendment 12. All existing committed test files and fixtures are retained
+unchanged. New tests are in six `InjectedAmendment6*Test` classes, with one
+new support class and two fixtures under
+`src/test/resources/ctosim/injected-problems/amendment6/`.
+No production source was read, searched, or modified.
+
+### F1. How is an empty refusal-code list represented?
+
+**Question:** Amendment 6 disables the fault when the accessor is empty,
+but spec 04 prohibits an explicitly empty JSON array. Does an unavailable
+code in a nonempty list also disable the fault?
+
+**Assumption:** Omit `refuseCodes` to exercise an empty accessor. Only
+an empty accessor disables assignment; a nonempty unusable list remains
+an active fault, even if it changes no answers. Remove disabled faults
+before computing m, assignment, cumulation, and small-sample warnings.
+Supplying codes alone does not request injection. Configuration validation,
+including disjoint code lists and default fault lists, belongs to spec 04
+and is not duplicated here. Earlier tests are not changed or adjudicated.
+
+**Tests:** `InjectedAmendment6DisabledTest`;
+`twoMissingCodeListsGiveExactlyOneWarningEachAndAllocateNoFaults`;
+`disabledDontKnowDoesNotStealAnEnumeratorFromActiveRefuse`.
+
+### F2. What does "dontKnow left unchanged" mean?
+
+**Question:** Does a dontKnow draw that finds no usable code, or selects
+the answer already present, block refuse? Is the precedence per answer
+or per submission?
+
+**Assumption:** Unchanged means the actual answer is unchanged, not that
+a Bernoulli draw was never attempted. Refuse remains eligible after either
+no-op case, at probability 0.25. A changed answer cannot be changed again
+by refuse, but other eligible answers in that interview remain candidates.
+With fixed ordinary answers and disjoint offered codes, dontKnow changes
+25 percent and refuse changes 0.75 * 0.25 of the faulty enumerator's
+answers on average.
+
+**Tests:** `dontKnowWinsAndRefuseHasAQuarterChanceAmongUnchangedAnswers`;
+`anUnusableOrAlreadyPresentDontKnowCodeDoesNotBlockRefuse`;
+`refusalPrecedenceIsPerAnswerAndRecordsAreGroupedByFaultBeforeFieldOrder`.
+
+### F3. What random sequence and independence are required?
+
+**Question:** No exact PRNG stream is specified. How can independent draws,
+stable assignment, and the fifth fault's ordering be checked?
+
+**Assumption:** Do not hard-code any seed's outcomes. The stated
+seed-and-E assignment rule permits comparing configurations whose m is
+unchanged, including one active fault versus two cumulated faults at E=2.
+Separate fault draws mean adding the later refuse fault does not consume
+dontKnow's draws. Check overlap of the two faults' single-fault runs
+against probability 0.25 squared, and conditional refusal frequency in
+the combined run. Neither test demands the exact refusal target set stay
+unchanged when its eligibility is changed by dontKnow.
+
+Fixed-seed frequency checks use the existing tolerance of seven binomial
+standard deviations plus two. The combined precedence tests use 3,000
+eligible faulty-enumerator answers per select kind; the separate-stream
+test uses 2,000. Other code tests use 200-800 opportunities, and uniform
+enumerator assignment uses 200 seeds (100 through 299), with 60 interviews
+per enumerator. Assertions require the relevant fault records and mixed
+cases to exist; tests never skip for an unobserved scenario. Replay checks
+compare actual submissions, visits, records, warnings, and CSV output.
+
+**Tests:** `InjectedAmendment6PrecedenceTest`;
+`refusalAssignmentIsUniformOverEnumeratorsAcrossFixedSeeds`;
+`InjectedAmendment6RecordsTest` replay/seed/locale tests.
+
+### F4. Which inherited eligibility and protection rules apply?
+
+**Question:** Does "the same eligible questions" carry over all exclusions
+and the rules preventing multiple modifications to an answer?
+
+**Assumption:** Yes: blank, irrelevant, nonnumeric/nonselect, read-only,
+calculated, survey-ID, cascade-ancestor, and repeat-count answers are not
+changed by refuse. The repeat-count exclusion also applies to an
+add-another choice whose answer controls an indirect count. Copied
+reinterview cascade answers remain protected, and resent submissions
+receive no additional fault records. The inherited protection for answers
+already changed by skipModules or outliers also applies to refuse.
+Tests avoid unspecified interactions between refuse and a forced consent
+answer; the five-fault fixture offers refusal codes only on an independent
+code question.
+
+**Tests:** `InjectedAmendment6CascadeTest`;
+`teamCodesStillLeaveIdsReadOnlyCalculationsAndRepeatCountsAlone`;
+`refusalDoesNotChangeAnAddAnotherAnswerThatControlsAnIndirectRepeatCount`;
+`resentCopiesKeepTheirOriginalTeamCodeWithoutAnExtraFaultRecord`;
+`outlierAnswersAreProtectedFromTheLaterRefusalFault`;
+`answersAlreadyChangedBySkipModulesAreProtectedFromRefuse`;
+blank/irrelevant/noneligible cases in `InjectedAmendment6CodesTest`.
+
+### F5. How should numeric and select code identity be tested?
+
+**Question:** Must numeric codes preserve their spelling, and can an
+unusable refusal code fall back to a dontKnow or ordinary special code?
+
+**Assumption:** Numeric identity is by numeric value, following the
+Amendment 5 clarification inherited by refuse. Fractional codes are never
+rounded to integers, and a code numerically equal to the ordinary answer
+does not create a changed-answer record. Select codes preserve exact
+strings, including case, leading zeros, and Unicode. Selection is uniform
+among currently offered codes, or numeric codes accepted by the current
+question's engine constraint; ordinary drawing bounds are not constraints.
+There is no fallback to another code list. A refuse code may also be an
+ordinary specialValue, but the dontKnow and refuse lists in these fixtures
+are disjoint. No later-question lookahead, nonfinite numeric text, exponent
+spelling, or duplicate numeric spellings in a list are prescribed by
+these tests.
+
+**Tests:** `InjectedAmendment6CodesTest`;
+`eachFaultUsesOnlyItsOwnCodesEvenWhenBothListsAndSpecialsArePresent`;
+`anUnusableOwnListNeverFallsBackToTheOtherFaultsOfferedCodes`.
+
+### F6. What does cleanValue mean when both faults are active?
+
+**Question:** The general counterfactual keeps other problems, but removing
+a successful dontKnow could newly enable refuse on that same answer.
+Does a dontKnow record need to simulate that newly enabled draw?
+
+**Assumption:** Do not impose a resolution on dontKnow records in a
+combined-fault run. Exact cleanValue checks there are restricted to refuse
+records, which restore the unchanged incoming answer. Standalone refuse
+records compare against the same actual visit walked without the fault,
+retaining actual visit timing and independent ordinary answer draws.
+The tests check returned field values, keys, enumerators, statistical
+classification, empty relatedKey, per-field uniqueness, and ordering.
+Mixed records are grouped by fault first, then form order, even when
+bind order or lexical field order differs.
+
+**Tests:** `eachChangedFieldHasItsOrdinaryCleanValueAndRecordsFollowFormOrder`;
+`refusalPrecedenceIsPerAnswerAndRecordsAreGroupedByFaultBeforeFieldOrder`;
+`refusalAnswerKeyRowsExposeTheNewProblemWithTheStatisticalKind`;
+the new `metadata6` and `truthfulCodeRecords` oracles.
+
+### F7. Which warnings and assignment boundaries are prescribed?
+
+**Question:** What warning wording is required, and where does an inactive
+refuse warning belong among other fault warnings?
+
+**Assumption:** Require exactly one configuration-wide warning identifiable
+by `refuse` when requested without codes, after original-table warnings
+and before failed-outlier warnings. Do not prescribe prose or its position
+relative to another fault's warning. Active faults follow canonical order,
+whatever the input list's order. With five active faults, a cumulation
+warning gives 10 as the required enumerator count. At E=1 only the
+no-injection warning applies. Small-sample warnings count interviews,
+not replacement records, with 9 versus 10 exercising the boundary.
+The four earlier faults and their warnings are unchanged when refuse is
+absent or inactive; merely supplying its code list changes neither.
+
+**Tests:** `InjectedAmendment6AssignmentTest`;
+`theMissingCodesWarningAppearsAfterTableWarningsAndBeforeOutlierWarnings`;
+disabled-fault warning comparisons.
+
+### Amendment 6 build verification
+
+**Question:** Can the requested offline Maven test compilation run here?
+
+**Observation:** The baseline and post-addition Maven invocations fail in
+`testCompile` accessing
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+The `-e` retry identifies `java.nio.file.AccessDeniedException`.
+This is an environment failure, not a successful requested Maven build.
+
+**Assumption:** Use the existing supplementary in-memory Java compiler
+probe, with `--release 17`, to check the seven new Java files and nine
+unchanged supporting test sources against compiled public APIs and cached
+dependency bytes. This does not replace Maven verification. No repositories
+are copied, drives mapped, dependencies installed, or production sources
+inspected. Logs and probes remain under `.codex-runs/spec14-amendment6/`.
+
+**Result:** All 16 new/support sources compile with the supplementary
+compiler. The diagnostic JUnit run discovers and starts 81 invocations:
+2 pass and 79 fail, with no skips, aborts, or failed containers. Failures
+are 68 configuration exceptions for unimplemented code-list settings,
+8 illegal-argument exceptions for the unsupported refuse fault, and
+3 unsupported-operation exceptions from stubs. These expected failures
+do not exercise assertions beyond the missing support.
+See `diagnostic-compile.log`, `diagnostic-junit.log`, and
+`maven-test-compile-detail.log` in the run directory.
