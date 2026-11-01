@@ -1389,3 +1389,193 @@ are 68 configuration exceptions for unimplemented code-list settings,
 do not exercise assertions beyond the missing support.
 See `diagnostic-compile.log`, `diagnostic-junit.log`, and
 `maven-test-compile-detail.log` in the run directory.
+
+## Amendment 7: text codes and explicit exclusions
+
+This addition is limited to Amendment 7. It adds six new test classes,
+`InjectedAmendment7TextTest`, `InjectedAmendment7PrecedenceTest`,
+`InjectedAmendment7ExclusionsTest`, `InjectedAmendment7InteractionsTest`,
+`InjectedAmendment7CascadeTest`, and `InjectedAmendment7RecordsTest`, plus
+`InjectedAmendment7Support`. The new static fixture is
+`src/test/resources/ctosim/injected-problems/amendment7/other-specify.xml`.
+Small parameterized forms use the existing resource-backed form template;
+cascade tests reuse the existing read-only CSV fixtures and test helpers.
+No production source was opened, searched, or modified. All previously
+committed tests and fixtures are retained unchanged.
+
+### G1. What identifies a text code, including a numeric-looking code?
+
+**Question:** Should numeric-looking text codes be compared numerically or
+normalized, as numeric question codes are in earlier amendments?
+
+**Assumption:** A text answer uses the exact string supplied in the team's
+list. Thus `097` differs from `97`, and leading zeros, decimal spelling,
+case, Unicode, commas, and quotes survive. No normalization, conversion to
+a number, or fallback to the other team's list or `specialValues` is
+assumed. The engine, rather than a text appearance or ordinary drawing
+range, decides whether a code is accepted. Configuration parsing errors
+are covered by spec 04 tests and are not duplicated here.
+
+**Tests:** `textCodesAreUniformAtOneQuarterRateAndKeepExactStrings`,
+`textCodesDoNotUseNumericEquality`,
+`textWithNumericAppearanceStillTakesAcceptedNonnumericTeamCodes`,
+`eachTextFaultUsesItsOwnListDespiteOtherAvailableCodes`, and
+`answerKeyQuotesTextCodesAndTheReplacedTextWithoutLosingUnicode`.
+
+### G2. When and among which candidates is text-code selection made?
+
+**Question:** Does the quarter-probability apply before trying an arbitrary
+code (possibly losing the injection), or to replacement by a uniformly
+chosen currently accepted code? Do earlier injected answers count when
+evaluating a later text constraint?
+
+**Assumption:** When at least one code is accepted, there is a 0.25 chance
+of choosing uniformly from the accepted subset. Rejected candidates do
+not reduce that rate. Acceptance is evaluated at the current question,
+with current prior answers, including prior injected answers. The tests
+do not prescribe a search implementation or random sequence. Fixtures
+make the ordinary answer valid and distinct from accepted codes. There is
+no extra assertion about look-ahead at future answers.
+
+**Tests:** `regexFiltersCodesBeforeUniformSelectionRatherThanReducingTheInjectionRate`,
+`acceptanceUsesTheOtherAnswersOfThisInterview`,
+`aTextConstraintSeesEarlierInjectedAnswersRatherThanTheCleanInterview`, and
+`noAcceptedCodeKeepsTheOrdinaryAnswerWithoutFallingBackToOtherLists`.
+
+### G3. Which unchanged-answer and relevance rules carry over to text?
+
+**Question:** Does the extension override missingness, relevance, or the
+rule that records describe actual changes only?
+
+**Assumption:** All inherited rules continue to apply. Blank or irrelevant
+text stays blank; a draw of the already present exact code creates no
+record. An already present code still belongs to the uniform accepted
+candidate set, so one unchanged and one changing candidate give a 0.125
+observable replacement rate. A dontKnow attempt with no accepted code, or the same code already
+present, leaves that answer available to refuse. The other-specify fixture
+offers ordinary/other choices that are not team codes, so relevance is
+controlled solely by the actual gate answer. Supplying codes alone does
+not request faults, and missing code lists are represented by omitted
+configuration keys, as required by spec 04.
+
+**Tests:** Blank, irrelevant, unchanged-code, missing-list, and no-request
+tests in `InjectedAmendment7TextTest`; `otherSpecifyReceivesCodesOnlyInInterviewsWhereOtherWasSelected`;
+`anAcceptedCodeEqualToTheOrdinaryTextKeepsItsShareOfUniformDraws`;
+`aDontKnowDrawThatLeavesTheTextUnchangedDoesNotBlockRefuse`.
+
+### G4. Does Amendment 7 settle combined-fault dontKnow cleanValue?
+
+**Question:** Amendment 7 says that text records contain the answer
+replaced, but also says records are as for the other questions. Amendment
+6 explicitly leaves dontKnow's cleanValue unspecified when both faults
+are active. Is that earlier exception now removed?
+
+**Assumption:** Do not assume that the exception has been removed.
+Combined-fault tests require exact cleanValue for refuse only, and verify
+the final value, field, metadata, exclusivity and ordering for both faults.
+Standalone tests for each fault verify the exact replaced text against
+the same actual visit walked without faults, including nonconstant
+ordinary text draws. This avoids imposing an unclarified counterfactual
+on combined dontKnow records.
+
+**Tests:** `InjectedAmendment7PrecedenceTest`,
+`cleanValuesAreTheActualGeneratedTextReplacedAndRecordsFollowFormOrder`,
+and the `textRecords` and `metadata` helpers.
+
+### G5. How are protected kinds and protected roles represented?
+
+**Question:** Some exclusions are defined by the control rather than its
+data type (range, media, acknowledge), and some questions have no ordinary
+answer (notes, rank). Must tests require those controls to produce a value?
+Does protecting a calculation mean freezing its dependencies too?
+
+**Assumption:** Protection means no replacement record for that field and
+no direct change from its same-visit ordinary behavior. A rank may remain
+blank with its ordinary unsupported-control warning; a note may remain
+blank. No nonblank output is required for such controls. Media fixtures
+use upload controls, with image uploads bearing `signature` and `draw`
+appearances. Both integer and decimal ranges are tested. Every type case
+also includes an eligible ordinary text companion to demonstrate active
+injection. Calculations and read-only fixtures have independent fixed
+values, so the tests do not prohibit normal recalculation after an input
+changes. Consent tests exercise both consenting and refusing submissions.
+Count tests cover numeric counts, an indirect count controlled by text,
+and an add-another select. Repeat-record path spelling is not prescribed;
+the repeated-answer tests check actual instance counts/values and the
+absence of changes to controllers.
+
+**Tests:** `InjectedAmendment7ExclusionsTest`,
+`addAnotherAnswersThatControlRepeatCountsRemainProtected`,
+`InjectedAmendment7CascadeTest`, and the skipModules, outlier, and resent
+tests in `InjectedAmendment7InteractionsTest`.
+
+### G6. What randomness is prescribed and what evidence is sufficient?
+
+**Question:** The spec prescribes probabilities, independence and replay,
+but not a PRNG or seed-specific replacement pattern.
+
+**Assumption:** Use fixed seeds without expected snapshots. With two
+enumerators and one active fault (or two cumulated faults), exactly one
+enumerator is faulty. Even submission counts give half as many potential
+faulty interviews. Rate tests use the existing tolerance of seven binomial
+standard deviations plus two; the main text/code test has 1,600 eligible
+answers, regex selection 1,200, combined precedence 3,000, and independent
+fault streams 2,000. Conditional relevance/constraint tests count actual
+eligible opportunities. Code bins and mixed-field tests require every
+scenario they assert to be observed; no missing scenario causes a skip.
+Same-seed checks include submissions, records, visits, warnings and CSV;
+different-seed checks require more than one pattern across four seeds.
+Locale/time-zone tests restore JVM defaults in finally blocks.
+
+**Tests:** Rate tests in `InjectedAmendment7TextTest` and
+`InjectedAmendment7PrecedenceTest`; replay, seed and locale tests in
+`InjectedAmendment7RecordsTest`.
+
+### G7. How are earlier conflicting text expectations handled in this run?
+
+**Question:** Amendment 7 says earlier tests expecting unchanged text are
+superseded and go through a dispute, but this task explicitly requires all
+committed tests to be kept and new files/classes only.
+
+**Assumption:** Preserve all earlier tests without rewriting or disabling
+them. In particular, earlier whole-run no-change assertions with text
+companions and assertions that records must contain only numeric fields
+may need separate adjudication, as well as the explicit
+`InjectedAmendment6CodesTest.textAndDatesKeepTheirOrdinaryAnswersDespiteMatchingTeamCodeKinds`.
+This run neither edits disputes nor claims the complete old suite should
+pass after Amendment 7 is implemented.
+
+**Tests:** All new Amendment 7 classes; no changes to existing test files.
+
+### Amendment 7 build verification
+
+**Question:** Can the requested `mvnw.cmd -o -q test-compile` verify the
+new tests in this sandbox?
+
+**Observation:** The initial no-change baseline invocation exited zero.
+After new test sources were added, the requested command failed in
+`testCompile` while opening
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+The detailed `-e` retry identifies `java.nio.file.AccessDeniedException`.
+The earlier zero exit does not demonstrate compilation of the new tests.
+
+**Assumption:** Use the previously established supplementary in-memory
+Java compiler against compiled public API classes and cached dependency
+bytes, with `--release 17`. No source under production directories is
+read, no dependencies are installed or copied, and no build configuration
+is changed. This check is supplementary and does not turn the blocked
+Maven invocation into a success. Probes and logs are confined to
+`.codex-runs/spec14-amendment7/`.
+
+**Result:** All seven new Java files and nine unchanged support sources
+compile successfully with the supplementary compiler. The final diagnostic
+JUnit run discovers and starts 107 invocations: 22 pass and 85 fail, with
+no skipped or aborted tests and no failed containers. The failures are
+assertions about absent text replacements (including required positive
+controls) and range fields receiving team codes. No fixture-loading or
+configuration exception occurs. These are expected implementation gaps;
+assertions beyond a failing positive control remain unverified at runtime.
+See `diagnostic-compile-final.log`, `diagnostic-junit-final.log`,
+`maven-test-compile.log`, and `maven-test-compile-detail.log` under
+`.codex-runs/spec14-amendment7/`. The requested Maven compilation remains
+blocked; supplementary compilation does not replace it. No commit was made.

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms"
+        xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Relevant other-specify text</h:title><model>
+    <instance><data id="amendment7_other"><gate/><answer/><username/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/gate" type="select1"/>
+    <bind nodeset="/data/answer" type="string" relevant="/data/gate = 'other'"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <select1 ref="/data/gate"><label>Type</label>
+      <item><label>Ordinary</label><value>ordinary</value></item>
+      <item><label>Other</label><value>other</value></item>
+    </select1>
+    <input ref="/data/answer"><label>Other, specify</label></input>
+  </h:body>
+</h:html>
