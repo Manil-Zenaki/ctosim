@@ -475,3 +475,13 @@ they are named), found by the refusal rate of `ipacheckenumdb` as the
 fault `dontKnow` is by its "don't know" rate. The topic "refused" of
 Amendment 13 is superseded: the help no longer says that `dontKnowCodes`
 holds refused codes.
+
+Clarification (Amendment 14): assumptions N1–N3 of the questions file are
+reviewed one by one and confirmed: lexical checks of the visible help
+without fixed wording, separate definitions of the two keys sufficing
+without a literal "only", and any remaining sentence putting refused codes
+in `dontKnowCodes` failing (N1); the topics the amendment lists only, the
+refusal rate of `refuse` not to be confused with the consent of
+`fakeRefusal` (N2); the Amendment 13 test of the "refused" topic is
+superseded and goes through a dispute, the new tests following the earlier
+infrastructure (N3).
