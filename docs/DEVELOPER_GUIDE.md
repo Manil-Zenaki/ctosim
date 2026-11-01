@@ -253,17 +253,29 @@ by default) gives one number of a submission a value far beyond the
 fences `ipacheckoutliers` uses, yet accepted by the form's constraint at
 that moment (a constraint that depends on other answers included; the
 outlier moves to another question or a later submission when there is no
-room). `faults` lists the faults of **faulty enumerators**, all four by
+room). `faults` lists the faults of **faulty enumerators**, all five by
 default: `tooFast` (time per question x0.4, three times the speed
 violations), `skipModules` (answers filter questions so that the modules
 they open stay closed, half the time; declares fewer repeat instances, a
 quarter of the time, also for rosters built by "add another" questions),
-`dontKnow` (a "don't know / refused" code of `specialValues` where the
-form accepts one, a quarter of the time) and `fakeRefusal` (refusals
-declared to avoid interviews: about twice the others'). A faulty
+`dontKnow` (one of the team's "don't know" codes where the form accepts
+one, a quarter of the time), `fakeRefusal` (refusals declared to avoid
+interviews: about twice the others') and `refuse` (one of the team's
+"refused to answer" codes, a quarter of the answers `dontKnow` left
+unchanged, drawn apart). A faulty
 enumerator applies its faults to all its interviews; one enumerator per
 fault while at least half of them stay clean, otherwise faults are
 cumulated and a warning says so.
+
+The simulator never guesses what a code means ("97" is often "Other"):
+the team names its codes (spec 04, Amendments 11 and 12), and a code
+cannot be in both lists. Without its list, `dontKnow` or `refuse` is not
+injected, takes no enumerator, and a warning says so:
+
+```json
+"dontKnowCodes": ["-888"],
+"refuseCodes": ["-999"]
+```
 
 Consent (spec 07, Amendment 11) is simulated per interview only when the
 configuration names the consent questions, in the order the form asks
