@@ -53,6 +53,8 @@ public final class SimulationConfig {
     private final ProblemRates problems;
     private final Consent consent;
     private final Villages villages;
+    private final List<String> dontKnowCodes;
+    private final List<String> refuseCodes;
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
@@ -111,6 +113,20 @@ public final class SimulationConfig {
                      ZoneId timeZone, int enumerators, double speedViolationRate,
                      Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id,
                      int interviewsPerDay, ProblemRates problems, Consent consent, Villages villages) {
+        this(seed, submissions, start, fieldworkDays, missingRate, specialRate, specialValues, repeatMin, repeatMax,
+                integerRange, decimalRange, fields, timeZone, enumerators, speedViolationRate, profiles, area, textPools,
+                id, interviewsPerDay, problems, consent, villages, List.of(), List.of());
+    }
+
+    SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
+                     double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
+                     NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
+                     ZoneId timeZone, int enumerators, double speedViolationRate,
+                     Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id,
+                     int interviewsPerDay, ProblemRates problems, Consent consent, Villages villages,
+                     List<String> dontKnowCodes, List<String> refuseCodes) {
+        this.dontKnowCodes = List.copyOf(dontKnowCodes);
+        this.refuseCodes = List.copyOf(refuseCodes);
         this.villages = villages;
         this.consent = consent;
         this.problems = problems;
@@ -258,7 +274,8 @@ public final class SimulationConfig {
     SimulationConfig withId(String id) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
+                dontKnowCodes, refuseCodes);
     }
 
     /** The form's consent questions; empty when the configuration names none. See Amendment 8. */
@@ -271,14 +288,14 @@ public final class SimulationConfig {
         return java.util.Optional.ofNullable(villages);
     }
 
-    /** The team's "don't know" and "refused" codes; empty when none are named. See Amendment 11. */
+    /** The team's "don't know" codes; empty when none are named. See Amendments 11 and 12. */
     public java.util.List<String> dontKnowCodes() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return dontKnowCodes;
     }
 
     /** The team's "refused to answer" codes; empty when none are named. See Amendment 12. */
     public java.util.List<String> refuseCodes() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return refuseCodes;
     }
 
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
@@ -290,7 +307,8 @@ public final class SimulationConfig {
     public SimulationConfig withProblems(ProblemRates problems) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
+                dontKnowCodes, refuseCodes);
     }
 
     /** Text pools in file order; empty when not set. */
@@ -311,13 +329,15 @@ public final class SimulationConfig {
         more.put(name, override);
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, more,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
+                dontKnowCodes, refuseCodes);
     }
 
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
+                dontKnowCodes, refuseCodes);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
@@ -326,6 +346,7 @@ public final class SimulationConfig {
         }
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
-                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages);
+                timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
+                dontKnowCodes, refuseCodes);
     }
 }

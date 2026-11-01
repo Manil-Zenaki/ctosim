@@ -41,7 +41,7 @@ final class ConfigParser {
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
             "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
             "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay", "problems", "consent",
-            "villages");
+            "villages", "dontKnowCodes", "refuseCodes");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
             "distribution", "expr", "area", "when");
@@ -119,12 +119,23 @@ final class ConfigParser {
                 ? boundedInt(root.get("interviewsPerDay"), "interviewsPerDay", 1, SimulationConfig.MAX_INTERVIEWS_PER_DAY)
                 : d.interviewsPerDay();
 
+        List<String> dontKnowCodes = root.has("dontKnowCodes")
+                ? teamCodes(root.get("dontKnowCodes"), "dontKnowCodes") : List.of();
+        List<String> refuseCodes = root.has("refuseCodes")
+                ? teamCodes(root.get("refuseCodes"), "refuseCodes") : List.of();
+        for (int i = 0; i < refuseCodes.size(); i++) {
+            if (dontKnowCodes.contains(refuseCodes.get(i))) {
+                throw error("refuseCodes[" + i + "]", "\"" + refuseCodes.get(i)
+                        + "\" is also a \"don't know\" code; a code cannot mean both");
+            }
+        }
         return new SimulationConfig(seed, submissions, start, days, missing, special, specialValues,
                 repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations,
                 profiles, area, pools, id, interviewsPerDay,
                 root.has("problems") ? problems(root.get("problems")) : null,
                 root.has("consent") ? consent(root.get("consent")) : null,
-                root.has("villages") ? villages(root.get("villages")) : null);
+                root.has("villages") ? villages(root.get("villages")) : null,
+                dontKnowCodes, refuseCodes);
     }
 
     /** The coordinate columns of the preloaded village list (spec 04, Amendment 10). */
@@ -263,14 +274,27 @@ final class ConfigParser {
         }
     }
 
+    /** The team's "don't know" or "refused" codes (spec 04, Amendments 11 and 12). */
+    private List<String> teamCodes(JsonNode node, String key) throws ConfigException {
+        List<String> codes = codes(node, key);
+        if (codes.isEmpty()) {
+            throw error(key, "must name at least one code");
+        }
+        return codes;
+    }
+
     private List<String> specialValues(JsonNode node) throws ConfigException {
+        return codes(node, "specialValues");
+    }
+
+    private List<String> codes(JsonNode node, String key) throws ConfigException {
         if (!node.isArray()) {
-            throw error("specialValues", "must be an array of strings" + found(node));
+            throw error(key, "must be an array of strings" + found(node));
         }
         List<String> values = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < node.size(); i++) {
-            String path = "specialValues[" + i + "]";
+            String path = key + "[" + i + "]";
             String value = string(node.get(i), path);
             if (value.isEmpty()) {
                 throw error(path, "must not be an empty string");
