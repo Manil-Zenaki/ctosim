@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Isolated("Walks change the JVM time zone")
 class InjectedAmendment2RefusalTest {
-    private static final String FIXED = "\"fields\":{\"gate\":{\"value\":\"yes\"},\"code\":{\"value\":\"ok\"}},\"specialValues\":[\"-99\"]";
+    private static final String FIXED = "\"fields\":{\"gate\":{\"value\":\"yes\"},\"code\":{\"value\":\"ok\"}},\"specialValues\":[\"-99\"],\"dontKnowCodes\":[\"-99\"]";
 
     @ParameterizedTest @ValueSource(doubles = {.9, .75, .5, .2})
     void onlyWouldConsentInterviewsAreConvertedAtTheSpecifiedConditionalRate(double probability) throws Exception {

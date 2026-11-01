@@ -13,7 +13,7 @@ class InjectedAmendment1InteractionsTest {
     @Test void dontKnowAndAnOutlierCanAffectDifferentAnswersOnTheSameSubmission() throws Exception {
         var f = fixture("<amount/><code/>", bind("amount", "decimal", "constraint=\". &gt;= 0\"")
                 + bind("code", "select1", ""), input("amount") + choices("code", false, "ok", "-99"));
-        var r = run(f, settings(600, 2, "\"specialValues\":[\"-99\"],\"fields\":{\"code\":{\"value\":\"ok\"}}")
+        var r = run(f, settings(600, 2, "\"dontKnowCodes\":[\"-99\"],\"fields\":{\"code\":{\"value\":\"ok\"}}")
                 .withProblems(rates(1, "dontKnow")));
         assertEquals(600, records(r, "outlier").size()); rate(records(r, "dontKnow").size(), 300, .25);
         for (var p : records(r, "dontKnow")) {
@@ -69,7 +69,7 @@ class InjectedAmendment1InteractionsTest {
     }
     @Test void surveyIdNumbersAreProtectedFromDontKnowWhileOtherNumbersAreChanged() throws Exception {
         var f = fixture("<id/><answer/>", bind("id", "int", "") + bind("answer", "int", ""), input("id") + input("answer"));
-        var r = run(f, config(800, 2, "\"id\":\"id\",\"specialValues\":[\"-99\"]").withProblems(rates(0, "dontKnow")));
+        var r = run(f, config(800, 2, "\"id\":\"id\",\"dontKnowCodes\":[\"-99\"]").withProblems(rates(0, "dontKnow")));
         assertFalse(records(r, "dontKnow").isEmpty()); Set<String> ids = new HashSet<>();
         for (var s : r.submissions()) {
             assertEquals(value(r.clean(s.number()), "id"), value(s, "id")); assertTrue(ids.add(value(s, "id")));

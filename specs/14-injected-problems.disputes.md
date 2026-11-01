@@ -354,3 +354,102 @@ the fault, so the fault leaves the id alone as required.
 values as submissions (a wider `integerRange` or an `id` override with
 enough values), keeping every assertion; or drop the distinctness check
 and keep the comparison of each id with its clean walk.
+
+## Adjudication (2026-11-01)
+
+### Disputes 1–4: retain the previously corrected tests
+
+The earlier decisions remain consistent with the current spec. Dispute 1's
+cascade fixtures now supply distinct instanceIDs for resolving originals.
+Dispute 2's roster tests use Amendment 2's 0.25 probability, and its rejected
+outlier test checks the final per-target warnings rather than the superseded
+twenty-refusal warning. Dispute 3's add-another fixtures use repeat-local
+calculations and flag sums, with ordinary walks checking that the roster can
+extend and stop. Dispute 4's ID-only override supplies one possible ID per
+visit without changing the outlier distribution. Keep these fixes and their
+behavioral assertions; no further changes are needed for those disputes.
+
+### Dispute 5: upheld; enable the fault with the team's codes
+
+Amendment 5 expressly replaces `specialValues` with `dontKnowCodes` as the
+source of injected don't-know answers. Its clarification E1 supersedes the
+earlier tests, and E2 removes a fault with no codes before assignment.
+Amendment 6 similarly disables `refuse` without its own codes. Therefore,
+expecting replacements or an assignment for `dontKnow` without its codes is
+a test defect. The replacement, protection, ordering and assignment rules
+themselves remain in force.
+
+- `InjectedAmendment1DontKnowTest`: supply the former code lists through
+  `dontKnowCodes` in the select, numeric, fractional, Unicode and multiple-
+  replacement tests. Keep the 0.25 rate, uniform usable-code selection,
+  engine acceptance, exact Unicode values, clean values, independent ordinary
+  draws and form-order assertions. Rename methods referring to special codes
+  to refer to team codes. Apply the same fixture repair to the no-change
+  tests for blank answers, already-equal codes, unavailable/rejected codes,
+  unsupported question types, repeat counts, read-only fields and calculations;
+  those tests must exercise an active fault, not pass because it is disabled.
+  The empty-list case now omits `dontKnowCodes` and verifies that its accessor
+  is empty: spec 04 Amendment 11, referenced by spec 14, rejects an explicitly
+  empty JSON array and defines omission as the empty accessor list.
+- `dontKnowUsesOnlyCurrentlyOfferedSearchChoicesNotFilteredRowsOrPlaceholders`:
+  supply `A`, `C` and `code` as `dontKnowCodes`; retain the rate and the
+  requirement that only currently offered `A` replaces ordinary `B`. Also
+  migrate the class's cascade-protection fixture so its no-change assertions
+  exercise an active fault on the ID and all its upper questions.
+- `dontKnowAndAnOutlierCanAffectDifferentAnswersOnTheSameSubmission` and
+  `surveyIdNumbersAreProtectedFromDontKnowWhileOtherNumbersAreChanged`:
+  supply `-99` through `dontKnowCodes`. Keep every assertion about the changed
+  field, protected ID, outlier coexistence and clean values.
+- `faultsAndOriginalDurationTargetsCoexistAndFaultRecordsStayAfterDurationRecords`:
+  add `dontKnowCodes: ["-99"]` to `allFaultSettings()`. Retain the short-target
+  counts, evidence of each requested fault and record ordering. Retain the
+  existing `specialValues` setting for its separate uses.
+- `aSubsetOfFaultsUsesOnlyItsOwnMembersAndItsOwnCumulationThreshold` (both
+  cases) and `faultsUseAtMostHalfTheEnumeratorsAndWrapInCanonicalOrder` (six
+  cases): the same shared-setting fix activates `dontKnow`. Keep the subset
+  and canonical assignment assertions, wraparound, clean-half requirement and
+  warning thresholds of four and six enumerators respectively.
+- `fourthFaultFollowsCanonicalAssignmentAndWrapsAfterTheCleanHalf` (four
+  cases): add `dontKnowCodes: ["-99"]` to its shared `FIXED` configuration.
+  Keep the four-fault order, wraparound and eight-enumerator warning threshold.
+
+The disputed assignment tests already name their faults explicitly through
+`rates(...)`; none requests the default fault list. Their three- and
+four-fault expectations therefore remain correct. Adding `refuse` or changing
+their thresholds to ten would change the scenarios unnecessarily. Shared
+fixture repairs also keep the existing replay, configured-order, resent-copy
+and interaction tests meaningful. No probability or behavioral assertion was
+weakened.
+
+### Dispute 6: upheld; provide enough possible survey IDs
+
+Spec 13's "Survey ids", incorporated by spec 14, defines integer ID capacity
+from the ID override when present, otherwise from `integerRange`, and requires
+reuse when capacity is smaller than the submission count. The support range
+10..20 contains only 11 values. Neither `dontKnow` nor `refuse` promises to
+create 240 unique IDs from that range; their obligation is to leave IDs alone.
+
+In both `InjectedAmendment5RecordsTest` and `InjectedAmendment6RecordsTest`,
+`teamCodesStillLeaveIdsReadOnlyCalculationsAndRepeatCountsAlone` now gives only
+the ID field a min/max override of 10..249, exactly 240 possible integers.
+Keep all assertions: IDs are unique and equal to the same visits' clean IDs,
+read-only and calculated values stay fixed, the roster retains three members,
+and only the eligible amount field receives team codes. The other fields'
+ordinary ranges and overrides are unchanged.
+
+No production source was read or changed, and no commit was made.
+
+**Verification:** `mvnw.cmd -o -q test` failed at `testCompile` on the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, so the full Maven
+suite could not run. The supplementary compiler successfully compiled all
+49 spec 14 test/support sources against existing compiled API classes, both
+before and after the final fixture correction. The separate JUnit run of the
+seven affected classes started 80 tests: 79 passed; the explicit-empty-array
+fixture failed during configuration parsing. After correcting it to omit the
+key as spec 04 requires, its targeted rerun passed (1 started, 1 successful).
+Thus all 80 affected test cases have passing results across those runs, with
+no skips or aborts. `git diff --check` also passed.
+
+Logs: `.codex-runs/spec14-disputes-20261101-maven.log` and
+`.codex-runs/spec14-adjudication-20261101/{compile-final.log,junit.log,junit-empty-codes.log}`.
+The Maven limitation is also recorded in the questions file.

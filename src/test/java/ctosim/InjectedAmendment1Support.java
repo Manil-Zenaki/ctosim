@@ -94,6 +94,6 @@ final class InjectedAmendment1Support {
         }
     }
     static String allFaultSettings() {
-        return "\"specialValues\":[\"-99\"],\"fields\":{\"gate\":{\"value\":\"yes\"},\"code\":{\"value\":\"ok\"}}";
+        return "\"specialValues\":[\"-99\"],\"dontKnowCodes\":[\"-99\"],\"fields\":{\"gate\":{\"value\":\"yes\"},\"code\":{\"value\":\"ok\"}}";
     }
 }

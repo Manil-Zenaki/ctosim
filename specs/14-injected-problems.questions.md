@@ -1154,6 +1154,38 @@ environment failure, not a Java source diagnostic. The `-e` retry confirms
 `java.nio.file.AccessDeniedException`; its trace is recorded in
 `maven-test-compile-detail.log` in the run directory.
 
+### Disputes 5–6 build verification (2026-11-01)
+
+**Question:** Can the prescribed offline Maven run compile and execute the
+adjudicated tests in this environment?
+
+**Observation:** `mvnw.cmd -o -q test` fails at `testCompile`, reporting the
+cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` path. The Maven
+suite cannot run; this is not a successful Maven compilation.
+
+**Assumption:** Reuse the existing supplementary compiler and JUnit launcher,
+adapted under `.codex-runs/spec14-adjudication-20261101/`, against compiled
+public API classes and cached dependencies. This checks test compilation and
+behavior separately without reading production source, changing the build,
+installing dependencies or copying Maven repositories.
+
+**Tests:** All 49 spec 14 test/support sources compile with `--release 17`.
+The affected classes are `InjectedAmendment1DontKnowTest`,
+`InjectedAmendment1CascadeTest`, `InjectedAmendment1InteractionsTest`,
+`InjectedAmendment1AssignmentTest`, `InjectedAmendment2RefusalTest`,
+`InjectedAmendment5RecordsTest` and `InjectedAmendment6RecordsTest`.
+The Maven log is `.codex-runs/spec14-disputes-20261101-maven.log`; supplementary
+logs are `compile.log` and `junit.log` in the adjudication run directory.
+
+**Result:** The seven-class JUnit run passed 79 of 80 tests. Its sole failure
+was a migrated no-op fixture using an explicit empty JSON code list. Spec 04
+Amendment 11 requires omission for an empty accessor list, so that fixture
+was corrected. All 49 sources compiled again (`compile-final.log`), and the
+corrected test passed its targeted rerun (`junit-empty-codes.log`). All 80
+affected cases have passing results across the two JUnit runs, with no skips
+or aborts; this supplementary verification does not replace the blocked Maven
+suite.
+
 **Assumption:** Use the existing supplementary in-memory Java compiler
 approach, with `--release 17`, to check all five new Java files and six
 unchanged test support files against compiled public APIs and cached

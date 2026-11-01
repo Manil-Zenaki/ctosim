@@ -17,7 +17,7 @@ class InjectedAmendment1CascadeTest extends FieldworkAmendment3Support {
                 + "<bind nodeset=\"/data/meta/instanceID\" type=\"string\" jr:preload=\"uid\"/>", body);
     }
     private static String specials() {
-        return "\"enumerators\":2,\"specialValues\":[\"R1\",\"R2\",\"R0\",\"D1\",\"D2\",\"D3\",\"D0\","
+        return "\"enumerators\":2,\"dontKnowCodes\":[\"R1\",\"R2\",\"R0\",\"D1\",\"D2\",\"D3\",\"D0\","
                 + "\"A\",\"B\",\"C\",\"E\",\"X\",\"Z\",\"0007\",\"É02\",\"B1\",\"B2\",\"B3\",\"SHARED\",\"C1\",\"E1\"]";
     }
     @Test void dontKnowUsesOnlyCurrentlyOfferedSearchChoicesNotFilteredRowsOrPlaceholders() throws Exception {
@@ -26,7 +26,7 @@ class InjectedAmendment1CascadeTest extends FieldworkAmendment3Support {
                 + FormWalkerTestSupport.bind("answer", "string", ""),
                 control("search('a3-villages', 'matches', 'district', /data/district)", "code"));
         var r = run(f, InjectedAmendment1Support.settings(600, 2,
-                "\"specialValues\":[\"A\",\"C\",\"code\"],\"fields\":{\"answer\":{\"value\":\"B\"}}")
+                "\"dontKnowCodes\":[\"A\",\"C\",\"code\"],\"fields\":{\"answer\":{\"value\":\"B\"}}")
                 .withProblems(rates(0, "dontKnow")));
         rate(records(r, "dontKnow").size(), 300, .25);
         for (var p : records(r, "dontKnow")) {

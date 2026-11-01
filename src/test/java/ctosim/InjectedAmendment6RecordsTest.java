@@ -84,7 +84,7 @@ class InjectedAmendment6RecordsTest {
                         + "<repeat nodeset=\"/data/person\" jr:count=\"/data/size\">" + input("person/name") + "</repeat>"
                         + input("amount"));
         var run = faulty(form, 240, codes("1", "2")
-                + ",\"id\":\"id\",\"specialValues\":[],\"fields\":{\"size\":{\"value\":3},\"amount\":{\"value\":10}}");
+                + ",\"id\":\"id\",\"specialValues\":[],\"fields\":{\"id\":{\"min\":10,\"max\":249},\"size\":{\"value\":3},\"amount\":{\"value\":10}}");
         assertFalse(records(run, "refuse").isEmpty(), "an eligible question still receives the fault");
         for (var record : records(run, "refuse")) assertEquals("amount", record.field());
         Set<String> ids = new HashSet<>();
