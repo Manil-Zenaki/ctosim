@@ -116,6 +116,8 @@ setting.
 {synopt:{cmd:problems}}rates of injected problems, as option {opt problems}; see {help ctosim##problems:Injected problems}{p_end}
 {synopt:{cmd:missingRate}}probability that an optional question is left blank (default 0.05){p_end}
 {synopt:{cmd:specialRate}, {cmd:specialValues}}probability of a "don't know / refused" code, and which values are such codes{p_end}
+{synopt:{cmd:dontKnowCodes}}the values your team uses for "don't know", used by the fault {bf:dontKnow}; see {help ctosim##problems:Injected problems}{p_end}
+{synopt:{cmd:refuseCodes}}the values your team uses for "refused to answer", used by the fault {bf:refuse}{p_end}
 {synopt:{cmd:speedViolationRate}}probability of a speed violation on a field with a minimum time (default 0.1){p_end}
 {synopt:{cmd:repeats}}number of instances of repeats without a count (default 1 to 3){p_end}
 {synopt:{cmd:integerRange}, {cmd:decimalRange}}default bounds of numbers (0-100, 0-1000){p_end}
@@ -345,13 +347,14 @@ checks comparing enumerators ({cmd:ipacheckenumdb}) can find them:{p_end}
 
 {phang2}- {bf:tooFast}: the enumerator goes too fast, spending much less time on each question, with more speed violations;{p_end}
 {phang2}- {bf:skipModules}: the enumerator answers No to filter questions to skip the modules they open, and declares fewer repeat instances (a smaller household roster) than the respondent would, also in rosters built by an "add another member?" question, where it answers No earlier;{p_end}
-{phang2}- {bf:dontKnow}: the enumerator answers "don't know" or "refused" codes (the configuration's {cmd:specialValues}) where the form accepts them;{p_end}
+{phang2}- {bf:dontKnow}: the enumerator answers "don't know" codes where the form accepts them, which the "don't know" rate of {cmd:ipacheckenumdb} shows. It needs your team's codes (below).{p_end}
 {phang2}- {bf:fakeRefusal}: the enumerator declares refusals to avoid interviews: on average about twice the refusals of the other enumerators (about 80% consent when the others get 90%), which the consent rate of {cmd:ipacheckenumdb} shows. It needs the consent questions (below).{p_end}
+{phang2}- {bf:refuse}: the enumerator answers "refused to answer" codes where the form accepts them, which the refusal rate of {cmd:ipacheckenumdb} shows. It needs your team's codes (below).{p_end}
 
 {pstd}
 Each fault gets one enumerator of its own when there are enough: at least
 half of the enumerators always stay clean, so that the faulty ones stand
-out. With fewer than eight enumerators the faults are cumulated on the same
+out. With fewer than ten enumerators the faults are cumulated on the same
 enumerators, and a warning says so; use more enumerators (twice the number
 of faults) for one enumerator per fault, and enough submissions (at least
 ten per enumerator) for the checks to tell them apart.{p_end}
@@ -378,6 +381,19 @@ question; a respondent who refuses answers no to the last one. {cmd:yes} and
 consent questions are answered like any other question.{p_end}
 
 {pstd}
+{bf:"Don't know" and "refused" codes.} The fault {bf:dontKnow} uses only the
+codes named in the configuration's {cmd:dontKnowCodes} key, the values your team
+uses for "don't know" (for example {cmd:["-888"]}), and the fault {bf:refuse}
+only those of its {cmd:refuseCodes} key, the values your team uses for "refused
+to answer" (for example {cmd:["-999"]}); a code cannot be in both lists, as
+{cmd:ipacheckenumdb} counts them apart, with its {cmd:dontknow()} and
+{cmd:refuse()} options. {cmd:ctosim} never guesses these codes, since the same
+value can mean "Other" in another form. A code replaces an answer only where the
+question accepts it: among the offered choices of a select question, or as a
+number its constraint accepts. Without its key, a fault is not injected, and a
+warning says so.{p_end}
+
+{pstd}
 {bf:Located villages.} When the preloaded village list holds the villages'
 coordinates, name its latitude and longitude columns in the configuration's
 {cmd:villages} key, {cmd:latitude} and {cmd:longitude} ({cmd:ctosim} never
@@ -399,7 +415,7 @@ overlap. The configuration's {cmd:problems} object sets the share of
 submissions carrying each problem: {cmd:resent} and {cmd:reinterview} (0.01 by
 default), {cmd:shortDuration}, {cmd:longDuration}, {cmd:offHours},
 {cmd:overlap}, {cmd:travel}, {cmd:leftOpen} and {cmd:outliers} (0.02); its {cmd:faults} key
-is the list of faults to give enumerators, all four by default
+is the list of faults to give enumerators, all five by default
 ({cmd:"faults": ["dontKnow"]} for one, {cmd:[]} for none);
 {cmd:{c -(}{c )-}} asks for every problem at its default rate, {cmd:{c -(}"travel": 0{c )-}} for every problem
 but travel. Option {opt problems} uses the configuration's rates when it has
