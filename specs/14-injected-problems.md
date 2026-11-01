@@ -805,3 +805,17 @@ questions (Amendment 2).
 `specialValues` keeps its other uses, unchanged (among them the ordinary
 special answers of spec 05, and the choices a shortened roster avoids,
 Amendment 2).
+
+Clarification (Amendment 5): assumptions E1–E6 of the questions file are
+reviewed one by one and confirmed: an omitted key gives an empty list, and
+earlier tests that relied on `specialValues` for `dontKnow` are superseded
+and go through a dispute (E1); a fault without codes is removed before
+enumerators are assigned, as `fakeRefusal` without consent questions, while
+a non-empty list stays active even when no question can use it (E2);
+numeric codes are compared as numbers and never rounded, the engine
+accepting the code for the question answered, with no look-ahead at later
+questions (E3); the warning is identified by `dontKnow`, in the faults'
+warnings, without prescribed wording (E4); `dontKnowCodes` and
+`specialValues` are independent lists that may overlap (E5); no random
+sequence is prescribed, and `cleanValue` comes from the same visit walked
+without the fault (E6).
