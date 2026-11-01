@@ -239,10 +239,10 @@ interviews within 1.5 km of the village's coordinates), spec 14
 Amendment 4 (travel through located villages, with or without GPS; a
 reinterview's original in the village of the day), spec 04 Amendment 10
 (`villages`: the latitude and longitude columns, named by the user) and
-spec 11 Amendment 12 (help, the check in prose). Java 11645 tests, one
-disputed (spec 13 Dispute 4: a reuse count that depends on an ordinary
-draw, as Dispute 3; to run with `-Dispute` once Codex's usage limit
-resets); Stata 123, all green. IPA check (9 villages added to
+spec 11 Amendment 12 (help, the check in prose). Spec 13 Dispute 4 (a
+reuse count that depended on an ordinary draw) upheld: the test now fixes
+the district. Java 11645 and Stata 123 tests, all green; package
+republished and pushed. IPA check (9 villages added to
 `household_preloads.csv` with coordinates): a no-GPS check (successive
 interviews of an enumerator in villages more than 20 km apart at more
 than 60 km/h) flags the 8 injected trips and nothing else; every GPS
