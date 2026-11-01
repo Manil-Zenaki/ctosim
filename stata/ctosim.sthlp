@@ -390,8 +390,17 @@ to answer" (for example {cmd:["-999"]}); a code cannot be in both lists, as
 {cmd:refuse()} options. {cmd:ctosim} never guesses these codes, since the same
 value can mean "Other" in another form. A code replaces an answer only where the
 question accepts it: among the offered choices of a select question, or as a
-number its constraint accepts. Without its key, a fault is not injected, and a
-warning says so.{p_end}
+number its constraint accepts. The faults {bf:dontKnow} and {bf:refuse} also
+write your team's codes in text questions, as enumerators type "-999" in a text
+question when the respondent does not know. Dates and times,
+GPS locations, barcodes, media, sliders ({it:range}) and rankings are never
+changed. Without its key, a fault is not injected, and a warning says so.{p_end}
+
+{pstd}
+Since the codes also appear in text questions, give {cmd:ipacheckenumdb} each
+code both as a number and as a string, for example
+{cmd:dontknow(-999, "-999") refuse(-888, "-888")}: with the number alone, it
+stops on a type mismatch as soon as the data hold a text variable.{p_end}
 
 {pstd}
 {bf:Located villages.} When the preloaded village list holds the villages'
