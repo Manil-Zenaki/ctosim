@@ -288,3 +288,69 @@ and passed all 74 tests, with no failures, skips or aborts. Logs:
 `.codex-runs/spec14-adjudication-maven.log`,
 `.codex-runs/spec14-adjudication/compile.log` and
 `.codex-runs/spec14-adjudication/junit.log`.
+
+## Dispute 5: "don't know" tests that predate the team's codes (2026-11-01)
+
+**Tests:** in `InjectedAmendment1DontKnowTest`:
+`fractionalSpecialCodesAreAcceptedForDecimalQuestions`,
+`multipleReplacementsAreOrderedByFormFieldsAndKeepIndependentOrdinaryDraws`,
+`numericCodesAreUniformAmongOnlyNumericEngineAcceptedSpecialValues`
+(2 cases), `selectAnswersAreReplacedAtOneQuarterRateWithOneOfferedSpecialCode`
+(2 cases), `unicodeOfferedSpecialCodesArePreservedExactly`; in
+`InjectedAmendment1CascadeTest`:
+`dontKnowUsesOnlyCurrentlyOfferedSearchChoicesNotFilteredRowsOrPlaceholders`;
+in `InjectedAmendment1InteractionsTest`:
+`dontKnowAndAnOutlierCanAffectDifferentAnswersOnTheSameSubmission`,
+`faultsAndOriginalDurationTargetsCoexistAndFaultRecordsStayAfterDurationRecords`,
+`surveyIdNumbersAreProtectedFromDontKnowWhileOtherNumbersAreChanged`; in
+`InjectedAmendment1AssignmentTest`:
+`aSubsetOfFaultsUsesOnlyItsOwnMembersAndItsOwnCumulationThreshold`
+(2 cases), `faultsUseAtMostHalfTheEnumeratorsAndWrapInCanonicalOrder`
+(6 cases); in `InjectedAmendment2RefusalTest`:
+`fourthFaultFollowsCanonicalAssignmentAndWrapsAfterTheCleanHalf` (4 cases).
+
+**Spec:** Amendment 5: `dontKnow` draws its codes from
+`config.dontKnowCodes()` instead of `specialValues`; when that list is
+empty, no `dontKnow` is injected and the fault takes no enumerator.
+Clarification (Amendment 5), E1: "earlier tests that relied on
+`specialValues` for `dontKnow` are superseded and go through a dispute".
+Amendment 6 adds the fifth fault `refuse`, which, like `dontKnow`, takes
+no enumerator without `refuseCodes`.
+
+**What the tests do:** they give the codes through `specialValues` and no
+`dontKnowCodes`. The replacement tests then observe no replacement
+(`observed replacements / eligible opportunities ==> expected: <75.0> but
+was: <0.0>`). The assignment tests list `dontKnow` among the requested
+faults and expect it to take an enumerator (`one assigned enumerator:
+dontKnow ==> expected: <1> but was: <0>`), whereas without codes it is
+removed before assignment, which shifts the faults that follow.
+
+**Requested change:** supply the same codes as `dontKnowCodes` (keeping
+`specialValues` where a test checks it is not used, or dropping it), so
+that `dontKnow` is active, and keep every assertion on rates, codes,
+eligibility, ordering and assignment. Where an assignment test requests
+the default fault list, also supply `refuseCodes` (disjoint from
+`dontKnowCodes`) or name the faults explicitly, and expect the five
+faults of Amendment 6 where the default list matters.
+
+## Dispute 6: team-code tests whose survey ids repeat (2026-11-01)
+
+**Tests:** `InjectedAmendment5RecordsTest.teamCodesStillLeaveIdsReadOnlyCalculationsAndRepeatCountsAlone`,
+`InjectedAmendment6RecordsTest.teamCodesStillLeaveIdsReadOnlyCalculationsAndRepeatCountsAlone`.
+
+**Spec:** spec 13, "Survey ids": when the id question has fewer possible
+values `K` than submissions `N`, some values are used twice, and a warning
+gives `K` and `N`. This is the situation of Dispute 4, upheld.
+
+**What the tests do:** `"id":"id"` on an integer question with the
+`integerRange` of the support settings, 10 to 20 (11 values), and 240
+submissions; they then require every submission's id to be distinct
+("survey IDs stay unique"). The same walk without any fault already
+repeats 229 of the 240 ids (checked with the public API outside the
+test tree), and each submission's id equals its id in the walk without
+the fault, so the fault leaves the id alone as required.
+
+**Requested change:** give the id question at least as many possible
+values as submissions (a wider `integerRange` or an `id` override with
+enough values), keeping every assertion; or drop the distinctness check
+and keep the comparison of each id with its clean walk.

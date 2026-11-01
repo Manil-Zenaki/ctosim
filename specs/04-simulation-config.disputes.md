@@ -68,3 +68,41 @@ with Java release 17 (`compiled=true`). Logs are
 `.codex-runs/04-dispute-probe-compile.log`. Compilation is verified by the
 probe; runtime test results remain unverified because Maven could not reach
 test execution. No implementation source was read or modified.
+
+## Dispute 2: the four-fault default, superseded by Amendment 12 (2026-11-01)
+
+**Tests:** in `ProblemRatesAmendment7Test`:
+`defaultFaultsAreUnmodifiableAndUnchangedByCustomInstances`,
+`defaultsIncludeOutliersAndAllFaultsInTheSpecifiedOrder`; in
+`ProblemRatesAmendment8Test`:
+`defaultsAppendFakeRefusalAfterTheThreeExistingFaults`,
+`omittedFaultsInAnyPresentProblemsObjectUseAllFourDefaults` (4 cases); in
+`ProblemRatesAmendment9Test`:
+`defaultsEnableLeftOpenWithoutChangingAnyEarlierDefault`; in
+`SimulationConfigAmendment7IoTest`:
+`loadAcceptsOutlierBoundsAndNumericRepresentations` (10 cases),
+`loadDistinguishesAbsentProblemsFromNewDefaultsAndExplicitlyDisabledNewComponents`;
+in `SimulationConfigAmendment7ParsingTest`:
+`emptyProblemsEnableBothNewDefaultsAndKeepTheSevenOriginalDefaults`,
+`explicitOutlierRatesAreRetainedWithoutChangingOtherDefaults` (10 cases),
+`originalRateOverridesStillDefaultBothNewComponents`; in
+`SimulationConfigAmendment8IoTest`:
+`loadDistinguishesAbsentConsentFromRequiredFieldsWithDefaults`; in
+`SimulationConfigAmendment9ParsingTest`:
+`parseAndLoadAcceptNumericFormsAndInclusiveEndpoints` (20 cases).
+
+**Spec:** Amendment 12: `faults` accepts `refuse`, and its default is the
+five faults `tooFast`, `skipModules`, `dontKnow`, `fakeRefusal`,
+`refuse`; so is `ProblemRates.defaults().faults()`. "The earlier tests of
+the four-fault default are superseded and go through a dispute."
+
+**What the tests do:** they expect the default fault list of Amendment 8,
+`[tooFast, skipModules, dontKnow, fakeRefusal]`; every failure reads
+`expected: <[tooFast, skipModules, dontKnow, fakeRefusal]> but was:
+<[tooFast, skipModules, dontKnow, fakeRefusal, refuse]>` (directly, or
+inside a `ProblemRates[...]` comparison).
+
+**Requested change:** expect the five faults of Amendment 12 wherever the
+default list is checked, keeping every other assertion (rates, absent
+`problems`, consent, copies, immutability, numeric forms). A test whose
+name says "four" may keep its name or be renamed.
