@@ -1,6 +1,6 @@
 # Project status and hand-over notes
 
-Last updated: 2026-10-31. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
+Last updated: 2026-11-01. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
 `docs/ARCHITECTURE.md` first; this file records where the work stands and
 what was learnt along the way.
 
@@ -247,6 +247,21 @@ republished and pushed. IPA check (9 villages added to
 interviews of an enumerator in villages more than 20 km apart at more
 than 60 km/h) flags the 8 injected trips and nothing else; every GPS
 answer is within 1.5 km of its declared village.
+
+2026-11-01, the teams' forms (owner). The simulator was run on the 41
+team forms in `samples/private/`; it drew `dontKnow` from `specialValues`,
+so a "97" could stand for "Other", and a "-888" in LLRP's B04 made B04_a
+and B04_b impossible. The owner chose that the user names the codes and
+that "don't know" and "refused" are distinct: spec 04 Amendments 11-12
+(`dontKnowCodes`, `refuseCodes`, disjoint; default faults now five),
+spec 14 Amendments 5-6 (`dontKnow` from its codes; a fifth fault
+`refuse`, drawn apart, on answers `dontKnow` left unchanged; without its
+codes a fault is not injected and a warning says so), spec 11 Amendments
+13-14 (help). Disputes 04/2 and 14/5-6 (tests predating the codes and the
+fifth fault; survey ids that repeat) upheld. Java 12540 and Stata 138
+tests, all green. LLRP spouse form: without codes the dead end is gone;
+with `"dontKnowCodes":["-888"]` B04_a and B04_b cannot be answered after
+a "don't know" in B04, a form finding if the team uses -888 there.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
