@@ -261,7 +261,15 @@ codes a fault is not injected and a warning says so), spec 11 Amendments
 fifth fault; survey ids that repeat) upheld. Java 12540 and Stata 138
 tests, all green. LLRP spouse form: without codes the dead end is gone;
 with `"dontKnowCodes":["-888"]` B04_a and B04_b cannot be answered after
-a "don't know" in B04, a form finding if the team uses -888 there.
+a "don't know" in B04; LLRP does not use -888 (its MSE form uses -99, the
+spouse form no code), so this was the simulator's doing. With each team's
+codes read from its choices sheets, the 41 forms add no new dead end.
+IPA check (IPA household form, 20 enumerators, 400 submissions,
+`dontKnowCodes` ["-999"], `refuseCodes` ["-888"]): `ipacheckenumdb` with
+`dontknow(-999, "-999") refuse(-888, "-888")` (both values are needed: with
+a number only it compares text variables to it and stops on a type
+mismatch) gives the faulty enumerators 2.76 % "don't know" and 1.84 %
+refusals, against at most 0.29 % and 0.16 % for the other 19.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
