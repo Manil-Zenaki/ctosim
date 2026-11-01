@@ -900,3 +900,18 @@ and `text`.
 
 Earlier tests that expect a text question to keep its answer under these
 faults are superseded and go through a dispute.
+
+Clarification (Amendment 7): assumptions G1–G7 of the questions file are
+reviewed one by one and confirmed: a text code is the exact string of the
+team's list, never compared as a number, with no fallback to another list
+(G1); with probability 0.25 a code is drawn uniformly among those the
+engine accepts at that moment, given the interview's answers so far,
+injected ones included (G2); blank and irrelevant text stays blank, an
+accepted code equal to the answer already there keeps its share of the
+draws and gives no record, and leaves the answer to `refuse` (G3); the
+`cleanValue` of a `dontKnow` record in a run with both faults stays
+unprescribed (G4); a protected question has no record and no direct
+change, a rank or note may stay blank, and the answers that control a
+repeat count are protected whatever their type, a text question included
+(G5); no random sequence is prescribed (G6); earlier tests that expect
+text to keep its answer are superseded and go through a dispute (G7).
