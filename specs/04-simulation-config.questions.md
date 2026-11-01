@@ -1090,3 +1090,92 @@ from spec 04; no production source was opened, read, searched, or changed.
   remain unchanged. **Dependent tests:** Full Maven test compilation remains
   unverified. Runtime tests were not requested and were not run. No commit
   was created.
+
+## Amendment 11: the team's "don't know" codes
+
+New coverage is in `SimulationConfigAmendment11ParsingTest` and
+`SimulationConfigAmendment11CopiesTest`, with
+`SimulationConfigAmendment11Support` and `amendment-11-dont-know-codes.json`.
+Existing tests and fixtures are preserved. Expectations come only from spec 04;
+no production source was opened, read, searched, or changed.
+
+59. **Does "exact strings" allow whitespace and alternative spellings of codes?**
+    - **Assumption:** Yes. Unlike field names, codes have only a nonempty rule;
+      whitespace-only strings and whitespace at either edge are valid and
+      retained. No numeric interpretation, trimming, case folding, or Unicode
+      normalization is permitted. Distinct decoded strings such as `-99`,
+      `-099`, and `-99.0`, or composed/decomposed Unicode, remain distinct.
+      JSON escapes are decoded before equality checks. No extra grammar or
+      length/count limit is inferred; no arbitrary performance limit or
+      unpaired-surrogate behavior is tested.
+    - **Dependent tests:** `codesAreNonemptyExactStringsPreservedInFileOrder`,
+      UTF-8 fixture and BOM/escape cases, and decoded duplicate rejection in
+      `invalidCodesReportConfigExceptionSourceLocationAndReason`.
+
+60. **Which location identifies an invalid element or a repeated code?**
+    - **Assumption:** Invalid elements identify their zero-based bracket index,
+      as illustrated by `dontKnowCodes[1]`. A duplicate identifies its second
+      occurrence, following the confirmed convention for faults/consent
+      arrays. Invalid containers and empty arrays identify `dontKnowCodes`.
+      Diagnostics require source and explanatory text without prescribed
+      wording. Duplicate object keys retain question 2's syntax-versus-rule
+      flexibility; their tests do not prescribe line/path/cause. Actual JSON
+      syntax errors independently require the failing line and retained cause.
+    - **Dependent tests:** `invalidCodesReportConfigExceptionSourceLocationAndReason`,
+      `duplicateDecodedKeysAreRejectedEvenWithIdenticalArrays`, and
+      `malformedCodesJsonReportsFailingLineAndRetainsCause`, through parse/load.
+
+61. **Does this key require other settings or change the configured fault list?**
+    - **Assumption:** No. The codes need no form, specialValues, problems, or
+      enabled dontKnow fault to be accepted. Neither problems nor specialValues
+      imply codes; codes do not enable problems, add/remove faults, or change
+      any earlier setting. Overlap with specialValues is legal, but neither
+      list filters, supplements, or reorders the other. Only the exact
+      top-level schema key is added; arbitrary field/profile/choice names
+      remain legal. The absence rule for actual fault injection belongs to
+      spec 14, so these tests inspect configuration only. No statistical or
+      seed-dependent generation assertions belong to this amendment here.
+    - **Dependent tests:** Omission tests, schema-placement tests,
+      `theNewKeyRemainsLegalAsAFieldProfileAndChoiceName`,
+      `codesAlonePreserveEveryEarlierDefaultAndDoNotEnableProblems`,
+      `addingCodesPreservesAllEarlierNondefaultSettings`, and
+      `specialValuesAndFaultSelectionNeitherFilterNorReplaceCodes`.
+
+62. **Which copies preserve codes, and what collection identity is required?**
+    - **Assumption:** All three copy APIs preserve exact codes and order,
+      including unchanged assignments, boundary values, replacing/clearing
+      problems, and chained copies. Copies are distinct configurations and
+      receivers are unchanged, as already specified. No identity constraint
+      is imposed on immutable lists. Mutations that would change a list or
+      view throw UnsupportedOperationException, including on copies; empty
+      lists are checked with additions rather than unspecified no-op changes.
+      Parsing another configuration or changing an array snapshot cannot
+      alter previously returned codes. Existing UTF-8/BOM/JSON input rules
+      apply to the new key through both entry points.
+    - **Dependent tests:** Copy, mutation/view, empty-list, array-snapshot,
+      rejected-copy, and independent-configuration tests in
+      `SimulationConfigAmendment11CopiesTest`; fixture and BOM parsing tests.
+
+### Amendment 11 build verification (2026-10-31)
+
+- Ran the requested `.\mvnw.cmd -o -q test-compile` and an `-e` diagnostic
+  retry. Both reached `maven-compiler-plugin:3.15.0:testCompile` and failed
+  with `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac closed
+  its archive file manager. Logs: `.codex-runs/04-amendment11-test-compile.log`
+  and `.codex-runs/04-amendment11-test-compile-detail.log`.
+- All three new Java files and their existing test-source dependencies
+  compiled successfully with Java release 17 against the actual
+  `target/classes` binaries and cached JUnit 5.11.4 API (nine source files).
+  The existing compiler-probe approach reads class entries in memory to
+  avoid the archive access failure. It does not inspect production source,
+  copy repositories, change permissions, or install dependencies. Probe:
+  `.codex-runs/Amendment11CompileProbe.java`; result:
+  `.codex-runs/04-amendment11-probe-compile.log` (`compiled=true`). This
+  verifies the new sources compile, but does not make Maven successful.
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** This is an environment
+  blocker; production, build configuration, dependencies, and existing tests
+  remain unchanged. **Dependent tests:** Full Maven test compilation remains
+  unverified. Runtime tests were not requested and were not run. No commit
+  was created.
