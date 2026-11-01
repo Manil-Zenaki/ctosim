@@ -674,3 +674,15 @@ public java.util.List<String> refuseCodes();   // empty when the key is absent
   is `ProblemRates.defaults().faults()`.
 - The earlier tests of the four-fault default are superseded and go
   through a dispute.
+
+Clarification (Amendment 12): assumptions 63–67 of the questions file are
+reviewed one by one and confirmed: the exact-string rules of Amendment 11
+apply, overlap being checked on decoded strings (63); an overlap is
+reported at its zero-based position in `refuseCodes` whatever the order of
+the keys, a repeat at its second occurrence, with no precedence prescribed
+among several errors (64); only the two code lists may not overlap, and
+neither list nor the fault `refuse` needs or changes another setting (65);
+the list-taking constructors accept `refuse` in the order given, and only
+the default fault list gains it, the earlier default tests going through a
+dispute (66); every copy keeps `refuseCodes()`, and the lists cannot be
+changed (67).
