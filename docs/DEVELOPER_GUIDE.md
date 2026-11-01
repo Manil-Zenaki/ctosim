@@ -277,6 +277,15 @@ injected, takes no enumerator, and a warning says so:
 "refuseCodes": ["-999"]
 ```
 
+Teams put the same codes in text questions, so the two faults also write
+them there when the question accepts them (spec 14, Amendment 7). They
+never change dates and times, GPS, barcodes, media, sliders (`range`),
+rankings, notes, calculations, read-only questions, the survey id,
+consent, or any question that controls a repeat count, whatever its
+type. IPA's `ipacheckenumdb` compares numeric variables with a number and
+text variables with a string, so it needs each code in both forms:
+`dontknow(-888, "-888") refuse(-999, "-999")`.
+
 Consent (spec 07, Amendment 11) is simulated per interview only when the
 configuration names the consent questions, in the order the form asks
 them; the simulator never guesses them from names:
