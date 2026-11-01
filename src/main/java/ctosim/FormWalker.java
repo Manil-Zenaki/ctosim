@@ -71,6 +71,8 @@ public final class FormWalker {
     private final String[] deviceIds;
     /** Generic paths of the questions that set a repeat count (spec 07, Amendment 9). */
     private final Set<String> countQuestions;
+    /** Generic paths of every question a repeat count depends on, whatever its type (spec 14, Amendment 7). */
+    private final Set<String> countControllers;
     /** The modules of the form (spec 14, Amendment 1). */
     private final List<Module> modules;
     /** The select_one questions of a repeat that its count depends on, by generic path (spec 14, Amendment 2). */
@@ -83,7 +85,8 @@ public final class FormWalker {
         this.config = Objects.requireNonNull(config, "config");
         this.generator = new AnswerGenerator(config);
         this.deviceIds = deviceIds(config);
-        this.countQuestions = countQuestions(form);
+        this.countQuestions = countQuestions(form, true);
+        this.countControllers = countQuestions(form, false);
         List<Module> found = new ArrayList<>();
         modules(form.newEntryController().getModel().getForm(), found);
         this.modules = List.copyOf(found);
@@ -474,10 +477,10 @@ public final class FormWalker {
     }
 
     /**
-     * The generic paths of the integer questions that a repeat count depends on, directly or
-     * through calculates (spec 07, Amendment 9).
+     * The generic paths of the questions that a repeat count depends on, directly or through
+     * calculates (spec 07, Amendment 9): the integer inputs only when {@code integers}.
      */
-    private static Set<String> countQuestions(LoadedForm form) {
+    private static Set<String> countQuestions(LoadedForm form, boolean integers) {
         FormDef def = form.newEntryController().getModel().getForm();
         Map<String, String> calculations = form.calculations();
         Map<String, Integer> questions = new HashMap<>(); // generic path -> control type
@@ -495,7 +498,7 @@ public final class FormWalker {
             if (control != null) {
                 TreeElement template = def.getMainInstance().getTemplatePath(ref);
                 int type = template == null ? Constants.DATATYPE_NULL : template.getDataType();
-                if ((control == Constants.CONTROL_INPUT || control == Constants.CONTROL_RANGE)
+                if (!integers || (control == Constants.CONTROL_INPUT || control == Constants.CONTROL_RANGE)
                         && (type == Constants.DATATYPE_INTEGER || type == Constants.DATATYPE_LONG)) {
                     result.add(path);
                 }
@@ -1725,8 +1728,9 @@ public final class FormWalker {
                     && skip(prompt, ref, kind, loaded, name, question, a, random)) {
                 return;
             }
-            // repeat counts and the answers that extend a roster are left to skipModules
-            boolean controls = count || extender != null;
+            // repeat counts and the answers that extend a roster are left to skipModules; a range is a slider
+            boolean controls = count || extender != null || prompt.getControlType() == Constants.CONTROL_RANGE
+                    || countControllers.contains(ref.genericize().toString(false));
             boolean replaced = injection.dontKnow && !controls
                     && code(prompt, kind, loaded, name, question, a, random, config.dontKnowCodes(), "dontKnow");
             if (injection.refuseAnswers && !controls && !replaced) {
@@ -2081,6 +2085,8 @@ public final class FormWalker {
                         codes.add(c);
                     }
                 }
+            } else if (kind == QuestionKind.TEXT) {
+                codes.addAll(new java.util.LinkedHashSet<>(teamCodes));
             } else if (kind == QuestionKind.INTEGER || kind == QuestionKind.DECIMAL) {
                 for (String v : teamCodes) {
                     try {
