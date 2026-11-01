@@ -642,3 +642,35 @@ second occurrence, an empty or ill-typed list at `dontKnowCodes` (60);
 the key needs and implies nothing else in the configuration, and is
 independent of `specialValues` (61); every copy keeps `dontKnowCodes()`
 and the list cannot be changed (62).
+
+## Amendment 12: refused answers apart from "don't know"
+
+Teams code "don't know" and "refused to answer" with distinct values, and
+`ipacheckenumdb` counts them apart. `dontKnowCodes` (Amendment 11) holds
+the team's "don't know" codes only; one top-level key is added for the
+refused ones, and `faults` (Amendment 7) accepts one more name.
+Everything else is unchanged.
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `refuseCodes` | array of strings | none | The values the form's team uses for "refused to answer". Without it, the fault `refuse` is not injected. |
+
+The rules of `dontKnowCodes` apply to `refuseCodes` (non-empty, distinct,
+exact strings, at least one; errors at `refuseCodes`, `refuseCodes[1]`).
+A code may not be in both lists: such a code is an error of the
+configuration, located at its position in `refuseCodes`.
+
+Public accessor added:
+
+```java
+// added to SimulationConfig:
+public java.util.List<String> refuseCodes();   // empty when the key is absent
+```
+
+- `refuseCodes()` is unmodifiable and keeps the file's order; copies keep
+  it.
+- `faults` accepts `refuse`, and its default is the five faults, in the
+  order `tooFast`, `skipModules`, `dontKnow`, `fakeRefusal`, `refuse`; so
+  is `ProblemRates.defaults().faults()`.
+- The earlier tests of the four-fault default are superseded and go
+  through a dispute.

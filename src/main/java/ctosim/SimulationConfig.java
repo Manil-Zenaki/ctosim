@@ -276,6 +276,11 @@ public final class SimulationConfig {
         throw new UnsupportedOperationException("not implemented yet");
     }
 
+    /** The team's "refused to answer" codes; empty when none are named. See Amendment 12. */
+    public java.util.List<String> refuseCodes() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
     public java.util.Optional<ProblemRates> problems() {
         return java.util.Optional.ofNullable(problems);

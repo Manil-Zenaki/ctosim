@@ -819,3 +819,31 @@ warnings, without prescribed wording (E4); `dontKnowCodes` and
 `specialValues` are independent lists that may overlap (E5); no random
 sequence is prescribed, and `cleanValue` comes from the same visit walked
 without the fault (E6).
+
+## Amendment 6: refused answers, a fault of their own
+
+Teams code "don't know" and "refused to answer" with distinct values, and
+`ipacheckenumdb` reports a "don't know" rate and a refusal rate per
+enumerator. `dontKnow` (Amendment 5) uses the "don't know" codes only
+(spec 04, Amendment 12); a fifth fault abuses refusals. Everything else is
+unchanged.
+
+| `problem` | `family` | `check` | deterministic |
+|---|---|---|---|
+| `refuse` | `enumerator` | `ipacheckenumdb` | no |
+
+It comes after `fakeRefusal` in the order of faults (and of the problems'
+table), so that the enumerators of the four earlier faults are unchanged
+when it is not injected.
+
+A faulty enumerator of `refuse` answers as one of `dontKnow` (Amendments
+1 and 5), with `config.refuseCodes()` in place of `config.dontKnowCodes()`:
+probability 0.25 per answer, drawn apart from `dontKnow`'s draws, the same
+eligible questions and the same rules for select and numeric questions.
+Its records have `problem` `refuse`. When one enumerator carries both
+faults, `dontKnow` applies first; `refuse` applies only to an answer that
+`dontKnow` left unchanged.
+
+When `config.refuseCodes()` is empty, no `refuse` is injected, the fault
+takes no enumerator, and `warnings()` holds one warning that says so,
+among the faults' warnings, as for `dontKnow` without codes.

@@ -464,3 +464,14 @@ codes, no fault" statement sufficing (M2), the refused answers among them
 being superseded by Amendment 14; the help oracle follows the earlier
 infrastructure (M3).
 
+## Amendment 14: the help on refused answers
+
+The command is unchanged; its help file documents that `dontKnowCodes`
+holds the team's "don't know" codes only (spec 04, Amendment 12), the
+configuration's `refuseCodes` key (the values the team uses for "refused
+to answer", named by the user), and the fault `refuse` (spec 14,
+Amendment 6: the enumerator answers with those codes, injected only when
+they are named), found by the refusal rate of `ipacheckenumdb` as the
+fault `dontKnow` is by its "don't know" rate. The topic "refused" of
+Amendment 13 is superseded: the help no longer says that `dontKnowCodes`
+holds refused codes.
