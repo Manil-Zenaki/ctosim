@@ -1303,3 +1303,103 @@ searched, or changed.
   `.codex-runs/04-dispute2-test-detail.log`,
   `.codex-runs/04-dispute2-probe-compile.log`, and
   `.codex-runs/04-dispute2-junit.log`.
+
+## Amendment 13: the team's "other" codes
+
+New coverage is in `SimulationConfigAmendment13ParsingTest`,
+`SimulationConfigAmendment13RateTest`, `SimulationConfigAmendment13SeparationTest`,
+`SimulationConfigAmendment13CopiesTest`, and `ProblemRatesAmendment13Test`, with
+one new support class and a UTF-8 fixture. Existing tests and fixtures are kept.
+Only the spec and test sources were consulted; no production source was read.
+
+68. **Do the confirmed exact-string rules extend to other codes, including
+    whitespace, numeric-looking strings, and Unicode?**
+    - **Assumption:** Yes, as Amendment 13 explicitly adopts Amendment 11.
+      Codes are decoded strings, without trimming, case folding, numeric
+      interpretation or Unicode normalization. Nonempty whitespace strings
+      are valid. Empty lists differ from an absent key and are rejected.
+    - **Dependent tests:** `codesAreNonemptyExactStringsPreservedInFileOrder`,
+      `invalidCodesReportConfigExceptionSourceLocationAndReason`, the UTF-8,
+      BOM and escape tests, and `distinctExactStringsMayAppearAcrossLists`.
+      No undocumented code length or array size limit is asserted.
+
+69. **Where are overlap errors reported, and does disabled use relax validation?**
+    - **Assumption:** An overlap with either `dontKnowCodes` or `refuseCodes`
+      identifies its zero-based position in `otherCodes`, independent of root
+      key order or JSON escape spelling. Repeated codes identify their second
+      occurrence, following Amendment 11. A zero `otherRate`, absent problems,
+      or an empty fault list does not permit otherwise invalid lists. No error
+      precedence is assumed when several independent errors are present.
+    - **Dependent tests:** All overlap tests in
+      `SimulationConfigAmendment13SeparationTest` and duplicate-code parsing tests.
+
+70. **What precision and extreme numeric behavior is prescribed for otherRate?**
+    - **Assumption:** The existing number-valued rate rules apply: inclusive
+      endpoints, ordinary fractions and exponents, and negative zero as zero
+      without requiring its sign bit. Tests use representable values on either
+      side of one. Exact-decimal values rounding onto an endpoint, numeric
+      underflow and exponents overflowing a double remain untested, consistent
+      with questions 7 and 19. NaN and Infinity tokens are invalid JSON.
+    - **Dependent tests:** Acceptance, rejection and syntax tests in
+      `SimulationConfigAmendment13RateTest`, and
+      `allCopyOperationsAndChainsPreserveDefaultZeroOneAndPreciseRates`.
+
+71. **Do the new settings or fault imply other settings or extend nested schemas?**
+    - **Assumption:** No. `otherRate` may be supplied alone; rates have no sum
+      constraint. Codes do not enable problems or change their faults. Other
+      codes may overlap `specialValues`; only the stated cross-list exclusions
+      apply. The two keys extend the top-level schema only, while `other` is a
+      fault name, not a new problem-rate key. Arbitrary field/profile/choice
+      names remain unrestricted by these new schema names.
+    - **Dependent tests:** Independence and schema tests in the parsing, rate,
+      separation and copies classes, and
+      `otherIsAFaultNameAndDoesNotIntroduceANewRateKey`.
+      Generator selection probabilities and fault injection belong to specs
+      05 and 14, so this suite does not simulate draws or assert frequencies.
+
+72. **Which fault constructors and copies are affected, and what about old defaults?**
+    - **Assumption:** Both existing list-taking `ProblemRates` constructors
+      accept `other`, preserve the supplied order and all rates, defensively
+      copy the list, and retain the existing invalid-name/duplicate/null rules.
+      Explicit selections never gain faults automatically. The seven-rate
+      constructor still has no faults. Only default selections gain the sixth
+      fault, in the exact order specified. Every configuration copy preserves
+      both new settings, leaves its receiver unchanged, and keeps collections
+      unmodifiable; list object identity is not specified.
+    - **Dependent tests:** `ProblemRatesAmendment13Test` and
+      `SimulationConfigAmendment13CopiesTest`.
+    - **Existing tests:** The earlier five-fault default tests intentionally
+      remain unchanged, as requested. Their supersession requires the separate
+      dispute process specified in Amendment 13; this run does not adjudicate it.
+
+73. **Do earlier diagnostic conventions apply to both new keys?**
+    - **Assumption:** Yes: parse/load value failures report `ConfigException`,
+      source, path and an explanation; malformed JSON reports its failing line
+      and retains its cause. Duplicate decoded object keys are rejected, without
+      choosing between the syntax-error and validation-error diagnostic forms
+      permitted by question 2. Error prose is not fixed. Loading and parsing
+      share UTF-8/BOM and validation behavior.
+    - **Dependent tests:** Diagnostic tests in the parsing, rate, separation and
+      fault classes; most input cases exercise both parse and load.
+
+### Amendment 13 build verification (2026-11-01)
+
+- Ran `.\mvnw.cmd -o -q test-compile` and an `-e` diagnostic retry. Maven reached
+  `maven-compiler-plugin:3.15.0:testCompile` but failed with
+  `java.nio.file.AccessDeniedException` for
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` while javac closed its
+  archive file manager. Logs: `.codex-runs/04-amendment13-test-compile.log` and
+  `.codex-runs/04-amendment13-test-compile-detail.log`.
+- A fallback compiler probe compiled all six new Java files and their existing
+  test-source dependencies (twelve sources total) against actual `target/classes`
+  binaries and the cached JUnit 5.11.4 API with Java release 17. It uses in-memory
+  class entries to avoid the archive access failure; it does not read production
+  source, copy repositories, change dependency permissions, or install anything.
+  Probe: `.codex-runs/Amendment13CompileProbe.java`; result:
+  `.codex-runs/04-amendment13-probe-compile.log` (`compiled=true`).
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** This is an environment
+  blocker, not a reason to change production code, build settings or existing
+  tests. **Dependent tests:** Full Maven test compilation remains unverified;
+  the added sources compile via the fallback. Runtime tests were not requested
+  and were not run. No commit was created.
