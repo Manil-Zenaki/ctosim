@@ -170,3 +170,42 @@ passed, zero failed; all 81 containers passed**
 (`.codex-runs/04-dispute2-junit.log`). Maven itself remains blocked by the
 cached-JAR access failure. No dependencies, build configuration or production
 files were changed, and no commit was made.
+
+## Dispute 3: the five-fault default, superseded by Amendment 13 (2026-11-01)
+
+**Tests:** in `ProblemRatesAmendment7Test`:
+`defaultFaultsAreUnmodifiableAndUnchangedByCustomInstances`,
+`defaultsIncludeOutliersAndAllFaultsInTheSpecifiedOrder`; in
+`ProblemRatesAmendment8Test`: `defaultsIncludeAllFiveFaultsInTheSpecifiedOrder`,
+`omittedFaultsInAnyPresentProblemsObjectUseAllFiveDefaults` (4 cases); in
+`ProblemRatesAmendment9Test`:
+`defaultsEnableLeftOpenWithoutChangingAnyEarlierDefault`; in
+`ProblemRatesAmendment12Test`:
+`omittedFaultsDefaultToAllFiveEvenWithoutRefusalCodes` (8 cases),
+`problemRateDefaultsHaveExactlyTheFiveFaultsInTheSpecifiedOrder`,
+`theFiveDefaultFaultsAreUnmodifiable`; in `SimulationConfigAmendment7IoTest`:
+`loadAcceptsOutlierBoundsAndNumericRepresentations` (10 cases),
+`loadDistinguishesAbsentProblemsFromNewDefaultsAndExplicitlyDisabledNewComponents`;
+in `SimulationConfigAmendment7ParsingTest`:
+`emptyProblemsEnableBothNewDefaultsAndKeepTheSevenOriginalDefaults`,
+`explicitOutlierRatesAreRetainedWithoutChangingOtherDefaults` (10 cases),
+`originalRateOverridesStillDefaultBothNewComponents`; in
+`SimulationConfigAmendment8IoTest`:
+`loadDistinguishesAbsentConsentFromRequiredFieldsWithDefaults`; in
+`SimulationConfigAmendment9ParsingTest`:
+`parseAndLoadAcceptNumericFormsAndInclusiveEndpoints` (20 cases).
+
+**Spec:** Amendment 13: "`faults` accepts `other`, and its default is the
+six faults, in the order `tooFast`, `skipModules`, `dontKnow`,
+`fakeRefusal`, `refuse`, `other`; so is `ProblemRates.defaults().faults()`.
+The earlier tests of the five-fault default are superseded and go through
+a dispute." Clarification (Amendment 13), assumption 72.
+
+**What the tests do:** they expect the default fault list of Amendment 12;
+the failures read `expected: <[tooFast, skipModules, dontKnow, fakeRefusal,
+refuse]> but was: <[tooFast, skipModules, dontKnow, fakeRefusal, refuse,
+other]>`, or the same inside a whole `ProblemRates` record.
+
+**Requested change:** expect the six faults of Amendment 13 wherever the
+default list is checked, keeping every other assertion (rates, absence of
+`problems`, copies, immutability, explicit lists).

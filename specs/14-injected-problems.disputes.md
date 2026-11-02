@@ -632,3 +632,40 @@ tests, but do not establish a successful full Maven suite.
 Logs: `.codex-runs/spec14-disputes-7-8-maven.log` and
 `.codex-runs/spec14-disputes-7-8/{compile.log,junit.log}`. The Maven limitation
 is also recorded in the questions file.
+
+## Dispute 9: a decimal written as the engine writes it (2026-11-01)
+
+**Test:** `InjectedAmendment8ExclusionsTest.nonselectInputsAreNeverTreatedAsOtherQuestions`
+(the `decimal` case).
+
+**Spec:** spec 08 and spec 07: answers are written as the engine writes
+them; a decimal question answered 12 holds `12.0` (spec 14, Amendment 1
+already compares numbers as numbers).
+
+**What the test does:** a `decimal` question fixed to `12` and the
+assertion `unchanged(r, "protected", "12")`, which fails with `expected:
+<12> but was: <12.0>`. The walk without any fault writes `12.0` too; the
+fault leaves the question alone, which is what the test is about.
+
+**Requested change:** compare with the value the walk without faults
+writes (or as a number) for the decimal case, keeping the other cases.
+
+## Dispute 10: a select used directly as a repeat count (2026-11-01)
+
+**Test:** `InjectedAmendment8ExclusionsTest.directAndIndirectSelectRepeatCountControllersRemainProtected`
+(the direct case, `indirect` false).
+
+**Spec:** the fault's protections (Amendment 8, "Eligible questions")
+leave repeat counts alone; nothing in the specs makes the engine create
+repeat instances from a `select_one` named directly in `jr:count`.
+
+**What the test does:** `jr:count="/data/size"` where `size` is a
+`select1` fixed to `3`, and it asserts three `person` instances (line 41).
+The walk without any fault gives no instance either (checked with the
+public API outside the test tree: 0 instances faulty and clean), so the
+assertion fails whatever the fault does; `size` itself is unchanged, and
+the indirect case (through an integer calculation) passes.
+
+**Requested change:** keep the assertion that `size` is unchanged and
+that the companion is changed, and compare the instance count with the
+walk without faults (or drop it) in the direct case.
