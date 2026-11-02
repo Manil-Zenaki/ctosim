@@ -986,3 +986,20 @@ among the faults' warnings, as for `dontKnow` without codes.
 
 Earlier tests that rely on the five-fault default (enumerator
 assignment, cumulated faults) are superseded and go through a dispute.
+
+Clarification (Amendment 8): assumptions H1–H7 of the questions file are
+reviewed one by one and confirmed: a later text question whose relevance
+refers to the select and is true once the other choice is selected
+qualifies, even when real choices make it relevant too, and the first in
+the form's order wins (H1); the "unaltered label" is the label after the
+white-space, case and accent normalisation, without the removed letter;
+when both texts are rejected the usual text is kept and the select change
+keeps its record (H2); the normalisation details are those the assumption
+lists, half the eligible texts losing one letter other than the first, at
+no prescribed position (H3); real choices exclude exactly the three code
+lists, `specialValues` alone excluding nothing, and a rejected select draw
+keeps the clean answer without retrying another other choice (H4); only an
+empty `otherCodes` disables the fault, all the protections listed carry
+over, and six cumulated faults need twelve enumerators (H5); no random
+sequence is prescribed, and `other` draws apart from the earlier faults
+(H6); the earlier five-fault default tests go through a dispute (H7).

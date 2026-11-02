@@ -725,3 +725,16 @@ public double otherRate();
   `other`; so is `ProblemRates.defaults().faults()`.
 - The earlier tests of the five-fault default are superseded and go
   through a dispute.
+
+Clarification (Amendment 13): assumptions 68–73 of the questions file are
+reviewed one by one and confirmed: the exact-string rules of Amendment 11
+apply to `otherCodes`, a whitespace-only code included, and an empty list
+is an error unlike an absent key (68); an overlap with either list is
+reported at its zero-based position in `otherCodes` whatever the order of
+the keys, a repeat at its second occurrence, and no setting relaxes these
+checks (69); `otherRate` follows the rules of the other rates (70); the
+two keys imply nothing else, may overlap `specialValues`, and `other` is a
+fault name, not a rate key (71); the list-taking constructors accept
+`other` in the order given, only the default fault list gains it, and the
+earlier five-fault default tests go through a dispute (72); the earlier
+diagnostic conventions apply to both keys (73).

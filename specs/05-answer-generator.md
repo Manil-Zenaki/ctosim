@@ -349,3 +349,14 @@ it is an ordinary choice of that question instead.
   choice, or, when there are none, one special choice.
 
 With `otherCodes` empty, answers are drawn as before.
+
+Clarification (Amendment 4): assumptions 38–41 of the questions file are
+reviewed one by one and confirmed. When a question has no ordinary choice
+but both other and special choices, the special draw (probability
+`specialRate`) still comes first, and the other fallback applies when it
+is not taken; the tests need not prescribe it (38). Any weight that names
+an other choice, zero included, makes it an ordinary choice of that
+question, even when its value is in `specialValues` (39). The other choice
+is added after the ordinary set is drawn, so a set may hold four choices,
+written in the order of `choices` (40). An empty `otherCodes` is obtained
+by omitting the key; blank and fixed answers keep their precedence (41).
