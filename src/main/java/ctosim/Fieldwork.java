@@ -339,6 +339,7 @@ public final class Fieldwork {
             injection.skipModules = faults.contains(SKIP_MODULES);
             injection.dontKnow = faults.contains(DONT_KNOW);
             injection.refuseAnswers = faults.contains(REFUSE);
+            injection.other = faults.contains(OTHER);
             if (faults.contains(FAKE_REFUSAL) && FormWalker.consents(config, number)) {
                 double r = config.consent().get().rate();
                 double p = r <= 0 ? 0 : Math.min(1, (1 - r) / r);
@@ -908,12 +909,13 @@ public final class Fieldwork {
     static final String DONT_KNOW = "dontKnow";
     static final String FAKE_REFUSAL = "fakeRefusal";
     static final String REFUSE = "refuse";
+    static final String OTHER = "other";
     static final String LEFT_OPEN = "leftOpen";
     private static final List<String> PROBLEMS = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP, TRAVEL,
             OUTLIER, LEFT_OPEN);
     /** The order of the records of a submission: the table, then the faults. */
     private static final List<String> RECORD_ORDER = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP,
-            TRAVEL, OUTLIER, LEFT_OPEN, "tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse");
+            TRAVEL, OUTLIER, LEFT_OPEN, "tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other");
     /** Where the warnings of faulty enumerators come, between those of travel and of outliers. */
     private static final String FAULTS = "faults";
     private static final List<String> WARNING_ORDER = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP,
@@ -997,6 +999,11 @@ public final class Fieldwork {
                 faults.remove(REFUSE);
                 warn(FAULTS, "problems: faults: refuse needs the team's \"refused\" codes (refuseCodes in the"
                         + " configuration); no refuse was injected");
+            }
+            if (faults.contains(OTHER) && config.otherCodes().isEmpty()) {
+                faults.remove(OTHER);
+                warn(FAULTS, "problems: faults: other needs the team's \"other\" codes (otherCodes in the"
+                        + " configuration); no other was injected");
             }
             if (faults.isEmpty()) {
                 return;
@@ -1136,7 +1143,7 @@ public final class Fieldwork {
                 family(problem), problem, check(problem), field, value, cleanValue, related,
                 !SHORT.equals(problem) && !LONG.equals(problem) && !OUTLIER.equals(problem) && !TOO_FAST.equals(problem)
                         && !SKIP_MODULES.equals(problem) && !DONT_KNOW.equals(problem) && !FAKE_REFUSAL.equals(problem)
-                        && !REFUSE.equals(problem));
+                        && !REFUSE.equals(problem) && !OTHER.equals(problem));
     }
 
     private static String family(String problem) {
@@ -1145,7 +1152,7 @@ public final class Fieldwork {
             case SHORT, LONG -> "duration";
             case OFFHOURS, OVERLAP, LEFT_OPEN -> "schedule";
             case OUTLIER -> "outlier";
-            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL, REFUSE -> "enumerator";
+            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL, REFUSE, OTHER -> "enumerator";
             default -> "travel";
         };
     }
@@ -1156,6 +1163,7 @@ public final class Fieldwork {
             case SHORT, LONG, OUTLIER -> "ipacheckoutliers";
             case OFFHOURS -> "ipachecktimeuse";
             case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL, REFUSE -> "ipacheckenumdb";
+            case OTHER -> "ipacheckspecify";
             default -> "custom";
         };
     }
@@ -1190,6 +1198,7 @@ public final class Fieldwork {
             }
         }
         records.addAll(changes(s, visit, injection, REFUSE));
+        records.addAll(changes(s, visit, injection, OTHER));
         return records;
     }
 

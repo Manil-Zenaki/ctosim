@@ -73,10 +73,14 @@ public final class FormWalker {
     private final Set<String> countQuestions;
     /** Generic paths of every question a repeat count depends on, whatever its type (spec 14, Amendment 7). */
     private final Set<String> countControllers;
+    /** Probability that the fault other replaces an eligible answer (spec 14, Amendment 8). */
+    private static final double OTHER_PROBABILITY = 0.25;
     /** The modules of the form (spec 14, Amendment 1). */
     private final List<Module> modules;
     /** The select_one questions of a repeat that its count depends on, by generic path (spec 14, Amendment 2). */
     private final Map<String, Extender> extenders;
+    /** The "other, specify" text questions of each select question, in form order (spec 14, Amendment 8). */
+    private final Map<String, List<TreeReference>> specifyQuestions;
     /** Generic path of each field name of the form (its first occurrence), for ${name} in expressions. */
     private final Map<String, String> paths = new HashMap<>();
 
@@ -91,6 +95,7 @@ public final class FormWalker {
         modules(form.newEntryController().getModel().getForm(), found);
         this.modules = List.copyOf(found);
         this.extenders = extenders(form);
+        this.specifyQuestions = specifyQuestions(form);
 
         Set<String> names = new HashSet<>();
         collectNames(form.newEntryController().getModel().getForm().getMainInstance().getRoot(), names);
@@ -217,6 +222,8 @@ public final class FormWalker {
         boolean dontKnow;
         /** Answers with the team's "refused" codes (refuse). */
         boolean refuseAnswers;
+        /** Ticks "Other" and types an offered choice in its "specify" question (other). */
+        boolean other;
         /** The question that gets an outlier value at its first instance, or null. */
         String outlierField;
         /** When set, the questions that could get an outlier are listed in {@link #eligible}. */
@@ -266,6 +273,7 @@ public final class FormWalker {
             copy.skipModules = skipModules;
             copy.dontKnow = dontKnow;
             copy.refuseAnswers = refuseAnswers;
+            copy.other = other;
             copy.outlierField = outlierField;
             copy.refuse = refuse;
             copy.shortenRosters = shortenRosters;
@@ -363,6 +371,27 @@ public final class FormWalker {
     private static final java.util.regex.Pattern REFERENCE = java.util.regex.Pattern.compile("\\$\\{([^}]*)\\}");
 
     /** The field names written as ${name} in an expression of the configuration. */
+    /** A label as an enumerator types it: one space between words, lower case, no accents. */
+    static String plain(String label) {
+        String spaced = label.strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+        return java.text.Normalizer.normalize(spaced, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+    }
+
+    /** {@code text} without one of its letters other than the first, when it has at least four letters. */
+    static String typo(String text, SplittableRandom random) {
+        List<Integer> letters = new ArrayList<>();
+        for (int i = 0; i < text.length(); i += Character.charCount(text.codePointAt(i))) {
+            if (Character.isLetter(text.codePointAt(i))) {
+                letters.add(i);
+            }
+        }
+        if (letters.size() < 4) {
+            return text;
+        }
+        int at = letters.get(1 + random.nextInt(letters.size() - 1));
+        return text.substring(0, at) + text.substring(at + Character.charCount(text.codePointAt(at)));
+    }
+
     private static Set<String> references(String expression) {
         Set<String> names = new HashSet<>();
         java.util.regex.Matcher m = REFERENCE.matcher(expression);
@@ -525,6 +554,68 @@ public final class FormWalker {
             }
         }
         return Set.copyOf(result);
+    }
+
+    /**
+     * For each select question, the later text questions whose relevance refers to it, in form order
+     * (spec 14, Amendment 8).
+     */
+    private static Map<String, List<TreeReference>> specifyQuestions(LoadedForm form) {
+        FormDef def = form.newEntryController().getModel().getForm();
+        Map<String, String> relevances = form.relevances();
+        List<QuestionDef> ordered = new ArrayList<>();
+        questionsInOrder(def, ordered);
+        Set<String> selects = new HashSet<>();
+        Map<String, List<TreeReference>> result = new HashMap<>();
+        for (QuestionDef q : ordered) {
+            TreeReference ref = ((TreeReference) q.getBind().getReference()).genericize();
+            String path = ref.toString(false);
+            int control = q.getControlType();
+            if (control == Constants.CONTROL_SELECT_ONE || control == Constants.CONTROL_SELECT_MULTI) {
+                selects.add(path);
+                continue;
+            }
+            TreeElement template = def.getMainInstance().getTemplatePath(ref);
+            String relevance = relevances.get(path);
+            if (control != Constants.CONTROL_INPUT || template == null
+                    || template.getDataType() != Constants.DATATYPE_TEXT || relevance == null) {
+                continue;
+            }
+            List<TreeReference> mentioned = new ArrayList<>();
+            try {
+                collectReferences(XPathParseTool.parseXPath(relevance), mentioned, false);
+            } catch (XPathSyntaxException e) {
+                continue; // reported by the engine when it parses the form
+            }
+            Set<String> referred = new java.util.LinkedHashSet<>();
+            for (TreeReference mention : mentioned) {
+                try {
+                    TreeReference absolute = mention.isAbsolute() ? mention : mention.anchor(ref);
+                    if (absolute != null && absolute.getInstanceName() == null) {
+                        referred.add(absolute.genericize().toString(false));
+                    }
+                } catch (RuntimeException e) {
+                    // a reference the engine cannot place
+                }
+            }
+            for (String select : referred) {
+                if (selects.contains(select)) {
+                    result.computeIfAbsent(select, k -> new ArrayList<>()).add(ref);
+                }
+            }
+        }
+        return result;
+    }
+
+    private static void questionsInOrder(IFormElement element, List<QuestionDef> out) {
+        if (element instanceof QuestionDef q && q.getBind() != null) {
+            out.add(q);
+        }
+        if (element.getChildren() != null) {
+            for (IFormElement child : element.getChildren()) {
+                questionsInOrder(child, out);
+            }
+        }
     }
 
     /** Collects the questions' generic paths and the count references of counted repeats. */
@@ -715,6 +806,8 @@ public final class FormWalker {
         private final Injection injection;
         /** Counts the answers seen by faults, so that each has its own draws (spec 14, Amendment 1). */
         private int adjusted;
+        /** The texts the fault other types in specify questions not yet reached: typed, then unaltered. */
+        private final Map<String, List<String>> specifyTexts = new HashMap<>();
         private boolean outlierDone;
         /** Screen seconds so far (spec 07, Amendment 12). */
         private long screen;
@@ -906,6 +999,9 @@ public final class FormWalker {
             FieldOverride override = nearHousehold(effective.override(), kind);
             if (effective.blank()) {
                 clear(ref); // an expression whose value is empty leaves the question blank
+                if (injection != Injection.NONE && !leftAlone(name) && specify(prompt, ref, kind, loaded, null)) {
+                    answered++;
+                }
                 handled(ref, minimum);
                 return;
             }
@@ -914,6 +1010,9 @@ public final class FormWalker {
                 String text = generator.generate(question, clock.now().toLocalDate(), answers, override);
                 if (text == null) {
                     clear(ref);
+                    if (injection != Injection.NONE && !leftAlone(name) && specify(prompt, ref, kind, loaded, null)) {
+                        answered++;
+                    }
                     handled(ref, minimum);
                     return;
                 }
@@ -1697,7 +1796,11 @@ public final class FormWalker {
             if (injection == Injection.NONE || leftAlone(name)) {
                 return;
             }
-            String a = currentText(ref);
+            String usual = currentText(ref);
+            if (specify(prompt, ref, kind, loaded, usual)) {
+                return; // written by the fault other, out of reach of the code faults
+            }
+            String a = usual;
             if (a == null || a.isEmpty()) {
                 return;
             }
@@ -1735,9 +1838,127 @@ public final class FormWalker {
                     && code(prompt, kind, loaded, name, question, a, random, config.dontKnowCodes(), "dontKnow");
             if (injection.refuseAnswers && !controls && !replaced) {
                 // drawn apart from dontKnow's draws (spec 14, Amendment 6)
-                code(prompt, kind, loaded, name, question, a, new SplittableRandom(seed(questionSeed, 0, 1)),
+                replaced = code(prompt, kind, loaded, name, question, a, new SplittableRandom(seed(questionSeed, 0, 1)),
                         config.refuseCodes(), "refuse");
             }
+            if (injection.other && !controls && !replaced
+                    && (kind == QuestionKind.SELECT_ONE || kind == QuestionKind.SELECT_MULTIPLE)) {
+                other(prompt, ref, kind, loaded, name, question, a, new SplittableRandom(seed(questionSeed, 0, 2)));
+            }
+        }
+
+        /**
+         * A faulty enumerator ticks "Other" instead of a real choice, and will type that choice's label in
+         * the specify question (spec 14, Amendment 8).
+         */
+        private void other(FormEntryPrompt prompt, TreeReference ref, QuestionKind kind, List<String> loaded,
+                           String name, Question question, String a, SplittableRandom random) {
+            List<TreeReference> specifies = specifyQuestions.get(ref.genericize().toString(false));
+            if (specifies == null || random.nextDouble() >= OTHER_PROBABILITY) {
+                return;
+            }
+            List<String> selected = List.of(a.trim().split("\\s+"));
+            List<String> real = new ArrayList<>();
+            for (String value : selected) {
+                if (config.otherCodes().contains(value)) {
+                    return;
+                }
+                if (!config.dontKnowCodes().contains(value) && !config.refuseCodes().contains(value)) {
+                    real.add(value);
+                }
+            }
+            if (real.isEmpty()) {
+                return;
+            }
+            String replaced = real.get(random.nextInt(real.size()));
+            List<String> offered = new ArrayList<>(new java.util.LinkedHashSet<>(question.choices()));
+            FormDef def = session.getModel().getForm();
+            IAnswerData original = def.getMainInstance().resolveReference(ref).getValue();
+            Map<String, String> candidates = new LinkedHashMap<>(); // new answer -> its specify question
+            for (String code : offered) {
+                if (!config.otherCodes().contains(code)) {
+                    continue;
+                }
+                String answer = code;
+                if (kind == QuestionKind.SELECT_MULTIPLE) {
+                    List<String> values = new ArrayList<>();
+                    for (String c : offered) {
+                        if (c.equals(code) || !c.equals(replaced) && selected.contains(c)) {
+                            values.add(c);
+                        }
+                    }
+                    answer = String.join(" ", values);
+                }
+                IAnswerData data = loaded == null ? convert(prompt, answer) : convertLoaded(kind, answer, loaded);
+                if (data == null) {
+                    continue;
+                }
+                def.setValue(data, ref, true);
+                for (TreeReference specify : specifies) {
+                    TreeReference at = specify.contextualize(ref);
+                    for (int i = 0; i < at.size(); i++) {
+                        if (at.getMultiplicity(i) == TreeReference.INDEX_UNBOUND) {
+                            at.setMultiplicity(i, 0);
+                        }
+                    }
+                    TreeElement element = def.getMainInstance().resolveReference(at);
+                    if (element != null && element.isRelevant()) {
+                        candidates.put(answer, element.getRef().toString(true));
+                        break;
+                    }
+                }
+            }
+            def.setValue(original, ref, true);
+            String label = label(prompt, replaced);
+            String plain = label == null ? "" : plain(label);
+            if (candidates.isEmpty() || plain.isEmpty()) {
+                return;
+            }
+            List<String> answers = new ArrayList<>(candidates.keySet());
+            String answer = answers.get(random.nextInt(answers.size()));
+            String typed = random.nextBoolean() ? typo(plain, random) : plain;
+            if (!answer(prompt, kind, loaded, answer)) {
+                answer(prompt, kind, loaded, a);
+                return;
+            }
+            injection.changes.add(new Change("other", name, stored(), a));
+            specifyTexts.put(candidates.get(answer), typed.equals(plain) ? List.of(plain) : List.of(typed, plain));
+        }
+
+        /** The label the engine displays for a choice of the current select question, or null. */
+        private static String label(FormEntryPrompt prompt, String value) {
+            List<SelectChoice> choices = prompt.getSelectChoices();
+            if (choices != null) {
+                for (SelectChoice choice : choices) {
+                    if (value.equals(choice.getValue())) {
+                        return prompt.getSelectChoiceText(choice);
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Writes the text the fault other typed for this specify question, or else gives back the usual
+         * answer; false when there is no such text or the engine accepts none of them.
+         */
+        private boolean specify(FormEntryPrompt prompt, TreeReference ref, QuestionKind kind, List<String> loaded,
+                                String usual) {
+            List<String> texts = specifyTexts.remove(ref.toString(true));
+            if (texts == null) {
+                return false;
+            }
+            for (String text : texts) {
+                if (answer(prompt, kind, loaded, text)) {
+                    return true;
+                }
+            }
+            if (usual != null && !usual.isEmpty()) {
+                answer(prompt, kind, loaded, usual);
+            } else {
+                clear(ref);
+            }
+            return false;
         }
 
         /** The survey id, the upper questions of its cascade and answers given by a reinterview. */

@@ -45,6 +45,7 @@ public final class LoadedForm {
 
     private Map<String, String> calculations;
     private Map<String, String> constraints;
+    private Map<String, String> relevances;
 
     /** The engine form's XML (spec 12 reads what the form reads from its attached files). */
     byte[] engineXml() {
@@ -68,6 +69,14 @@ public final class LoadedForm {
             constraints = bindExpressions("constraint");
         }
         return constraints;
+    }
+
+    /** Every relevance condition, by bind nodeset (engine form; spec 14, Amendment 8). */
+    synchronized Map<String, String> relevances() {
+        if (relevances == null) {
+            relevances = bindExpressions("relevant");
+        }
+        return relevances;
     }
 
     private Map<String, String> bindExpressions(String attribute) {
