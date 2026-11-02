@@ -692,3 +692,112 @@ No repositories were copied, drives mapped, dependencies installed, production
 files read/changed, or build configuration changed. No commit was made.
 
 **Tests:** All four new Amendment 3 test classes and their new helper.
+
+## Amendment 4: additional questions and assumptions
+
+Only `AnswerGeneratorOtherChoiceTest` and `AnswerGeneratorOtherDistributionTest`
+were added. Existing tests and helpers remain unchanged. Minimal questions and
+JSON configuration fixtures are inline; no form fixture is needed. Expectations
+come from spec 05 and the configuration contract in spec 04, Amendment 13.
+No production source or implementation bodies were read.
+
+### 38. Which branch wins when only other and special choices remain?
+
+**Question:** With no ordinary choices, but both other and special choices,
+does the unconditional-sounding other fallback override a successful special
+draw, or does the unchanged special branch still happen first?
+
+**Assumption:** This precedence is not imposed for positive `specialRate` when
+both categories remain and there are no ordinary choices. At `specialRate=0`,
+the stated other fallback supplies a uniform single other answer regardless of
+`otherRate`. When there are ordinary choices, the special branch still precedes
+the ordinary/other branch. With only other choices, a single uniform other is
+required; with only special choices, the existing single-special fallback holds.
+
+**Tests:** `otherFallbackWinsWhenNoOrdinaryExistsAndSpecialBranchIsDisabled`,
+`onlyOtherChoicesFallBackToOneUniformOtherAtEveryRate`,
+`absentOtherCodesLeaveOnlySpecialFallbackUniform`,
+`specialBranchReturnsOnlyOneSpecialWithoutAddingOther`, and the joint-rate tests.
+
+### 39. Does a zero weight count as naming an other choice?
+
+**Question:** Does reclassification require a positive weight, and does a
+reclassified code also present in `specialValues` become special again?
+
+**Assumption:** The amendment says weights that "name it" and "an ordinary
+choice ... instead". Presence of the exact key, including weight zero, makes
+that choice ordinary for that question, regardless of special membership.
+Other codes not named by the weights remain other choices. Weights for another
+field or unoffered values do not reclassify offered choices. A zero-weight
+ordinary choice is excluded while positive weights remain, but can fill a
+multiple-select set once they run out. The previously unspecified distribution
+among multiple remaining zero-weight choices is still not asserted.
+
+**Tests:** Positive/zero weight classification tests in
+`AnswerGeneratorOtherChoiceTest`; `aNamedOtherBecomesOrdinaryButUnmentionedOthersRemainOther`,
+`zeroWeightNamedOtherCanFillMultipleSelectAfterPositiveWeightsRunOut`, and
+`allZeroOrdinaryWeightsIncludeNamedOtherInSelectOneFallback`.
+
+### 40. Does adding an other choice increase the maximum set size to four?
+
+**Question:** Is the other choice added after choosing the nonempty ordinary
+set, and where does it appear in the serialized answer?
+
+**Assumption:** "Added to the set" preserves the ordinary size draw of 1 through
+min(3, ordinary count), then adds exactly one other on the other branch. The
+result can therefore have four choices. The existing display-order rule applies
+to the entire set, including the added other, with single spaces and no repeats.
+The other decision has probability `otherRate` conditional on each ordinary
+set, and each offered other has equal probability. This is the reading used
+for the joint subset oracle; no particular sequence of PRNG calls is assumed.
+
+**Tests:** `multipleSelectKeepsEveryOrdinarySubsetProbabilityAndAddsOtherIndependently`,
+`multipleSelectCanContainThreeOrdinaryChoicesPlusOneOther`,
+`weightedMultipleSelectPreservesWithoutReplacementProbabilitiesWithOtherAdded`,
+and `rateOneSelectsOrAddsExactlyOneOtherInDisplayOrder`.
+
+### 41. How are empty codes, unchanged rules, and statistical checks exercised?
+
+**Question:** How is an empty `otherCodes` setting represented, and do the
+existing blank/fixed rules and explicit override API still apply?
+
+**Assumption:** Spec 04 requires an explicitly supplied list to contain at
+least one code. Omit the key to obtain the empty setting; do not use invalid
+JSON `otherCodes: []`. Codes are exact strings, including case, Unicode and
+numeric spelling. The three- and four-argument generation APIs keep their
+existing override replacement semantics. Missing answers and fixed values,
+and the empty/label select exceptions, keep precedence. Invalid configuration
+validation belongs to spec 04, not to these generator tests.
+
+Statistical tests use fixed seeds with 30,000 or 60,000 draws and the existing
+seven-standard-deviation-plus-two-count tolerance. Boundary rates are exact.
+Joint probabilities are derived from the spec, including special, missing,
+other and weighted ordinary branches. Tests compare same-input sequences for
+determinism, not sequences between different configurations. Distinct nonempty,
+whitespace-free choices avoid the unresolved ambiguity in question 4.
+
+**Tests:** Default-rate, absent/unoffered-code, exact-code, explicit-override,
+precedence and repeatability tests; all new statistical tests.
+
+### 42. Amendment 4 compilation verification (2026-11-01)
+
+**Question:** Can the requested offline compilation complete in this sandbox?
+
+**Result:** `mvnw.cmd -o -q test-compile` fails in test compilation. The `-e`
+diagnostic reports `java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar` during Windows real-path
+resolution while closing the JAR filesystem. A correctly quoted
+`-Dmaven.compiler.fork=true` retry also fails with that access error and cannot
+resolve existing project classes. No test runtime was attempted. The repository
+compile remains unverified and must be rerun with working filesystem access.
+
+A separate JavaCompiler probe checks the two new files and the unchanged
+`AnswerGeneratorTestSupport` against compile-only API declarations transcribed
+from specs 04 and 05, using Java release 17 and cached JUnit 5 dependencies.
+It reported `SPEC_ONLY_TYPECHECK=true` with no compiler diagnostics; closing
+its file manager then reported an access error for the cached JUnit params JAR.
+This is a successful syntax/type check against the spec, not proof of a
+successful Maven build. Logs and probe files are under `.codex-runs/answer-other/`; no dependency
+repository was copied, no drives mapped, and no build configuration changed.
+
+**Tests:** Both new Amendment 4 test classes.
