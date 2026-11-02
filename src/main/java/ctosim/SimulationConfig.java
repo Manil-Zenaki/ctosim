@@ -25,6 +25,7 @@ public final class SimulationConfig {
     static final int MAX_ENUMERATORS = 10_000;
     static final int MAX_INTERVIEWS_PER_DAY = 1_000;
     static final int DEFAULT_INTERVIEWS_PER_DAY = 4;
+    static final double DEFAULT_OTHER_RATE = 0.03;
 
     static final List<String> DEFAULT_SPECIAL_VALUES = List.of(
             "-99", "-98", "-97", "-96", "-88", "-77", "-999", "-888", "-777", "97", "98", "99", "999");
@@ -55,6 +56,8 @@ public final class SimulationConfig {
     private final Villages villages;
     private final List<String> dontKnowCodes;
     private final List<String> refuseCodes;
+    private final List<String> otherCodes;
+    private final double otherRate;
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
@@ -125,6 +128,20 @@ public final class SimulationConfig {
                      Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id,
                      int interviewsPerDay, ProblemRates problems, Consent consent, Villages villages,
                      List<String> dontKnowCodes, List<String> refuseCodes) {
+        this(seed, submissions, start, fieldworkDays, missingRate, specialRate, specialValues, repeatMin, repeatMax,
+                integerRange, decimalRange, fields, timeZone, enumerators, speedViolationRate, profiles, area, textPools,
+                id, interviewsPerDay, problems, consent, villages, dontKnowCodes, refuseCodes, List.of(), DEFAULT_OTHER_RATE);
+    }
+
+    SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
+                     double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
+                     NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
+                     ZoneId timeZone, int enumerators, double speedViolationRate,
+                     Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id,
+                     int interviewsPerDay, ProblemRates problems, Consent consent, Villages villages,
+                     List<String> dontKnowCodes, List<String> refuseCodes, List<String> otherCodes, double otherRate) {
+        this.otherCodes = List.copyOf(otherCodes);
+        this.otherRate = otherRate;
         this.dontKnowCodes = List.copyOf(dontKnowCodes);
         this.refuseCodes = List.copyOf(refuseCodes);
         this.villages = villages;
@@ -275,7 +292,7 @@ public final class SimulationConfig {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate);
     }
 
     /** The form's consent questions; empty when the configuration names none. See Amendment 8. */
@@ -300,12 +317,12 @@ public final class SimulationConfig {
 
     /** The team's "other" codes; empty when none are named. See Amendment 13. */
     public java.util.List<String> otherCodes() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return otherCodes;
     }
 
     /** The probability that an ordinary select answer includes an "other" choice. See Amendment 13. */
     public double otherRate() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return otherRate;
     }
 
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
@@ -318,7 +335,7 @@ public final class SimulationConfig {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate);
     }
 
     /** Text pools in file order; empty when not set. */
@@ -340,14 +357,14 @@ public final class SimulationConfig {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, more,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate);
     }
 
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
@@ -357,6 +374,6 @@ public final class SimulationConfig {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate);
     }
 }

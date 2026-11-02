@@ -41,7 +41,7 @@ final class ConfigParser {
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
             "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
             "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay", "problems", "consent",
-            "villages", "dontKnowCodes", "refuseCodes");
+            "villages", "dontKnowCodes", "refuseCodes", "otherCodes", "otherRate");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
             "distribution", "expr", "area", "when");
@@ -129,13 +129,23 @@ final class ConfigParser {
                         + "\" is also a \"don't know\" code; a code cannot mean both");
             }
         }
+        List<String> otherCodes = root.has("otherCodes")
+                ? teamCodes(root.get("otherCodes"), "otherCodes") : List.of();
+        for (int i = 0; i < otherCodes.size(); i++) {
+            String code = otherCodes.get(i);
+            if (dontKnowCodes.contains(code) || refuseCodes.contains(code)) {
+                throw error("otherCodes[" + i + "]", "\"" + code + "\" is also a "
+                        + (dontKnowCodes.contains(code) ? "\"don't know\"" : "\"refused\"") + " code; a code cannot mean both");
+            }
+        }
+        double otherRate = root.has("otherRate") ? rate(root.get("otherRate"), "otherRate") : d.otherRate();
         return new SimulationConfig(seed, submissions, start, days, missing, special, specialValues,
                 repeatMin, repeatMax, integerRange, decimalRange, fields, timeZone, enumerators, speedViolations,
                 profiles, area, pools, id, interviewsPerDay,
                 root.has("problems") ? problems(root.get("problems")) : null,
                 root.has("consent") ? consent(root.get("consent")) : null,
                 root.has("villages") ? villages(root.get("villages")) : null,
-                dontKnowCodes, refuseCodes);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate);
     }
 
     /** The coordinate columns of the preloaded village list (spec 04, Amendment 10). */

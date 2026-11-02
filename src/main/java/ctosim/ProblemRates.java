@@ -11,7 +11,7 @@ public record ProblemRates(double resent, double reinterview, double shortDurati
                            List<String> faults) {
 
     /** The faults a faulty enumerator can carry, in their order (spec 14, Amendment 1). */
-    static final List<String> FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse");
+    static final List<String> FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other");
 
     private static final ProblemRates DEFAULTS = new ProblemRates(0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02,
             FAULTS);
