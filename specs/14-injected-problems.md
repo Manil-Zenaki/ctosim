@@ -915,3 +915,74 @@ change, a rank or note may stay blank, and the answers that control a
 repeat count are protected whatever their type, a text question included
 (G5); no random sequence is prescribed (G6); earlier tests that expect
 text to keep its answer are superseded and go through a dispute (G7).
+
+## Amendment 8: "Other" abused, a fault of its own
+
+An enumerator who does not look for the right choice ticks "Other" and
+types, in the "other, specify" question, the very choice the list
+offered. IPA's `ipacheckspecify` lists the texts typed after "Other",
+enumerator by enumerator, so that they can be recoded. A sixth fault
+abuses "Other" (spec 04, Amendment 13). Everything not mentioned here is
+unchanged.
+
+| `problem` | `family` | `check` | deterministic |
+|---|---|---|---|
+| `other` | `enumerator` | `ipacheckspecify` | no |
+
+It comes after `refuse` in the order of faults (and of the problems'
+table), so that the enumerators of the five earlier faults are unchanged
+when it is not injected.
+
+### Eligible questions
+
+A `select_one` or `select_multiple` question is eligible when it offers
+at least one **other choice** (a choice whose value is in
+`config.otherCodes()`) that has a **specify question**: a `text`
+question, later in the form, whose relevance refers to the select
+question and that is relevant once that other choice is selected. When
+several text questions qualify, the specify question is the first in the
+form's order. The protections of `dontKnow` (Amendments 1, 5 and 7)
+carry over: the survey id and the upper questions of its cascade, repeat
+counts and the answers that control them, consent questions, answers
+copied by a reinterview, resent submissions, and answers already changed
+by another fault or an outlier are never changed.
+
+### The fault
+
+A faulty enumerator of `other` changes each answer to an eligible
+question with probability 0.25, drawn apart from the other faults'
+draws, when the answer drawn as usual (its **clean answer**) contains no
+other choice and at least one **real choice**: a selected choice whose
+value is in none of `otherCodes`, `dontKnowCodes` and `refuseCodes`.
+
+- One real choice of the clean answer, drawn uniformly, is the
+  **replaced choice**. For a `select_one` question the answer becomes an
+  other choice that has a specify question, drawn uniformly among them;
+  for a `select_multiple` question, the replaced choice is removed and
+  that other choice is added, the values written in the order of the
+  choices. When the engine does not accept the new answer, the clean
+  answer is kept.
+- The specify question, when it is reached and relevant, is answered with
+  the replaced choice's label, as the engine displays it in the form's
+  default language, with surrounding white space removed and inner runs
+  of white space reduced to one space, then written in lower case with
+  accents removed (each accented letter replaced by its base letter).
+  For half of these texts, drawn at random, one letter other than the
+  first is also removed, when the label has at least four letters. When
+  the engine does not accept the text, the unaltered label is tried; when
+  it does not accept that either, the specify question is answered as
+  usual. A specify text written by `other` counts as an answer changed by
+  another fault for `dontKnow` and `refuse`.
+- One record per changed answer: `field` the select question, `value`
+  the new answer, `cleanValue` the clean answer. The specify text has no
+  record of its own.
+
+When one enumerator carries several faults, `dontKnow` and `refuse`
+apply first; `other` applies only to an answer they left unchanged.
+
+When `config.otherCodes()` is empty, no `other` is injected, the fault
+takes no enumerator, and `warnings()` holds one warning that says so,
+among the faults' warnings, as for `dontKnow` without codes.
+
+Earlier tests that rely on the five-fault default (enumerator
+assignment, cumulated faults) are superseded and go through a dispute.

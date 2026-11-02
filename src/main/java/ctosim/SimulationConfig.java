@@ -298,6 +298,16 @@ public final class SimulationConfig {
         return refuseCodes;
     }
 
+    /** The team's "other" codes; empty when none are named. See Amendment 13. */
+    public java.util.List<String> otherCodes() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    /** The probability that an ordinary select answer includes an "other" choice. See Amendment 13. */
+    public double otherRate() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
     public java.util.Optional<ProblemRates> problems() {
         return java.util.Optional.ofNullable(problems);

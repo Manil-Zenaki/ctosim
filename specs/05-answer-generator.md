@@ -321,3 +321,31 @@ particular, repeated values are removed within each level (Amendment 2);
 a distribution replaces the uniform draw entirely, with the range kept;
 only the first point of a trace or shape is held within the area; plausible
 texts come after the hints and before the `numbers` rule (Amendment 3).
+
+## Amendment 4: "Other" chosen rarely
+
+Drawing every choice with the same probability makes honest enumerators
+choose "Other" as often as any other choice (a fifth of the answers to a
+question with five choices), which hides an enumerator who abuses it.
+Uses the settings of spec 04, Amendment 13. Everything not mentioned
+here is unchanged.
+
+Let **other choices** be the choices whose value is in the
+configuration's `otherCodes`. An other choice is neither a special
+choice nor an ordinary choice, even when its value is also in
+`specialValues`; when the field's override has `weights` that name it,
+it is an ordinary choice of that question instead.
+
+- **Select one.** When the answer would be an ordinary choice and the
+  question offers at least one other choice: with probability
+  `otherRate` the answer is an other choice, drawn uniformly among them;
+  otherwise it is an ordinary choice, drawn as before. When there are no
+  ordinary choices, the answer is drawn uniformly among the other
+  choices, or, when there are none, among the special choices.
+- **Select multiple.** When the answer would be a set of ordinary
+  choices and the question offers at least one other choice: with
+  probability `otherRate` one other choice, drawn uniformly, is added to
+  the set. When there are no ordinary choices, the answer is one other
+  choice, or, when there are none, one special choice.
+
+With `otherCodes` empty, answers are drawn as before.

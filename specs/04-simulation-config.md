@@ -686,3 +686,42 @@ the list-taking constructors accept `refuse` in the order given, and only
 the default fault list gains it, the earlier default tests going through a
 dispute (66); every copy keeps `refuseCodes()`, and the lists cannot be
 changed (67).
+
+## Amendment 13: the team's "other" codes
+
+Most select questions offer an "Other" choice followed by an "other,
+specify" text question. Teams code "Other" with values of their own (96,
+9996, 777, -666...), which the simulator cannot recognise. Two top-level
+keys are added (used by spec 05 Amendment 4 and spec 14 Amendment 8), and
+`faults` (Amendment 7) accepts one more name. Everything else is
+unchanged.
+
+| Key | Type | Default | Range | Meaning |
+|---|---|---|---|---|
+| `otherCodes` | array of strings | none | | The choice values the form's team uses for "Other". Without it, no choice is treated as "Other" and the fault `other` is not injected. |
+| `otherRate` | number | `0.03` | 0 to 1 | Probability that an ordinary answer to a select question offering an "Other" choice includes one. |
+
+The rules of `dontKnowCodes` (Amendment 11) apply to `otherCodes`
+(non-empty, distinct, exact strings, at least one; errors at
+`otherCodes`, `otherCodes[1]`). A code may not be in `otherCodes` and in
+`dontKnowCodes` or `refuseCodes`: such a code is an error of the
+configuration, located at its position in `otherCodes`. `otherCodes` is
+independent of `specialValues`. `otherRate` follows the rules of the
+other rates (`missingRate`, `specialRate`) and may be given without
+`otherCodes`.
+
+Public accessors added:
+
+```java
+// added to SimulationConfig:
+public java.util.List<String> otherCodes();   // empty when the key is absent
+public double otherRate();
+```
+
+- `otherCodes()` is unmodifiable and keeps the file's order; copies keep
+  both values.
+- `faults` accepts `other`, and its default is the six faults, in the
+  order `tooFast`, `skipModules`, `dontKnow`, `fakeRefusal`, `refuse`,
+  `other`; so is `ProblemRates.defaults().faults()`.
+- The earlier tests of the five-fault default are superseded and go
+  through a dispute.

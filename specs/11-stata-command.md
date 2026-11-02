@@ -501,3 +501,14 @@ without fixed wording, each fault's link with text questions stated in a
 sentence (O1); the topics the amendment lists only, -999 being an example
 of a code given in both forms (O2); the help oracle follows the earlier
 infrastructure (O3).
+
+## Amendment 16: the help on "Other" abused
+
+The command is unchanged; its help file documents the configuration's
+`otherCodes` key (spec 04, Amendment 13: the values the team uses for
+"Other", named by the user) and `otherRate` (how often honest
+enumerators choose "Other", 0.03 by default; spec 05, Amendment 4), and
+the fault `other` (spec 14, Amendment 8: the enumerator ticks "Other" and
+types an offered choice in the "specify" question, injected only when
+the codes are named), found with `ipacheckspecify`, which lists the
+"specify" texts by enumerator.
