@@ -24,10 +24,12 @@ public final class AnswerGenerator {
 
     private final SimulationConfig config;
     private final Set<String> specialValues;
+    private final Set<String> otherCodes;
 
     public AnswerGenerator(SimulationConfig config) {
         this.config = Objects.requireNonNull(config, "config");
         this.specialValues = Set.copyOf(config.specialValues());
+        this.otherCodes = Set.copyOf(config.otherCodes());
     }
 
     /** At most this many values are listed from one drawing range. */
@@ -387,20 +389,28 @@ public final class AnswerGenerator {
 
     private String selectOne(List<String> choices, Map<String, Double> weights, RandomGenerator random) {
         List<String> special = new ArrayList<>();
+        List<String> other = new ArrayList<>();
         List<String> ordinary = new ArrayList<>();
-        split(choices, special, ordinary);
-        if (!special.isEmpty() && (ordinary.isEmpty() || random.nextDouble() < config.specialRate())) {
+        split(choices, weights, special, other, ordinary);
+        if (!special.isEmpty() && (ordinary.isEmpty() && other.isEmpty() || random.nextDouble() < config.specialRate())) {
             return special.get(random.nextInt(special.size()));
+        }
+        if (!other.isEmpty() && (ordinary.isEmpty() || random.nextDouble() < config.otherRate())) {
+            return other.get(random.nextInt(other.size()));
         }
         return ordinary.get(weightedIndex(ordinary, weights, random));
     }
 
     private String selectMultiple(List<String> choices, Map<String, Double> weights, RandomGenerator random) {
         List<String> special = new ArrayList<>();
+        List<String> other = new ArrayList<>();
         List<String> ordinary = new ArrayList<>();
-        split(choices, special, ordinary);
-        if (!special.isEmpty() && (ordinary.isEmpty() || random.nextDouble() < config.specialRate())) {
+        split(choices, weights, special, other, ordinary);
+        if (!special.isEmpty() && (ordinary.isEmpty() && other.isEmpty() || random.nextDouble() < config.specialRate())) {
             return special.get(random.nextInt(special.size()));
+        }
+        if (ordinary.isEmpty()) {
+            return other.get(random.nextInt(other.size()));
         }
         int size = 1 + random.nextInt(Math.min(3, ordinary.size()));
         List<String> remaining = new ArrayList<>(ordinary);
@@ -408,18 +418,27 @@ public final class AnswerGenerator {
         for (int i = 0; i < size; i++) {
             chosen.add(remaining.remove(weightedIndex(remaining, weights, random)));
         }
-        List<String> answer = new ArrayList<>(size);
+        if (!other.isEmpty() && random.nextDouble() < config.otherRate()) { // spec 05, Amendment 4
+            chosen.add(other.get(random.nextInt(other.size())));
+        }
+        List<String> answer = new ArrayList<>(chosen.size());
         for (String choice : choices) {
-            if (chosen.contains(choice)) {
+            if (chosen.contains(choice) && !answer.contains(choice)) {
                 answer.add(choice);
             }
         }
         return String.join(" ", answer);
     }
 
-    private void split(List<String> choices, List<String> special, List<String> ordinary) {
+    /** Sorts choices into special, "other" (unless the weights name them) and ordinary ones. */
+    private void split(List<String> choices, Map<String, Double> weights, List<String> special, List<String> other,
+                       List<String> ordinary) {
         for (String choice : choices) {
-            (specialValues.contains(choice) ? special : ordinary).add(choice);
+            if (otherCodes.contains(choice)) {
+                (weights.containsKey(choice) ? ordinary : other).add(choice);
+            } else {
+                (specialValues.contains(choice) ? special : ordinary).add(choice);
+            }
         }
     }
 
