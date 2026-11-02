@@ -1600,3 +1600,174 @@ sources with `--release 17`; this does not establish a successful Maven run.
 **Tests:** The 12 classes containing the tests in Disputes 7–8, including
 the assignment and interaction classes affected by shared fixture changes.
 Runtime results are recorded at the end of the disputes file.
+
+## Amendment 8 test-author questions and assumptions
+
+### H1. How is a qualifying specify question identified?
+
+**Question:** Must a specify question become newly relevant only for Other,
+or is it enough that its relevance refers to the select and is true with
+the chosen Other value? What about a question controlled by a future answer?
+
+**Assumption:** Follow the stated conditions literally: a later text
+question whose relevance refers to this select and is true with Other
+qualifies, even if it is also relevant for real choices. A text without
+such a reference, an earlier text, an unrendered instance node, a numeric
+question, and a text relevant only for a real choice do not qualify.
+When several qualify, instance and control order agree in the fixtures;
+the first wins even when bind order and alphabetical order differ. No
+expectation is imposed on unresolved future-answer dependencies, inherited
+group relevance without a direct reference, or matching across repeat instances.
+
+**Tests:** `InjectedAmendment8EligibilityTest`;
+`otherChoiceIsUniformAmongOnlyThoseWithSpecifyQuestions`.
+
+### H2. What exactly is the "unaltered label" used on text rejection?
+
+**Question:** Does retry mean the original displayed label before
+normalization, or the normalized label before the optional deletion?
+
+**Assumption:** Leave that distinction open. Fallback fixtures use an
+already lowercase, unaccented, whitespace-normalized label, so both
+interpretations agree. A rejected deletion must retry that label; if both
+attempts fail, ordinary text is kept while the successful select change
+still has its record. No particular subsequent code-fault treatment is
+asserted for an ordinary text fallback.
+
+**Tests:** `rejectedTypoRetriesTheUnalteredLabel`,
+`rejectingBothLabelAttemptsUsesTheUsualTextButKeepsTheSelectChangeRecord`,
+`specifyConstraintUsesTheChangedSelectAnswer`.
+
+### H3. Which normalization and typo details are prescribed?
+
+**Question:** How are letters counted and deleted when there are spaces,
+digits or punctuation? Are deletion positions uniform? What is the base
+letter of a ligature or a non-Latin character?
+
+**Assumption:** Test Latin accented letters with unambiguous bases, ASCII
+whitespace, case conversion independent of locale, and the displayed
+default-language label (including an embedded output). Four letters is an
+inclusive threshold, not four characters. On an eligible label exactly
+half the texts lose one letter; the first letter, spaces, punctuation and
+digits are retained. Tests intentionally do not require uniform deletion
+positions or prescribe ligature transliteration, empty labels, supplementary
+Unicode letter counting, or scripts with no obvious base-letter mapping.
+
+**Tests:** `InjectedAmendment8TextTest` and
+`labelLowercasingAndRandomnessIgnoreMachineLocaleAndTimeZone`.
+
+### H4. How are real choices and unchanged earlier attempts treated?
+
+**Question:** Does membership in specialValues alone disqualify a real
+choice? Does a failed earlier code-fault attempt reserve the answer?
+
+**Assumption:** Real-choice exclusion uses exactly the three named lists,
+with the exact string rules of spec 04 Amendment 13. specialValues alone
+does not exclude a choice. A select_multiple retains every unchosen real
+choice and every selected don't-know/refusal choice; just one real choice
+is replaced, and the new answer follows the offered choices' order.
+Earlier attempts with no usable code leave the answer eligible. An
+already-present don't-know/refusal code is not itself a real choice, so
+no test requires Other to replace that code. Fixed ordinary-answer
+overrides provide clean opportunities, as confirmed in Amendment 1.
+
+**Tests:** `InjectedAmendment8ChoiceTest` and
+`anEarlierAttemptWithoutAnOfferedCodeDoesNotBlockOther`.
+
+The select rejection rule is a draw followed by acceptance, with the clean
+answer retained on rejection. It does not specify retrying a different
+Other choice or filtering by the select's constraint before the draw.
+`aRejectedDrawDoesNotRetryAnotherOtherChoiceOrFilterItOutBeforeDrawing`
+uses two qualifying Other choices, one rejected, to check the resulting
+one-eighth observable replacement probability.
+
+### H5. Which protections and assignments carry over?
+
+**Question:** Is Other disabled only by an empty code list, or also by a
+form without any eligible pair? Does it inherit read-only/calculation
+protection and indirect repeat-controller protection?
+
+**Assumption:** Only an empty list disables and removes the fault before
+assignment, as with don't-know/refusal faults. A nonempty unusable list
+still occupies its fault slot. The inherited protections include read-only
+and calculated answers, consent, survey-id cascades, direct and indirect
+repeat counts and add-another controllers, copied reinterview answers,
+resent submissions, and answers already changed by skipModules. Outliers
+target integer/decimal questions whereas Other targets selects, so there
+is no artificial same-field outlier/select fixture. The six faults use
+canonical order irrespective of configured list order, require twelve
+enumerators to avoid cumulation, and leave at least half clean.
+
+**Tests:** `InjectedAmendment8AssignmentTest`,
+`InjectedAmendment8ExclusionsTest`, `InjectedAmendment8CascadeTest`, and the
+skipModules/resent tests in `InjectedAmendment8InteractionsTest`.
+
+### H6. What randomness and record counterfactual are tested?
+
+**Question:** Is any seed-specific PRNG sequence prescribed? Does adding
+Other change earlier faults' draws? What is a sufficient statistical sample?
+
+**Assumption:** No PRNG sequence is prescribed. Use fixed seeds, per-answer
+probabilities, independent earlier-fault streams, and seven binomial
+standard deviations plus two as tolerance. Main rates use 1,600–3,000
+faulty-interview opportunities; uniform real-choice selection uses 2,400,
+and specify typo tests several hundred actual replacements. Positive
+controls are mandatory, never skipped when missing. The simple one-fault
+case compares cleanValue to the same actual visit walked without faults;
+combined tests use fixed clean selects and verify Other's exact replaced
+answer. They do not constrain the earlier unresolved combined-fault
+dontKnow cleanValue. Replays include instances, visits, warnings, records
+and CSV, and restore JVM defaults after locale testing.
+
+**Tests:** Statistical checks throughout the new classes,
+`InjectedAmendment8InteractionsTest`, and `InjectedAmendment8RecordsTest`.
+
+### H7. How are existing five-fault tests handled?
+
+**Question:** Amendment 8 supersedes earlier five-fault default assertions,
+but this task requires all committed tests to remain intact.
+
+**Assumption:** Preserve every existing test and support file. Add only
+new Amendment 8 classes and a new resource fixture. Do not adjudicate old
+defaults, modify disputes, or claim the entire old suite should pass.
+Configuration parse-error cases belong to spec 04; these tests use its
+documented JSON API so they compile before new configuration accessors are
+implemented. No production source was read or changed.
+
+**Tests:** All `InjectedAmendment8*` classes.
+
+### Amendment 8 build verification (2026-11-01)
+
+**Question:** Can `mvnw.cmd -o -q test-compile` verify these additions in
+this sandbox?
+
+**Observation:** Both the initial invocation and the invocation after
+adding tests fail in `testCompile` when opening the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. A detailed offline
+retry identifies `java.nio.file.AccessDeniedException`. Maven does not
+establish successful compilation of the new tests. `MAVEN_USER_HOME` was
+set to `.tools/maven-home`; dependencies, repositories and build
+configuration were not changed.
+
+**Assumption:** Reuse the earlier supplementary in-memory Java compiler
+approach, against compiled public API classes and cached dependency bytes,
+without reading production source or copying dependency repositories.
+This verifies Java compilation independently but does not replace or
+claim success for the requested Maven command. All probes and logs are
+under `.codex-runs/spec14-amendment8/`.
+
+**Result:** The final supplementary compilation succeeds with `--release
+17` for all nine new Java files and eleven unchanged test-support sources.
+The diagnostic JUnit run discovers and starts 85 invocations across eight
+test classes, with no skipped/aborted tests or failed containers. All 85
+currently fail before reaching their behavioral assertions: 80 because
+`otherCodes` is not a recognized configuration key, five because `other`
+is not a recognized fault. No fixture-loading failure occurs. The actual
+fault behavior and downstream assertions cannot yet be verified at runtime.
+See `compile-final.log`, `junit-final.log`, `maven-test-compile.log`, and
+`maven-test-compile-detail.log` in that directory.
+
+Existing tests/supports are preserved. The only tracked-file edit is this
+questions-file addition; the tests and the displayed-label fixture are new
+files. No production code, spec text, build configuration or disputes file
+was modified, and no commit was made.

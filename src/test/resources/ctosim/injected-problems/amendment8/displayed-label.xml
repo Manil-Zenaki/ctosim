@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml"
+        xmlns:jr="http://openrosa.org/javarosa">
+  <h:head><h:title>Default language choice display</h:title><model>
+    <instance><data id="other_display"><prefix/><answer/><specify/><username/><meta><instanceID/></meta></data></instance>
+    <itext>
+      <translation lang="English"><text id="choice"><value>Wrong language</value></text></translation>
+      <translation lang="Français" default=""><text id="choice"><value>  CAFÉ  <output value="/data/prefix"/>  </value></text></translation>
+    </itext>
+    <bind nodeset="/data/prefix" type="string"/>
+    <bind nodeset="/data/answer" type="select1"/>
+    <bind nodeset="/data/specify" type="string" relevant="/data/answer = 'O'"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/prefix"><label>Number</label></input>
+    <select1 ref="/data/answer"><label>Drink</label>
+      <item><label ref="jr:itext('choice')"/><value>not_the_label</value></item>
+      <item><label>Other</label><value>O</value></item>
+    </select1>
+    <input ref="/data/specify"><label>Specify</label></input>
+  </h:body>
+</h:html>
