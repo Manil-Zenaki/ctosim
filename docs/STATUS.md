@@ -1,6 +1,6 @@
 # Project status and hand-over notes
 
-Last updated: 2026-11-01. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
+Last updated: 2026-11-07. Read `CLAUDE.md`, `docs/WORKFLOW.md` and
 `docs/ARCHITECTURE.md` first; this file records where the work stands and
 what was learnt along the way.
 
@@ -285,6 +285,23 @@ faulty enumerators have 3.05 % "don't know" and 1.98 % refusals, against
 at most 0.27 % and 0.17 % for the others. Teams' codes read from their
 choices sheets (Mauritania, whose codes differ by question, and SARGIL
 ASSET, in Bengali, left out).
+
+2026-11-07, "Other" abused (owner's choice among the next steps). Honest
+enumerators drew "Other" as often as any choice (22 % for the IPA form's
+religion), which hid an enumerator who abuses it. Spec 04 Amendment 13
+(`otherCodes`, disjoint from the other code lists; `otherRate` 0.03; six
+default faults), spec 05 Amendment 4 ("Other" at `otherRate`), spec 14
+Amendment 8 (fault `other`: "Other" ticked on a quarter of the selects
+with a "specify" text question, the replaced choice's label typed there,
+lower case, no accents, half the time a letter missing; one record on the
+select; check `ipacheckspecify`), spec 11 Amendment 16 (help). Disputes
+04/3, 05/1, 14/9-10 upheld. Java 13560 and Stata 154 tests, all green.
+IPA check (`otherCodes` ["-666"]): the faulty enumerator answers "Other"
+24.7 % of the time against 0.5-8.6 % (mean 3.7 %) for the 19 others, and
+`ipacheckspecify` lists its texts ("elctricity", "cement/conrete/slab").
+Left for later: honest "specify" texts are still placeholders
+(`e_hhh_relig_osp 1276`); names ending in `_osp`, `_oth` or `_autre` do
+not match the plausible-text rule of spec 05 Amendment 3.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
