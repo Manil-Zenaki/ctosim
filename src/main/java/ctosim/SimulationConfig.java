@@ -58,6 +58,7 @@ public final class SimulationConfig {
     private final List<String> refuseCodes;
     private final List<String> otherCodes;
     private final double otherRate;
+    private final FormUpdate formUpdate;
 
     SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
                      double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
@@ -140,6 +141,20 @@ public final class SimulationConfig {
                      Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id,
                      int interviewsPerDay, ProblemRates problems, Consent consent, Villages villages,
                      List<String> dontKnowCodes, List<String> refuseCodes, List<String> otherCodes, double otherRate) {
+        this(seed, submissions, start, fieldworkDays, missingRate, specialRate, specialValues, repeatMin, repeatMax,
+                integerRange, decimalRange, fields, timeZone, enumerators, speedViolationRate, profiles, area, textPools,
+                id, interviewsPerDay, problems, consent, villages, dontKnowCodes, refuseCodes, otherCodes, otherRate, null);
+    }
+
+    SimulationConfig(long seed, int submissions, LocalDateTime start, int fieldworkDays, double missingRate,
+                     double specialRate, List<String> specialValues, int repeatMin, int repeatMax,
+                     NumericRange integerRange, NumericRange decimalRange, Map<String, FieldOverride> fields,
+                     ZoneId timeZone, int enumerators, double speedViolationRate,
+                     Map<String, Double> profiles, Area area, Map<String, List<String>> textPools, String id,
+                     int interviewsPerDay, ProblemRates problems, Consent consent, Villages villages,
+                     List<String> dontKnowCodes, List<String> refuseCodes, List<String> otherCodes, double otherRate,
+                     FormUpdate formUpdate) {
+        this.formUpdate = formUpdate;
         this.otherCodes = List.copyOf(otherCodes);
         this.otherRate = otherRate;
         this.dontKnowCodes = List.copyOf(dontKnowCodes);
@@ -292,7 +307,7 @@ public final class SimulationConfig {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes, otherCodes, otherRate);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate, formUpdate);
     }
 
     /** The form's consent questions; empty when the configuration names none. See Amendment 8. */
@@ -327,7 +342,7 @@ public final class SimulationConfig {
 
     /** The day a new version of the form is deployed; empty when none is named. See Amendment 14. */
     public java.util.Optional<FormUpdate> formUpdate() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return java.util.Optional.ofNullable(formUpdate);
     }
 
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
@@ -340,7 +355,7 @@ public final class SimulationConfig {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes, otherCodes, otherRate);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate, formUpdate);
     }
 
     /** Text pools in file order; empty when not set. */
@@ -362,14 +377,14 @@ public final class SimulationConfig {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, more,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes, otherCodes, otherRate);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate, formUpdate);
     }
 
     public SimulationConfig withSeed(long seed) {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes, otherCodes, otherRate);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate, formUpdate);
     }
 
     public SimulationConfig withSubmissions(int submissions) {
@@ -379,6 +394,6 @@ public final class SimulationConfig {
         return new SimulationConfig(seed, submissions, start, fieldworkDays, missingRate, specialRate,
                 specialValues, repeatMin, repeatMax, integerRange, decimalRange, fields,
                 timeZone, enumerators, speedViolationRate, profiles, area, textPools, id, interviewsPerDay, problems, consent, villages,
-                dontKnowCodes, refuseCodes, otherCodes, otherRate);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate, formUpdate);
     }
 }

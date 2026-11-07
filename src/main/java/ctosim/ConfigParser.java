@@ -41,7 +41,7 @@ final class ConfigParser {
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
             "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
             "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay", "problems", "consent",
-            "villages", "dontKnowCodes", "refuseCodes", "otherCodes", "otherRate");
+            "villages", "dontKnowCodes", "refuseCodes", "otherCodes", "otherRate", "formUpdate");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
             "distribution", "expr", "area", "when");
@@ -145,7 +145,26 @@ final class ConfigParser {
                 root.has("problems") ? problems(root.get("problems")) : null,
                 root.has("consent") ? consent(root.get("consent")) : null,
                 root.has("villages") ? villages(root.get("villages")) : null,
-                dontKnowCodes, refuseCodes, otherCodes, otherRate);
+                dontKnowCodes, refuseCodes, otherCodes, otherRate,
+                root.has("formUpdate") ? formUpdate(root.get("formUpdate")) : null);
+    }
+
+    /** The day a new version of the form is deployed (spec 04, Amendment 14). */
+    private FormUpdate formUpdate(JsonNode node) throws ConfigException {
+        JsonNode update = object(node, "formUpdate");
+        checkKeys(update, "formUpdate", Set.of("date", "previousVersion"));
+        if (!update.has("date")) {
+            throw error("formUpdate", "needs \"date\", the first day of the new version");
+        }
+        LocalDate date = date(update.get("date"), "formUpdate.date");
+        String previous = null;
+        if (update.has("previousVersion")) {
+            previous = string(update.get("previousVersion"), "formUpdate.previousVersion");
+            if (previous.isEmpty()) {
+                throw error("formUpdate.previousVersion", "must not be empty");
+            }
+        }
+        return new FormUpdate(date, previous);
     }
 
     /** The coordinate columns of the preloaded village list (spec 04, Amendment 10). */
