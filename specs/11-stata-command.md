@@ -536,3 +536,16 @@ reviewed one by one and confirmed: lexical checks of the visible help
 without fixed wording (Q1); a JSON example naming a "specify" field with
 at least two answers, the recoding exercise being a topic, not a command
 sequence (Q2); the help oracle follows the earlier infrastructure (Q3).
+
+## Amendment 18: the help on an outdated form version
+
+The command is unchanged; its help file documents the configuration's
+`formUpdate` key (spec 04, Amendment 14: the `date` a new version of the
+form is deployed, and the `previousVersion` used before it, by default
+the form's version minus one when it is a number), that submissions
+started before that date have the previous version in `formdef_version`
+and the others the form's version, and the fault `outdatedVersion`
+(spec 14, Amendment 9: the enumerator keeps the previous version after
+the update, injected only when `formUpdate` is named), found with
+`ipacheckversions`. With seven faults, one enumerator per fault needs
+fourteen enumerators.

@@ -1003,3 +1003,59 @@ empty `otherCodes` disables the fault, all the protections listed carry
 over, and six cumulated faults need twelve enumerators (H5); no random
 sequence is prescribed, and `other` draws apart from the earlier faults
 (H6); the earlier five-fault default tests go through a dispute (H7).
+
+## Amendment 9: an outdated form version, a fault of its own
+
+An enumerator who does not update the tablet after a new version of the
+form is deployed goes on submitting the old version. IPA's
+`ipacheckversions` lists the submissions whose version was not the
+current one on their day. A seventh fault keeps the old version
+(spec 04, Amendment 14). Everything not mentioned here is unchanged.
+
+| `problem` | `family` | `check` | deterministic |
+|---|---|---|---|
+| `outdatedVersion` | `enumerator` | `ipacheckversions` | yes |
+
+It comes after `other` in the order of faults (and of the problems'
+table), so that the enumerators of the six earlier faults are unchanged
+when it is not injected.
+
+### Versions
+
+When `config.formUpdate()` is present, the **new version** is the form's
+version (its catalog's `version`), and the **previous version** is the
+update's `previousVersion` or, when it is absent, the form's version
+minus one when that version is a positive integer written in digits
+(`2601051230` gives `2601051229`). Each submission then has a version,
+written as the `version` attribute of its instance's root element (spec
+08, Amendment 3, puts it in `formdef_version`):
+
+- a submission whose interview starts before the update's `date` has the
+  previous version;
+- a submission whose interview starts on or after that date has the new
+  version;
+- a resent copy has its original's version.
+
+This holds whether or not `config.problems()` is present. When there is
+no previous version (the form has no version, or its version is not a
+positive integer and `previousVersion` is absent), or the previous
+version equals the new one, no update is simulated: every submission has
+the form's version, as before, `outdatedVersion` is not injected, and
+`warnings()` holds one warning that says why. Without `formUpdate`,
+nothing changes.
+
+### The fault
+
+A faulty enumerator of `outdatedVersion` does not update the tablet: its
+submissions whose interview starts on or after the update's `date` have
+the previous version instead of the new one. One record per such
+submission: `field` `formdef_version`, `value` the previous version,
+`cleanValue` the new version. Nothing else in these submissions changes.
+
+When `config.formUpdate()` is absent, or no update is simulated, no
+`outdatedVersion` is injected, the fault takes no enumerator, and
+`warnings()` holds one warning that says so, among the faults' warnings,
+as for `dontKnow` without codes.
+
+Earlier tests that rely on the six-fault default (enumerator
+assignment, cumulated faults) are superseded and go through a dispute.

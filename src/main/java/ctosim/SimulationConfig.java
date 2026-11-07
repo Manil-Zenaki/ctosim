@@ -325,6 +325,11 @@ public final class SimulationConfig {
         return otherRate;
     }
 
+    /** The day a new version of the form is deployed; empty when none is named. See Amendment 14. */
+    public java.util.Optional<FormUpdate> formUpdate() {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
     public java.util.Optional<ProblemRates> problems() {
         return java.util.Optional.ofNullable(problems);

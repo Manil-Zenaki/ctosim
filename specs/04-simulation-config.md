@@ -738,3 +738,43 @@ fault name, not a rate key (71); the list-taking constructors accept
 `other` in the order given, only the default fault list gains it, and the
 earlier five-fault default tests go through a dispute (72); the earlier
 diagnostic conventions apply to both keys (73).
+
+## Amendment 14: a form update during fieldwork
+
+Teams update their form during fieldwork, and an enumerator who does not
+update the tablet goes on with the old version, which IPA's
+`ipacheckversions` finds. One top-level key is added (used by spec 14
+Amendment 9), and `faults` (Amendment 7) accepts one more name.
+Everything else is unchanged.
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `formUpdate` | object | none | The day a new version of the form is deployed. Without it, every submission has the form's version and the fault `outdatedVersion` is not injected. |
+
+`formUpdate` has two keys:
+
+- `date` (required): a date written `YYYY-MM-DD`, the first day on which
+  the new version is used;
+- `previousVersion` (optional): a non-empty string, the version used
+  before that day.
+
+Other keys are errors, as for the other objects of the configuration.
+
+Public type and accessor added:
+
+```java
+public record FormUpdate(java.time.LocalDate date, String previousVersion) { }  // previousVersion null when absent
+
+// added to SimulationConfig:
+public java.util.Optional<FormUpdate> formUpdate();   // empty when the key is absent
+```
+
+- The rules of "Strictness" and "Errors" apply, with errors at their
+  paths (`formUpdate`, `formUpdate.date`, `formUpdate.previousVersion`);
+  copies keep `formUpdate()`.
+- `faults` accepts `outdatedVersion`, and its default is the seven
+  faults, in the order `tooFast`, `skipModules`, `dontKnow`,
+  `fakeRefusal`, `refuse`, `other`, `outdatedVersion`; so is
+  `ProblemRates.defaults().faults()`.
+- The earlier tests of the six-fault default are superseded and go
+  through a dispute.

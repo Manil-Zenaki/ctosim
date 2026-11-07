@@ -412,3 +412,12 @@ Everything not mentioned here is unchanged.
 
 `speed violations` fields when no violation occurred; `review_*`
 columns.
+
+## Amendment 3: the version of each submission
+
+A form updated during fieldwork gives submissions of different versions
+in one export (spec 14, Amendment 9). Everything else is unchanged.
+
+`formdef_version` is the `version` attribute of the root element of the
+submission's instance when it has one, and the catalog's version
+otherwise (empty when that is `null`).
