@@ -178,7 +178,7 @@ class AnswerGeneratorOtherChoiceTest {
         for (String fixed : List.of("other_z", "a", "unoffered")) {
             for (int rate : new int[] {0, 1}) {
                 AnswerGenerator g = generator(CODES + ",\"otherRate\":" + rate
-                        + ",\"fields\":{\"answer\":{\"value\":\"" + fixed + "\"}}}");
+                        + ",\"fields\":{\"answer\":{\"value\":\"" + fixed + "\"}}");
                 for (String answer : draws(g, select(kind, List.of("a", "other_z")), 50)) assertEquals(fixed, answer);
             }
         }
@@ -205,7 +205,7 @@ class AnswerGeneratorOtherChoiceTest {
     @ParameterizedTest
     @EnumSource(value = QuestionKind.class, names = {"SELECT_ONE", "SELECT_MULTIPLE"})
     void emptyAndLabelSelectsStayBlankEvenWhenRequiredAndFixedToOther(QuestionKind kind) throws Exception {
-        AnswerGenerator g = generator(CODES + ",\"otherRate\":1,\"fields\":{\"answer\":{\"value\":\"other_z\"}}}");
+        AnswerGenerator g = generator(CODES + ",\"otherRate\":1,\"fields\":{\"answer\":{\"value\":\"other_z\"}}");
         for (Question q : List.of(select(kind, List.of()),
                 new Question("answer", kind, List.of("other_z", "a"), "list label", true))) {
             for (String answer : draws(g, q, 100)) assertNull(answer);

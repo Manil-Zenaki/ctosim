@@ -801,3 +801,18 @@ successful Maven build. Logs and probe files are under `.codex-runs/answer-other
 repository was copied, no drives mapped, and no build configuration changed.
 
 **Tests:** Both new Amendment 4 test classes.
+
+### 43. Dispute adjudication build verification (2026-11-07)
+
+**Question:** Can the corrected disputed fixtures be compiled and tested
+with the required offline build in this sandbox?
+
+**Result:** `mvnw.cmd -o -q test` failed during `testCompile`. An offline
+`-e` diagnostic run identified `java.nio.file.AccessDeniedException` for
+`.tools/m2/com/fasterxml/jackson/core/jackson-databind/2.13.2.1/jackson-databind-2.13.2.1.jar`.
+Compilation and test execution remain unverified; rerun with working access
+to the dependency cache. Logs are in `.codex-runs/answer-generator-dispute/`.
+No dependencies were copied, drives mapped, or build configuration changed.
+
+**Tests:** `AnswerGeneratorOtherChoiceTest.fixedValuesStillOverrideOtherRateInBothDirections`
+and `emptyAndLabelSelectsStayBlankEvenWhenRequiredAndFixedToOther` (both select kinds).
