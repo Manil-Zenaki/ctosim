@@ -279,3 +279,47 @@ the harness. The final direct JUnit run of thirteen selected Amendment
 tests, passed **1,436 tests, zero failures; all 100 containers passed**
 (`.codex-runs/04-dispute3-junit.log`). The full Maven suite remains blocked
 by cached-JAR access; no dependencies, permissions or build settings changed.
+
+## Dispute 4: the six-fault default, superseded by Amendment 14 (2026-11-07)
+
+**Tests:** in `ProblemRatesAmendment7Test`:
+`defaultFaultsAreUnmodifiableAndUnchangedByCustomInstances`,
+`defaultsIncludeOutliersAndAllFaultsInTheSpecifiedOrder`; in
+`ProblemRatesAmendment8Test`: `defaultsIncludeAllSixFaultsInTheSpecifiedOrder`,
+`omittedFaultsInAnyPresentProblemsObjectUseAllSixDefaults` (4 cases); in
+`ProblemRatesAmendment9Test`:
+`defaultsEnableLeftOpenWithoutChangingAnyEarlierDefault`; in
+`ProblemRatesAmendment12Test`:
+`omittedFaultsDefaultToAllSixEvenWithoutRefusalCodes` (8 cases),
+`problemRateDefaultsHaveExactlyTheSixFaultsInTheSpecifiedOrder`,
+`theSixDefaultFaultsAreUnmodifiable`; in `ProblemRatesAmendment13Test`:
+`omittedFaultsDefaultToAllSixEvenWithoutOtherCodes` (8 cases),
+`problemRateDefaultsHaveExactlyTheSixFaultsInTheSpecifiedOrder`,
+`theSixDefaultFaultsAreUnmodifiable`; in `SimulationConfigAmendment7IoTest`:
+`loadAcceptsOutlierBoundsAndNumericRepresentations` (10 cases),
+`loadDistinguishesAbsentProblemsFromNewDefaultsAndExplicitlyDisabledNewComponents`;
+in `SimulationConfigAmendment7ParsingTest`:
+`emptyProblemsEnableBothNewDefaultsAndKeepTheSevenOriginalDefaults`,
+`explicitOutlierRatesAreRetainedWithoutChangingOtherDefaults` (10 cases),
+`originalRateOverridesStillDefaultBothNewComponents`; in
+`SimulationConfigAmendment8IoTest`:
+`loadDistinguishesAbsentConsentFromRequiredFieldsWithDefaults`; in
+`SimulationConfigAmendment9ParsingTest`:
+`parseAndLoadAcceptNumericFormsAndInclusiveEndpoints` (20 cases).
+
+**Spec:** Amendment 14: "`faults` accepts `outdatedVersion`, and its
+default is the seven faults, in the order `tooFast`, `skipModules`,
+`dontKnow`, `fakeRefusal`, `refuse`, `other`, `outdatedVersion`; so is
+`ProblemRates.defaults().faults()`. The earlier tests of the six-fault
+default are superseded and go through a dispute." Clarification
+(Amendment 14), assumption 78.
+
+**What the tests do:** they expect the default fault list of Amendment 13;
+the failures read `expected: <[tooFast, skipModules, dontKnow, fakeRefusal,
+refuse, other]> but was: <[tooFast, skipModules, dontKnow, fakeRefusal,
+refuse, other, outdatedVersion]>`, or the same inside a whole
+`ProblemRates` record.
+
+**Requested change:** expect the seven faults of Amendment 14 wherever the
+default list is checked, keeping every other assertion (rates, absence of
+`problems`, copies, immutability, explicit lists).
