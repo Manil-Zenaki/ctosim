@@ -118,6 +118,8 @@ setting.
 {synopt:{cmd:specialRate}, {cmd:specialValues}}probability of a "don't know / refused" code, and which values are such codes{p_end}
 {synopt:{cmd:dontKnowCodes}}the values your team uses for "don't know", used by the fault {bf:dontKnow}; see {help ctosim##problems:Injected problems}{p_end}
 {synopt:{cmd:refuseCodes}}the values your team uses for "refused to answer", used by the fault {bf:refuse}{p_end}
+{synopt:{cmd:otherCodes}}the values your team uses for "Other", used by the fault {bf:other}{p_end}
+{synopt:{cmd:otherRate}}how often honest enumerators choose "Other" when a question offers it (default 0.03){p_end}
 {synopt:{cmd:speedViolationRate}}probability of a speed violation on a field with a minimum time (default 0.1){p_end}
 {synopt:{cmd:repeats}}number of instances of repeats without a count (default 1 to 3){p_end}
 {synopt:{cmd:integerRange}, {cmd:decimalRange}}default bounds of numbers (0-100, 0-1000){p_end}
@@ -350,11 +352,12 @@ checks comparing enumerators ({cmd:ipacheckenumdb}) can find them:{p_end}
 {phang2}- {bf:dontKnow}: the enumerator answers "don't know" codes where the form accepts them, which the "don't know" rate of {cmd:ipacheckenumdb} shows. It needs your team's codes (below).{p_end}
 {phang2}- {bf:fakeRefusal}: the enumerator declares refusals to avoid interviews: on average about twice the refusals of the other enumerators (about 80% consent when the others get 90%), which the consent rate of {cmd:ipacheckenumdb} shows. It needs the consent questions (below).{p_end}
 {phang2}- {bf:refuse}: the enumerator answers "refused to answer" codes where the form accepts them, which the refusal rate of {cmd:ipacheckenumdb} shows. It needs your team's codes (below).{p_end}
+{phang2}- {bf:other}: the fault {bf:other} makes the enumerator tick "Other" instead of the right choice, and type that offered choice in the "specify" question, which {cmd:ipacheckspecify} finds by listing the "specify" texts of each enumerator. It needs your team's "Other" codes (below).{p_end}
 
 {pstd}
 Each fault gets one enumerator of its own when there are enough: at least
 half of the enumerators always stay clean, so that the faulty ones stand
-out. With fewer than ten enumerators the faults are cumulated on the same
+out. With fewer than twelve enumerators the six faults are cumulated on the same
 enumerators, and a warning says so; use more enumerators (twice the number
 of faults) for one enumerator per fault, and enough submissions (at least
 ten per enumerator) for the checks to tell them apart.{p_end}
@@ -401,6 +404,21 @@ Since the codes also appear in text questions, give {cmd:ipacheckenumdb} each
 code both as a number and as a string, for example
 {cmd:dontknow(-999, "-999") refuse(-888, "-888")}: with the number alone, it
 stops on a type mismatch as soon as the data hold a text variable.{p_end}
+
+{pstd}
+{bf:"Other" codes.} The configuration's {cmd:otherCodes} key names the values
+your team uses for "Other" (for example {cmd:["96"]}); {cmd:ctosim} never
+guesses them. Honest enumerators then choose "Other" rarely: {cmd:otherRate},
+0.03 (3%) by default, is the probability that an answer to a question offering
+"Other" includes it. The fault {bf:other} is injected only when {cmd:otherCodes}
+is named; without it, the fault is not injected, and a warning says so. A
+faulty enumerator of the fault {bf:other} ticks "Other" on about a quarter of
+the questions that have a "specify" question, and types in that "specify"
+question the label of the choice it should have ticked, in lower case, without
+accents, sometimes with a letter missing. {cmd:ipacheckspecify} lists the
+"specify" texts by enumerator, so that they can be recoded: the faulty
+enumerator chooses "Other" far more often than the others, and its texts are
+choices the list already offered. The answer key gives the right choice.{p_end}
 
 {pstd}
 {bf:Located villages.} When the preloaded village list holds the villages'
