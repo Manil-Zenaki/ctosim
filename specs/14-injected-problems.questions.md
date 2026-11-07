@@ -1793,3 +1793,178 @@ including the decimal and direct-select repeat-count cases, with no skips,
 aborts or failures. Logs are `.codex-runs/spec14-disputes-9-10-compile.log`
 and `.codex-runs/spec14-disputes-9-10-junit.log`. Temporary compiler and
 runner artifacts are confined to `.codex-runs/`.
+
+## Amendment 9 test-author questions and assumptions
+
+### I1. Which version source can Fieldwork observe?
+
+**Question:** Amendment 9 calls the new version the form's catalog version,
+but the public Fieldwork constructor takes a LoadedForm and configuration,
+not a FieldCatalog. What if those versions disagree?
+
+**Assumption:** Fixtures put the new version on the primary instance root,
+as specified by spec 01's LoadedForm.version(). The export fixture's catalog
+has the same version. No expectation is imposed on disagreement between a
+separately supplied catalog and the loaded form, or on direct FormWalker
+calls outside Fieldwork.walkAll().
+
+**Tests:** All `InjectedAmendment9*` classes, especially
+`simulatedVersionsReachTheWideAndLongExportsPerSubmission`.
+
+### I2. What are the inference and equality rules for version strings?
+
+**Question:** Is there an integer-width limit, should leading zeros be
+preserved, and does “digits” include non-ASCII digit characters? Is equality
+numeric or textual?
+
+**Assumption:** No size limit is stated, so canonical ASCII positive
+integers are decremented exactly, including a value above Long.MAX_VALUE.
+Version 1 has usable previous version 0. Zero, negative, signed, decimal,
+exponent, whitespace-surrounded and alphabetic versions do not qualify for
+automatic inference. An explicit previousVersion overrides inference and
+is kept exactly, including Unicode, commas, quotes and XML-sensitive text.
+Equal-version tests use identical strings; they do not choose between
+numeric and textual equality for differently spelled numbers. Leading-zero
+formatting, Unicode digits, and a present-but-empty form version are left
+open. A missing form version disables the update even when an explicit
+previousVersion is supplied, following the parenthetical in “Versions”.
+
+**Tests:** The inference, explicit-version, invalid-version and absent-version
+tests in `InjectedAmendment9VersionsTest` and `InjectedAmendment9FaultTest`.
+
+### I3. Which date determines the version?
+
+**Question:** Does the update apply by local interview date, upload date,
+nominal visit number, or the date before schedule problems are applied?
+
+**Assumption:** Compare the actual Submission.start().toLocalDate() with
+the configured date, inclusively for the new version, in the configured
+local clock. Crossing midnight before ending or uploading does not change
+the version. Schedule changes are reflected through the resulting start.
+Resent copies use their original's version and keep only their resent
+record, including when the original carries outdatedVersion. Reinterviews
+copy the specified id/cascade answers, not the version: their own start
+and enumerator determine their version. The reinterview date-boundary test
+chooses the update date from a preliminary public run, avoiding any assumed
+PRNG sequence for originals.
+
+**Tests:** Date-boundary, overnight, configured-zone and schedule tests in
+`InjectedAmendment9VersionsTest`; `InjectedAmendment9InteractionsTest`.
+
+### I4. Are impossible-update and inactive-fault warnings coalesced?
+
+**Question:** “Versions” asks for one warning when no update can be
+simulated, and “The fault” also asks for one when outdatedVersion is
+inactive. Should requesting that fault duplicate the same explanation?
+
+**Assumption:** One configuration-wide explanation satisfies both clauses,
+rather than two warnings for the same inactive update. When the fault is
+requested, its warning contains `outdatedVersion`, following earlier
+fault-warning conventions. Impossible updates warn even without problems;
+an absent formUpdate without a requested version fault does not warn.
+No exact prose, language, or reason substring is prescribed. Separate
+travel, outlier, cumulation and small-sample warnings retain their own
+places and counts. A valid update after all interviews does not disable
+the assigned fault or produce an inactive-update warning.
+
+**Tests:** Disabled/invalid-update and warning-order tests in
+`InjectedAmendment9FaultTest`, invalid-version tests in
+`InjectedAmendment9VersionsTest`, and
+`aFutureValidUpdateProducesNoOutdatedRecordsAndDoesNotDisableTheFaultSlot`.
+
+### I5. What does “nothing else changes” cover, and which protections apply?
+
+**Question:** Does a version fault alter the plan or answers, and do answer
+protections prevent a version fault on a reinterview or a refused interview?
+
+**Assumption:** All submission properties except the root's version remain
+equal to a run with the same other problems and without outdatedVersion:
+answers, metadata, identity, answered count, start/end/upload times and
+submission warnings. The visit list also stays equal. XML is compared as
+DOM trees after removing only the version attribute; attribute serialization
+order is not constrained. The version is not a question answer, so answer
+protections do not exempt reinterviews or fake refusals. Resent copies have
+their explicitly specified exception. The cleanValue is always the current
+version, including under cumulated faults. Adding the fault is compared
+against six faults with E=6, where the same m=3 enumerators carry the earlier
+faults, so the comparison does not assume unchanged assignment when m changes.
+
+**Tests:** `versionFaultLeavesAnswersClocksMetadataLocationsAndWarningsUnchanged`,
+`addingTheSeventhFaultKeepsEarlierFaultResultsWhenTheSameEnumeratorsCarryThem`,
+`InjectedAmendment9InteractionsTest`, and the seven-fault assignment tests.
+
+### I6. What assignment and randomness evidence is sufficient?
+
+**Question:** Is there a prescribed seed-specific assignment? How should a
+fault with no post-update interview affect assignment and sample warnings?
+
+**Assumption:** Use the inherited canonical order, m=min(7,floor(E/2)),
+round-robin cumulation, and fourteen enumerators to avoid cumulation.
+Absent or impossible updates remove the fault before assignment; a valid
+future update keeps its slot. Small-sample warnings count all interviews,
+not just outdated records, with nine/ten as the boundary. A single
+enumerator gets the inherited comparison warning, with normal version
+updates still applied. No PRNG or particular faulty username is assumed.
+The uniformity test uses 320 fixed seeds, eight enumerators, and seven
+binomial standard deviations plus two as tolerance; all eight bins must
+be observed. Other tests use a fixed seed, require positive observations,
+and check repeated/fresh runs and locale/time-zone independence. JVM
+defaults are restored in finally blocks.
+
+**Tests:** `InjectedAmendment9AssignmentTest`, the future-update test, and
+replay/locale tests in `InjectedAmendment9RecordsTest`.
+
+### I7. How are existing tests and configuration validation treated?
+
+**Question:** Amendment 9 supersedes six-fault defaults, but this task says
+to preserve all existing tests and add tests for Amendment 9 only.
+
+**Assumption:** Keep all existing test/support files unchanged and add five
+test classes, one support class and two resource fixtures. Do not adjudicate
+old defaults or edit the disputes file. Configuration syntax/errors and
+default-list accessor checks belong to spec 04 Amendment 14; the new tests
+use its documented JSON and the existing public ProblemRates constructors.
+No production source or implementation was read or modified. The ordinary
+no-update test is the backward-compatibility behavior explicitly required
+by this amendment. An empty submission count is not used because the
+configuration requires at least one submission.
+
+**Tests:** All `InjectedAmendment9*` classes. Existing six-fault tests remain
+available for a separate dispute; this run does not claim the full existing
+suite should pass.
+
+### Amendment 9 build verification (2026-11-07)
+
+**Question:** Can `mvnw.cmd -o -q test-compile` verify these additions in
+this sandbox?
+
+**Observation:** The baseline, post-edit and final requested invocations
+fail in testCompile while opening the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. An offline `-e`
+retry reports `java.nio.file.AccessDeniedException`. MAVEN_USER_HOME was
+set to `.tools/maven-home`. Maven cannot establish successful compilation
+of the tests here; no repository copies, dependency installation, build
+configuration edits or drive mappings were used.
+
+**Assumption:** Reuse the supplementary in-memory Java compiler from prior
+test-author runs, against compiled public API classes and cached dependency
+bytes, without reading production sources. This establishes supplementary
+Java compilation only and does not turn the requested Maven command into a
+success. Temporary probes and logs are confined to
+`.codex-runs/spec14-amendment9/`.
+
+**Result:** Supplementary compilation succeeds with `--release 17` for all
+six new Java files and thirteen unchanged support sources. A separate
+fixture probe successfully loads the simple version variants, the
+seven-fault form and the overnight form. The final diagnostic JUnit run
+discovers and starts 74 invocations across five test classes: one passes,
+73 fail, none are skipped or aborted, and no container fails. Seventy
+failures are the unimplemented `formUpdate` setting; three are the
+unrecognized `outdatedVersion` fault. Downstream behavioral assertions
+cannot yet be verified at runtime. Logs: `compile-final.log`,
+`junit-final.log`, `maven-final.log`, and `maven-detail.log` in that directory.
+
+All previously committed tests are preserved. The questions file is the
+only modified tracked file; test classes/support and fixtures are new.
+No production code, spec text, pom.xml or dispute file was changed, and no
+commit was made.

@@ -1,0 +1,9 @@
+{
+  "form_id": "version_contract",
+  "title": "Version contract",
+  "version": "2601051230",
+  "fields": [
+    {"name": "answer", "type": "integer", "xpath": "/data/answer", "row": 2},
+    {"name": "username", "type": "username", "xpath": "/data/username", "row": 3}
+  ]
+}
