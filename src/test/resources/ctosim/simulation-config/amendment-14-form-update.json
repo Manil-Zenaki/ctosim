@@ -1,0 +1,7 @@
+{
+  "formUpdate": {
+    "previousVersion": " 001.0 / révision 東京 📝 ",
+    "date": "2028-02-29"
+  },
+  "problems": {"faults": ["outdatedVersion", "other", "tooFast"]}
+}

@@ -1422,3 +1422,111 @@ Only the spec and test sources were consulted; no production source was read.
   classes, including every disputed test and related copy tests; all 100
   containers passed. Logs: `.codex-runs/04-dispute3-probe-compile.log` and
   `.codex-runs/04-dispute3-junit.log`. No commit was made.
+
+## Amendment 14: a form update during fieldwork
+
+New coverage is in `SimulationConfigAmendment14ParsingTest`,
+`SimulationConfigAmendment14CopiesTest`, and `ProblemRatesAmendment14Test`,
+with a new support class and `amendment-14-form-update.json` UTF-8 fixture.
+Existing tests and fixtures are preserved. Expectations derive only from
+spec 04; no production source was opened, searched, or changed.
+
+74. **Does previousVersion have any restrictions beyond being a nonempty string?**
+    - **Assumption:** No. It is preserved exactly after JSON decoding, including
+      leading/trailing whitespace, whitespace-only strings, Unicode, escapes,
+      case, and numeric-looking strings. No trimming, normalization, numeric
+      conversion, or undocumented length limit is imposed. An absent member
+      becomes Java null, but explicit JSON null remains an error under
+      Strictness. Comparing with an actual form version is outside this module.
+    - **Dependent tests:** `previousVersionIsANonemptyExactString`,
+      `aDateAloneIsSufficientAndAbsentPreviousVersionIsNull`,
+      `invalidUpdatesReportConfigExceptionSourceLocationAndReason`, fixture,
+      escape/BOM, record-accessor, and copy tests.
+
+75. **What date grammar and fieldwork relationships are required?**
+    - **Assumption:** The required date is a real calendar date written with
+      four-digit year, two-digit month and day, without surrounding whitespace,
+      time, offset, or alternative date notation. Ordinary four-digit positive
+      years (0001 through 9999) and Gregorian leap-day rules are tested. The
+      spec states no restriction relative to start or fieldworkDays; dates
+      before, within, or after fieldwork are accepted and timeZone does not
+      shift the LocalDate. No year-zero, signed/expanded-year, chronology,
+      performance, or undocumented size expectations are asserted.
+    - **Dependent tests:** `aDateAloneIsSufficientAndAbsentPreviousVersionIsNull`,
+      `invalidUpdatesReportConfigExceptionSourceLocationAndReason`, and
+      `updateDateIsNotRestrictedToFieldworkOrShiftedByTimeZone`.
+
+76. **Must the FormUpdate record constructor enforce the JSON validation rules?**
+    - **Assumption:** Unspecified. Unlike Consent and Villages, Amendment 14
+      gives no constructor rejection or exception-type contract. Tests exercise
+      valid construction/accessors and the explicitly nullable previousVersion,
+      but do not require rejection of null dates or empty previousVersion in
+      direct construction. JSON input still has all stated validation rules.
+    - **Dependent tests:** `publicRecordPreservesItsDateAndNullablePreviousVersion`
+      and record equality assertions; no constructor-invalid-input tests added.
+
+77. **Do the new setting and fault depend on each other or expand other schemas?**
+    - **Assumption:** No. formUpdate can appear without problems; default or
+      explicit outdatedVersion faults can appear without formUpdate. A date-only
+      object needs no other configuration. Neither setting adds/removes faults
+      or alters unrelated settings. Only the top-level formUpdate schema key
+      and the exact fault name are added; outdatedVersion is not a rate key.
+      Field/profile/choice names remain arbitrary. Fault injection and generated
+      submission version behavior belong to spec 14, not these config tests.
+    - **Dependent tests:** Omission, standalone/default preservation, explicit
+      fault-selection, schema-placement, arbitrary-name and copy tests. No
+      random draws or statistical behavior are tested for this parsing module.
+
+78. **Which fault constructors, defaults and copies gain the new behavior?**
+    - **Assumption:** Both list-taking ProblemRates constructors accept exact
+      outdatedVersion, preserving supplied order, rates, defensive copying,
+      and existing duplicate/invalid/null-element rules. Only omitted/default
+      fault selections gain the seventh fault. Explicit empty lists and the
+      seven-rate constructor still have no faults. All three configuration copy
+      APIs retain present or absent formUpdate and the optional previousVersion,
+      including same-value assignments, endpoint values, problem replacement
+      or clearing, and chains. No identity requirement is imposed on immutable
+      FormUpdate values. Copies remain distinct and leave receivers unchanged.
+    - **Dependent tests:** `ProblemRatesAmendment14Test` and
+      `SimulationConfigAmendment14CopiesTest`.
+    - **Existing-test conflict:** The amendment explicitly supersedes the
+      six-fault default. Existing committed tests are kept unchanged as
+      requested; updating those assertions belongs to the separate dispute
+      process. New tests assert the seven-fault default in the stated order.
+
+79. **Which diagnostic conventions apply to the new object?**
+    - **Assumption:** Earlier conventions continue: value errors name the source,
+      location, and a reason; a missing required date may be reported at
+      formUpdate or below. Invalid members identify their complete paths.
+      Unknown members identify their paths. No wording or error precedence
+      among independent invalid values is fixed. Duplicate decoded object keys
+      follow question 2 (syntax or rule-error diagnostics accepted). A definite
+      syntax error names its failing line and retains the underlying cause.
+      UTF-8/BOM and validation behavior apply to both parse and load.
+    - **Dependent tests:** Validation, duplicate-key, syntax-diagnostic,
+      schema-placement, fixture/BOM, and invalid-fault tests; these run through
+      both entry points. Temporary load inputs are created under `.codex-runs/`
+      and removed after each invocation.
+
+### Amendment 14 build verification (2026-11-07)
+
+- Ran `.\mvnw.cmd -o -q test-compile` and an `-e` diagnostic retry. Both
+  reached `maven-compiler-plugin:3.15.0:testCompile` but failed on the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The detailed log
+  confirms `java.nio.file.AccessDeniedException` while javac closes its archive
+  file manager. Logs: `.codex-runs/04-amendment14-test-compile.log` and
+  `.codex-runs/04-amendment14-test-compile-detail.log`.
+- The existing fallback compiler-probe approach successfully compiled all four
+  new Java files and their existing test-source dependencies (ten files total)
+  with Java release 17 against actual `target/classes` binaries and cached
+  JUnit 5.11.4 APIs. It reads class entries into memory to avoid the archive
+  access failure; it does not inspect production source, copy repositories,
+  change dependency permissions, or install anything. Probe:
+  `.codex-runs/Amendment14CompileProbe.java`; result:
+  `.codex-runs/04-amendment14-probe-compile.log` (`compiled=true`).
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** This is an environment
+  blocker, not grounds to alter production, build settings, dependencies, or
+  existing tests. **Dependent tests:** Full Maven test compilation remains
+  unverified; the added sources compile through the fallback. Runtime tests
+  were not requested and were not run. No commit was made.
