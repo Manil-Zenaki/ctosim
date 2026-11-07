@@ -421,6 +421,17 @@ enumerator chooses "Other" far more often than the others, and its texts are
 choices the list already offered. The answer key gives the right choice.{p_end}
 
 {pstd}
+The "specify" text an honest enumerator writes after choosing "Other" is drawn
+as for any text question: by default it is a placeholder made of the field's
+name and a number, such as {cmd:e_hhh_relig_osp 1276}. To make a recoding
+exercise with {cmd:ipacheckspecify} realistic, give that "specify" question
+plausible answers with a {cmd:texts} override in the configuration's
+{cmd:fields} key, for example
+{cmd:"fields": {"e_hhh_relig_osp": {"texts": ["Jehovah's Witness", "Bahai", "no religion"]}}}:
+honest "Other" answers then read like real answers outside the list, to be
+told apart from the faulty enumerator's choices typed again.{p_end}
+
+{pstd}
 {bf:Located villages.} When the preloaded village list holds the villages'
 coordinates, name its latitude and longitude columns in the configuration's
 {cmd:villages} key, {cmd:latitude} and {cmd:longitude} ({cmd:ctosim} never
