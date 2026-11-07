@@ -8,8 +8,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import static ctosim.SimulationConfigTestSupport.quote;
 
 final class SimulationConfigAmendment7Support {
-    // Amendment 13 supersedes the default; explicit Amendment 7 lists stay unchanged.
-    static final List<String> DEFAULT_FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other");
+    // Amendment 14 supersedes the default; explicit Amendment 7 lists stay unchanged.
+    static final List<String> DEFAULT_FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other", "outdatedVersion");
     static final List<String> LEGACY_FAULTS = List.of("tooFast", "skipModules", "dontKnow");
 
     private SimulationConfigAmendment7Support() { }

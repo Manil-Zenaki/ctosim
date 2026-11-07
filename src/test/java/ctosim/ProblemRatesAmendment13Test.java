@@ -15,7 +15,10 @@ import static ctosim.SimulationConfigTestSupport.assertDiagnostic;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProblemRatesAmendment13Test {
+    // Amendment 14 changes defaults only; explicit Amendment 13 selections stay unchanged.
     private static final List<String> DEFAULT_FAULTS =
+            List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other", "outdatedVersion");
+    private static final List<String> AMENDMENT_13_FAULTS =
             List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other");
 
     private static ProblemRates rates(List<String> faults, boolean legacy) {
@@ -24,7 +27,7 @@ class ProblemRatesAmendment13Test {
     }
 
     @Test
-    void problemRateDefaultsHaveExactlyTheSixFaultsInTheSpecifiedOrder() {
+    void problemRateDefaultsHaveExactlyTheSevenFaultsInTheSpecifiedOrder() {
         assertEquals(DEFAULT_FAULTS, ProblemRates.defaults().faults());
     }
 
@@ -74,7 +77,7 @@ class ProblemRatesAmendment13Test {
 
     @ParameterizedTest
     @MethodSource("defaultInputs")
-    void omittedFaultsDefaultToAllSixEvenWithoutOtherCodes(String json, boolean load) throws Exception {
+    void omittedFaultsDefaultToAllSevenEvenWithoutOtherCodes(String json, boolean load) throws Exception {
         try (Input input = input(json, load)) {
             assertEquals(DEFAULT_FAULTS, input.read().problems().orElseThrow().faults());
         }
@@ -83,7 +86,7 @@ class ProblemRatesAmendment13Test {
     static Stream<List<String>> selections() {
         return Stream.of(List.<String>of(), List.of("other"), List.of("fakeRefusal"),
                 List.of("other", "fakeRefusal"), List.of("fakeRefusal", "other"),
-                List.of("dontKnow", "other"), List.of("refuse", "other"), List.of("other", "refuse"), DEFAULT_FAULTS,
+                List.of("dontKnow", "other"), List.of("refuse", "other"), List.of("other", "refuse"), AMENDMENT_13_FAULTS,
                 List.of("other", "refuse", "fakeRefusal", "dontKnow", "skipModules", "tooFast"));
     }
 
@@ -195,7 +198,7 @@ class ProblemRatesAmendment13Test {
     }
 
     @Test
-    void theSixDefaultFaultsAreUnmodifiable() {
+    void theSevenDefaultFaultsAreUnmodifiable() {
         ProblemRates defaults = ProblemRates.defaults();
         assertThrows(UnsupportedOperationException.class, () -> defaults.faults().remove("other"));
         assertEquals(DEFAULT_FAULTS, defaults.faults());

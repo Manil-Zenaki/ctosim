@@ -1530,3 +1530,19 @@ spec 04; no production source was opened, searched, or changed.
   existing tests. **Dependent tests:** Full Maven test compilation remains
   unverified; the added sources compile through the fallback. Runtime tests
   were not requested and were not run. No commit was made.
+
+### Dispute 4 build verification (2026-11-07)
+
+- **Question:** Can the calling environment rerun `.\mvnw.cmd -o -q test`
+  with accessible cached dependencies? The requested run and an `-e` retry
+  failed during `testCompile` with `AccessDeniedException` on the cached
+  `commons-io-2.5.jar`; logs are `.codex-runs/04-dispute4-test.log` and
+  `.codex-runs/04-dispute4-test-detail.log`.
+- **Assumption:** This is the previously documented sandbox build blocker,
+  not a reason to change requirements, dependencies or build settings.
+- **Dependent tests:** The full Maven suite remains unverified. The fallback
+  compiler verified 32 selected test/support sources against built production
+  classes, and the direct JUnit run passed all 1,705 tests in fifteen selected
+  classes, including every disputed test and related copy tests. Results:
+  `.codex-runs/04-dispute4-probe-compile.log` and
+  `.codex-runs/04-dispute4-junit.log`. No implementation source was read.

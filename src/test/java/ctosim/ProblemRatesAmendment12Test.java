@@ -15,9 +15,9 @@ import static ctosim.SimulationConfigTestSupport.assertDiagnostic;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProblemRatesAmendment12Test {
-    // Amendment 13 changes defaults only; explicit Amendment 12 selections stay unchanged.
+    // Amendment 14 changes defaults only; explicit Amendment 12 selections stay unchanged.
     private static final List<String> DEFAULT_FAULTS =
-            List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other");
+            List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other", "outdatedVersion");
     private static final List<String> AMENDMENT_12_FAULTS =
             List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse");
 
@@ -27,7 +27,7 @@ class ProblemRatesAmendment12Test {
     }
 
     @Test
-    void problemRateDefaultsHaveExactlyTheSixFaultsInTheSpecifiedOrder() {
+    void problemRateDefaultsHaveExactlyTheSevenFaultsInTheSpecifiedOrder() {
         assertEquals(DEFAULT_FAULTS, ProblemRates.defaults().faults());
     }
 
@@ -77,7 +77,7 @@ class ProblemRatesAmendment12Test {
 
     @ParameterizedTest
     @MethodSource("defaultInputs")
-    void omittedFaultsDefaultToAllSixEvenWithoutRefusalCodes(String json, boolean load) throws Exception {
+    void omittedFaultsDefaultToAllSevenEvenWithoutRefusalCodes(String json, boolean load) throws Exception {
         try (Input input = input(json, load)) {
             assertEquals(DEFAULT_FAULTS, input.read().problems().orElseThrow().faults());
         }
@@ -180,7 +180,7 @@ class ProblemRatesAmendment12Test {
     }
 
     @Test
-    void theSixDefaultFaultsAreUnmodifiable() {
+    void theSevenDefaultFaultsAreUnmodifiable() {
         ProblemRates defaults = ProblemRates.defaults();
         assertThrows(UnsupportedOperationException.class, () -> defaults.faults().remove("refuse"));
         assertEquals(DEFAULT_FAULTS, defaults.faults());

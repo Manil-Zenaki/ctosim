@@ -323,3 +323,76 @@ refuse, other, outdatedVersion]>`, or the same inside a whole
 **Requested change:** expect the seven faults of Amendment 14 wherever the
 default list is checked, keeping every other assertion (rates, absence of
 `problems`, copies, immutability, explicit lists).
+
+## Adjudication of Dispute 4 (2026-11-07)
+
+**Dispute 4 upheld: correct the superseded six-fault default expectations.**
+Amendment 14 explicitly requires `[tooFast, skipModules, dontKnow,
+fakeRefusal, refuse, other, outdatedVersion]`, in that order, both for
+`ProblemRates.defaults()` and for a present `problems` object with omitted
+`faults`. Clarification 78 confirms that only the default list gains the
+new fault; explicit selections retain their supplied contents and order.
+The earlier adjudications remain historical rulings under their respective
+amendments; their default expectations are superseded by Amendment 14.
+
+- `ProblemRatesAmendment7Test.defaultsIncludeOutliersAndAllFaultsInTheSpecifiedOrder`
+  and `defaultFaultsAreUnmodifiableAndUnchangedByCustomInstances`: expect
+  seven default faults. Keep every rate and immutability assertion, since
+  neither requirement changes.
+- `ProblemRatesAmendment8Test.defaultsIncludeAllSixFaultsInTheSpecifiedOrder`
+  and `omittedFaultsInAnyPresentProblemsObjectUseAllSixDefaults` (four cases):
+  expect seven faults and rename `Six` to `Seven`. Empty objects and
+  unrelated rate overrides use the current default; keep all inputs and
+  rate assertions.
+- `ProblemRatesAmendment9Test.defaultsEnableLeftOpenWithoutChangingAnyEarlierDefault`:
+  change only the expected record's default fault list. All nine rate
+  defaults, including `leftOpen`, remain unchanged.
+- `ProblemRatesAmendment12Test.omittedFaultsDefaultToAllSixEvenWithoutRefusalCodes`
+  (eight cases), `problemRateDefaultsHaveExactlyTheSixFaultsInTheSpecifiedOrder`
+  and `theSixDefaultFaultsAreUnmodifiable`: expect seven faults and rename
+  `Six` to `Seven`. Code-list presence and unrelated rates do not change
+  the omitted-faults default. Keep every input and immutability assertion.
+- `ProblemRatesAmendment13Test.omittedFaultsDefaultToAllSixEvenWithoutOtherCodes`
+  (eight cases), `problemRateDefaultsHaveExactlyTheSixFaultsInTheSpecifiedOrder`
+  and `theSixDefaultFaultsAreUnmodifiable`: likewise expect seven faults
+  and rename `Six` to `Seven`. The new default does not require code lists
+  or `formUpdate`; keep the inputs and immutability assertion.
+- `SimulationConfigAmendment7IoTest.loadAcceptsOutlierBoundsAndNumericRepresentations`
+  (ten cases) and
+  `loadDistinguishesAbsentProblemsFromNewDefaultsAndExplicitlyDisabledNewComponents`:
+  expect seven faults when a present `problems` object omits `faults`.
+  Keep numeric expectations, absent `problems`, and explicitly empty lists.
+- `SimulationConfigAmendment7ParsingTest.emptyProblemsEnableBothNewDefaultsAndKeepTheSevenOriginalDefaults`,
+  `explicitOutlierRatesAreRetainedWithoutChangingOtherDefaults` (ten cases),
+  and `originalRateOverridesStillDefaultBothNewComponents`: expect seven
+  faults because none of these inputs supplies `faults`. Keep all rates.
+- `SimulationConfigAmendment8IoTest.loadDistinguishesAbsentConsentFromRequiredFieldsWithDefaults`:
+  change the omitted-faults expectation to seven faults. Keep consent and
+  absent-problems assertions, which Amendment 14 does not alter.
+- `SimulationConfigAmendment9ParsingTest.parseAndLoadAcceptNumericFormsAndInclusiveEndpoints`
+  (twenty cases): change only the expected record's default fault list.
+  Keep numeric forms, endpoints, all other rates, and both entry points.
+
+The corrections are in the Amendment 7, 8 and 9 support constants and the
+Amendment 12 and 13 test constants. Amendment 13's explicit selection
+provider now uses a separate `AMENDMENT_13_FAULTS` constant containing its
+original six names, so its explicit-list, constructor and copy inputs
+remain identical. The earlier explicit-list constants, fixtures and all
+other assertions are unchanged. No implementation source was read or
+modified, and no commit was made.
+
+Validation: `.\mvnw.cmd -o -q test` failed during `testCompile`; an `-e`
+retry confirmed `AccessDeniedException` on the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs:
+`.codex-runs/04-dispute4-test.log` and
+`.codex-runs/04-dispute4-test-detail.log`. Maven did not reach test execution.
+The fallback `.codex-runs/SimulationConfigDispute4CompileProbe.java`
+successfully compiled 32 test/support sources with Java release 17 against
+existing `target/classes` binaries and cached JUnit APIs (`compiled=true`
+in `.codex-runs/04-dispute4-probe-compile.log`). The direct JUnit fallback
+ran fifteen selected Amendment 7-9, 12 and 13 test classes, including every
+disputed test and related copy tests: **1,705 tests passed, zero failures;
+all 122 containers passed** (`.codex-runs/04-dispute4-junit.log`). The full
+Maven suite remains unverified because of the cached-JAR access failure.
+No repositories were copied, and no dependencies, permissions or build
+settings were changed. `git diff --check` passed.
