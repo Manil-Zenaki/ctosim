@@ -723,3 +723,45 @@ Logs: `.codex-runs/spec14-disputes-9-10-maven.log`,
 `.codex-runs/spec14-disputes-9-10-compile.log`, and
 `.codex-runs/spec14-disputes-9-10-junit.log`. The Maven limitation is also
 recorded in the questions file.
+
+## Dispute 11: tests that assume one interview a day (2026-11-07)
+
+**Tests:**
+
+- `InjectedAmendment9FaultTest.everyPostUpdateInterviewOfTheFaultyEnumeratorAndOnlyThoseInterviewsIsOutdated`
+  (`expected: <38> but was: <32>`, "two before the update");
+- `InjectedAmendment9AssignmentTest.smallSampleWarningCountsAllInterviewsIncludingThoseBeforeTheUpdate`
+  (`n / 2 - 2` outdated records: `expected: <7> but was: <1>`, `<8>` but `<2>`);
+- `InjectedAmendment9VersionsTest.updateAppliesWithoutProblemsAndWithAnExplicitEmptyFaultList`
+  (both cases fail at line 25: no interview starts on the update date);
+- `InjectedAmendment9InteractionsTest.resentCopiesKeepTheirOriginalVersionAndHaveOnlyTheirResentRecord`
+  (the `fault` case: "exercise copying an outdated original", no such copy).
+
+**Spec:** spec 04, Amendment 5: `interviewsPerDay` is 4 by default; spec
+13 (and its Amendment 1) schedules up to that many interviews per
+enumerator per day. Nothing in Amendment 9 changes the schedule.
+
+**What the tests do:** they use `settings(...)` (start 2026-03-02,
+default `interviewsPerDay`) and count as if each enumerator did one
+interview a day. With four a day, an enumerator has eight interviews on
+2 and 3 March, not two: 40 interviews per enumerator give 32 outdated
+ones, and `n = 18, 20` give 1 and 2. With 12 submissions and 2
+enumerators, the six interviews of each enumerator fall on 2 and 3 March,
+so none starts on the update date (4 March) or after it, and line 25
+fails. With 120 submissions, 2 enumerators and an update on 10 March,
+fieldwork ends on 12 March: a probe of the same configuration shows 30
+resent copies, of which only one has an original started on or after
+10 March, and it is not the faulty enumerator's, so the test finds no
+outdated original to copy. The versions, records and warnings the tests
+check are otherwise as specified: in each case the outdated submissions
+are exactly the faulty enumerator's interviews started on or after the
+date.
+
+**Requested change:** derive the expected counts from the actual starts
+(the number of the faulty enumerator's submissions whose start is on or
+after the date), or choose dates and sizes for which the schedule of four
+interviews a day gives interviews before, on and after the update date
+(for instance `interviewsPerDay: 1` in these configurations, or an update
+date one or two days after the start), and enough resent copies of
+post-update originals of the faulty enumerator, keeping every assertion
+on versions, records and warnings.
