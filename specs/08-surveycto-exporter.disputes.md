@@ -149,3 +149,21 @@ previous ruling and `SurveyCtoExporterAudioAuditAmendmentTest` are retained.
 These results verify compilation and the selected tests' execution; the
 full Maven suite remains unverified. No production source was read or
 modified, and no build configuration, dependencies, or fixtures changed.
+
+## Dispute 3: the catalog's version, superseded by Amendment 3 (2026-11-07)
+
+**Test:** `SurveyCtoExporterContractTest.catalogTitleAndVersionWinOverDefinitionAndInstanceMetadata`.
+
+**Spec:** Amendment 3: "`formdef_version` is the `version` attribute of
+the root element of the submission's instance when it has one, and the
+catalog's version otherwise". Clarification (Amendment 3), assumption 17.
+
+**What the test does:** its instance's root is
+`<data id="export_test" version="instance-version">`, and it expects the
+catalog's `v08` in `formdef_version`; the instance's version now wins, so
+the cell holds `instance-version`.
+
+**Requested change:** expect `instance-version` in `formdef_version` (or
+drop the `version` attribute from this instance and keep `v08`), keeping
+the assertions on the file name, the header, the title and the ignored
+`instanceName` and `review_status`.
