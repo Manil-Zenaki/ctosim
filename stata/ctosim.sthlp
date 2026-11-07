@@ -120,6 +120,7 @@ setting.
 {synopt:{cmd:refuseCodes}}the values your team uses for "refused to answer", used by the fault {bf:refuse}{p_end}
 {synopt:{cmd:otherCodes}}the values your team uses for "Other", used by the fault {bf:other}{p_end}
 {synopt:{cmd:otherRate}}how often honest enumerators choose "Other" when a question offers it (default 0.03){p_end}
+{synopt:{cmd:formUpdate}}a new version of the form deployed during fieldwork: its {cmd:date}, and the {cmd:previousVersion} used before it{p_end}
 {synopt:{cmd:speedViolationRate}}probability of a speed violation on a field with a minimum time (default 0.1){p_end}
 {synopt:{cmd:repeats}}number of instances of repeats without a count (default 1 to 3){p_end}
 {synopt:{cmd:integerRange}, {cmd:decimalRange}}default bounds of numbers (0-100, 0-1000){p_end}
@@ -353,14 +354,15 @@ checks comparing enumerators ({cmd:ipacheckenumdb}) can find them:{p_end}
 {phang2}- {bf:fakeRefusal}: the enumerator declares refusals to avoid interviews: on average about twice the refusals of the other enumerators (about 80% consent when the others get 90%), which the consent rate of {cmd:ipacheckenumdb} shows. It needs the consent questions (below).{p_end}
 {phang2}- {bf:refuse}: the enumerator answers "refused to answer" codes where the form accepts them, which the refusal rate of {cmd:ipacheckenumdb} shows. It needs your team's codes (below).{p_end}
 {phang2}- {bf:other}: the fault {bf:other} makes the enumerator tick "Other" instead of the right choice, and type that offered choice in the "specify" question, which {cmd:ipacheckspecify} finds by listing the "specify" texts of each enumerator. It needs your team's "Other" codes (below).{p_end}
+{phang2}- {bf:outdatedVersion}: the fault {bf:outdatedVersion} makes the enumerator keep using the previous version of the form after the update date, as when a tablet was not updated, which {cmd:ipacheckversions} detects; it needs a form update (below).{p_end}
 
 {pstd}
 Each fault gets one enumerator of its own when there are enough: at least
 half of the enumerators always stay clean, so that the faulty ones stand
-out. With fewer than twelve enumerators the six faults are cumulated on the same
-enumerators, and a warning says so; use more enumerators (twice the number
-of faults) for one enumerator per fault, and enough submissions (at least
-ten per enumerator) for the checks to tell them apart.{p_end}
+out. With fewer than fourteen enumerators the seven faults are cumulated on the
+same enumerators, and a warning says so; one enumerator per fault needs
+fourteen enumerators (twice the number of faults), and enough submissions (at
+least ten per enumerator) for the checks to tell them apart.{p_end}
 
 {pstd}
 {bf:Duration and the time from start to end.} The variable {cmd:duration}
@@ -430,6 +432,28 @@ plausible answers with a {cmd:texts} override in the configuration's
 {cmd:"fields": {"e_hhh_relig_osp": {"texts": ["Jehovah's Witness", "Bahai", "no religion"]}}}:
 honest "Other" answers then read like real answers outside the list, to be
 told apart from the faulty enumerator's choices typed again.{p_end}
+
+{pstd}
+{bf:A form update during fieldwork.} The configuration's {cmd:formUpdate} key
+simulates a new version of the form deployed during fieldwork: its {cmd:date}
+is the date the new version of the form is deployed, written YYYY-MM-DD. Its
+{cmd:previousVersion} is the version used before that date; by default, it is
+the form's version minus one when the form's version is a number, as the
+versions SurveyCTO gives by default are (2601051230 gives 2601051229).
+Submissions whose interview started before the update date have the previous
+version in {cmd:formdef_version}, and all others the form's version, also
+those started on the update date. A resent copy keeps the version of its
+original. For example, {cmd:"formUpdate": {"date": "2026-03-10"}} with a form
+of version 2601051230.{p_end}
+
+{pstd}
+The fault {bf:outdatedVersion} is injected only when {cmd:formUpdate} is named;
+without it, or when no previous version is known (a form without a version, or
+one that is not a number, without {cmd:previousVersion}), no update is simulated,
+the fault is not injected, and a warning says so. {cmd:ipacheckversions} flags
+the submissions whose version was not the latest one in use on their day, and
+so finds the outdated version kept by the faulty enumerator; the answer key
+gives the version it should have used.{p_end}
 
 {pstd}
 {bf:Located villages.} When the preloaded village list holds the villages'
