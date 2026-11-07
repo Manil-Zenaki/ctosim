@@ -600,7 +600,8 @@ public final class SurveyCtoExporter {
     }
 
     private List<String> metadataCells(Parsed p) {
-        String formdef = version == null ? "" : version;
+        String formdef = p.root().hasAttribute("version") ? p.root().getAttribute("version") // spec 08, A3
+                : version == null ? "" : version;
         return hasInstanceName ? List.of(p.id(), p.instanceName(), formdef, p.id()) : List.of(p.id(), formdef, p.id());
     }
 
