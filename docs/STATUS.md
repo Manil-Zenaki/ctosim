@@ -299,9 +299,10 @@ select; check `ipacheckspecify`), spec 11 Amendment 16 (help). Disputes
 IPA check (`otherCodes` ["-666"]): the faulty enumerator answers "Other"
 24.7 % of the time against 0.5-8.6 % (mean 3.7 %) for the 19 others, and
 `ipacheckspecify` lists its texts ("elctricity", "cement/conrete/slab").
-Left for later: honest "specify" texts are still placeholders
-(`e_hhh_relig_osp 1276`); names ending in `_osp`, `_oth` or `_autre` do
-not match the plausible-text rule of spec 05 Amendment 3.
+Honest "specify" texts are placeholders (`e_hhh_relig_osp 1276`); the owner
+chose to document a `texts` override for them rather than widen the
+plausible-text rule (spec 11 Amendment 17, help and guide). Stata 159
+tests, all green.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
