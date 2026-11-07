@@ -297,6 +297,15 @@ as often as any other choice, and the fault `other` can be injected
 (spec 14, Amendment 8); without them, "Other" is an ordinary choice and
 the fault is not injected.
 
+The "specify" text of an honest "Other" is drawn as for any text question,
+so it is a placeholder (`e_hhh_relig_osp 1276`) unless the configuration
+gives that field plausible answers, which makes a recoding exercise with
+`ipacheckspecify` realistic:
+
+```json
+"fields": {"e_hhh_relig_osp": {"texts": ["Jehovah's Witness", "Bahai", "no religion"]}}
+```
+
 Consent (spec 07, Amendment 11) is simulated per interview only when the
 configuration names the consent questions, in the order the form asks
 them; the simulator never guesses them from names:
