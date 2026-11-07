@@ -520,3 +520,13 @@ word "other" does not stand for it (P1); the topics the amendment lists
 only, the default stated explicitly in any equivalent spelling, and an
 "only when" or "without codes, no fault" statement for activation (P2);
 the help oracle follows the earlier infrastructure (P3).
+
+## Amendment 17: the help on honest "specify" texts
+
+The command is unchanged; its help file says that the "specify" text an
+honest enumerator writes after choosing "Other" is drawn as for any text
+question, so that, without more, it is a placeholder made of the field's
+name and a number, and that a field override with `texts` in the
+configuration gives that question plausible answers instead (with an
+example naming a "specify" field and a few answers), for instance to make
+a recoding exercise with `ipacheckspecify` realistic.
