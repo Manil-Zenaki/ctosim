@@ -421,3 +421,13 @@ in one export (spec 14, Amendment 9). Everything else is unchanged.
 `formdef_version` is the `version` attribute of the root element of the
 submission's instance when it has one, and the catalog's version
 otherwise (empty when that is `null`).
+
+Clarification (Amendment 3): assumptions 17–19 of the questions file are
+reviewed one by one and confirmed: a present root `version` attribute is
+used as it is, even empty, and only an absent one falls back to the
+catalog's version (17); the value is neither validated, converted,
+trimmed nor limited (18); only the root element's unqualified `version`
+attribute counts, and nothing else of the export changes, repeat files
+included (19). The earlier contract test in which the catalog's version
+wins over an instance's `version` attribute is superseded and goes
+through a dispute.

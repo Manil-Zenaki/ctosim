@@ -1059,3 +1059,22 @@ as for `dontKnow` without codes.
 
 Earlier tests that rely on the six-fault default (enumerator
 assignment, cumulated faults) are superseded and go through a dispute.
+
+Clarification (Amendment 9): assumptions I1–I7 of the questions file are
+reviewed one by one and confirmed: the form's version is the loaded
+form's (I1); only ASCII digits make a positive integer, which is
+decremented exactly whatever its size, 1 giving 0, and other spellings
+(sign, decimal point, spaces, letters) need `previousVersion`; versions
+are compared as strings; a form without a version simulates no update,
+even with `previousVersion` (I2); the date compared is the local date of
+the interview's actual start, inclusive for the new version; a resent
+copy has its original's version, a reinterview its own (I3); one warning
+explains an impossible or missing update, naming `outdatedVersion` when
+that fault is asked for, and a valid update after the last interview
+keeps the fault's enumerator (I4); only the root's `version` attribute
+changes, answer protections do not exempt the version, and adding the
+fault leaves the earlier faults' enumerators unchanged when their number
+does not change (I5); assignment follows the inherited rules, and
+small-sample warnings count all interviews (I6); the earlier six-fault
+tests go through a dispute (I7). Expected counts depend on the schedule
+of spec 13, with `interviewsPerDay` (4 by default).

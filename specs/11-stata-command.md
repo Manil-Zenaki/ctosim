@@ -549,3 +549,10 @@ and the others the form's version, and the fault `outdatedVersion`
 the update, injected only when `formUpdate` is named), found with
 `ipacheckversions`. With seven faults, one enumerator per fault needs
 fourteen enumerators.
+
+Clarification (Amendment 18): assumptions R1–R3 of the questions file are
+reviewed one by one and confirmed: the help is checked lexically, related
+facts in one sentence (R1); submissions started on the update date have
+the form's version, the default previous version applies to a numeric
+form version, and only the topics of Amendment 18 are required (R2); the
+checks run as standalone do-files through the unchanged runner (R3).

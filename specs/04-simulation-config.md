@@ -778,3 +778,18 @@ public java.util.Optional<FormUpdate> formUpdate();   // empty when the key is a
   `ProblemRates.defaults().faults()`.
 - The earlier tests of the six-fault default are superseded and go
   through a dispute.
+
+Clarification (Amendment 14): assumptions 74–79 of the questions file are
+reviewed one by one and confirmed: `previousVersion` is any non-empty
+string, kept exactly as decoded, an explicit `null` being an error (74);
+`date` is a real calendar date written `YYYY-MM-DD`, with no relation
+required to `start` or `fieldworkDays`, and `timeZone` does not shift it
+(75); the `FormUpdate` record itself enforces nothing, validation being
+the parser's (76); `formUpdate` and the fault `outdatedVersion` may each
+appear without the other in the configuration, which implies nothing
+else (77); the list-taking constructors accept `outdatedVersion` in the
+order given, only the default fault list gains it, copies keep
+`formUpdate()`, and the earlier six-fault default tests go through a
+dispute (78); the earlier diagnostic conventions apply (79). The Maven
+blocker recorded under "build verification" belongs to the test author's
+sandbox: the suite compiles and runs in the project's build.
