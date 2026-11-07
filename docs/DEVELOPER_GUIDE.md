@@ -253,16 +253,20 @@ by default) gives one number of a submission a value far beyond the
 fences `ipacheckoutliers` uses, yet accepted by the form's constraint at
 that moment (a constraint that depends on other answers included; the
 outlier moves to another question or a later submission when there is no
-room). `faults` lists the faults of **faulty enumerators**, all five by
+room). `faults` lists the faults of **faulty enumerators**, all six by
 default: `tooFast` (time per question x0.4, three times the speed
 violations), `skipModules` (answers filter questions so that the modules
 they open stay closed, half the time; declares fewer repeat instances, a
 quarter of the time, also for rosters built by "add another" questions),
 `dontKnow` (one of the team's "don't know" codes where the form accepts
 one, a quarter of the time), `fakeRefusal` (refusals declared to avoid
-interviews: about twice the others') and `refuse` (one of the team's
+interviews: about twice the others'), `refuse` (one of the team's
 "refused to answer" codes, a quarter of the answers `dontKnow` left
-unchanged, drawn apart). A faulty
+unchanged, drawn apart) and `other` ("Other" ticked instead of a real
+choice on a quarter of the select questions that have an "other, specify"
+text question, and that choice's label typed in it, in lower case,
+without accents, half the time with a letter missing; found by
+`ipacheckspecify`). A faulty
 enumerator applies its faults to all its interviews; one enumerator per
 fault while at least half of them stay clean, otherwise faults are
 cumulated and a warning says so.
@@ -285,6 +289,13 @@ consent, or any question that controls a repeat count, whatever its
 type. IPA's `ipacheckenumdb` compares numeric variables with a number and
 text variables with a string, so it needs each code in both forms:
 `dontknow(-888, "-888") refuse(-999, "-999")`.
+
+"Other" codes are named the same way (`"otherCodes": ["96"]`, spec 04
+Amendment 13). With them, honest enumerators choose "Other" with
+probability `otherRate` (0.03 by default, spec 05 Amendment 4) instead of
+as often as any other choice, and the fault `other` can be injected
+(spec 14, Amendment 8); without them, "Other" is an ordinary choice and
+the fault is not injected.
 
 Consent (spec 07, Amendment 11) is simulated per interview only when the
 configuration names the consent questions, in the order the form asks
