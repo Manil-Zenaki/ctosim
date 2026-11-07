@@ -346,3 +346,79 @@ Logs: `.codex-runs/exporter-dispute2-compile.log` and
 `.codex-runs/exporter-dispute2-junit.log`. This verifies the selected
 tests, not a successful full Maven build. Temporary probes and logs remain
 under `.codex-runs/`; no production source or build configuration changed.
+
+## Amendment 3: per-submission versions
+
+Only `SurveyCtoExporterSubmissionVersionAmendment3Test` is added for this
+amendment. Existing tests and fixtures remain unchanged. The new class
+reuses the committed test-only form template, repeat fixture, catalog
+builder, and CSV reader; its expectations come from spec 08. No production
+source was opened, searched, or modified.
+
+17. **Question:** Does an empty or whitespace-only root `version` attribute
+    count as having a version, or should it trigger catalog fallback?
+    **Assumption:** "When it has one" tests attribute presence, not whether
+    its value is nonblank. A present `version=""` exports an empty cell,
+    and ordinary spaces are preserved. Only an absent attribute triggers
+    catalog fallback. The loaded form definition's version is never the
+    fallback, even if the catalog version is missing, null, or empty.
+    **Tests:** `rootAttributeOverridesCatalogAndPreservesItsStringValue`,
+    the `absentRootAttribute...` cases,
+    `eachRowResolvesItsOwnVersionInSubmissionListOrder`, and
+    `earlierExportsCannotLeakTheirVersionIntoLaterCalls`.
+
+18. **Question:** Is a submission version restricted to numeric values,
+    normalized, or subject to a size limit?
+    **Assumption:** The amendment specifies the attribute's value and adds
+    no validation, numeric conversion, trimming, or length limit. Tests
+    preserve zero, leading zeroes, an integer beyond 64-bit range,
+    nonnumeric text, Unicode (including a supplementary character), and
+    CSV-sensitive characters. XML entities are decoded normally; CR, LF,
+    and TAB in attributes use character references so XML attribute
+    normalization does not change the fixture's intended value. No
+    arbitrary large-input limit or performance requirement is invented.
+    **Tests:** `rootAttributeOverridesCatalogAndPreservesItsStringValue`,
+    `fallbackPreservesCatalogVersionWithoutNumericParsingOrTrimming`,
+    `rootVersionUsesNormalCsvQuotingAndXmlEntityDecoding`, and
+    `writeAllWritesPerSubmissionVersionsAsExactUtf8AndReplacesThemOnNextExport`.
+
+19. **Question:** Does Amendment 3 introduce version metadata in repeat
+    files, derive versions from child elements, or change other columns?
+    **Assumption:** "Everything else is unchanged" preserves the existing
+    metadata location and repeat layouts. Only the root's unqualified
+    `version` attribute supplies this value; child `version` elements and
+    descendant attributes do not. Tests do not prescribe policies for
+    namespaced version attributes, duplicate XML attributes (malformed XML),
+    or other new validation cases. No extra `formdef_version` column is
+    added to repeat files. Empty batches still have their usual headers;
+    an empty field catalog still has the metadata column.
+    **Tests:** `versionElementsAndDescendantAttributesDoNotSupplyTheRootVersion`,
+    `rootAttributeWinsOverConflictingVersionElementsAndDescendantAttributes`,
+    `mixedRootVersionsDoNotAlterRepeatHeadersValuesOrKeys`,
+    `changingOnlyRootVersionChangesOnlyTheVersionCell`,
+    `emptyBatchKeepsTheVersionHeaderWithoutInventingARow`,
+    `submissionVersionIsStillMetadataWhenTheCatalogHasNoFields`, and
+    `versionStaysBetweenInstanceNameAndKeyWhenTheFormEnablesInstanceName`.
+
+### Amendment 3 validation
+
+- `mvnw.cmd -o -q test-compile` reached `testCompile` but failed on the
+  cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+  The diagnostic `-e` rerun confirms `java.nio.file.AccessDeniedException`,
+  consistent with the earlier environment failures recorded above. Logs:
+  `.codex-runs/exporter-amendment3-test-compile.log` and
+  `.codex-runs/exporter-amendment3-test-compile-detail.log`.
+- An independent diagnostic compiler successfully compiled the new test
+  class and its existing support class with `--release 17`, reading the
+  existing cached classes and JARs into memory. No dependency repository
+  was copied, drive mapped, package installed, or build file modified.
+  Log: `.codex-runs/exporter-amendment3-probe-compile.log`.
+- Diagnostic JUnit execution discovered **66 cases**: **14 passed and 52
+  failed**, with no skipped/aborted tests or failed containers. Failures
+  are assertion failures exercising submission-specific version handling;
+  current output uses the catalog version instead. This is an expected
+  failing contract suite, not a successful Maven build. Log:
+  `.codex-runs/exporter-amendment3-junit.log`.
+
+All temporary probes, their compiled classes, and logs are under
+`.codex-runs/`. No existing test was rewritten and no commit was made.
