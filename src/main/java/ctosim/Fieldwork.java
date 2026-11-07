@@ -155,7 +155,11 @@ public final class Fieldwork {
         @SuppressWarnings("unchecked")
         Map<String, String>[] place = new Map[e + 1]; // each enumerator's place of the day (spec 13, A4)
         int[] placeDay = new int[e + 1];
-        Problems plan = config.problems().map(rates -> new Problems(rates, n, e)).orElse(null);
+        Versions versions = versions(); // spec 14, Amendment 9
+        Problems plan = config.problems().map(rates -> new Problems(rates, n, e, versions)).orElse(null);
+        if (plan == null && versions.warning != null) {
+            planWarnings.add(versions.warning);
+        }
 
         LocalDateTime[] lastEnd = new LocalDateTime[e + 1];
         int[] day = new int[e + 1];
@@ -518,6 +522,20 @@ public final class Fieldwork {
         }
         if (villages != null) {
             planWarnings.addAll(villages.warnings());
+        }
+        if (versions.previous != null) {
+            for (int i = 0; i < submissions.size(); i++) {
+                Submission s = submissions.get(i);
+                Visit visit = planned.get(i);
+                boolean after = !s.start().toLocalDate().isBefore(versions.date);
+                boolean outdated = after && plan != null && plan.faultsOf(visit.enumerator()).contains(OUTDATED_VERSION);
+                String version = after && !outdated ? versions.current : versions.previous;
+                submissions.set(i, withVersion(s, version));
+                if (outdated && !copies.contains(s.number())) {
+                    injected.add(record(submissions.get(i), visit, OUTDATED_VERSION, "formdef_version",
+                            versions.previous, versions.current, ""));
+                }
+            }
         }
         this.visits = Collections.unmodifiableList(planned);
         this.warnings = List.copyOf(planWarnings);
@@ -910,12 +928,14 @@ public final class Fieldwork {
     static final String FAKE_REFUSAL = "fakeRefusal";
     static final String REFUSE = "refuse";
     static final String OTHER = "other";
+    static final String OUTDATED_VERSION = "outdatedVersion";
     static final String LEFT_OPEN = "leftOpen";
     private static final List<String> PROBLEMS = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP, TRAVEL,
             OUTLIER, LEFT_OPEN);
     /** The order of the records of a submission: the table, then the faults. */
     private static final List<String> RECORD_ORDER = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP,
-            TRAVEL, OUTLIER, LEFT_OPEN, "tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other");
+            TRAVEL, OUTLIER, LEFT_OPEN, "tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other",
+            OUTDATED_VERSION);
     /** Where the warnings of faulty enumerators come, between those of travel and of outliers. */
     private static final String FAULTS = "faults";
     private static final List<String> WARNING_ORDER = List.of(RESENT, REINTERVIEW, SHORT, LONG, OFFHOURS, OVERLAP,
@@ -935,7 +955,10 @@ public final class Fieldwork {
         /** The faults of each faulty enumerator. */
         private final java.util.Map<Integer, Set<String>> faulty = new HashMap<>();
 
-        Problems(ProblemRates rates, int n, int e) {
+        private final Versions versions;
+
+        Problems(ProblemRates rates, int n, int e, Versions versions) {
+            this.versions = versions;
             double[] shares = {rates.resent(), rates.reinterview(), rates.shortDuration(), rates.longDuration(),
                 rates.offHours(), rates.overlap(), rates.travel(), rates.outliers(), rates.leftOpen()};
             warnings.put(FAULTS, new ArrayList<>());
@@ -1004,6 +1027,15 @@ public final class Fieldwork {
                 faults.remove(OTHER);
                 warn(FAULTS, "problems: faults: other needs the team's \"other\" codes (otherCodes in the"
                         + " configuration); no other was injected");
+            }
+            if (versions.previous == null) {
+                if (faults.remove(OUTDATED_VERSION)) {
+                    warn(FAULTS, "problems: faults: " + (versions.warning == null
+                            ? "outdatedVersion needs a form update (formUpdate in the configuration)"
+                            : versions.warning) + "; no outdatedVersion was injected");
+                } else if (versions.warning != null) {
+                    warn(FAULTS, versions.warning);
+                }
             }
             if (faults.isEmpty()) {
                 return;
@@ -1109,6 +1141,72 @@ public final class Fieldwork {
         }
     }
 
+    /**
+     * The versions of a form update (spec 14, Amendment 9): {@code previous} is null when no update is
+     * simulated, and {@code warning} then says why when one was asked for.
+     */
+    private record Versions(java.time.LocalDate date, String previous, String current, String warning) { }
+
+    private Versions versions() {
+        FormUpdate update = config.formUpdate().orElse(null);
+        if (update == null) {
+            return new Versions(null, null, null, null);
+        }
+        String current = form.version();
+        String previous = update.previousVersion();
+        String why = null;
+        if (current == null) {
+            why = "the form has no version";
+        } else if (previous == null && !current.matches("[0-9]+")) {
+            why = "the form's version '" + current + "' is not a number, and no previousVersion is named";
+        } else if (previous == null && new java.math.BigInteger(current).signum() == 0) {
+            why = "the form's version is 0, and no previousVersion is named";
+        } else {
+            if (previous == null) {
+                previous = new java.math.BigInteger(current).subtract(java.math.BigInteger.ONE).toString();
+            }
+            if (previous.equals(current)) {
+                why = "the previous version is the form's version '" + current + "'";
+            }
+        }
+        if (why != null) {
+            return new Versions(null, null, null, "formUpdate: " + why + "; no form update was simulated");
+        }
+        return new Versions(update.date(), previous, current, null);
+    }
+
+    /** The submission with {@code version} as the version attribute of its instance's root element. */
+    private static Submission withVersion(Submission s, String version) {
+        String xml = s.instanceXml();
+        int open = 0;
+        while (true) {
+            open = xml.indexOf('<', open);
+            char next = xml.charAt(open + 1);
+            if (next != '?' && next != '!') {
+                break;
+            }
+            open++;
+        }
+        int close = xml.indexOf('>', open);
+        String tag = xml.substring(open, close);
+        String escaped = version.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;")
+                .replace(">", "&gt;");
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\sversion=(\"[^\"]*\"|'[^']*')").matcher(tag);
+        String replaced;
+        if (m.find()) {
+            replaced = tag.substring(0, m.start()) + " version=\"" + escaped + "\"" + tag.substring(m.end());
+        } else {
+            boolean empty = tag.endsWith("/");
+            replaced = (empty ? tag.substring(0, tag.length() - 1) : tag) + " version=\"" + escaped + "\""
+                    + (empty ? "/" : "");
+        }
+        if (replaced.equals(tag)) {
+            return s;
+        }
+        return new Submission(s.number(), xml.substring(0, open) + replaced + xml.substring(close), s.start(), s.end(),
+                s.submitted(), s.answered(), s.warnings(), s.unsatisfiedConstraints(), s.formErrors());
+    }
+
     /** A problem's count: its rate times N, rounded half up, at least 1 when the rate is above 0. */
     private static long count(double rate, int n) {
         if (rate <= 0) {
@@ -1152,7 +1250,7 @@ public final class Fieldwork {
             case SHORT, LONG -> "duration";
             case OFFHOURS, OVERLAP, LEFT_OPEN -> "schedule";
             case OUTLIER -> "outlier";
-            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL, REFUSE, OTHER -> "enumerator";
+            case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL, REFUSE, OTHER, OUTDATED_VERSION -> "enumerator";
             default -> "travel";
         };
     }
@@ -1164,6 +1262,7 @@ public final class Fieldwork {
             case OFFHOURS -> "ipachecktimeuse";
             case TOO_FAST, SKIP_MODULES, DONT_KNOW, FAKE_REFUSAL, REFUSE -> "ipacheckenumdb";
             case OTHER -> "ipacheckspecify";
+            case OUTDATED_VERSION -> "ipacheckversions";
             default -> "custom";
         };
     }
