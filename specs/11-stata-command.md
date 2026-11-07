@@ -530,3 +530,9 @@ name and a number, and that a field override with `texts` in the
 configuration gives that question plausible answers instead (with an
 example naming a "specify" field and a few answers), for instance to make
 a recoding exercise with `ipacheckspecify` realistic.
+
+Clarification (Amendment 17): assumptions Q1–Q3 of the questions file are
+reviewed one by one and confirmed: lexical checks of the visible help
+without fixed wording (Q1); a JSON example naming a "specify" field with
+at least two answers, the recoding exercise being a topic, not a command
+sequence (Q2); the help oracle follows the earlier infrastructure (Q3).
