@@ -15,7 +15,10 @@ import static ctosim.SimulationConfigTestSupport.assertDiagnostic;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProblemRatesAmendment12Test {
+    // Amendment 13 changes defaults only; explicit Amendment 12 selections stay unchanged.
     private static final List<String> DEFAULT_FAULTS =
+            List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other");
+    private static final List<String> AMENDMENT_12_FAULTS =
             List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse");
 
     private static ProblemRates rates(List<String> faults, boolean legacy) {
@@ -24,7 +27,7 @@ class ProblemRatesAmendment12Test {
     }
 
     @Test
-    void problemRateDefaultsHaveExactlyTheFiveFaultsInTheSpecifiedOrder() {
+    void problemRateDefaultsHaveExactlyTheSixFaultsInTheSpecifiedOrder() {
         assertEquals(DEFAULT_FAULTS, ProblemRates.defaults().faults());
     }
 
@@ -74,7 +77,7 @@ class ProblemRatesAmendment12Test {
 
     @ParameterizedTest
     @MethodSource("defaultInputs")
-    void omittedFaultsDefaultToAllFiveEvenWithoutRefusalCodes(String json, boolean load) throws Exception {
+    void omittedFaultsDefaultToAllSixEvenWithoutRefusalCodes(String json, boolean load) throws Exception {
         try (Input input = input(json, load)) {
             assertEquals(DEFAULT_FAULTS, input.read().problems().orElseThrow().faults());
         }
@@ -83,7 +86,7 @@ class ProblemRatesAmendment12Test {
     static Stream<List<String>> selections() {
         return Stream.of(List.<String>of(), List.of("refuse"), List.of("fakeRefusal"),
                 List.of("refuse", "fakeRefusal"), List.of("fakeRefusal", "refuse"),
-                List.of("dontKnow", "refuse"), DEFAULT_FAULTS,
+                List.of("dontKnow", "refuse"), AMENDMENT_12_FAULTS,
                 List.of("refuse", "fakeRefusal", "dontKnow", "skipModules", "tooFast"));
     }
 
@@ -177,7 +180,7 @@ class ProblemRatesAmendment12Test {
     }
 
     @Test
-    void theFiveDefaultFaultsAreUnmodifiable() {
+    void theSixDefaultFaultsAreUnmodifiable() {
         ProblemRates defaults = ProblemRates.defaults();
         assertThrows(UnsupportedOperationException.class, () -> defaults.faults().remove("refuse"));
         assertEquals(DEFAULT_FAULTS, defaults.faults());

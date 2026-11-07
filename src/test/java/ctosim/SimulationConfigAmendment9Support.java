@@ -9,8 +9,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
 final class SimulationConfigAmendment9Support {
-    // Amendment 12 supersedes the default fault list.
-    static final List<String> DEFAULT_FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse");
+    // Amendment 13 supersedes the default fault list.
+    static final List<String> DEFAULT_FAULTS = List.of("tooFast", "skipModules", "dontKnow", "fakeRefusal", "refuse", "other");
 
     private SimulationConfigAmendment9Support() { }
 

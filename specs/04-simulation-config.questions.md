@@ -1403,3 +1403,22 @@ Only the spec and test sources were consulted; no production source was read.
   tests. **Dependent tests:** Full Maven test compilation remains unverified;
   the added sources compile via the fallback. Runtime tests were not requested
   and were not run. No commit was created.
+
+### Dispute 3 build verification (2026-11-07)
+
+- **Question:** Can the calling environment rerun `.\mvnw.cmd -o -q test`
+  with accessible cached dependency JARs? The required run failed during
+  `maven-compiler-plugin:3.15.0:compile` on `commons-io-2.5.jar`; an `-e`
+  retry reported `AccessDeniedException` on `jackson-databind-2.13.2.1.jar`.
+  Logs: `.codex-runs/04-dispute3-test.log` and
+  `.codex-runs/04-dispute3-test-detail.log`.
+- **Assumption:** This is an environment blocker and does not justify changing
+  specification expectations, production code, dependencies or build settings.
+- **Dependent tests:** The full Maven suite remains unverified. A fallback
+  compiler probe compiled 23 test/support sources and a JUnit runner with
+  Java release 17 against existing production binaries and cached JUnit APIs,
+  without reading production source or copying repositories. The final direct
+  JUnit run passed all 1,436 tests in thirteen selected Amendment 7-9 and 12
+  classes, including every disputed test and related copy tests; all 100
+  containers passed. Logs: `.codex-runs/04-dispute3-probe-compile.log` and
+  `.codex-runs/04-dispute3-junit.log`. No commit was made.

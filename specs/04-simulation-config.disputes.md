@@ -209,3 +209,73 @@ other]>`, or the same inside a whole `ProblemRates` record.
 **Requested change:** expect the six faults of Amendment 13 wherever the
 default list is checked, keeping every other assertion (rates, absence of
 `problems`, copies, immutability, explicit lists).
+
+## Adjudication (2026-11-07)
+
+**Dispute 3 upheld: correct the superseded five-fault default expectations.**
+Amendment 13 explicitly requires `[tooFast, skipModules, dontKnow,
+fakeRefusal, refuse, other]`, in that order, for `ProblemRates.defaults()`
+and for a present `problems` object with omitted `faults`. Clarification 72
+explicitly supersedes the earlier default tests and preserves supplied
+lists and their order. Disputes 1 and 2 were correctly upheld under their
+respective amendments; their historical default expectations are now
+superseded by Amendment 13.
+
+- `ProblemRatesAmendment7Test.defaultsIncludeOutliersAndAllFaultsInTheSpecifiedOrder`
+  and `defaultFaultsAreUnmodifiableAndUnchangedByCustomInstances`: expect
+  all six default faults. Keep rate and immutability assertions because
+  Amendment 13 changes neither requirement.
+- `ProblemRatesAmendment8Test.defaultsIncludeAllFiveFaultsInTheSpecifiedOrder`
+  and `omittedFaultsInAnyPresentProblemsObjectUseAllFiveDefaults` (four cases):
+  expect the six faults and rename `Five` to `Six`. An unrelated rate
+  override does not supply an explicit fault list; keep the original inputs
+  and rate assertions.
+- `ProblemRatesAmendment9Test.defaultsEnableLeftOpenWithoutChangingAnyEarlierDefault`:
+  change only the expected record's default fault list. All nine rate
+  defaults, including `leftOpen`, remain unchanged.
+- `ProblemRatesAmendment12Test.omittedFaultsDefaultToAllFiveEvenWithoutRefusalCodes`
+  (eight cases), `problemRateDefaultsHaveExactlyTheFiveFaultsInTheSpecifiedOrder`
+  and `theFiveDefaultFaultsAreUnmodifiable`: expect six faults and rename
+  `Five` to `Six`. Neither code-list presence nor an unrelated rate override
+  changes the default list. Keep the immutability check and all inputs.
+- `SimulationConfigAmendment7IoTest.loadAcceptsOutlierBoundsAndNumericRepresentations`
+  (ten cases) and
+  `loadDistinguishesAbsentProblemsFromNewDefaultsAndExplicitlyDisabledNewComponents`:
+  expect six faults only when a present `problems` object omits `faults`.
+  Keep all numeric, absent-problems and explicitly disabled assertions.
+- `SimulationConfigAmendment7ParsingTest.emptyProblemsEnableBothNewDefaultsAndKeepTheSevenOriginalDefaults`,
+  `explicitOutlierRatesAreRetainedWithoutChangingOtherDefaults` (ten cases)
+  and `originalRateOverridesStillDefaultBothNewComponents`: expect six
+  faults because no input supplies `faults`; keep every rate assertion.
+- `SimulationConfigAmendment8IoTest.loadDistinguishesAbsentConsentFromRequiredFieldsWithDefaults`:
+  update the omitted-faults expectation to six faults. Keep the consent and
+  absent-problems assertions, which Amendment 13 leaves unchanged.
+- `SimulationConfigAmendment9ParsingTest.parseAndLoadAcceptNumericFormsAndInclusiveEndpoints`
+  (twenty cases): update only the expected record's default fault list.
+  Keep numeric forms, endpoints, all other rates and both input paths.
+
+The Amendment 7, 8 and 9 support constants and Amendment 12 test constant
+now contain the six-fault default. Amendment 12's explicit selection
+provider uses a separate `AMENDMENT_12_FAULTS` constant with its original
+five names, preserving every explicit-list, constructor and copy case.
+Amendment 7's `LEGACY_FAULTS`, Amendment 8's `AMENDMENT_8_FAULTS`, fixtures
+and all other assertions remain unchanged. No implementation source was
+read or modified, and no commit was made.
+
+Validation: `.\mvnw.cmd -o -q test` failed during production compilation
+on the cached `commons-io-2.5.jar`; an `-e` retry confirmed an
+`AccessDeniedException` on the cached `jackson-databind-2.13.2.1.jar`.
+Logs: `.codex-runs/04-dispute3-test.log` and
+`.codex-runs/04-dispute3-test-detail.log`. Maven did not reach test execution.
+The fallback `.codex-runs/Dispute3CompileProbe.java` compiled 23 test/support
+sources and a JUnit runner with Java release 17 against existing
+`target/classes` binaries and cached JUnit APIs (`compiled=true` in
+`.codex-runs/04-dispute3-probe-compile.log`). It reads dependency class
+entries into memory, without copying repositories or reading production
+source. An initial direct run exposed a missing test argument-provider
+class in the fallback classpath; including that existing test source fixed
+the harness. The final direct JUnit run of thirteen selected Amendment
+7-9 and 12 test classes, including every disputed test and the related copy
+tests, passed **1,436 tests, zero failures; all 100 containers passed**
+(`.codex-runs/04-dispute3-junit.log`). The full Maven suite remains blocked
+by cached-JAR access; no dependencies, permissions or build settings changed.

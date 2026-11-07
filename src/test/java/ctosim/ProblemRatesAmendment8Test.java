@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ProblemRatesAmendment8Test {
     @Test
-    void defaultsIncludeAllFiveFaultsInTheSpecifiedOrder() {
+    void defaultsIncludeAllSixFaultsInTheSpecifiedOrder() {
         assertEquals(DEFAULT_FAULTS, ProblemRates.defaults().faults());
         assertEquals(.02, ProblemRates.defaults().outliers());
         SimulationConfigProblemsSupport.assertRates(SimulationConfigProblemsSupport.DEFAULTS, ProblemRates.defaults());
@@ -22,7 +22,7 @@ class ProblemRatesAmendment8Test {
 
     @ParameterizedTest
     @ValueSource(strings = {"{}", "{\"travel\":0}", "{\"outliers\":0}", "{\"resent\":1}"})
-    void omittedFaultsInAnyPresentProblemsObjectUseAllFiveDefaults(String problems) throws Exception {
+    void omittedFaultsInAnyPresentProblemsObjectUseAllSixDefaults(String problems) throws Exception {
         assertEquals(DEFAULT_FAULTS, parse("{\"problems\":" + problems + "}").problems().orElseThrow().faults());
     }
 
