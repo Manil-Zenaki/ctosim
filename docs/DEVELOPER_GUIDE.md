@@ -253,7 +253,7 @@ by default) gives one number of a submission a value far beyond the
 fences `ipacheckoutliers` uses, yet accepted by the form's constraint at
 that moment (a constraint that depends on other answers included; the
 outlier moves to another question or a later submission when there is no
-room). `faults` lists the faults of **faulty enumerators**, all six by
+room). `faults` lists the faults of **faulty enumerators**, all seven by
 default: `tooFast` (time per question x0.4, three times the speed
 violations), `skipModules` (answers filter questions so that the modules
 they open stay closed, half the time; declares fewer repeat instances, a
@@ -266,7 +266,9 @@ unchanged, drawn apart) and `other` ("Other" ticked instead of a real
 choice on a quarter of the select questions that have an "other, specify"
 text question, and that choice's label typed in it, in lower case,
 without accents, half the time with a letter missing; found by
-`ipacheckspecify`). A faulty
+`ipacheckspecify`) and `outdatedVersion` (the previous version of the form
+kept after a form update, as when a tablet was not updated; found by
+`ipacheckversions`). A faulty
 enumerator applies its faults to all its interviews; one enumerator per
 fault while at least half of them stay clean, otherwise faults are
 cumulated and a warning says so.
@@ -305,6 +307,20 @@ gives that field plausible answers, which makes a recoding exercise with
 ```json
 "fields": {"e_hhh_relig_osp": {"texts": ["Jehovah's Witness", "Bahai", "no religion"]}}
 ```
+
+A form update during fieldwork (spec 04 Amendment 14, spec 14 Amendment 9)
+is named by its date; the previous version is the form's version (from the
+`settings` sheet) minus one, unless `previousVersion` gives it:
+
+```json
+"formUpdate": {"date": "2026-03-04", "previousVersion": "2206191527"}
+```
+
+Submissions started before the date then have the previous version in
+`formdef_version` (spec 08 Amendment 3), the others the form's version; a
+resent copy keeps its original's. Only then can `outdatedVersion` be
+injected; without the setting, or when no previous version is known, no
+update is simulated and a warning says so.
 
 Consent (spec 07, Amendment 11) is simulated per interview only when the
 configuration names the consent questions, in the order the form asks
