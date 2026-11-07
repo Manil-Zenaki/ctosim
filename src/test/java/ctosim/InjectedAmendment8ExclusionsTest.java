@@ -38,7 +38,11 @@ class InjectedAmendment8ExclusionsTest {
                         + input("person/name") + "</repeat>" + companionBody());
         var r = other(f, 600, codes("1", "O") + "," + fixed("size", "3", "answer", "a"));
         unchanged(r, "size", "3"); singleRecords(r, "a", Set.of("O"));
-        for (var s : r.submissions()) assertEquals(3, count(s, "person"));
+        for (var s : r.submissions()) {
+            if (indirect) assertEquals(3, count(s, "person"));
+            else assertEquals(count(r.clean(s.number()), "person"), count(s, "person"),
+                    "the fault must preserve the engine's ordinary direct-select repeat count");
+        }
     }
 
     @Test void addAnotherSelectControllingADynamicRepeatCountRemainsProtected() throws Exception {
@@ -79,6 +83,16 @@ class InjectedAmendment8ExclusionsTest {
                 + bind("detail", "string", "relevant=\"/data/protected = '96'\"") + companionBinds(),
                 input("protected") + input("detail") + companionBody());
         var r = other(f, 600, codes("96", "O") + "," + fixed("protected", "12", "answer", "a"));
-        unchanged(r, "protected", "12"); singleRecords(r, "a", Set.of("O"));
+        if (type.equals("decimal")) {
+            assertTrue(others(r).stream().noneMatch(p -> p.field().equals("protected")),
+                    "an ineligible decimal answer has no record");
+            for (var s : r.submissions()) {
+                String actual = value(s, "protected");
+                assertEquals(12.0, Double.parseDouble(actual), "the fixed decimal keeps its numeric value");
+                assertEquals(value(r.clean(s.number()), "protected"), actual,
+                        "the fault must preserve the engine's ordinary decimal representation");
+            }
+        } else unchanged(r, "protected", "12");
+        singleRecords(r, "a", Set.of("O"));
     }
 }

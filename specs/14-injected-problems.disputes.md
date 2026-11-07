@@ -669,3 +669,57 @@ the indirect case (through an integer calculation) passes.
 **Requested change:** keep the assertion that `size` is unchanged and
 that the companion is changed, and compare the instance count with the
 walk without faults (or drop it) in the direct case.
+
+## Adjudication of Disputes 9 and 10 (2026-11-07)
+
+### Dispute 9: upheld; test decimal preservation without prescribing its spelling
+
+Amendment 8 limits `other` to select questions. It requires the decimal
+input to remain unchanged, but does not require an integral decimal to be
+serialized as `"12"`. Spec 08's "Cell values" preserves the stored value
+for this type; it does not impose that spelling either. Replacing the
+expectation with a hard-coded `"12.0"` would unnecessarily couple this
+protection test to a particular representation.
+
+In `InjectedAmendment8ExclusionsTest.nonselectInputsAreNeverTreatedAsOtherQuestions`,
+the decimal case now checks numeric value 12 and exact equality with the
+same visit walked without the fault. It still requires no `other` record
+on `protected`. Keep the existing exact `"12"` assertions for the integer
+and string cases. Keep `singleRecords` for all three cases: actual
+injections must occur only on the eligible companion, with the existing
+clean-value, changed-value, enumerator and metadata checks.
+
+### Dispute 10: upheld for the direct case; retain the controller protection checks
+
+Amendment 8's "Eligible questions" carries over protection of repeat
+counts and their controlling answers, regardless of their type (Amendment
+7, G5). Thus the select answer `size` must stay `"3"` and have no fault
+record. This protection is separate from repeat creation: spec 07's
+"Repeats" delegates counted repeats to the engine and does not require a
+direct `select_one` reference in `jr:count` to produce three instances.
+The dispute's observed zero count is not made into a new requirement.
+
+In `directAndIndirectSelectRepeatCountControllersRemainProtected`, the
+direct case now compares each submission's `person` count with the same
+visit walked without faults. The indirect case keeps its three-instance
+assertion through the integer calculation. Both cases keep the unchanged
+`size` assertion, no record on it, and every positive-control assertion
+on the eligible companion. The count check is retained as a comparison,
+so an effect of the fault on the ordinary count still fails the test.
+
+The previous adjudications of Disputes 1–8 are unchanged. No production
+source was read or changed, and no commit was made.
+
+**Verification:** `mvnw.cmd -o -q test` failed at `testCompile`, reporting
+the cached `.tools/m2/com/fasterxml/jackson/core/jackson-databind/2.13.2.1/jackson-databind-2.13.2.1.jar`.
+The full Maven suite therefore did not run. The supplementary in-memory
+compiler successfully compiled the affected class and its seven supporting
+test sources with `--release 17`, against existing compiled API classes and
+cached dependencies. A separate JUnit run of
+`InjectedAmendment8ExclusionsTest` passed all nine invocations, including
+both disputed cases, with no failures, skips or aborts.
+
+Logs: `.codex-runs/spec14-disputes-9-10-maven.log`,
+`.codex-runs/spec14-disputes-9-10-compile.log`, and
+`.codex-runs/spec14-disputes-9-10-junit.log`. The Maven limitation is also
+recorded in the questions file.

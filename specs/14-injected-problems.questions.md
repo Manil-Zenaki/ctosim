@@ -1771,3 +1771,25 @@ Existing tests/supports are preserved. The only tracked-file edit is this
 questions-file addition; the tests and the displayed-label fixture are new
 files. No production code, spec text, build configuration or disputes file
 was modified, and no commit was made.
+
+### Disputes 9–10 build verification (2026-11-07)
+
+**Question:** Can the required offline Maven run verify the adjudicated
+Amendment 8 exclusions tests in this sandbox?
+
+**Observation:** `mvnw.cmd -o -q test` fails in `testCompile`, reporting
+the cached `.tools/m2/com/fasterxml/jackson/core/jackson-databind/2.13.2.1/jackson-databind-2.13.2.1.jar`,
+before JUnit runs. See `.codex-runs/spec14-disputes-9-10-maven.log`.
+
+**Assumption:** Supplementary compilation against existing compiled API
+classes and cached dependency bytes can verify the changed tests without
+reading production source or modifying dependencies. It does not establish
+a successful full Maven suite.
+
+**Tests and result:** The in-memory compiler compiled
+`InjectedAmendment8ExclusionsTest` and its seven supporting test sources
+with `--release 17`. A separate JUnit run passed all nine invocations,
+including the decimal and direct-select repeat-count cases, with no skips,
+aborts or failures. Logs are `.codex-runs/spec14-disputes-9-10-compile.log`
+and `.codex-runs/spec14-disputes-9-10-junit.log`. Temporary compiler and
+runner artifacts are confined to `.codex-runs/`.
