@@ -512,3 +512,11 @@ the fault `other` (spec 14, Amendment 8: the enumerator ticks "Other" and
 types an offered choice in the "specify" question, injected only when
 the codes are named), found with `ipacheckspecify`, which lists the
 "specify" texts by enumerator.
+
+Clarification (Amendment 16): assumptions P1–P3 of the questions file are
+reviewed one by one and confirmed: lexical checks of the visible help
+without fixed wording, the fault named as a fault so that the ordinary
+word "other" does not stand for it (P1); the topics the amendment lists
+only, the default stated explicitly in any equivalent spelling, and an
+"only when" or "without codes, no fault" statement for activation (P2);
+the help oracle follows the earlier infrastructure (P3).
