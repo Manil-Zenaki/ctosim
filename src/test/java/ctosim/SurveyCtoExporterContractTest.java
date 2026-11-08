@@ -50,14 +50,14 @@ class SurveyCtoExporterContractTest {
         assertThrows(IllegalArgumentException.class, () -> new SurveyCtoExporter(c, form, "example"));
     }
 
-    @Test void catalogTitleAndVersionWinOverDefinitionAndInstanceMetadata() throws Exception {
+    @Test void catalogTitleAndInstanceVersionWinOverDefinitionAndOtherInstanceMetadata() throws Exception {
         var e = single(temp, "text");
         var s = Submission.of(1, "<data id=\"export_test\" version=\"instance-version\"><value>x</value>"
                 + "<meta><instanceID>uuid:x</instanceID><instanceName>ignore</instanceName></meta>"
                 + "<review_status>ignore</review_status></data>", START, END);
         assertEquals("Export_WIDE.csv", e.wideFileName());
         assertEquals(List.of("SubmissionDate", "value", "instanceID", "formdef_version", "KEY"), csv(e.wide(List.of(s))).get(0));
-        assertEquals(List.of(DATE, "x", "uuid:x", "v08", "uuid:x"), csv(e.wide(List.of(s))).get(1));
+        assertEquals(List.of(DATE, "x", "uuid:x", "instance-version", "uuid:x"), csv(e.wide(List.of(s))).get(1));
     }
 
     @Test void absentCatalogVersionGivesAnEmptyCell() throws Exception {

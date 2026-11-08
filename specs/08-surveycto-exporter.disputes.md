@@ -167,3 +167,46 @@ the cell holds `instance-version`.
 drop the `version` attribute from this instance and keep `v08`), keeping
 the assertions on the file name, the header, the title and the ignored
 `instanceName` and `review_status`.
+
+## Adjudication of Dispute 3 (2026-11-07)
+
+### Dispute 3: upheld; the submission root's version takes precedence
+
+Amendment 3 explicitly uses the submission root's `version` attribute
+when present, falling back to the catalog only when that attribute is
+absent. Its clarification confirms this rule and explicitly supersedes
+the earlier catalog-wins contract test. The disputed instance has
+`version="instance-version"`, so expecting the catalog's `v08` is wrong.
+
+Changed that expected cell to `instance-version` and renamed the test to
+`catalogTitleAndInstanceVersionWinOverDefinitionAndOtherInstanceMetadata`.
+Kept the instance's version attribute so the test continues to exercise
+precedence. The catalog-derived filename/title assertion, exact header,
+and exclusion of the submitted `instanceName` and `review_status` remain
+unchanged: Amendment 3 changes none of those rules.
+
+Kept `SurveyCtoExporterSubmissionVersionAmendment3Test` unchanged. Its
+root-attribute precedence, absent-attribute fallback, literal-value,
+per-row, repeat-layout and file-writing assertions follow Amendment 3
+and its confirmed clarifications. The earlier adjudications remain in
+effect; Amendment 3 does not change the audio-audit, blank-selection,
+instanceName or comments rules they address.
+
+### Validation of Dispute 3
+
+- `mvnw.cmd -o -q test` stopped in `testCompile` with a fatal compiler
+  error naming `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+  Log: `.codex-runs/exporter-dispute3-maven-test.log`.
+- Adapted the existing diagnostic compiler under `.codex-runs/` and
+  successfully compiled the corrected contract test, the unchanged
+  Amendment 3 test and their support class with `--release 17`, using
+  existing compiled classes and cached dependencies.
+  Log: `.codex-runs/exporter-dispute3-compile.log`.
+- Diagnostic JUnit execution of both test classes passed all **137
+  tests**, with no skipped/aborted tests or failed containers.
+  Log: `.codex-runs/exporter-dispute3-junit.log`.
+
+This verifies compilation and execution of the affected tests, not a
+successful full Maven suite run. No production source was read or
+modified; no build configuration, dependencies or fixtures changed.
+No commit was made.

@@ -422,3 +422,17 @@ source was opened, searched, or modified.
 
 All temporary probes, their compiled classes, and logs are under
 `.codex-runs/`. No existing test was rewritten and no commit was made.
+
+### Dispute 3 adjudication validation
+
+`mvnw.cmd -o -q test` stopped in `testCompile` with a fatal compiler
+error naming `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+Log: `.codex-runs/exporter-dispute3-maven-test.log`. The existing diagnostic
+compiler, adapted under `.codex-runs/`, successfully compiled the corrected
+contract test, the Amendment 3 test and their support class with
+`--release 17`. Diagnostic JUnit execution passed all 137 tests in the two
+test classes, with no skips, aborts or failed containers. Logs:
+`.codex-runs/exporter-dispute3-compile.log` and
+`.codex-runs/exporter-dispute3-junit.log`. The full Maven suite remains
+unverified. The ruling and the superseded expectation are recorded at the
+end of `08-surveycto-exporter.disputes.md`; no new spec assumption was needed.
