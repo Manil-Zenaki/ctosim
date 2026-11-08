@@ -585,3 +585,12 @@ The help file documents visit outcomes and revisits (spec 04 Amendments
   `ipacheckids` flags unless the check keeps only the visits where the
   household was found; the answer key does not list them;
 - that replacement households are not simulated.
+
+Clarification (Amendment 19): assumptions S1–S3 of the questions file are
+reviewed one by one and confirmed: the help is checked for its meaning,
+with the exact key and command names, not for wording or layout (S1); only
+the listed topics are required, defaults may be written as decimals or
+percentages, moving is an example of a final reason, and "the answer key
+does not list them" means the revisits and their repeated ids, not a
+problem injected into a revisited household (S2); the tests read the
+installed help and need no change to earlier tests (S3).
