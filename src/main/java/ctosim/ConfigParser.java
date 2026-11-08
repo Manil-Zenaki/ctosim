@@ -41,7 +41,7 @@ final class ConfigParser {
     private static final Set<String> TOP_KEYS = Set.of("seed", "submissions", "start", "fieldworkDays",
             "missingRate", "specialRate", "specialValues", "repeats", "integerRange", "decimalRange", "fields", "timeZone",
             "enumerators", "speedViolationRate", "profiles", "area", "textPools", "id", "interviewsPerDay", "problems", "consent",
-            "villages", "dontKnowCodes", "refuseCodes", "otherCodes", "otherRate", "formUpdate");
+            "villages", "dontKnowCodes", "refuseCodes", "otherCodes", "otherRate", "formUpdate", "visits");
     private static final Set<String> MIN_MAX = Set.of("min", "max");
     private static final Set<String> OVERRIDE_KEYS = Set.of("value", "min", "max", "weights", "texts", "missingRate",
             "distribution", "expr", "area", "when");
@@ -146,7 +146,56 @@ final class ConfigParser {
                 root.has("consent") ? consent(root.get("consent")) : null,
                 root.has("villages") ? villages(root.get("villages")) : null,
                 dontKnowCodes, refuseCodes, otherCodes, otherRate,
-                root.has("formUpdate") ? formUpdate(root.get("formUpdate")) : null);
+                root.has("formUpdate") ? formUpdate(root.get("formUpdate")) : null,
+                root.has("visits") ? visits(root.get("visits")) : null);
+    }
+
+    /** The form's availability question and the rates of failed visits (spec 04, Amendment 15). */
+    private VisitPlan visits(JsonNode node) throws ConfigException {
+        JsonNode visits = object(node, "visits");
+        checkKeys(visits, "visits", Set.of("field", "available", "number", "revisitRate", "unreachedRate",
+                "maxVisits"));
+        if (!visits.has("field")) {
+            throw error("visits", "needs \"field\", the availability question");
+        }
+        String field = questionName(visits.get("field"), "visits.field");
+        String available = "1";
+        if (visits.has("available")) {
+            available = string(visits.get("available"), "visits.available");
+            if (available.isEmpty()) {
+                throw error("visits.available", "must not be empty");
+            }
+        }
+        String number = null;
+        if (visits.has("number")) {
+            number = questionName(visits.get("number"), "visits.number");
+            if (number.equals(field)) {
+                throw error("visits", "the availability and visit number questions must differ, not both '"
+                        + field + "'");
+            }
+        }
+        double revisit = visits.has("revisitRate") ? rate(visits.get("revisitRate"), "visits.revisitRate") : 0.1;
+        double unreached = visits.has("unreachedRate")
+                ? rate(visits.get("unreachedRate"), "visits.unreachedRate") : 0.025;
+        BigDecimal sum = (visits.has("revisitRate") ? visits.get("revisitRate").decimalValue() : new BigDecimal("0.1"))
+                .add(visits.has("unreachedRate") ? visits.get("unreachedRate").decimalValue() : new BigDecimal("0.025"));
+        if (sum.compareTo(BigDecimal.ONE) > 0) {
+            throw error("visits", "revisitRate plus unreachedRate must be at most 1, not " + sum.toPlainString());
+        }
+        int max = visits.has("maxVisits") ? boundedInt(visits.get("maxVisits"), "visits.maxVisits", 2, 10) : 3;
+        return new VisitPlan(field, available, number, revisit, unreached, max);
+    }
+
+    /** A question name, following the name rule of {@code id}. */
+    private String questionName(JsonNode node, String path) throws ConfigException {
+        String name = string(node, path);
+        if (name.isEmpty()) {
+            throw error(path, "must not be empty");
+        }
+        if (EDGE_SPACE.matcher(name).find()) {
+            throw error(path, "must not start or end with white space: \"" + name + "\"");
+        }
+        return name;
     }
 
     /** The day a new version of the form is deployed (spec 04, Amendment 14). */
@@ -644,6 +693,9 @@ final class ConfigParser {
     private double number(JsonNode node, String path) throws ConfigException {
         if (node == null || !node.isNumber()) {
             throw error(path, "must be a number" + found(node));
+        }
+        if ((node.isDouble() || node.isFloat()) && !Double.isFinite(node.doubleValue())) {
+            throw error(path, "must be a finite number, not " + node.asText());
         }
         return node.decimalValue().doubleValue();
     }
