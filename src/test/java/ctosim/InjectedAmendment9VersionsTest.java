@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class InjectedAmendment9VersionsTest {
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void updateAppliesWithoutProblemsAndWithAnExplicitEmptyFaultList(boolean empty) throws Exception {
-        var c = settings(12, 2, update(UPDATE.toString(), null));
+        var c = settings(12, 2, "\"interviewsPerDay\":1," + update(UPDATE.toString(), null));
         if (empty) c = c.withProblems(rates(0));
         var r = run(simple(NEW), c);
         normalVersions(r, UPDATE, OLD, NEW);

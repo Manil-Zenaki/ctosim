@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class InjectedAmendment9InteractionsTest {
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void resentCopiesKeepTheirOriginalVersionAndHaveOnlyTheirResentRecord(boolean fault) throws Exception {
-        var c = settings(120, 2, update("2026-03-10", null))
+        var c = settings(120, 2, "\"interviewsPerDay\":1," + update("2026-03-10", null))
                 .withProblems(new ProblemRates(.25, 0, 0, 0, 0, 0, 0, 0, fault ? List.of(FAULT) : List.of()));
         var r = run(simple(NEW), c); var copies = records(r, "resent");
         assertFalse(copies.isEmpty());

@@ -1968,3 +1968,25 @@ All previously committed tests are preserved. The questions file is the
 only modified tracked file; test classes/support and fixtures are new.
 No production code, spec text, pom.xml or dispute file was changed, and no
 commit was made.
+
+### Dispute 11 build verification (2026-11-07)
+
+**Question:** Can the required offline Maven test run verify the corrected
+Amendment 9 schedule fixtures in this sandbox?
+
+**Observation:** `mvnw.cmd -o -q test` failed at `testCompile`, reporting
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`, before JUnit ran.
+`MAVEN_USER_HOME` was set to `.tools/maven-home`.
+
+**Assumption:** This build limitation does not authorize dependency or build
+configuration changes. Use the existing supplementary in-memory compiler
+against compiled API classes and cached dependency bytes without reading
+production sources; report its result separately from Maven.
+
+**Dependent tests and result:** All six `InjectedAmendment9*` Java sources
+and thirteen supporting test sources compile with `--release 17`. The
+separate JUnit run passes all 74 invocations across the five Amendment 9
+test classes, including all seven invocations of the four disputed methods,
+with no failures, skips or aborts. The full Maven suite remains unverified.
+Logs: `.codex-runs/spec14-dispute11-maven.log` and
+`.codex-runs/spec14-dispute11/{compile.log,junit.log}`.

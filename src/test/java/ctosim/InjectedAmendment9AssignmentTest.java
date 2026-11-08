@@ -69,7 +69,8 @@ class InjectedAmendment9AssignmentTest {
 
     @ParameterizedTest @ValueSource(ints = {18, 20})
     void smallSampleWarningCountsAllInterviewsIncludingThoseBeforeTheUpdate(int n) throws Exception {
-        var r = run(simple(NEW), settings(n, 2, update(UPDATE.toString(), null)).withProblems(rates(0, FAULT)));
+        var r = run(simple(NEW), settings(n, 2, "\"interviewsPerDay\":1," + update(UPDATE.toString(), null))
+                .withProblems(rates(0, FAULT)));
         assertEquals(n / 2 - 2, outdated(r).size());
         if (n == 20) assertTrue(r.plan().warnings().isEmpty());
         else {

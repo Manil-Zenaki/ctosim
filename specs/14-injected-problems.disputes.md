@@ -765,3 +765,60 @@ interviews a day gives interviews before, on and after the update date
 date one or two days after the start), and enough resent copies of
 post-update originals of the faulty enumerator, keeping every assertion
 on versions, records and warnings.
+
+## Adjudication of Dispute 11 (2026-11-07)
+
+Dispute 11 is upheld for all four scenarios. Spec 04 Amendment 5 sets
+`interviewsPerDay` to 4 by default; spec 13 Amendment 1 uses that quota
+independently of `fieldworkDays`. Spec 14 Amendment 9 preserves the schedule
+and compares the local date of the actual interview start with the update
+date, inclusively. The old fixtures did not establish the one-interview-a-day
+timeline their assertions needed. The disputed outcomes do not justify
+changing version, record or warning requirements.
+
+Each disputed method now explicitly sets `interviewsPerDay: 1` in its own
+configuration. The shared `settings(...)` helper remains unchanged. Every
+existing assertion is retained.
+
+- `InjectedAmendment9FaultTest.everyPostUpdateInterviewOfTheFaultyEnumeratorAndOnlyThoseInterviewsIsOutdated`:
+  with one interview per day, the faulty enumerator has two interviews
+  before 4 March and 38 on or after it. Keep the count of 38, the per-start
+  check that exactly its post-update interviews are recorded, every version
+  assertion, record metadata and absence of warnings.
+- `InjectedAmendment9AssignmentTest.smallSampleWarningCountsAllInterviewsIncludingThoseBeforeTheUpdate`:
+  both cases now have two interviews per enumerator before the update, so
+  the existing `n / 2 - 2` counts are justified. Keep the warning naming the
+  enumerator and all nine interviews for N=18, and no warning for N=20.
+  Amendment 9 clarification I6 counts all interviews for this threshold,
+  including those before the update, not just outdated records.
+- `InjectedAmendment9VersionsTest.updateAppliesWithoutProblemsAndWithAnExplicitEmptyFaultList`:
+  six interviews per enumerator now span six days, including 3, 4 and
+  5 March. Keep the explicit observations before, on and after the update,
+  the per-start version checks, and empty problems and warnings in both
+  configurations. Amendment 9 requires the update without injected faults.
+- `InjectedAmendment9InteractionsTest.resentCopiesKeepTheirOriginalVersionAndHaveOnlyTheirResentRecord`:
+  the lower daily quota extends the sample beyond the 10 March update,
+  giving the fixed-seed fixture more post-update originals to copy. Keep
+  both cases and every assertion: actual copies of old versions, an actual
+  copy of an outdated original when the fault is active, equal original
+  and copy versions and starts, exactly the resent record on each copy,
+  and version-record metadata. No particular random sequence or selected
+  original is prescribed; the positive observations remain fixture coverage
+  checks, not new production requirements.
+
+The earlier adjudications of Disputes 1–10 are unchanged. No production
+source was read or changed, and no commit was made.
+
+**Verification:** The required `mvnw.cmd -o -q test` failed at
+`testCompile`, reporting the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The full Maven
+suite did not run. The supplementary in-memory compiler successfully
+compiled all six Amendment 9 test/support sources and thirteen supporting
+test sources with `--release 17`, against existing compiled API classes
+and cached dependencies. A separate JUnit run of all five Amendment 9
+test classes passed all 74 invocations, with no failures, skips or aborts.
+This includes all seven invocations of the four disputed methods.
+
+Logs: `.codex-runs/spec14-dispute11-maven.log` and
+`.codex-runs/spec14-dispute11/{compile.log,junit.log}`. The Maven limitation
+is also recorded in the questions file.

@@ -15,7 +15,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Isolated("Walks change the JVM time zone")
 class InjectedAmendment9FaultTest {
     @Test void everyPostUpdateInterviewOfTheFaultyEnumeratorAndOnlyThoseInterviewsIsOutdated() throws Exception {
-        var r = run(simple(NEW), settings(80, 2, update(UPDATE.toString(), null)).withProblems(rates(0, FAULT)));
+        var r = run(simple(NEW), settings(80, 2, "\"interviewsPerDay\":1," + update(UPDATE.toString(), null))
+                .withProblems(rates(0, FAULT)));
         String faulty = soleEnumerator(r, FAULT);
         var recorded = targets(r, FAULT);
         assertEquals(38, outdated(r).size(), "40 interviews per enumerator, two before the update");
