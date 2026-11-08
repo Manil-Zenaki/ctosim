@@ -602,3 +602,10 @@ says that a revisit repeats the household's answers given before the
 availability question at its first visit (spec 13, Amendment 7), dates,
 times, locations and media files excepted, so that the household keeps
 the same identification, such as its district, from one visit to the next.
+
+Clarification (Amendment 20): assumptions T1–T3 of the questions file are
+reviewed one by one and confirmed: the help is checked for its meaning, not
+its wording, title or place in the section (T1); only the help's
+explanation is required, the excepted answers are not promised to change,
+and the district is an example of identification, not a required word (T2);
+the tests run on their own against the installed help (T3).
