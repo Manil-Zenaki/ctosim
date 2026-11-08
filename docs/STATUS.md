@@ -304,6 +304,21 @@ chose to document a `texts` override for them rather than widen the
 plausible-text rule (spec 11 Amendment 17, help and guide). Stata 159
 tests, all green.
 
+2026-11-07, outdated form version (owner's choice). A form update during
+fieldwork is named by its date (`formUpdate`, spec 04 Amendment 14); the
+previous version is the form's version (settings sheet) minus one unless
+`previousVersion` gives it. Only `formdef_version` changes: submissions
+started before the date have the previous version (spec 08 Amendment 3:
+the instance's root `version` wins over the catalog's). Fault
+`outdatedVersion` (spec 14 Amendment 9, seven default faults): a faulty
+enumerator keeps the previous version after the date; check
+`ipacheckversions`. Spec 11 Amendment 18 (help), guide updated. Disputes
+04/4, 08/3, 14/11 (tests assuming one interview a day) upheld. Java 14111
+and Stata 169 tests, all green. IPA check (20 enumerators, 400
+submissions, update on 4 March): 168 submissions on 2206191527, 232 on
+2206191528; `ipacheckversions` finds 11 outdated submissions, all
+enumerator16's, matching the answer key.
+
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
 correctness): web submissions (`deviceid` `(web)`, no audio audit,
