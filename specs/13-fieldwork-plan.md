@@ -652,3 +652,37 @@ not offer ends nothing (50); an ended household leaves the queue at once,
 is not counted by the waiting warning, and the next interviews go to new
 households, which take the next ids (51); the draws stay uniform and
 seeded as in Amendment 5 (52).
+
+## Amendment 7: a revisit repeats the household's identification
+
+Amendment 5 gave a revisit the household's survey id, its cascade and its
+point, but the other questions asked before the availability question
+(the district, the enumerator's name, the household head's name...) were
+drawn again at each visit, so the same household could change district
+from one visit to the next. A revisit now repeats them, as an enumerator
+reopening the same household's form would. Without `config.visits()`,
+everything is unchanged.
+
+During `walkAll()`, at a revisit, each question listed below that the
+walker answers gets the answer recorded for it in the household's first
+visit:
+
+- the questions the walker answered in the first visit before it first
+  answered the availability question (`field`), in the order it walked
+  the form;
+- except questions inside a repeat group, the availability question, the
+  visit number question (`number`), and questions of type date, time,
+  dateTime, geopoint, geotrace, geoshape, image, audio, video and file,
+  which are answered as usual.
+
+A question the first visit left blank is left blank. A repeated answer
+replaces the question's usual draw, its override and its missing rate;
+enumerator faults and outliers (spec 14) do not change it and the answer
+key records nothing for it. When the engine does not accept it, the
+question is answered as usual, and the submission has a warning that
+names the field and the value.
+
+A question the revisit asks but the first visit did not, and every
+question after the availability question, is answered as before. The id
+question and its upper questions keep the rule of Amendment 5.
+`walk(number, visit)` outside `walkAll()` is not affected.

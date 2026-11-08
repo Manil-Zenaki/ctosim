@@ -594,3 +594,11 @@ percentages, moving is an example of a final reason, and "the answer key
 does not list them" means the revisits and their repeated ids, not a
 problem injected into a revisited household (S2); the tests read the
 installed help and need no change to earlier tests (S3).
+
+## Amendment 20: the help on a revisit's repeated answers
+
+The help file's section on visit outcomes and revisits (Amendment 19) also
+says that a revisit repeats the household's answers given before the
+availability question at its first visit (spec 13, Amendment 7), dates,
+times, locations and media files excepted, so that the household keeps
+the same identification, such as its district, from one visit to the next.
