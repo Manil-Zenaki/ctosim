@@ -337,9 +337,15 @@ every revisit on a later day, same device, numbered 1, 2, 3;
 `keep if avail == 1`; `ipatracksurvey` with `masterdata()` needs one
 row per household (keep each household's last visit); with
 `trackingdata()` it fails inside IPA's `ipacolformat` (varlist not
-allowed), with or without `outcome()`. Open: questions asked before the
-availability question (a plain district list) are drawn again at each
-visit (92 of 147 revisits change district).
+allowed), with or without `outcome()`.
+
+2026-11-08, a revisit repeats the household's identification (owner's
+choice): the answers given before the availability question at the first
+visit are given again at each revisit, outside repeats, except dates,
+times, locations and media, without faults or answer-key records (spec 13
+Amendment 7, Dispute 5 upheld; help spec 11 Amendment 20). Java 15245 and
+Stata 200 tests, all green. IPA check: 0 of 147 revisits change district
+(92 before), none changes enumerator.
 
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
