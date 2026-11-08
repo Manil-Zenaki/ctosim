@@ -1546,3 +1546,119 @@ spec 04; no production source was opened, searched, or changed.
   classes, including every disputed test and related copy tests. Results:
   `.codex-runs/04-dispute4-probe-compile.log` and
   `.codex-runs/04-dispute4-junit.log`. No implementation source was read.
+
+## Amendment 15: visit outcomes and revisits
+
+New coverage is confined to `SimulationConfigAmendment15ParsingTest`,
+`SimulationConfigAmendment15RatesTest`, `SimulationConfigAmendment15CopiesTest`,
+and `VisitPlanAmendment15Test`, with a new support class and the minimal UTF-8
+fixture `amendment-15-visits.json`. Existing tests and fixtures are unchanged.
+Expectations come only from spec 04; no production source was opened, searched,
+or modified.
+
+80. **Which string rules apply to field, number, and available?**
+    - **Assumption:** The explicit reference to the id rule includes its
+      confirmed clarifications: names are nonempty exact decoded strings;
+      space, tab, CR, LF, and form feed are rejected at either end. Internal
+      whitespace, punctuation, Unicode, and numeric-looking names are allowed.
+      No further identifier grammar, length limit, or Unicode normalization
+      is imposed. Non-ASCII edge-whitespace classification remains untested.
+      The two names are compared exactly, including case and decoded escapes.
+      Available is a code, so only the nonempty-string rule applies; even a
+      whitespace-only code is retained exactly. An omitted number becomes
+      Java null, while an explicit JSON null is an error for every member.
+    - **Dependent tests:** Exact-name, exact-code, case/normalization,
+      invalid-string, BOM/escape, fixture, default, and copy tests in the new
+      parsing and copy classes.
+
+81. **How should individual rates, their sum, and maxVisits be validated?**
+    - **Assumption:** Rates use the earlier number rules, with inclusive 0
+      and 1 endpoints; an omitted rate retains its own default even if that
+      makes the combined sum invalid. All-zero rates are a present plan and
+      do not bypass the other validations. MaxVisits uses the confirmed exact
+      JSON-integer rule before floating-point rounding, including decimal and
+      exponent forms. Tiny nonzero fractions, integer overflow, and values
+      outside 2 through 10 are rejected. Valid JSON numbers such as 1e400
+      are outside the stated ranges and must produce ConfigException.
+    - **Dependent tests:** All methods in `SimulationConfigAmendment15RatesTest`;
+      zero-rate cases in copy tests.
+    - **Unresolved:** Exact-decimal versus double-rounded rate comparisons at
+      sub-ULP distances from an endpoint or from a sum of one, and numeric
+      underflow for rates, are not prescribed. Tests avoid those distinctions.
+      Signed zero is compared numerically without requiring its sign bit.
+      Sum-above-one tests use excesses that remain unambiguous as doubles.
+
+82. **Do visits introduce dependencies on other settings or form contents?**
+    - **Assumption:** No. A field-only visit plan is sufficient without id,
+      problems, or a form; an unrelated id or problems setting does not imply
+      visits. Only field and number must differ. Available need not differ
+      from field names or codes in other settings. Visit rates have no sum
+      constraint with unrelated rates and maxVisits has no stated relation
+      to submissions, fieldworkDays, enumerators, or interviewsPerDay. Adding
+      visits must preserve every earlier setting and default. Only the stated
+      schema locations gain keys; these strings remain legal field, profile,
+      and choice names.
+    - **Dependent tests:** Omission and schema-location tests in the parsing
+      class; standalone/default preservation, nondefault preservation,
+      capacity/rate independence, and code-overlap tests in the copy class.
+      Visit generation, scheduling, random draws, and outcome frequencies
+      belong to specs 13 and 14 and are intentionally not tested here.
+
+83. **Does the direct VisitPlan constructor validate or normalize its inputs?**
+    - **Assumption:** No, as explicitly stated by Amendment 15. It retains
+      components unchanged, including null strings, empty or edge-whitespace
+      strings, equal names, invalid rates (NaN and infinities included), and
+      visit counts outside the JSON limits. These constructor cases do not
+      relax any parser validation rule.
+    - **Dependent test:** `VisitPlanAmendment15Test.recordEnforcesNothingAndPreservesEveryComponent`.
+
+84. **Which copies must retain visits, and is record identity significant?**
+    - **Assumption:** All three existing copy APIs (withSeed, withSubmissions,
+      withProblems) retain absent, defaulted, fully specified, and zero-rate
+      plans, including a null number. This applies to unchanged-value copies,
+      boundary values, adding/replacing/clearing problems, and chains. Copies
+      remain distinct configurations and leave the receiver unchanged; no
+      identity requirement is imposed on the immutable VisitPlan itself.
+    - **Dependent tests:** Copy matrix, chained copies, rejected-copy
+      immutability, and parse-isolation tests in the new copy class.
+
+85. **Which locations and diagnostic conventions apply to visits errors?**
+    - **Assumption:** A bad supplied member names its full path. Missing field
+      and equal field/number may identify visits or a more specific member,
+      since the spec does not choose between them. A sum above one explicitly
+      identifies the visits object itself. Unknown members identify their
+      complete paths. Existing conventions apply to source attribution,
+      explanatory text, decoded duplicate keys, actual syntax-error lines,
+      and retained syntax causes. Duplicate keys may be classified as syntax
+      or rule errors (question 2); exact wording and precedence among multiple
+      independent failures are not fixed. Parse and load share validation and
+      BOM handling. Temporary load inputs are under `.codex-runs/` and are
+      removed after use.
+    - **Dependent tests:** New invalid-object/string, invalid-rate/count,
+      excessive-sum, unknown/misplaced-key, duplicate, malformed-JSON,
+      BOM/escape, and UTF-8 fixture tests, exercised through both entry points.
+
+### Amendment 15 build verification (2026-11-07)
+
+- Ran `.\mvnw.cmd -o -q test-compile` and an `-e` diagnostic retry. Both
+  reached `maven-compiler-plugin:3.15.0:testCompile` but failed with
+  `java.nio.file.AccessDeniedException` on the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs:
+  `.codex-runs/04-amendment15-test-compile.log` and
+  `.codex-runs/04-amendment15-test-compile-detail.log`.
+- The existing in-memory compiler-probe approach compiled the final four new
+  test classes, their new support class, and two unchanged existing test
+  helpers (seven files total), with Java release 17 against actual
+  `target/classes` binaries and cached JUnit 5.11.4 APIs. It reads binary
+  class entries into memory to avoid javac's archive access failure; it does
+  not inspect production source, copy repositories, change permissions or
+  dependencies, or install anything. Probe:
+  `.codex-runs/Amendment15CompileProbe.java`; result:
+  `.codex-runs/04-amendment15-probe-compile.log` (`compiled=true`).
+- **Question:** Can the calling environment rerun the requested Maven command
+  with accessible cached dependencies? **Assumption:** This is the previously
+  documented sandbox build blocker, not grounds to change production, build
+  settings, dependencies, or existing tests. **Dependent tests:** Full Maven
+  test compilation remains unverified in this sandbox; the added sources
+  compile through the fallback. Runtime tests were not requested and were not
+  run. No commit was made.

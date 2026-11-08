@@ -1,0 +1,10 @@
+{
+  "visits": {
+    "maxVisits": 10,
+    "unreachedRate": 0.125,
+    "revisitRate": 0.625,
+    "number": "visite numéro",
+    "available": " 01 ✓ ",
+    "field": "disponibilité 東京"
+  }
+}
