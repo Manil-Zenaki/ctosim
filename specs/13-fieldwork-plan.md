@@ -617,3 +617,24 @@ than `available` and the special values, restricted as follows:
 
 A household found at its first visit, and `walk(number, visit)` outside
 `walkAll()`, are not affected.
+
+Clarification (Amendment 5): assumptions 41–47 of the questions file are
+reviewed one by one and confirmed: the availability and visit number
+questions are answered only where the walker answers a question, every
+answered instance gets the answer, the visit answers replace values,
+weights, expressions and rules, and a question without offered choices
+uses the fallback (41); `attempt()` has only the lower bound, `maxVisits`
+limits planned households, and the fallback covers every refusal by the
+engine (42); a household is an entity of the plan, not an id string: a
+revisit carries the household's id only when the plan gave it one or the
+id was given at the question, and it receives no new id (43); the day
+finally scheduled decides whether an interview is a revisit, waits are
+counted in workdays of "When", and a household whose visits are over does
+not wait (44); a trip into a new day is not charged, the combination of a
+trip with the move time of Amendment 4 is not prescribed, and a later
+revisit of a day does not change that day's place (45); the outcome draw
+depends on the seed and the first visit's number only, and the failed
+value on the seed, the number and the offered values (46); warnings need
+the named fields and numbers only, the two configuration warnings follow
+the earlier ones in either order, and the waiting warning counts
+households (47).

@@ -862,3 +862,16 @@ public record VisitPlan(String field, String available, String number,
   unmodifiable list. The record itself enforces nothing.
 - The rules of "Strictness" and "Errors" apply, with errors at their
   paths (`visits.final`, `visits.final[1]`).
+
+Clarification (Amendment 15): assumptions 80–85 of the questions file are
+reviewed one by one and confirmed: `field` and `number` follow the name
+rule of `id` and are compared exactly, `available` need only be a
+non-empty string, kept exactly, and an explicit `null` is an error for
+every member (80); rates follow the earlier number rules with inclusive
+ends, an omitted rate keeps its default even when the sum then exceeds 1,
+and `maxVisits` follows the exact integer rule, numbers out of range such
+as `1e400` being errors (81); `visits` needs nothing else in the
+configuration and changes no other setting (82); the record validates and
+normalises nothing (83); every copy keeps `visits()` (84); the earlier
+diagnostic conventions apply, a sum above 1 being reported at `visits`
+(85).
