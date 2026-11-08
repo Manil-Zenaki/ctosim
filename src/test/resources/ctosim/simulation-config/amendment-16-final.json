@@ -1,0 +1,11 @@
+{
+  "visits": {
+    "final": ["moved", "décédé", "東京", "1"],
+    "maxVisits": 10,
+    "unreachedRate": 0.125,
+    "revisitRate": 0.625,
+    "number": "visit_number",
+    "available": "Y",
+    "field": "availability"
+  }
+}

@@ -1662,3 +1662,88 @@ or modified.
   test compilation remains unverified in this sandbox; the added sources
   compile through the fallback. Runtime tests were not requested and were not
   run. No commit was made.
+
+## Amendment 16: final reasons of a failed visit
+
+New coverage is confined to `SimulationConfigAmendment16ParsingTest`,
+`SimulationConfigAmendment16ValidationTest`, `SimulationConfigAmendment16CopiesTest`,
+and `VisitPlanAmendment16Test`, plus the minimal UTF-8 fixture
+`amendment-16-final.json`. Existing tests and fixtures are preserved; the new
+classes reuse the unchanged Amendment 15 input helper and base diagnostic helper.
+Expectations come only from spec 04. No production source was read or modified.
+
+86. **Are final codes exact strings, including whitespace and numeric-looking text?**
+    - **Assumption:** Yes. The stated constraints are nonempty, distinct strings
+      unequal to available. No trimming, case folding, numeric conversion, or
+      Unicode normalization is specified. Whitespace-only strings are nonempty;
+      `01`, `1.0`, and `1e0` differ from the default available code `1`. JSON
+      escapes are decoded before equality checks. The omitted list and explicit
+      empty array both produce an empty list, unlike the nonempty code lists in
+      earlier amendments.
+    - **Dependent tests:** List acceptance, available comparison, escaped-key,
+      UTF-8 fixture, duplicate-code, and collision tests in the new parsing and
+      validation classes.
+
+87. **Where should duplicates and available/final collisions be reported?**
+    - **Assumption:** The examples `visits.final` and `visits.final[1]` follow the
+      established array diagnostic conventions: wrong container types at
+      `visits.final`; invalid elements at their zero-based index; duplicates at
+      their second occurrence; available collisions at the matching final
+      element. Explicit available may precede or follow final, and omitted
+      available still contributes its default. Duplicate object keys retain
+      question 2's flexibility about syntax-versus-rule classification. Error
+      wording and precedence among multiple independent failures are not fixed.
+    - **Dependent tests:** All invalid-list, invalid-element, duplicate-code,
+      collision, duplicate-key, and syntax-diagnostic tests in
+      `SimulationConfigAmendment16ValidationTest`, through both parse and load.
+
+88. **What does 'the record itself enforces nothing' mean for finalValues?**
+    - **Assumption:** Direct seven-argument construction retains even null lists,
+      null elements, empty codes, duplicates, and codes equal to available;
+      existing components also remain unchecked. The six-argument constructor
+      supplies a non-null empty list and preserves its six inputs. Parser-created
+      lists, including omitted/explicitly empty lists and lists exposed through
+      copies, must reject changes with UnsupportedOperationException, consistent
+      with question 10.
+    - **Dependent tests:** All `VisitPlanAmendment16Test` methods and the list
+      mutation/empty-list/copy tests in `SimulationConfigAmendment16CopiesTest`.
+    - **Unresolved:** No test requires direct-constructor list identity, defensive
+      copying, or mutability. The explicit unmodifiable guarantee is the parser's.
+
+89. **Does final introduce other dependencies or change earlier visit settings?**
+    - **Assumption:** No. Only visits gains the final key; it does not remove the
+      required field or change the other defaults. Codes may equal field names
+      or codes in other settings; no form membership check belongs here. Zero
+      visit rates do not disable validation. All existing copy APIs, including
+      unchanged-value copies and adding/replacing/clearing problems, keep the
+      entire plan and its final list without modifying the receiver. No identity
+      requirement is imposed on the VisitPlan instance itself.
+    - **Dependent tests:** Default preservation, fixture, overlap, missing-field,
+      schema-location, zero-rate collision, and all copy/isolation tests. Visit
+      scheduling and random outcome generation belong to spec 13, so no random
+      draws or statistical assertions are added to this configuration module.
+    - **Unresolved:** No maximum final-list size or code length is specified;
+      tests impose no additional size limits.
+
+### Amendment 16 build verification (2026-11-08)
+
+- Ran `.\mvnw.cmd -o -q test-compile`, corrected a string-literal typo in the
+  new tests, and reran it. Maven reached testCompile but failed on the cached
+  `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. An `-e` retry
+  confirmed `java.nio.file.AccessDeniedException`. Logs:
+  `.codex-runs/04-amendment16-test-compile.log` and
+  `.codex-runs/04-amendment16-test-compile-detail.log`.
+- The existing in-memory compiler-probe approach compiled all four final new
+  test classes plus the two unchanged test helpers (six sources) with Java
+  release 17 against actual target/classes binaries and cached JUnit 5.11.4
+  APIs. It reads binary class entries into memory to avoid the archive-access
+  failure; it does not inspect production source, copy repositories, change
+  permissions/dependencies, or install anything. Probe:
+  `.codex-runs/Amendment16CompileProbe.java`; final result:
+  `.codex-runs/04-amendment16-probe-compile.log` (`compiled=true`).
+- **Question:** Can the calling environment rerun the required Maven command
+  with accessible cached dependencies? **Assumption:** This is the previously
+  documented sandbox build blocker, not grounds to change production or build
+  configuration. **Dependent tests:** Full Maven test compilation remains
+  unverified here; the added sources compile through the fallback. Runtime
+  tests were not requested and were not run. No commit was made.
