@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:h="http://www.w3.org/1999/xhtml"
+        xmlns:jr="http://openrosa.org/javarosa" xmlns:ct="urn:ctosim:xforms">
+  <h:head><h:title>Problems and household visits</h:title><model>
+    <instance><data id="problem_visits"><id/><status/><attempt/><amount/><gps/><elapsed/><username/><meta><instanceID/></meta></data></instance>
+    <bind nodeset="/data/id" type="int"/>
+    <bind nodeset="/data/status" type="select1" ct:minimum-seconds="300"/>
+    <bind nodeset="/data/attempt" type="int"/>
+    <bind nodeset="/data/amount" type="int" relevant="/data/status = 'yes'"/>
+    <bind nodeset="/data/gps" type="geopoint"/>
+    <bind nodeset="/data/elapsed" type="int" calculate="duration()"/>
+    <bind nodeset="/data/username" type="string" jr:preload="property" jr:preloadParams="username"/>
+    <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/id"><label>Household</label></input>
+    <select1 ref="/data/status"><label>Available?</label>
+      <item><label>Yes</label><value>yes</value></item>
+      <item><label>Absent</label><value>absent</value></item>
+    </select1>
+    <input ref="/data/attempt"><label>Visit number</label></input>
+    <input ref="/data/amount"><label>Amount</label></input>
+    <input ref="/data/gps"><label>Location</label></input>
+  </h:body>
+</h:html>

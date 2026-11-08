@@ -1990,3 +1990,180 @@ test classes, including all seven invocations of the four disputed methods,
 with no failures, skips or aborts. The full Maven suite remains unverified.
 Logs: `.codex-runs/spec14-dispute11-maven.log` and
 `.codex-runs/spec14-dispute11/{compile.log,junit.log}`.
+
+## Amendment 10 additions (2026-11-08)
+
+Only new `InjectedAmendment10*` test/support classes and
+`src/test/resources/ctosim/injected-problems/amendment10/tracking.xml`
+are added. Previously committed tests and fixtures are unchanged. Expectations
+come from Amendment 10 and the contracts it retains or explicitly references,
+especially spec 13 Amendment 5 and spec 04 Amendment 15. No production source
+was opened, searched or modified, and no commit was made.
+
+### J1. Does “target” include every interview of a faulty enumerator?
+
+**Question:** Earlier amendments distinguish targets of table problems from
+enumerator faults, which apply to every submission of the assigned enumerator.
+Does Amendment 10 force every such submission to find a fresh household, skip
+fault injection on failed visits/revisits, or merely omit those records?
+
+**Assumption:** Do not resolve this interaction. Target/queue tests use explicit
+table problems with an empty fault list, including `outlier` and `leftOpen`.
+Fault protection tests use zero failure rates, so every visit is independently
+a successful first visit. No requirement about suppressing faults on failed
+visits or revisits is inferred. “No record” is enforced for legitimate failed
+visits/revisits with problems absent, all rates zero, or explicit table targets.
+
+**Tests:** `InjectedAmendment10TargetsTest`, `InjectedAmendment10ProtectionTest`,
+`legitimateFailedVisitsAndRepeatedIdsHaveNoAnswerKeyRecords`, and
+`mixedRunListsOnlyInjectedProblemsAndNeverLegitimateFailedVisitsOrRevisits`.
+
+### J2. What if a resent original is a successful revisit?
+
+**Question:** Originals now need only have found their household, which includes
+a successful revisit. A resent target must still copy the entire instance and
+original Visit, while Amendment 10 says a target is never a revisit. Which
+attempt number belongs in that resent copy and its Visit? Does “revisits have
+no record” refer to the original visit or the copy as well?
+
+**Assumption:** Do not prescribe the resent copy's attempt or record suppression
+in that ambiguous case. The mixed-original test asserts only that recorded
+originals are found, earlier, untargeted, not reused, and have the recorded id.
+The test that demands a successful first-visit resent target uses revisitRate=0,
+so every eligible found original necessarily has attempt 1. A separate
+reinterview test requires a successful revisit to be eligible: reinterviews
+copy ids, not ordinary visit-number answers, and have their own attempt 1.
+
+**Tests:** `duplicateOriginalsAreFoundVisitsEvenWhenFailedVisitsAreEarlierAndHaveIds`,
+`duplicateTargetsWithFirstVisitOriginalsStaySuccessfulFirstVisits`, and
+`aSuccessfulRevisitCanBeTheOnlyOriginalOfAReinterview`.
+
+### J3. Do failed injections or moved outliers still override household outcomes?
+
+**Question:** Earlier rules turn an unsuccessful injection into an ordinary
+visit, while the new rule guarantees that a target finds a fresh household.
+Does a reserved target that fails injection retain that guarantee? Does an
+outlier that moves to another submission also displace a queued revisit?
+
+**Assumption:** Leave those outcome/queue details open. Duplicate fallback tests
+require no duplicate record and the documented warning when no found original
+exists, without asserting the fallback's attempt or outcome. Outlier target
+and count tests have an always-eligible unprotected numeric answer, so relocation
+is unnecessary. The no-eligible-outlier protection test has no waiting households.
+The travel test requires at least one injection but does not demand that every
+requested trip succeed. Exact N-based counts use short, long, outlier and
+leftOpen fixtures without an injection fallback.
+
+**Tests:** Duplicate no-original tests; numeric-protection tests;
+`targetsFindTheirHouseholdAtFirstVisitEvenWhenAllOrdinaryHouseholdsAreUnreached`;
+count and target tests in `InjectedAmendment10TargetsTest`.
+
+### J4. How is postponement observed without assuming random target numbers?
+
+**Question:** No PRNG sequence is specified. What does “at its next interviews
+instead” require when several households or consecutive targets are waiting?
+
+**Assumption:** Keep the inherited queue order: at each non-target interview,
+take the same enumerator's earliest latest-visit submission from an earlier
+actual workday. A target consumes neither that household nor its next attempt.
+The independent oracle maintains a queue from observed visits, verifies retained
+id, point and attempt progression, and requires both displacement and subsequent
+resumption to occur. Ordinary terminal visits remove the household. A large
+unique numeric id pool and a point-sized area avoid ambiguous id collisions and
+travel-time effects. Success after one failure uses maxVisits=2; all-unreached
+cases exercise multiple enumerators and maxVisits=3 and 10.
+
+**Tests:** `targetsPostponeWaitingHouseholdsWithoutLosingReorderingOrIncrementingThem`.
+
+### J5. Are the protected questions protected even in unusual roles or fallback?
+
+**Question:** Does naming a question in visits.field or visits.number protect
+only the usual availability/number answer, or also numeric inputs, select/text
+visit numbers, module gates, roster controllers, repeat instances and an
+ordinary fallback when the engine rejects the planned answer?
+
+**Assumption:** “The questions named by field and number ... are never changed”
+protects the named question in all these roles, including each answered repeat
+instance and its spec 13 fallback. Numeric availability inputs on successful
+visits can accept the available value without offering choices; the
+no-offered-failure-choice fallback is not involved. A constrained visit number
+that rejects attempt 1 falls back to its configured ordinary value 4; that value
+must not then be shortened. Protections follow configured names, including when
+number is omitted. Unprotected companion answers demonstrate that faults/outliers
+remain active. No precedence is invented when visits and consent name the same
+question, a conflict already left open by the earlier consent clarification.
+
+**Tests:** `InjectedAmendment10ProtectionTest`, especially
+`aRejectedVisitNumberRetainsItsOrdinaryFallbackEvenWhenItCanShortenARoster`,
+`aTrackingAnswerInsideAnAddAnotherRosterCannotBeUsedToEndItEarly`, and
+`protectionFollowsConfiguredNamesAndDoesNotDependOnHavingANumberSetting`.
+
+### J6. What counts and randomness should be asserted?
+
+**Question:** Do counts use submissions, distinct households, successful visits,
+or remaining non-revisit slots? Does enabling visit outcomes change target draws?
+
+**Assumption:** Use the explicit N, preserving half-up rounding and the positive
+minimum. Singleton runs, all-target runs, half ties, tiny positive rates and mixed
+problem types are tested. Inherited seed/N-only targeting still applies; outcome
+rates do not change selected numbers for problem types that cannot fall back in
+the fixtures. Tests use fixed seeds, positive-observation assertions and broad
+ensembles without requiring particular seed snapshots. No new distribution or
+statistical rate is introduced by Amendment 10. Bernoulli-fault protection tests
+use 120 or more interviews per faulty enumerator and require an unprotected
+replacement, rather than asserting an unrelated rate again. Replay covers reused
+and fresh Fieldwork objects and changed JVM locale/time zone, restored in finally.
+
+**Tests:** Count, targeting and replay tests in `InjectedAmendment10TargetsTest`;
+the 24-seed successful-revisit-original test; companion-fault protection tests.
+
+### J7. What new errors, warnings and CSV details are required?
+
+**Question:** Amendment 10 introduces no new public validation API or warning
+wording. Should tests invent new errors or answer-key labels for tracking?
+
+**Assumption:** No new errors or tracking labels are invented. Use the inherited
+no-original and no-eligible-outlier warnings, matching problem/field names and
+required numbers rather than prose. Failed visits and revisits with no injected
+problem yield header-only answer-key CSV. Mixed runs retain only actual injected
+records, with public KEY/id/relatedKey metadata checked for duplicates. All-target
+successful runs cannot leave waiting households, so the simple bounded fixtures
+must have no end-of-run waiting warning. Configuration validation and direct Visit
+constructor/walk errors belong to specs 04 and 13 and are not duplicated here.
+
+**Tests:** `InjectedAmendment10DuplicatesTest`,
+`aFormWithOnlyProtectedNumbersHasNoEligibleOutlierAndWarns`, and
+`everySubmissionCanBeATargetEvenWithNoNaturallySuccessfulHousehold`.
+
+### Amendment 10 build verification (2026-11-08)
+
+**Question:** Can the requested `mvnw.cmd -o -q test-compile` verify these
+additions in this sandbox?
+
+**Observation:** Both the baseline and final requested command fail during
+testCompile while opening the cached
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. An offline `-e`
+retry identifies `java.nio.file.AccessDeniedException`. MAVEN_USER_HOME was
+set to `.tools/maven-home`. No dependency installation, repository copying,
+drive mapping, permission changes or build-configuration edits were attempted.
+
+**Assumption:** Reuse the existing supplementary in-memory Java compiler from
+earlier independent-test runs, against compiled public API classes and cached
+dependency bytes, without reading production source. This is supplementary
+evidence only; the requested Maven command did not succeed.
+
+**Dependent tests and result:** All four new Java files and thirteen unchanged
+support sources compile successfully with `--release 17`. The diagnostic JUnit
+run starts all 63 invocations in the three new test classes: 54 pass and nine
+fail with assertion failures in duplicate handling. Those failures concern failed
+original eligibility and the successful-first-visit requirements; none are fixture
+loading, compilation, discovery or configuration errors. There are no failed
+containers, skipped tests or aborted tests. Assertions derived from the spec are
+kept despite those behavioral failures. The full existing suite was not run.
+
+Logs and temporary diagnostic programs are confined to
+`.codex-runs/spec14-amendment10/`: `maven-baseline.log`, `maven-final.log`,
+`maven-detail.log`, `compile-final.log`, and `junit-final.log`.
+The questions file is the only changed pre-existing tracked file. Existing test
+classes and resources, production code, pom.xml, spec text and dispute files
+remain unchanged; no commit was made.
