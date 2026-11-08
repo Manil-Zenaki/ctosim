@@ -420,6 +420,8 @@ public final class Fieldwork {
             injection.dontKnow = faults.contains(DONT_KNOW);
             injection.refuseAnswers = faults.contains(REFUSE);
             injection.other = faults.contains(OTHER);
+            // a household found later never gets a final reason (spec 13, Amendment 6)
+            injection.notFinal = household != null && household.failures < household.planned;
             if (faults.contains(FAKE_REFUSAL) && FormWalker.consents(config, number)) {
                 double r = config.consent().get().rate();
                 double p = r <= 0 ? 0 : Math.min(1, (1 - r) / r);
@@ -473,6 +475,7 @@ public final class Fieldwork {
                             villageOverride[enumerator] = waited.point;
                             villageOverrideDay[enumerator] = day[enumerator];
                             injection = injection.withAnswers(waited.given);
+                            injection.notFinal = waited.failures < waited.planned;
                             injection.route = new FormWalker.Route(null, null, 0);
                             to = null;
                         } else {
@@ -606,7 +609,10 @@ public final class Fieldwork {
                 household.done++;
                 household.lastNumber = number;
                 household.lastDay = day[enumerator];
-                if (!found && household.done < household.planned) {
+                // an unreached household given a final reason is not visited again (spec 13, Amendment 6)
+                boolean ended = !found && household.failures == household.planned
+                        && visitPlan.finalValues().contains(value(s.instanceXml(), visitPlan.field()));
+                if (!found && !ended && household.done < household.planned) {
                     waiting[enumerator].add(household);
                 }
             }
