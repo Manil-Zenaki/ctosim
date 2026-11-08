@@ -330,8 +330,8 @@ visits answer another offered value and the form's logic stops them
 (spec 13 Amendments 5-6); problem targets are found first visits and
 duplicate originals found visits (spec 14 Amendment 10); help (spec 11
 Amendment 19). Java 15198 and Stata 192 tests, all green. IPA check
-(1000 submissions, 853 households): 2 households unreached by final
-reason before maxVisits; no final value on a household found later;
+(1000 submissions, 853 households, 27 never found): 14 failed visits with a final
+value; no final value on a household found later;
 every revisit on a later day, same device, numbered 1, 2, 3;
 `ipacheckids` flags 245 submissions on all visits, none after
 `keep if avail == 1`; `ipatracksurvey` with `masterdata()` needs one
