@@ -1,0 +1,19 @@
+<h:html xmlns:h="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/2002/xforms"
+        xmlns:jr="http://openrosa.org/javarosa" xmlns:ct="urn:ctosim:xforms">
+  <h:head><h:title>Final visit reasons</h:title><model>
+    <instance><data id="final-visit-reasons"><answer/><attempt/><noise/><status/><details/></data></instance>
+    __SECONDARY__
+    <bind nodeset="/data/answer" type="int" ct:minimum-seconds="60"/>
+    <bind nodeset="/data/attempt" type="int" ct:minimum-seconds="60"/>
+    <bind nodeset="/data/noise" type="string" ct:minimum-seconds="60"/>
+    <bind nodeset="/data/status" type="string" ct:minimum-seconds="60"/>
+    <bind nodeset="/data/details" type="string" relevant="/data/status = 'yes'" ct:minimum-seconds="60"/>
+  </model></h:head>
+  <h:body>
+    <input ref="/data/answer"><label>Household</label></input>
+    <input ref="/data/attempt"><label>Attempt</label></input>
+    __NOISE__
+    <select1 ref="/data/status"><label>Availability</label>__CHOICES__</select1>
+    <input ref="/data/details"><label>Interview</label></input>
+  </h:body>
+</h:html>

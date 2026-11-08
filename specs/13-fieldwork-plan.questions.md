@@ -1157,3 +1157,137 @@ Log: `.codex-runs/fieldwork-amendment5/junit.log`. These expected failures
 do not validate assertions hidden behind the configuration error.
 A separate fixture probe loaded both simple duration variants and three
 cascade/delay variants successfully (`fixtures.log` in the same directory).
+
+## Amendment 6 additions
+
+New tests are in `FieldworkAmendment6ReasonsTest`,
+`FieldworkAmendment6TerminationTest` and `FieldworkAmendment6RandomnessTest`,
+with `FieldworkAmendment6Support` and an XML template under
+`src/test/resources/ctosim/fieldwork-plan/amendment6/`. Existing test sources
+and fixtures are unchanged. No production source or API bodies were read.
+Configuration syntax comes from the explicitly referenced spec 04 Amendment 16;
+its parser validation is outside this run's spec 13 scope.
+
+### 48. A final fallback on a household planned to be found
+
+**Question:** Does the all-final fallback for a revisited household terminate
+that household, despite its planned successful visit?
+
+**Assumption:** No. The termination rule explicitly belongs to the unreached
+household bullet. A revisited household uses all eligible failure choices if
+none is nonfinal and retains its later success, including its waiting warning
+when the submission limit interrupts it. No new warning is required merely
+because the fallback uses a final code.
+
+**Tests:** `allFinalFallbackDoesNotCancelARevisitedHouseholdsPlannedSuccess`,
+`allFinalFallbackDrawsUniformlyAmongEveryEligibleReason`,
+`aRevisitedHouseholdStillWaitsAfterAnAllFinalFallbackAtThePlanBoundary`, and
+`filteringUsesChoicesOfferedAtEachAttemptRatherThanAllChoicesInTheForm`.
+
+### 49. Final at the maximum visit and the meaning of the value given
+
+**Question:** Can the last allowed visit draw a final code, given the phrase
+"it has fewer than maxVisits visits"? Does a rejected final answer, an
+ordinary fallback that is final, an irrelevant availability question, or
+conflicting repeated instances end a household?
+
+**Assumption:** The draw among all eligible reasons applies on every failed
+visit, including attempt maxVisits. A final before that boundary stops early;
+a final at the boundary leaves no further visit or wait, just as an ordinary
+terminal failure does. No rule is inferred for rejected final injections,
+final ordinary fallbacks, skipped availability or repeated conflicting
+availability instances. Tests of final termination use one answered question
+with an accepted final value. The no-eligible-choice test uses a nonfinal
+ordinary fallback and checks only the retained Amendment 5 behavior.
+
+**Tests:** `finalOnTheLastAllowedAttemptStillLeavesNoWaitingHousehold`,
+`aFinalFailureOnARevisitRemovesTheHouseholdImmediately`,
+`noEligibleFailureChoiceKeepsTheExistingWarningAndOrdinaryAnswerFallback`;
+no tests impose the unresolved rejection/repeat behavior.
+
+### 50. Offered choices, code comparisons and exclusions
+
+**Question:** Is a nonfinal value that exists in the form but is not offered
+now eligible? Can a final designation restore a special value? Are codes
+normalised, or must the configured final list intersect the form's choices?
+
+**Assumption:** Intersect exact configured strings with the currently offered
+choices. Exclude available and all four special-code families before applying
+the final restriction or its fallback. Codes retain case, leading zeros and
+Unicode, consistent with the configuration's code contract. Unoffered final
+codes neither become answers nor terminate a household. The itemset fixture
+offers absent only on attempt 1 and moved only on attempt 2; this makes
+answer-time filtering observable without reading implementation state.
+
+**Tests:** the special-code, exact-string and dynamic-offer tests in
+`FieldworkAmendment6ReasonsTest`, and
+`anUnofferedFinalReasonDoesNotShortenUnreachedHouseholds`.
+
+### 51. Terminations, household identity and waiting counts
+
+**Question:** How should early termination affect other queued households,
+ID allocation and the warning at a truncated plan boundary?
+
+**Assumption:** The unchanged Amendment 5 queue rule applies after removing
+the terminated household. Waiting counts exclude final unreached households
+immediately, including a final failure on the last submission. New households
+fill freed slots and advance household-based ID allocation. Most fixtures
+use a unique integer ID pool so household histories are observable; the
+two-value exhaustion case deliberately reuses IDs without merging households.
+Warnings are checked for counts and field names, not exact prose.
+
+**Tests:** `checkUnreachedQueue` derives each eligible revisit from observed
+enumerator, workday, prior submission position, attempt and accepted reason.
+Its callers cover one/multiple enumerators and one/multiple interviews per
+day. Boundary warning tests and
+`earlyFinalTerminationAllocatesIdsAndCountsExhaustionForEachNewHousehold`
+check the resulting counts and allocation.
+
+### 52. Uniformity and unchanged random contracts
+
+**Question:** Does "as in Amendment 5" retain uniform draws and their seeded
+independence, and how can distributions be tested without selecting a biased
+subset of households?
+
+**Assumption:** Retain those contracts. For revisited households with maxVisits
+2 and quota 1, each pair of submissions contains exactly one failed draw and
+one success, yielding 600 failure draws in 1,200 submissions. For unreached
+households, all 1,200 submissions are failures: include every draw, even those
+that terminate a household. Use the existing seven-binomial-standard-deviation
+plus two tolerance with a fixed seed; do not impose an RNG sequence. Outcomes
+remain independent of the failed-reason draw. Quota-one comparisons isolate
+schedules from the duration of an extra unrelated question. Different seeds
+must be capable of changing a sequence, not every individual answer.
+
+**Tests:** uniformity tests in the reasons and termination classes; replay,
+fresh load, prefix, outcome independence, unrelated-answer independence,
+different-seed and locale/time-zone tests in the randomness class. Omitted
+versus empty final settings, first-visit successes and standalone walks are
+compared with complete submission/visit observations where unchanged behavior
+is explicitly required.
+
+### Amendment 6 build verification
+
+The requested `.\mvnw.cmd -o -q test-compile` reached testCompile but failed
+because the compiler could not access
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. A diagnostic `-e`
+retry confirms `java.nio.file.AccessDeniedException`. Logs are in
+`.codex-runs/fieldwork-amendment6/test-compile.log` and
+`test-compile-detail.log`. No dependencies were installed or copied, no drives
+were mapped, and no production or build configuration files were changed.
+
+The existing offline diagnostic compiler was adapted under
+`.codex-runs/fieldwork-amendment6/`. It successfully compiled all seven required
+test/support sources with `--release 17` against existing compiled public APIs
+and cached JUnit 5 dependencies, without reading production source.
+Log: `memory-compile.log`. This verifies source compilation but is not a
+successful Maven build.
+
+The supplementary JUnit run discovered **42 cases from 30 test methods**:
+**26 passed and 16 failed**, with no skipped or aborted tests, failed
+containers or fixture-loading failures. All failures are assertion failures
+consistent with Amendment 6 being absent: final reasons appear for households
+later found despite an offered nonfinal alternative, or final failures still
+queue revisits, affecting IDs and waiting counts. Both static and
+attempt-filtered itemset fixtures ran. Log: `junit.log` in the same directory.
+No assertions were weakened to match the existing implementation.
