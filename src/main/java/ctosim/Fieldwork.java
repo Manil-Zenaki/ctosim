@@ -213,6 +213,8 @@ public final class Fieldwork {
             int first = minutes.nextInt(FIRST_START_MINUTES + 1);
             int gap = MIN_GAP_MINUTES + minutes.nextInt(MAX_GAP_MINUTES - MIN_GAP_MINUTES + 1);
             String problem = plan == null ? null : plan.problemOf(number);
+            // a target finds a fresh household at its first visit, even when its problem falls back (spec 14, Amendment 10)
+            boolean targeted = plan != null && plan.targets.containsKey(number);
 
             Integer original = null;
             if (RESENT.equals(problem) || REINTERVIEW.equals(problem)) {
@@ -224,7 +226,7 @@ public final class Fieldwork {
                     preferred = m -> submissions.get(m - 1) != null
                             && village.equals(value(submissions.get(m - 1).instanceXml(), villageField));
                 }
-                original = plan.original(number, problem, preferred);
+                original = plan.original(number, problem, preferred, m -> planned.get(m - 1).found());
                 if (original == null) {
                     problem = null;
                 }
@@ -344,7 +346,7 @@ public final class Fieldwork {
                 }
                 ordinary = true;
                 while (true) {
-                    revisit = visitPlan != null && problem == null && newHouseholdDay[enumerator] != day[enumerator]
+                    revisit = visitPlan != null && !targeted && newHouseholdDay[enumerator] != day[enumerator]
                             ? nextWaiting(waiting[enumerator], day[enumerator]) : null;
                     point = revisit != null ? revisit.point : household(number, village(enumerator, day[enumerator]));
                     if (today[enumerator] > 0 && lastVisit[enumerator] != null
@@ -384,7 +386,7 @@ public final class Fieldwork {
                 givenAnswers = revisit.given;
                 household = revisit;
             } else if (visitPlan != null) { // the first visit of a new household
-                household = problem == null ? outcome(number, visitPlan) : new Household(1, 0);
+                household = !targeted ? outcome(number, visitPlan) : new Household(1, 0);
             }
             if (REINTERVIEW.equals(problem)) {
                 id = originalId;
@@ -459,7 +461,7 @@ public final class Fieldwork {
                         dayOver[enumerator] = false;
                         start = dayStart(next).plusMinutes(first);
                         firstOfDay = true;
-                        Household waited = visitPlan != null && problem == null
+                        Household waited = visitPlan != null && !targeted
                                 ? nextWaiting(waiting[enumerator], day[enumerator]) : null;
                         if (waited != null) { // on its new day, the enumerator revisits first (spec 13, A5)
                             revisit = waited;
@@ -594,7 +596,7 @@ public final class Fieldwork {
                         }
                         household.given = uppers;
                     }
-                    if (problem == null) {
+                    if (!targeted) {
                         newHouseholdDay[enumerator] = day[enumerator];
                     }
                 } else {
@@ -1291,10 +1293,11 @@ public final class Fieldwork {
         }
 
         /** The original of a duplicate, drawn among earlier submissions that are no target and no original. */
-        Integer original(int number, String problem, java.util.function.IntPredicate preferred) {
+        Integer original(int number, String problem, java.util.function.IntPredicate preferred,
+                java.util.function.IntPredicate found) {
             List<Integer> candidates = new ArrayList<>();
-            for (int m = 1; m < number; m++) {
-                if (!targets.containsKey(m) && !originals.contains(m)) {
+            for (int m = 1; m < number; m++) { // only visits that found their household (spec 14, Amendment 10)
+                if (!targets.containsKey(m) && !originals.contains(m) && found.test(m)) {
                     candidates.add(m);
                 }
             }
