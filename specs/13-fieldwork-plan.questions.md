@@ -1291,3 +1291,172 @@ later found despite an offered nonfinal alternative, or final failures still
 queue revisits, affecting IDs and waiting counts. Both static and
 attempt-filtered itemset fixtures ran. Log: `junit.log` in the same directory.
 No assertions were weakened to match the existing implementation.
+
+## Amendment 7 additions
+
+This run adds `FieldworkAmendment7ReplayTest`, `FieldworkAmendment7ScopeTest`,
+`FieldworkAmendment7FallbackTest`, `FieldworkAmendment7ProtectionTest`,
+`FieldworkAmendment7RandomnessTest`, `FieldworkAmendment7CascadeTest`, one new
+support class, and a form template under
+`src/test/resources/ctosim/fieldwork-plan/amendment7/`. Existing tests and
+fixtures are unchanged. Expectations come from Amendment 7 and the public
+contracts it incorporates. No production sources or implementation bodies
+were inspected, and no production/build configuration was changed.
+
+### 53. Which questions belong to the first-visit prefix?
+
+**Question:** Is the boundary the first availability element in instance
+order, the first availability control encountered, or the first one actually
+answered? What happens when availability is never answered on the first visit?
+
+**Assumption:** Follow the explicit walk-order and "first answered" language.
+An irrelevant availability question does not end the prefix; a second answered
+availability question does not extend it. Questions inside ordinary groups
+qualify, but anything inside a repeat remains excluded even inside an ordinary
+group nested in that repeat. No behavior is imposed when the first visit
+never answers availability, nor for defaults, actions, read-only controls or
+calculated values that the walker keeps without answering. Fixtures use
+writable initially empty questions, except constant fixture metadata and
+read-only calculations used to observe the effect of replay.
+
+**Tests:** boundary, repeat, nested-group, skipped-availability and
+second-availability cases in `FieldworkAmendment7ScopeTest`; nested groups and
+downstream calculations/relevance in `FieldworkAmendment7ReplayTest`.
+
+### 54. Blank, skipped and temporarily irrelevant answers
+
+**Question:** Does an unanswered first-visit question count as a recorded
+blank? Can a later revisit replace the original snapshot? Must a recorded
+blank satisfy a newly required constraint?
+
+**Assumption:** A question handled with a missing answer is a recorded blank,
+as Amendment 7 explicitly requires. A question skipped by relevance was not
+answered and has no recorded answer. A question first asked on attempt 2 is
+still answered normally on attempt 3; the snapshot always belongs to attempt
+1. Relevance on the revisit still decides whether a question is answered.
+Skipping a question on attempt 2 does not erase its first answer for attempt
+3. Tests of blank replay use optional questions without constraints; the
+intersection of a stored blank with newly required/constraint behavior is
+left open.
+
+**Tests:** the two missing-rate tests in `FieldworkAmendment7ReplayTest`;
+`questionsAskedOnlyOnRevisitsUseTheirCurrentOverride`,
+`replayDoesNotForceAQuestionThatIsIrrelevantOnTheRevisit`, and
+`aQuestionSkippedOnOneRevisitStillRecoversTheFirstAnswerOnALaterRevisit`.
+
+### 55. Identity of a question and of a household
+
+**Question:** Do same-named questions in different nonrepeat groups share
+one answer? Do distinct households that receive a reused survey ID share a
+snapshot? Is a configured ID required for replay?
+
+**Assumption:** "The answer recorded for it" refers to each actual question,
+not a map keyed only by its last path component. Household identity follows
+the Amendment 5 clarification: households are planned entities, not ID
+strings. A fresh household sharing an exhausted ID gets its own first-visit
+answers, and a household without a configured ID still retains identification.
+No new API or private state is assumed. Unique IDs identify households in
+interleaving tests; a fixed quota and maximum of two visits make the reused-ID
+test's three separate household pairs unambiguous.
+
+**Tests:** `sameNamedQuestionsInSeparateGroupsRetainTheirOwnFirstAnswers`,
+`replayUsesEachHouseholdsFirstVisitAcrossInterleavedEnumerators`,
+`reusedSurveyIdsDoNotMakeNewHouseholdsInheritOldIdentification`, and
+`identificationIsRetainedWhenNoSurveyIdIsConfigured`.
+
+### 56. Rejection, fallback and the stored first answer
+
+**Question:** What changes when a first-visit answer fails a revisit's current
+constraint or is no longer an offered choice? Are warning text, retry count
+and random-stream consumption prescribed?
+
+**Assumption:** Both are engine rejections under the amendment. The ordinary
+fallback answers using the revisit's configuration and current choices, but
+does not overwrite the first-visit snapshot. The warning belongs to that
+submission and names the field and the original attempted answer. Exact
+wording, warning counts, retries and random-stream positions are not asserted.
+Fixtures use deterministic accepted fallback values or a singleton current
+choice list. Conversion errors from changing a question's static data type
+are not fabricated; removed offered choices exercise conversion rejection
+through an actual form.
+
+**Tests:** `FieldworkAmendment7FallbackTest`, including a third visit that can
+accept the original answer again after attempt 2 rejected it, and a second
+identification question that must still be replayed after another rejects.
+
+### 57. What is protected from faults and outliers?
+
+**Question:** Is the stored answer the actual accepted first-visit answer,
+including an injected code/outlier, or its hypothetical clean value? Can an
+outlier target suppress an otherwise due revisit? Does replay suppress fault
+records for unrelated questions or time/version problems?
+
+**Assumption:** Store the actual recorded first answer. On a revisit that
+answer is unchanged and receives no new answer-key record, even if its first
+visit had a fault record. Questions after availability remain eligible for
+faults/outliers. As in spec 14's ordinary-visit rule, an outlier changes an
+answer, not household outcome or revisit eligibility; a rate-one outlier
+fixture must still contain the revisits required by spec 13. These tests
+check the `problems()` records for the copied field, not unrelated records
+such as duration or form-version records. The interaction with consent's
+own injected answers (`fakeRefusal`), a fallback after replay rejection, and
+injected duplicates is left open here.
+
+**Tests:** `FieldworkAmendment7ProtectionTest` covers `dontKnow`, `refuse`,
+`other`, `skipModules`, and outliers, including the case where only a copied
+numeric question would otherwise be an outlier candidate. Fixed seeds and
+many households expose protection without prescribing a random sequence;
+positive-control assertions require actual fault opportunities/records.
+The current outlier runs fail those controls (no revisits), so they do not
+yet exercise all downstream protection assertions. This is recorded rather
+than silently accepting a vacuous protection test.
+
+### 58. Ordinary answers and determinism without prescribing RNG internals
+
+**Question:** Must excluded or later questions have exactly the same random
+values as a standalone walk even when earlier replay changed the form's
+answers or random consumption? What textual representation must date/time
+and media answers have?
+
+**Assumption:** Do not impose that stronger random-stream equivalence. The
+excluded-type tests use changing fixed overrides and compare each excluded
+answer to a standalone walk of the same visit, allowing engine serialization
+and normalization. Deterministic expressions distinguish current answers from
+replay in after-boundary and repeat tests. Full submission equality is used
+only for explicit unchanged behavior (no visit configuration, first visits),
+identical replay/fresh-load runs, locale/time-zone changes and longer-plan
+prefixes under the retained randomness contract. No new probability
+distribution is introduced by Amendment 7, so no new rate test is inferred.
+
+**Tests:** all ten excluded temporal/location/media cases and standalone/no-
+visits/first-visit cases in `FieldworkAmendment7ScopeTest`;
+`FieldworkAmendment7RandomnessTest`. Static IDs and search cascades after
+availability remain governed by Amendment 5, checked in
+`staticSurveyIdAfterAvailabilityStillUsesTheHouseholdsId` and
+`FieldworkAmendment7CascadeTest`.
+
+### Amendment 7 build verification
+
+The requested `./mvnw.cmd -o -q test-compile` was run after the test additions
+and exited 1 at testCompile because Maven's compiler could not access the
+cached `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Logs are
+`.codex-runs/fieldwork-amendment7/test-compile.log` and
+`test-compile-detail.log` (the diagnostic `-e` retry). No repository was
+copied, dependency installed, drive mapped, or build configuration changed.
+
+As supplementary source verification, the existing offline diagnostic
+compiler was adapted under `.codex-runs/fieldwork-amendment7/`. All twelve
+required test/support sources compiled successfully with `--release 17`
+against existing compiled public APIs and cached JUnit 5 dependencies.
+It reads binary class files, not production sources. Log:
+`memory-compile.log`. This is compilation evidence, not a successful Maven
+build.
+
+The supplementary JUnit run discovered **64 cases**: **23 passed and 41
+failed**, with no skipped/aborted cases, failed containers or fixture-loading
+errors. All failures are assertions: primarily missing replay or rejection
+warnings, fault changes/records on identification, and the outlier/revisit
+preconditions described above. Assertions after these failures remain
+unexercised. Log: `.codex-runs/fieldwork-amendment7/junit.log`. No expectations
+were weakened to agree with the current implementation, and no commit was
+made.
