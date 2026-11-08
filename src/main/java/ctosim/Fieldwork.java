@@ -72,6 +72,20 @@ public final class Fieldwork {
                 template.levels.clear(); // a village fixed by the configuration: no place of the day
             }
         }
+        VisitPlan plan = config.visits().orElse(null);
+        boolean visitsOn = false;
+        if (plan != null) { // spec 13, Amendment 5
+            visitsOn = names.contains(plan.field());
+            if (!visitsOn) {
+                configured.add("configuration: visits: the availability question '" + plan.field()
+                        + "' does not name any element of form '" + form.formId() + "'; no visit fails");
+            }
+            if (plan.number() != null && !names.contains(plan.number())) {
+                configured.add("configuration: visits: the visit number question '" + plan.number()
+                        + "' does not name any element of form '" + form.formId() + "'");
+            }
+        }
+        this.visitsOn = visitsOn;
         if (config.villages().isPresent() && template.levels.isEmpty()) {
             configured.add("configuration: villages: the form has no village question (a select_one loaded by"
                     + " search() that filters the survey id's choices) whose answer the plan chooses; no village"
@@ -89,6 +103,13 @@ public final class Fieldwork {
 
     private final FormDef definition;
     private final LoadedForm form;
+    /** Whether visits can fail: the configuration names an availability question the form holds. */
+    private final boolean visitsOn;
+    /** The number of possible survey ids, or -1 when the plan gives none (checked against the households). */
+    private long idCount = -1;
+    /** Each enumerator's village of the day when its first interview of that day is a revisit. */
+    private double[][] villageOverride = new double[0][];
+    private int[] villageOverrideDay = new int[0];
     /** The id's cascade, found once; each plan starts from a copy. */
     private final FormWalker.IdHistory template = new FormWalker.IdHistory();
     /** The village question's appearance and choices, set by {@link #cascade}. */
@@ -174,6 +195,18 @@ public final class Fieldwork {
         List<Integer> movedOutliers = new ArrayList<>(); // outlier targets whose outlier could not be placed yet
         Map<Integer, OpenForm> open = new HashMap<>(); // by enumerator: a form left open, waiting for its interview
         Set<Integer> copies = new HashSet<>(); // resent copies, which take no place in the plan
+        VisitPlan visitPlan = visitsOn ? config.visits().get() : null; // spec 13, Amendment 5
+        @SuppressWarnings("unchecked")
+        List<Household>[] waiting = new List[e + 1];
+        for (int i = 1; i <= e; i++) {
+            waiting[i] = new ArrayList<>();
+        }
+        int[] newHouseholdDay = new int[e + 1];
+        java.util.Arrays.fill(newHouseholdDay, -1);
+        boolean[] previousRevisit = new boolean[e + 1];
+        villageOverride = new double[e + 1][];
+        villageOverrideDay = new int[e + 1];
+        int revisits = 0;
         for (int number = 1; number <= n; number++) {
             int enumerator = (number - 1) % e + 1;
             SplittableRandom minutes = new SplittableRandom(FormWalker.seed(config.seed(), number, 10));
@@ -218,6 +251,7 @@ public final class Fieldwork {
             double[] point = null;
             double[] travelFrom = null;
             boolean ordinary = false;
+            Household revisit = null;
             if (OFFHOURS.equals(problem) || OVERLAP.equals(problem) || TRAVEL.equals(problem)) {
                 Submission previous = last[enumerator];
                 String why = previous == null ? "its enumerator has no interview before it" : null;
@@ -308,12 +342,50 @@ public final class Fieldwork {
                         start = dayStart(next).plusMinutes(first);
                     }
                 }
-                point = household(number, village(enumerator, day[enumerator]));
                 ordinary = true;
+                while (true) {
+                    revisit = visitPlan != null && problem == null && newHouseholdDay[enumerator] != day[enumerator]
+                            ? nextWaiting(waiting[enumerator], day[enumerator]) : null;
+                    point = revisit != null ? revisit.point : household(number, village(enumerator, day[enumerator]));
+                    if (today[enumerator] > 0 && lastVisit[enumerator] != null
+                            && (revisit != null || previousRevisit[enumerator])) { // a trip (spec 13, Amendment 5)
+                        long trip = tripMinutes(lastVisit[enumerator].latitude(), lastVisit[enumerator].longitude(), point);
+                        LocalDateTime later = start.plusMinutes(trip);
+                        if (later.isAfter(dayStart(day[enumerator]).plusMinutes(WORK_MINUTES))) {
+                            int next = day[enumerator] + 1;
+                            LocalDateTime earliest = lastEnd[enumerator].plusMinutes(MIN_GAP_MINUTES);
+                            while (dayStart(next).plusMinutes(first).isBefore(earliest)) {
+                                next++;
+                            }
+                            day[enumerator] = next;
+                            today[enumerator] = 0;
+                            dayOver[enumerator] = false;
+                            start = dayStart(next).plusMinutes(first);
+                            continue;
+                        }
+                        start = later;
+                    }
+                    break;
+                }
+                if (revisit != null) {
+                    ordinary = false;
+                    if (today[enumerator] == 0) { // the household's place is the village of the day
+                        villageOverride[enumerator] = revisit.point;
+                        villageOverrideDay[enumerator] = day[enumerator];
+                    }
+                }
             }
 
-            String id = ids == null ? null : ids.get(number - 1);
+            String id = ids == null ? null : ids.get(revisit != null ? 0 : number - revisits - 1);
             Map<String, String> givenAnswers = Map.of();
+            Household household = null;
+            if (revisit != null) {
+                id = revisit.id;
+                givenAnswers = revisit.given;
+                household = revisit;
+            } else if (visitPlan != null) { // the first visit of a new household
+                household = problem == null ? outcome(number, visitPlan) : new Household(1, 0);
+            }
             if (REINTERVIEW.equals(problem)) {
                 id = originalId;
                 if (history != null) {
@@ -334,7 +406,9 @@ public final class Fieldwork {
             }
             Set<String> faults = plan == null ? Set.of() : plan.faultsOf(enumerator);
             boolean fast = faults.contains(TOO_FAST);
-            Visit visit = new Visit(enumerator, start, point[0], point[1], id);
+            int attempt = household == null ? 1 : household.done + 1;
+            boolean found = household == null || attempt > household.failures;
+            Visit visit = new Visit(enumerator, start, point[0], point[1], id, attempt, found);
             FormWalker.IdHistory before = history == null ? null : history.copy();
             Map<String, String> given = givenAnswers;
             FormWalker.Injection injection = new FormWalker.Injection(factor * (fast ? FAST_FACTOR : 1),
@@ -354,7 +428,7 @@ public final class Fieldwork {
                 injection.route = new FormWalker.Route(firstOfDay ? null : place[enumerator], travelFrom,
                         travelFrom == null ? 0 : Math.max(20_000, 2_000.0 * gap));
             }
-            if (villages != null) { // where the walk takes the enumerator decides when and where it starts
+            if (villages != null && revisit == null) { // where the walk takes the enumerator decides when and where it starts
                 FormWalker.Injection probe = injection.with(injection.timeFactor());
                 Submission walked = walker.walk(number, visit, copy(before), probe);
                 if (TRAVEL.equals(problem) && probe.route.noCandidate) {
@@ -385,19 +459,37 @@ public final class Fieldwork {
                         dayOver[enumerator] = false;
                         start = dayStart(next).plusMinutes(first);
                         firstOfDay = true;
-                        injection.route = new FormWalker.Route(null, null, 0);
-                        probe = injection.with(injection.timeFactor());
-                        walked = walker.walk(number, new Visit(enumerator, start, point[0], point[1], id),
-                                copy(before), probe);
-                        to = villages.of(value(walked.instanceXml(), villageField));
+                        Household waited = visitPlan != null && problem == null
+                                ? nextWaiting(waiting[enumerator], day[enumerator]) : null;
+                        if (waited != null) { // on its new day, the enumerator revisits first (spec 13, A5)
+                            revisit = waited;
+                            household = waited;
+                            ordinary = false;
+                            id = waited.id;
+                            attempt = waited.done + 1;
+                            found = attempt > waited.failures;
+                            villageOverride[enumerator] = waited.point;
+                            villageOverrideDay[enumerator] = day[enumerator];
+                            injection = injection.withAnswers(waited.given);
+                            injection.route = new FormWalker.Route(null, null, 0);
+                            to = null;
+                        } else {
+                            injection.route = new FormWalker.Route(null, null, 0);
+                            probe = injection.with(injection.timeFactor());
+                            walked = walker.walk(number, new Visit(enumerator, start, point[0], point[1], id, attempt,
+                                    found), copy(before), probe);
+                            to = villages.of(value(walked.instanceXml(), villageField));
+                        }
                     }
                 }
-                if (to != null) {
+                if (revisit != null) {
+                    point = revisit.point;
+                } else if (to != null) {
                     point = nearVillage(number, to);
                 } else {
                     point = household(number, village(enumerator, day[enumerator]));
                 }
-                visit = new Visit(enumerator, start, point[0], point[1], id);
+                visit = new Visit(enumerator, start, point[0], point[1], id, attempt, found);
             }
             if (OUTLIER.equals(problem) || problem == null && !movedOutliers.isEmpty()) {
                 String field = outlierField(number, visit, before, injection);
@@ -433,7 +525,7 @@ public final class Fieldwork {
             Submission s = walker.walk(number, visit, history, injection);
             submissions.add(s);
             planned.add(visit);
-            if (routed && !TRAVEL.equals(problem) && !(REINTERVIEW.equals(problem) && !firstOfDay)) {
+            if (routed && !TRAVEL.equals(problem) && !((REINTERVIEW.equals(problem) || revisit != null) && !firstOfDay)) {
                 Map<String, String> answers = new java.util.LinkedHashMap<>();
                 for (String level : history.levels) {
                     String answer = value(s.instanceXml(), level);
@@ -486,6 +578,37 @@ public final class Fieldwork {
             last[enumerator] = s;
             lastVisit[enumerator] = visit;
             today[enumerator]++;
+            if (household != null) { // the household's visits (spec 13, Amendment 5)
+                if (revisit == null) {
+                    household.point = new double[] {visit.latitude(), visit.longitude()};
+                    // the plan's id, or the id given at the question; none otherwise (a text id without a pool)
+                    household.id = visit.id() != null ? visit.id()
+                            : history != null && idField != null ? value(s.instanceXml(), idField) : null;
+                    if (history != null) {
+                        Map<String, String> uppers = new HashMap<>();
+                        for (String upper : history.uppers.keySet()) {
+                            String v = value(s.instanceXml(), upper);
+                            if (v != null) {
+                                uppers.put(upper, v);
+                            }
+                        }
+                        household.given = uppers;
+                    }
+                    if (problem == null) {
+                        newHouseholdDay[enumerator] = day[enumerator];
+                    }
+                } else {
+                    revisits++;
+                    waiting[enumerator].remove(household);
+                }
+                household.done++;
+                household.lastNumber = number;
+                household.lastDay = day[enumerator];
+                if (!found && household.done < household.planned) {
+                    waiting[enumerator].add(household);
+                }
+            }
+            previousRevisit[enumerator] = revisit != null;
             OpenForm form = open.get(enumerator);
             if (form != null && form.englobed() == number) { // the form left open is finished now
                 open.remove(enumerator);
@@ -503,6 +626,10 @@ public final class Fieldwork {
                 today[enumerator]++;
             }
             lastDay = Math.max(lastDay, day[enumerator]);
+        }
+        if (idCount >= 0 && idCount < n - revisits) {
+            planWarnings.add(0, "fieldwork: the survey id '" + idField + "' has only " + idCount + " possible values for "
+                    + (n - revisits) + " households; some ids are used twice");
         }
         if (lastDay + 1 > days) {
             planWarnings.add(0, "fieldwork: the interviews took " + (lastDay + 1) + " days, more than fieldworkDays ("
@@ -522,6 +649,14 @@ public final class Fieldwork {
         }
         if (villages != null) {
             planWarnings.addAll(villages.warnings());
+        }
+        int stillWaiting = 0;
+        for (int i = 1; i <= e; i++) {
+            stillWaiting += waiting[i].size();
+        }
+        if (stillWaiting > 0) {
+            planWarnings.add("fieldwork: " + stillWaiting + " households were still waiting for a revisit when the"
+                    + " simulation ended");
         }
         if (versions.previous != null) {
             for (int i = 0; i < submissions.size(); i++) {
@@ -567,11 +702,64 @@ public final class Fieldwork {
 
     /** The village of an enumerator on a day: uniform in the area, or in spec 05's rectangle. */
     private double[] village(int enumerator, int day) {
+        if (enumerator < villageOverride.length && villageOverride[enumerator] != null
+                && villageOverrideDay[enumerator] == day) {
+            return villageOverride[enumerator];
+        }
         SplittableRandom random = new SplittableRandom(FormWalker.seed(config.seed(), (long) enumerator << 32 | day, 11));
         Area area = area();
         return new double[] {
             area.minLatitude() + random.nextDouble() * (area.maxLatitude() - area.minLatitude()),
             area.minLongitude() + random.nextDouble() * (area.maxLongitude() - area.minLongitude())};
+    }
+
+    /** A household of the plan and its visits (spec 13, Amendment 5). */
+    private static final class Household {
+        /** Visits planned, and how many of them fail before the household is found. */
+        final int planned;
+        final int failures;
+        int done;
+        int lastNumber;
+        int lastDay;
+        double[] point;
+        String id;
+        Map<String, String> given = Map.of();
+
+        Household(int planned, int failures) {
+            this.planned = planned;
+            this.failures = failures;
+        }
+    }
+
+    /** A new household's outcome, drawn from the seed and its first visit's number. */
+    private Household outcome(int number, VisitPlan plan) {
+        SplittableRandom random = new SplittableRandom(FormWalker.seed(config.seed(), number, 41));
+        double u = random.nextDouble();
+        if (u < plan.unreachedRate()) {
+            return new Household(plan.maxVisits(), plan.maxVisits());
+        }
+        if (u < plan.unreachedRate() + plan.revisitRate()) {
+            int k = 1 + random.nextInt(plan.maxVisits() - 1);
+            return new Household(k + 1, k);
+        }
+        return new Household(1, 0);
+    }
+
+    /** The household waiting longest from a day before {@code day}, or null. */
+    private static Household nextWaiting(List<Household> waiting, int day) {
+        Household next = null;
+        for (Household h : waiting) {
+            if (h.lastDay < day && (next == null || h.lastNumber < next.lastNumber)) {
+                next = h;
+            }
+        }
+        return next;
+    }
+
+    /** Two minutes per kilometre, rounded up, when the two points are more than 3 km apart; 0 otherwise. */
+    private static long tripMinutes(double lat, double lon, double[] to) {
+        double metres = distance(lat, lon, to[0], to[1]);
+        return metres > 3_000 ? (long) Math.ceil(2 * metres / 1000) : 0;
     }
 
     /** A point within {@link #VILLAGE_METRES} of the village and within the area. */
@@ -629,6 +817,7 @@ public final class Fieldwork {
 
     /** The id of each submission, in number order; null when there is no id question or no possible value. */
     private List<String> surveyIds(int n, List<String> planWarnings) {
+        idCount = -1;
         if (idField == null) {
             return null;
         }
@@ -659,10 +848,7 @@ public final class Fieldwork {
                 }
             }
         }
-        if (count < n) {
-            planWarnings.add("fieldwork: the survey id '" + idField + "' has only " + count + " possible values for "
-                    + n + " submissions; some ids are used twice");
-        }
+        idCount = count; // compared with the number of households after the plan (spec 13, Amendment 5)
         List<String> ids = new ArrayList<>(n);
         for (int k = 0; k < n; k++) {
             ids.add(order.get(k % order.size()));

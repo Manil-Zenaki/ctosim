@@ -247,6 +247,8 @@ public final class FormWalker {
         LocalDateTime pausedAt;
         /** The place of the day, or null outside the fieldwork plan's villages. */
         Route route;
+        /** A failed visit of a household found later: its reason is never final (spec 13, Amendment 6). */
+        boolean notFinal;
 
         Injection(double timeFactor, boolean keepLocations, Map<String, String> answers) {
             this.timeFactor = timeFactor;
@@ -266,9 +268,18 @@ public final class FormWalker {
             return answers;
         }
 
+        /** A fresh injection with the same settings and other given answers. */
+        Injection withAnswers(Map<String, String> given) {
+            return copy(timeFactor, given);
+        }
+
         /** A fresh injection with the same settings and another time factor. */
         Injection with(double factor) {
-            Injection copy = new Injection(factor, keepLocations, answers);
+            return copy(factor, answers);
+        }
+
+        private Injection copy(double factor, Map<String, String> given) {
+            Injection copy = new Injection(factor, keepLocations, given);
             copy.violationFactor = violationFactor;
             copy.skipModules = skipModules;
             copy.dontKnow = dontKnow;
@@ -280,6 +291,7 @@ public final class FormWalker {
             copy.pauseAt = pauseAt;
             copy.pauseLength = pauseLength;
             copy.route = route == null ? null : route.fresh();
+            copy.notFinal = notFinal;
             return copy;
         }
     }
@@ -331,6 +343,9 @@ public final class FormWalker {
         }
         if (!(visit.longitude() >= -180 && visit.longitude() <= 180)) {
             throw new IllegalArgumentException("the longitude must be between -180 and 180: " + visit.longitude());
+        }
+        if (visit.attempt() < 1) {
+            throw new IllegalArgumentException("visit numbers start at 1: " + visit.attempt());
         }
         TimeZone previous = TimeZone.getDefault();
         TimeZone.setDefault(TimeZone.getTimeZone(config.timeZone()));
@@ -966,6 +981,11 @@ public final class FormWalker {
             if (consent != null && consent.fields().contains(name) && giveConsent(prompt, ref, name, path, consent)) {
                 return;
             }
+            VisitPlan visits = config.visits().orElse(null);
+            if (visits != null && visit != null && (name.equals(visits.field()) || name.equals(visits.number()))
+                    && giveVisit(prompt, ref, name, path, visits)) {
+                return;
+            }
             String given = injection.answers().get(name);
             if (given != null && give(prompt, ref, name, path, given)) {
                 return;
@@ -1064,6 +1084,56 @@ public final class FormWalker {
                 return true;
             }
             warn("field '" + name + "' (" + path + "): the consent value '" + value
+                    + "' is not accepted by this question; answered as usual");
+            return false;
+        }
+
+        /**
+         * Answers the availability or visit number question of a visit (spec 13, Amendment 5); false, with
+         * a warning, when the engine does not accept the answer or no value fits a failed visit.
+         */
+        private boolean giveVisit(FormEntryPrompt prompt, TreeReference ref, String name, String path, VisitPlan visits) {
+            if (!name.equals(visits.field())) {
+                String value = Integer.toString(visit.attempt());
+                if (answerWith(prompt, ref, name, path, value)) {
+                    return true;
+                }
+                warn("field '" + name + "' (" + path + "): the visit number '" + value
+                        + "' is not accepted by this question; answered as usual");
+                return false;
+            }
+            String value = visits.available();
+            if (!visit.found()) {
+                QuestionKind kind = kind(prompt);
+                List<String> offered = new ArrayList<>();
+                if (kind != null) {
+                    offered.addAll(new java.util.LinkedHashSet<>(
+                            prepare(prompt, ref, name, path, kind, false).question().choices()));
+                }
+                offered.remove(visits.available());
+                offered.removeAll(config.specialValues());
+                offered.removeAll(config.dontKnowCodes());
+                offered.removeAll(config.refuseCodes());
+                offered.removeAll(config.otherCodes());
+                offered.remove("");
+                List<String> restricted = new ArrayList<>(offered);
+                if (injection.notFinal) { // a household found later never gets a final reason (Amendment 6)
+                    restricted.removeAll(visits.finalValues());
+                }
+                if (!restricted.isEmpty()) {
+                    offered = restricted;
+                }
+                if (offered.isEmpty()) {
+                    warn("field '" + name + "' (" + path + "): no value other than the available value '"
+                            + visits.available() + "' is offered for a failed visit; answered as usual");
+                    return false;
+                }
+                value = offered.get(new SplittableRandom(seed(config.seed(), number, 42)).nextInt(offered.size()));
+            }
+            if (answerWith(prompt, ref, name, path, value)) {
+                return true;
+            }
+            warn("field '" + name + "' (" + path + "): the availability value '" + value
                     + "' is not accepted by this question; answered as usual");
             return false;
         }
@@ -1965,6 +2035,8 @@ public final class FormWalker {
         private boolean leftAlone(String name) {
             return config.id().isPresent() && config.id().get().equals(name)
                     || config.consent().isPresent() && config.consent().get().fields().contains(name)
+                    || config.visits().isPresent() && (name.equals(config.visits().get().field())
+                            || name.equals(config.visits().get().number()))
                     || history != null && history.uppers.containsKey(name)
                     || injection.answers().containsKey(name);
         }
