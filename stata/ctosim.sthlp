@@ -545,6 +545,13 @@ Households still waiting at the end of the simulation, because the planned
 interviews ran out, are reported in a warning.{p_end}
 
 {pstd}
+A revisit repeats the household's answers given before the availability
+question at its first visit, so the household keeps the same identification,
+such as its district, from one visit to the next. Dates, times, locations
+and media files are excepted: they are not repeated and are answered again
+at each visit.{p_end}
+
+{pstd}
 For example, {cmd:"visits": {"field": "consent_avail", "available": "1", "number": "visit_no", "final": ["5", "6"]}}
 for a question {cmd:consent_avail} whose value 1 means found, and whose values
 5 and 6 mean moved and deceased.{p_end}
