@@ -834,3 +834,31 @@ public java.util.Optional<VisitPlan> visits();   // empty when the key is absent
   the two rates above 1 is an error at `visits`. Other keys are errors.
 - The record itself enforces nothing; validation is the parser's.
 - Copies keep `visits()`.
+
+## Amendment 16: final reasons of a failed visit
+
+Some reasons of a failed visit end the household's visits: a household
+that has moved, or whose respondent has died, is not found the next
+time. One key is added to the `visits` object (Amendment 15, used by
+spec 13 Amendment 6); everything else is unchanged.
+
+| Key | Type | Default | Constraint |
+|---|---|---|---|
+| `final` | array of strings | `[]` | distinct; each non-empty; none equal to `available`: the values of the availability question after which the household is not visited again |
+
+Public type changed:
+
+```java
+public record VisitPlan(String field, String available, String number,
+        double revisitRate, double unreachedRate, int maxVisits,
+        java.util.List<String> finalValues) {
+
+    public VisitPlan(String field, String available, String number,
+            double revisitRate, double unreachedRate, int maxVisits);   // no final values
+}
+```
+
+- `finalValues()` keeps the file's order; the parser gives an
+  unmodifiable list. The record itself enforces nothing.
+- The rules of "Strictness" and "Errors" apply, with errors at their
+  paths (`visits.final`, `visits.final[1]`).

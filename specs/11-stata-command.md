@@ -559,8 +559,8 @@ checks run as standalone do-files through the unchanged runner (R3).
 
 ## Amendment 19: the help on visit outcomes and revisits
 
-The help file documents visit outcomes and revisits (spec 04 Amendment
-15, spec 13 Amendment 5, spec 14 Amendment 10):
+The help file documents visit outcomes and revisits (spec 04 Amendments
+15 and 16, spec 13 Amendments 5 and 6, spec 14 Amendment 10):
 
 - the `visits` key of the configuration file: the availability question
   (`field`) and its available value (`available`, `"1"` by default),
@@ -571,6 +571,10 @@ The help file documents visit outcomes and revisits (spec 04 Amendment
   simulator never guesses which question holds availability;
 - that a failed visit answers the availability question with another of
   its values, the rest of the form following the form's own logic;
+- the optional final values (`final`, spec 04 Amendment 16, spec 13
+  Amendment 6): reasons such as a household that has moved, after which
+  the household is not visited again, and which a household found later
+  never gets;
 - that a household is revisited on a later day by the same enumerator,
   with the same survey id and at the same place, and that households
   still waiting at the end of the simulation are reported in a warning;

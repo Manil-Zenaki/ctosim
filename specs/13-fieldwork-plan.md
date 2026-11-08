@@ -595,3 +595,25 @@ The outcomes, the failed visits' values and the revisits' schedule come
 from `config.seed()` as above, and the results are reproducible as in
 "Randomness". `visits()` holds every submission's visit, with its
 `attempt()` and `found()`.
+
+## Amendment 6: final reasons of a failed visit
+
+Amendment 5 drew the value of a failed visit among all the values meaning
+"not available", whatever followed, so a household recorded as moved or
+deceased could be found at the next visit. With the final values of the
+configuration (spec 04, Amendment 16), the reasons follow the household's
+outcome. Without final values, everything is as in Amendment 5.
+
+During `walkAll()`, the value of a failed visit is drawn, as in
+Amendment 5, among the values the availability question offers other
+than `available` and the special values, restricted as follows:
+
+- **Revisited household** (found after failed visits): among the values
+  that are not final. When none is offered, among all of them, as in
+  Amendment 5.
+- **Unreached household**: among all of them. When the value given is
+  final, the household is not visited again: it no longer waits for a
+  revisit, and it has fewer than `maxVisits` visits.
+
+A household found at its first visit, and `walk(number, visit)` outside
+`walkAll()`, are not affected.
