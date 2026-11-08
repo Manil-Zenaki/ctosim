@@ -316,3 +316,27 @@ in that diagnostic directory.
 
 No production source was read or changed, no dependency or build configuration
 was changed, and no commit was made.
+
+## Dispute 5: outlier tests that need revisits while every submission is a target (Amendment 7)
+
+`FieldworkAmendment7ProtectionTest.outlierTargetsLeaveReplayedNumbersAloneAndMayChangeQuestionsAfterAvailability`
+(line 90) and
+`FieldworkAmendment7ProtectionTest.aRevisitWithOnlyAReplayedNumericCandidateGetsNoOutlierRecordForIt`
+(line 102) run with `problems(1)`: an outlier rate of 1, so every one of
+the `N` submissions is an outlier target (spec 14: counts are computed from
+`N`). By spec 14, Amendment 10 ("Targets"), a problem's target always finds
+its household at its first visit and is never a revisit, and the
+clarification of that amendment adds that the visit rates do not change
+which submissions are targets (J6). A plan whose every submission is a
+target therefore has no failed visit and no revisit. The first test then
+fails its first assertion (an outlier on `after` at an `attempt() > 1`),
+and the second fails `assertReplayedAndUnrecorded` ("many protected answers
+must be exercised": no revisit at all). The questions file (57) already
+notes that these runs have no revisits; the Clarification of Amendment 7
+now states it.
+
+Requested: give these two tests an outlier rate below 1 (for example 0.5,
+or a value that leaves enough submissions free to be revisited), and
+assert outliers at revisits only where spec 14 allows them (an outlier
+moved from a target with no eligible question); keep the protection
+assertions: a repeated answer is unchanged and has no outlier record.
