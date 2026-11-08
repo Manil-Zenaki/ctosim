@@ -319,6 +319,28 @@ submissions, update on 4 March): 168 submissions on 2206191527, 232 on
 2206191528; `ipacheckversions` finds 11 outdated submissions, all
 enumerator16's, matching the answer key.
 
+2026-11-08, visit outcomes and revisits (owner's choices: availability
+question named in the configuration, about 2-3 % never found, no
+replacement households, one success value and several failure values,
+optional final values). Key `visits` (spec 04 Amendments 15-16:
+`field`, `available` "1", `number`, `revisitRate` 0.1, `unreachedRate`
+0.025, `maxVisits` 3, `final`); households found late are revisited on a
+later day by the same enumerator with the same id and place, failed
+visits answer another offered value and the form's logic stops them
+(spec 13 Amendments 5-6); problem targets are found first visits and
+duplicate originals found visits (spec 14 Amendment 10); help (spec 11
+Amendment 19). Java 15198 and Stata 192 tests, all green. IPA check
+(1000 submissions, 853 households): 2 households unreached by final
+reason before maxVisits; no final value on a household found later;
+every revisit on a later day, same device, numbered 1, 2, 3;
+`ipacheckids` flags 245 submissions on all visits, none after
+`keep if avail == 1`; `ipatracksurvey` with `masterdata()` needs one
+row per household (keep each household's last visit); with
+`trackingdata()` it fails inside IPA's `ipacolformat` (varlist not
+allowed), with or without `outcome()`. Open: questions asked before the
+availability question (a plain district list) are drawn again at each
+visit (92 of 147 revisits change district).
+
 Still not observed: speed-violation fields when no violation occurred,
 `review_*` columns. Known differences left for later (realism, not
 correctness): web submissions (`deviceid` `(web)`, no audio audit,
