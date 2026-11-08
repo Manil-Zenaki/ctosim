@@ -249,6 +249,10 @@ public final class FormWalker {
         Route route;
         /** A failed visit of a household found later: its reason is never final (spec 13, Amendment 6). */
         boolean notFinal;
+        /** At a revisit, the first visit's answers before the availability question, by path (spec 13, A7). */
+        Map<String, String> replay;
+        /** When set, the walk records here its answers before the availability question, by path. */
+        Map<String, String> recorded;
 
         Injection(double timeFactor, boolean keepLocations, Map<String, String> answers) {
             this.timeFactor = timeFactor;
@@ -292,6 +296,8 @@ public final class FormWalker {
             copy.pauseLength = pauseLength;
             copy.route = route == null ? null : route.fresh();
             copy.notFinal = notFinal;
+            copy.replay = replay;
+            copy.recorded = recorded == null ? null : new java.util.LinkedHashMap<>();
             return copy;
         }
     }
@@ -824,6 +830,8 @@ public final class FormWalker {
         /** The texts the fault other types in specify questions not yet reached: typed, then unaltered. */
         private final Map<String, List<String>> specifyTexts = new HashMap<>();
         private boolean outlierDone;
+        /** Whether the walk has answered the availability question (spec 13, Amendment 7). */
+        private boolean availabilityAnswered;
         /** Screen seconds so far (spec 07, Amendment 12). */
         private long screen;
 
@@ -957,6 +965,67 @@ public final class FormWalker {
         // --- Questions ----------------------------------------------------------------
 
         private void question(FormEntryPrompt prompt) {
+            TreeReference ref = session.getModel().getFormIndex().getReference();
+            String key = identification(prompt, ref);
+            if (key != null && injection.replay != null && injection.replay.containsKey(key)
+                    && replay(prompt, ref, injection.replay.get(key))) {
+                return;
+            }
+            ask(prompt);
+            if (key != null && injection.recorded != null) {
+                String value = currentText(ref);
+                injection.recorded.put(key, value == null ? "" : value);
+            }
+            VisitPlan visits = config.visits().orElse(null);
+            if (visits != null && visit != null && ref.getNameLast().equals(visits.field())
+                    && currentText(ref) != null && !currentText(ref).isEmpty()) {
+                availabilityAnswered = true;
+            }
+        }
+
+        /**
+         * The path of a question that identifies the household (spec 13, Amendment 7): answered before
+         * the availability question, outside repeats, of a kind repeated at a revisit; null otherwise.
+         */
+        private String identification(FormEntryPrompt prompt, TreeReference ref) {
+            if (visit == null || config.visits().isEmpty() || availabilityAnswered
+                    || injection.replay == null && injection.recorded == null || prompt.isReadOnly()
+                    || TreeElement.getAttribute(prompt.getBindAttributes(), FormLoader.CTOSIM_NS,
+                            FormLoader.CALCULATE_HERE) != null
+                    || leftAlone(ref.getNameLast())) {
+                return null;
+            }
+            QuestionKind kind = kind(prompt);
+            if (kind == null || NOT_REPEATED.contains(kind)) {
+                return null;
+            }
+            TreeElement element = session.getModel().getForm().getMainInstance().resolveReference(ref);
+            for (org.javarosa.core.model.instance.AbstractTreeElement e = element; e != null; e = e.getParent()) {
+                if (e.isRepeatable()) {
+                    return null;
+                }
+            }
+            return ref.genericize().toString(false);
+        }
+
+        /** Gives the first visit's answer again; false, with a warning, when the engine does not accept it. */
+        private boolean replay(FormEntryPrompt prompt, TreeReference ref, String value) {
+            if (value.isEmpty()) {
+                clear(ref);
+                handled(ref, minimumSeconds(prompt));
+                return true;
+            }
+            String name = ref.getNameLast();
+            String path = ref.toString(true);
+            if (answerWith(prompt, ref, name, path, value)) {
+                return true;
+            }
+            warn("field '" + name + "' (" + path + "): the answer '" + value
+                    + "' of the household's first visit is not accepted by this question; answered as usual");
+            return false;
+        }
+
+        private void ask(FormEntryPrompt prompt) {
             TreeReference ref = session.getModel().getFormIndex().getReference();
             String name = ref.getNameLast();
             String path = ref.toString(true);
@@ -1859,6 +1928,11 @@ public final class FormWalker {
         }
 
         // --- Faults and outliers (spec 14, Amendment 1) ------------------------------------
+
+        /** Kinds of question answered as usual at a revisit (spec 13, Amendment 7). */
+        private static final Set<QuestionKind> NOT_REPEATED = java.util.EnumSet.of(QuestionKind.DATE,
+                QuestionKind.TIME, QuestionKind.DATETIME, QuestionKind.GEOPOINT, QuestionKind.GEOTRACE,
+                QuestionKind.GEOSHAPE, QuestionKind.IMAGE, QuestionKind.AUDIO, QuestionKind.VIDEO, QuestionKind.FILE);
 
         /** Applies the faults and the outlier to an answer just given by the walker. */
         private void adjust(FormEntryPrompt prompt, TreeReference ref, String name, QuestionKind kind, Question question,

@@ -422,6 +422,7 @@ public final class Fieldwork {
             injection.other = faults.contains(OTHER);
             // a household found later never gets a final reason (spec 13, Amendment 6)
             injection.notFinal = household != null && household.failures < household.planned;
+            injection.replay = revisit != null ? revisit.replay : null; // its identification (Amendment 7)
             if (faults.contains(FAKE_REFUSAL) && FormWalker.consents(config, number)) {
                 double r = config.consent().get().rate();
                 double p = r <= 0 ? 0 : Math.min(1, (1 - r) / r);
@@ -476,6 +477,7 @@ public final class Fieldwork {
                             villageOverrideDay[enumerator] = day[enumerator];
                             injection = injection.withAnswers(waited.given);
                             injection.notFinal = waited.failures < waited.planned;
+                            injection.replay = waited.replay;
                             injection.route = new FormWalker.Route(null, null, 0);
                             to = null;
                         } else {
@@ -527,7 +529,13 @@ public final class Fieldwork {
                         FormWalker.seed(config.seed(), number, 32)).nextInt(FIRST_START_MINUTES + 1));
                 injection.pauseLength = java.time.Duration.between(pausedAt, resume.isAfter(pausedAt) ? resume : pausedAt);
             }
+            if (household != null && revisit == null) { // its identification, repeated at revisits (A7)
+                injection.recorded = new java.util.LinkedHashMap<>();
+            }
             Submission s = walker.walk(number, visit, history, injection);
+            if (household != null && revisit == null) {
+                household.replay = injection.recorded;
+            }
             submissions.add(s);
             planned.add(visit);
             if (routed && !TRAVEL.equals(problem) && !((REINTERVIEW.equals(problem) || revisit != null) && !firstOfDay)) {
@@ -732,6 +740,8 @@ public final class Fieldwork {
         double[] point;
         String id;
         Map<String, String> given = Map.of();
+        /** The first visit's answers before the availability question, by path (spec 13, Amendment 7). */
+        Map<String, String> replay = Map.of();
 
         Household(int planned, int failures) {
             this.planned = planned;
