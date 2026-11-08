@@ -345,6 +345,11 @@ public final class SimulationConfig {
         return java.util.Optional.ofNullable(formUpdate);
     }
 
+    /** The form's availability question and the rates of failed visits; empty when none is named. See Amendment 15. */
+    public java.util.Optional<VisitPlan> visits() {
+        throw new UnsupportedOperationException("spec 04, Amendment 15");
+    }
+
     /** The rates of injected problems; empty when none are asked for. See Amendment 6. */
     public java.util.Optional<ProblemRates> problems() {
         return java.util.Optional.ofNullable(problems);

@@ -556,3 +556,28 @@ facts in one sentence (R1); submissions started on the update date have
 the form's version, the default previous version applies to a numeric
 form version, and only the topics of Amendment 18 are required (R2); the
 checks run as standalone do-files through the unchanged runner (R3).
+
+## Amendment 19: the help on visit outcomes and revisits
+
+The help file documents visit outcomes and revisits (spec 04 Amendment
+15, spec 13 Amendment 5, spec 14 Amendment 10):
+
+- the `visits` key of the configuration file: the availability question
+  (`field`) and its available value (`available`, `"1"` by default),
+  the optional visit number question (`number`), the share of households
+  found only after failed visits (`revisitRate`, 10 % by default), the
+  share never found (`unreachedRate`, 2.5 % by default) and the most
+  visits made to one household (`maxVisits`, 3 by default); the
+  simulator never guesses which question holds availability;
+- that a failed visit answers the availability question with another of
+  its values, the rest of the form following the form's own logic;
+- that a household is revisited on a later day by the same enumerator,
+  with the same survey id and at the same place, and that households
+  still waiting at the end of the simulation are reported in a warning;
+- that IPA's `ipatracksurvey` counts completed interviews through its
+  `outcome()` option, given the availability question and its available
+  value;
+- that a revisited household's id appears in several submissions, which
+  `ipacheckids` flags unless the check keeps only the visits where the
+  household was found; the answer key does not list them;
+- that replacement households are not simulated.

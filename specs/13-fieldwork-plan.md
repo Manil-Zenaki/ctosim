@@ -465,3 +465,133 @@ compete when the village of the day is located (38); no radial
 distribution is prescribed, and standalone walks keep no place (39); the
 warnings' wording and the order of the two column warnings are not
 prescribed, and an unreadable file needs no column warning (40).
+
+## Amendment 5: visit outcomes and revisits
+
+Until now every household was interviewed at the first visit, so a
+tracking of the fieldwork (IPA's `ipatracksurvey`, a team's dashboard)
+showed an unrealistically perfect progress: no absent household, no
+second visit, no household left unreached. When the configuration names
+the form's availability question (spec 04, Amendment 15), the plan now
+simulates failed visits and revisits. Without that setting, everything
+is unchanged.
+
+### Public API
+
+```java
+public record Visit(
+        int enumerator,
+        java.time.LocalDateTime start,
+        double latitude,
+        double longitude,
+        String id,
+        int attempt,        // the household's visit number: 1 for its first visit
+        boolean found) {    // whether the household is found (available) at this visit
+
+    public Visit(int enumerator, java.time.LocalDateTime start,
+            double latitude, double longitude, String id);   // attempt 1, found
+}
+```
+
+`walk(number, visit)` throws `IllegalArgumentException` for an `attempt`
+below 1, in addition to the earlier cases.
+
+### Walking one visit
+
+When `config.visits()` is present, `walk(number, visit)` also does the
+following; without it, `attempt()` and `found()` have no effect.
+
+- **Availability.** Each question named by `field` that the walker
+  answers gets the `available` value when the visit finds the household.
+  When it does not, it gets a value drawn uniformly, from
+  `config.seed()` and `number`, among the values the question offers
+  other than `available` and the configuration's special values (spec
+  04: `specialValues`, `dontKnowCodes`, `refuseCodes`, `otherCodes`). The
+  rest of the form follows the form's own logic: what is asked after a
+  failed visit is what the form asks then.
+- **Visit number.** Each question named by `number` that the walker
+  answers gets `attempt()`, written as a whole number.
+- These answers replace the question's usual draw, its override and its
+  missing rate. When the engine does not accept the answer, or when no
+  value other than `available` is offered for a failed visit, the
+  question is answered as usual, and the submission has a warning that
+  names the field and, when there is one, the value.
+
+### Households
+
+During `walkAll()`, each submission is either a **revisit** (below) or
+the **first visit** of a new household. A household's **outcome** is
+drawn when its first visit is planned, from `config.seed()` and that
+visit's submission number, apart from the other draws:
+
+- with probability `unreachedRate`, it is **unreached**: its first
+  `maxVisits` visits all fail;
+- with probability `revisitRate`, it is **revisited**: its first `k`
+  visits fail and the next one finds it, `k` drawn uniformly between 1
+  and `maxVisits − 1`;
+- otherwise it is found at its first visit.
+
+A household **waits** for a revisit from the day of a failed visit that
+is not its last planned visit. Its visits are made by the enumerator of
+its first visit.
+
+### Revisits
+
+On each day it works, an enumerator first revisits its waiting
+households, one interview per household, before any new household: as
+long as households wait from an earlier day, the enumerator's first
+interviews of the day are revisits, of the households in the order of
+their latest visit's submission number. A household whose visit failed
+that same day waits for a later day. Whether an interview is a revisit
+follows from the day it is finally scheduled on (below).
+
+A revisit:
+
+- is the household's next visit: its `attempt()` is one more than the
+  household's previous visit's, and its `found()` follows the
+  household's outcome;
+- gets the household's survey id: the visit's `id()` is the household's,
+  and when the id is given at the question (Amendment 2), the id question
+  and its upper questions (Amendment 3) are answered as at the
+  household's first visit;
+- takes place at the household's point: its visit's `latitude()` and
+  `longitude()` are those of the household's first visit.
+
+When an enumerator's first interview of a day is a revisit, the
+enumerator's village of that day (`"Where"`) is the household's point,
+and, when the form has a village question (Amendment 4), its place of
+the day is the household's place.
+
+**Trips.** A revisit, and an interview that follows a revisit on the
+same day, starts later than "When" gives by two minutes per kilometre
+between its point and the point of the enumerator's previous interview
+(rounded up to a whole minute), when the two are more than 3 km apart.
+When that start is after the end of work, the interview is instead the
+first interview of the enumerator's next day. (Moves between located
+villages, Amendment 4, keep their own rule.)
+
+### Survey ids
+
+Survey ids of "Survey ids" go to households instead of submissions: the
+`k`-th household, in the order of first visits, gets the possible value
+at position `(k − 1) mod K`, and the warning for `K` smaller than `N`
+compares `K` with the number of households. An id given at the question
+(Amendment 2) counts as received at the household's first visit.
+
+### Warnings
+
+- When `field` names no element of the form, `configWarnings()` holds a
+  warning that names it, after the others, and no visit fails: every
+  visit finds its household and has `attempt()` 1.
+- When `number` names no element of the form, `configWarnings()` holds
+  a warning that names it, after the others.
+- When `walkAll()` ends while households still wait for a revisit,
+  `warnings()` holds, after the other warnings, one warning that gives
+  their number.
+
+### Randomness
+
+The outcomes, the failed visits' values and the revisits' schedule come
+from `config.seed()` as above, and the results are reproducible as in
+"Randomness". `visits()` holds every submission's visit, with its
+`attempt()` and `found()`.

@@ -793,3 +793,44 @@ order given, only the default fault list gains it, copies keep
 dispute (78); the earlier diagnostic conventions apply (79). The Maven
 blocker recorded under "build verification" belongs to the test author's
 sandbox: the suite compiles and runs in the project's build.
+
+## Amendment 15: visit outcomes and revisits
+
+Enumerators do not find every household at the first visit: the
+household is absent, has moved, or the respondent is not available. Teams'
+forms ask it at the start (a question such as "Is the household
+available?"), and the form then stops; the household is visited again
+another day, up to a number of visits after which it is left
+unreached. One top-level key is added (used by spec 13 Amendment 5 and
+spec 14 Amendment 10); everything else is unchanged.
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `visits` | object, see below | none | The form's availability question and the rates of failed visits. Without it, every household is found at the first visit. |
+
+The `visits` object:
+
+| Key | Type | Default | Constraint |
+|---|---|---|---|
+| `field` | string | required | the name of the question that records whether the household (or respondent) is available; the name rule of `id` |
+| `available` | string | `"1"` | non-empty: the choice value meaning available |
+| `number` | string | none | the name of the question that records the visit number (1 for the first visit, 2 for the second, ...); the name rule of `id`; different from `field` |
+| `revisitRate` | number | `0.1` | 0 to 1: share of households found only after one or more failed visits |
+| `unreachedRate` | number | `0.025` | 0 to 1: share of households never found; `revisitRate` plus `unreachedRate` is at most 1 |
+| `maxVisits` | integer | `3` | 2 to 10: most visits made to one household |
+
+Public type and accessor added:
+
+```java
+public record VisitPlan(String field, String available, String number,
+        double revisitRate, double unreachedRate, int maxVisits) { }   // number null when absent
+
+// added to SimulationConfig:
+public java.util.Optional<VisitPlan> visits();   // empty when the key is absent
+```
+
+- The rules of "Strictness" and "Errors" apply, with errors at their
+  paths (`visits`, `visits.field`, `visits.revisitRate`, ...); a sum of
+  the two rates above 1 is an error at `visits`. Other keys are errors.
+- The record itself enforces nothing; validation is the parser's.
+- Copies keep `visits()`.

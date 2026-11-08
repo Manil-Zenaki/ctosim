@@ -1078,3 +1078,26 @@ does not change (I5); assignment follows the inherited rules, and
 small-sample warnings count all interviews (I6); the earlier six-fault
 tests go through a dispute (I7). Expected counts depend on the schedule
 of spec 13, with `interviewsPerDay` (4 by default).
+
+## Amendment 10: problems, failed visits and revisits
+
+With visit outcomes (spec 13, Amendment 5), a household may be visited
+several times, so its survey id appears in several submissions. These
+submissions are not problems: they are what a team's tracking counts. A
+check of duplicate ids that does not keep only the visits where the
+household was found flags them, and the answer key does not list them.
+Everything not mentioned here is unchanged.
+
+- **Targets.** A problem's target is never a revisit and always finds
+  its household at its first visit (its household's outcome is not
+  drawn). When an enumerator's interview that would be a revisit is a
+  problem's target, the enumerator's waiting households are revisited
+  at its next interviews instead.
+- **Originals.** The original of a `resent` or `reinterview` target is
+  drawn, as in "The original of a duplicate", among the submissions
+  whose visit found its household.
+- **Answers left alone.** The questions named by `field` and `number`
+  (spec 04, Amendment 15) are never changed by a fault, an outlier or a
+  roster shortening.
+- **Records.** Failed visits and revisits have no record in the answer
+  key. Counts of problems are still computed from `N`.
