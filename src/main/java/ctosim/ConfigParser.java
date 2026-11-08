@@ -154,7 +154,7 @@ final class ConfigParser {
     private VisitPlan visits(JsonNode node) throws ConfigException {
         JsonNode visits = object(node, "visits");
         checkKeys(visits, "visits", Set.of("field", "available", "number", "revisitRate", "unreachedRate",
-                "maxVisits"));
+                "maxVisits", "final"));
         if (!visits.has("field")) {
             throw error("visits", "needs \"field\", the availability question");
         }
@@ -183,7 +183,16 @@ final class ConfigParser {
             throw error("visits", "revisitRate plus unreachedRate must be at most 1, not " + sum.toPlainString());
         }
         int max = visits.has("maxVisits") ? boundedInt(visits.get("maxVisits"), "visits.maxVisits", 2, 10) : 3;
-        return new VisitPlan(field, available, number, revisit, unreached, max);
+        List<String> finals = List.of();
+        if (visits.has("final")) { // spec 04, Amendment 16
+            finals = List.copyOf(codes(visits.get("final"), "visits.final"));
+            for (int i = 0; i < finals.size(); i++) {
+                if (finals.get(i).equals(available)) {
+                    throw error("visits.final[" + i + "]", "must differ from the available value \"" + available + "\"");
+                }
+            }
+        }
+        return new VisitPlan(field, available, number, revisit, unreached, max, finals);
     }
 
     /** A question name, following the name rule of {@code id}. */
