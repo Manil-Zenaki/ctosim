@@ -87,26 +87,42 @@ class FieldworkAmendment7ProtectionTest {
         assertReplayedAndUnrecorded(plan, rows, "identity");
     }
 
-    @Test void outlierTargetsLeaveReplayedNumbersAloneAndMayChangeQuestionsAfterAvailability() throws Exception {
-        var form = form7("<identity/><after/>", bind("identity", "decimal", "") + bind("after", "decimal", ""),
+    @Test void relocatedOutliersLeaveReplayedNumbersAloneAndChangeQuestionsAfterAvailability() throws Exception {
+        // Targets are found first visits. They cannot accept an identity outlier,
+        // and 'after' is not asked yet, so an outlier must move to a later visit.
+        // At a revisit the constraint permits outliers: only replay protects identity.
+        var form = form7("<identity/><after/>", bind("identity", "decimal",
+                "constraint=\"/data/attempt > 1 or (. >= 10 and . &lt;= 20)\"")
+                + bind("after", "decimal", "relevant=\"/data/attempt > 1\""),
                 input("identity"), input("after"));
-        var cfg = config7(40, 2, 1, 2, true, "\"decimalRange\":{\"min\":10,\"max\":20}")
-                .withProblems(problems(1));
+        var cfg = config7(160, 2, 1, 2, true, "\"decimalRange\":{\"min\":10,\"max\":20}")
+                .withProblems(problems(0.5));
         var plan = new Fieldwork(form, cfg);
         var rows = plan.walkAll();
         assertTrue(plan.problems().stream().anyMatch(p -> p.problem().equals("outlier") && p.field().equals("after")
-                && plan.visits().get(p.submission() - 1).attempt() > 1));
+                && plan.visits().get(p.submission() - 1).attempt() > 1),
+                "a relocated outlier must exercise a post-availability answer at a revisit");
+        for (var problem : plan.problems()) {
+            assertEquals("outlier", problem.problem());
+            assertEquals("after", problem.field(), "replayed identification cannot receive the moved outlier");
+            assertTrue(plan.visits().get(problem.submission() - 1).attempt() > 1,
+                    "only revisits offer an unprotected outlier candidate");
+            assertEquals(problem.value(), value(rows.get(problem.submission() - 1), "after"));
+        }
         assertReplayedAndUnrecorded(plan, rows, "identity");
     }
 
     @Test void aRevisitWithOnlyAReplayedNumericCandidateGetsNoOutlierRecordForIt() throws Exception {
-        var form = one("decimal", "", input("identity"));
-        var cfg = config7(24, 2, 1, 2, true, "\"decimalRange\":{\"min\":10,\"max\":20}")
-                .withProblems(problems(1));
+        // First visits reject outliers; later visits would accept them if identity
+        // were answered afresh. Moved outliers must still leave its replay alone.
+        var form = one("decimal", "constraint=\"/data/attempt > 1 or (. >= 10 and . &lt;= 20)\"",
+                input("identity"));
+        var cfg = config7(160, 2, 1, 2, true, "\"decimalRange\":{\"min\":10,\"max\":20}")
+                .withProblems(problems(0.5));
         var plan = new Fieldwork(form, cfg);
         var rows = plan.walkAll();
-        assertTrue(plan.problems().stream().anyMatch(p -> p.problem().equals("outlier") && p.field().equals("identity")
-                && plan.visits().get(p.submission() - 1).attempt() == 1));
         assertReplayedAndUnrecorded(plan, rows, "identity");
+        assertTrue(plan.problems().isEmpty(),
+                "targets reject outliers and the only later candidate is protected by replay");
     }
 }

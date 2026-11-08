@@ -1460,3 +1460,29 @@ preconditions described above. Assertions after these failures remain
 unexercised. Log: `.codex-runs/fieldwork-amendment7/junit.log`. No expectations
 were weakened to agree with the current implementation, and no commit was
 made.
+
+### Dispute 5 adjudication: correction to point 57 and verification (2026-11-08)
+
+The Clarification of Amendment 7 supersedes point 57's assumption that a
+rate-one outlier run must retain revisits. Spec 14 Amendment 10 makes every
+target a found first visit, and at rate 1 all submissions are targets. An
+outlier can reach a revisit only by relocation from a target with no eligible
+question; the receiving submission retains its own outcome (J3).
+
+The two disputed outlier tests in `FieldworkAmendment7ProtectionTest` now use
+rate 0.5 and constraints that reject first-visit outliers but allow their
+values at revisits. One exposes a post-availability candidate only at revisits
+and requires actual relocated outliers there; the other exposes only replayed
+identification and requires no records. Both retain nonvacuous replay equality
+and protection checks. No unresolved assumption is introduced. Decisions are
+recorded in `13-fieldwork-plan.disputes.md`, Adjudication of Dispute 5.
+
+The required `.\mvnw.cmd -o -q test` failed at `testCompile`; a diagnostic
+`-e test-compile` run exited 1 with `java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. Supplementary offline
+compilation of all twelve Amendment 7 test/support sources succeeded against
+existing compiled APIs with `--release 17`, and all 64 Amendment 7 JUnit cases
+passed, with none skipped or aborted and no failed containers. Logs are under
+`.codex-runs/fieldwork-dispute5/`: `maven-test.log`, `maven-detail.log`,
+`memory-compile.log` and `junit.log`. This does not establish a successful full
+Maven build. No production sources or build configuration were read or changed.

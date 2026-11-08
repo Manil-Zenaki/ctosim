@@ -340,3 +340,73 @@ or a value that leaves enough submissions free to be revisited), and
 assert outliers at revisits only where spec 14 allows them (an outlier
 moved from a target with no eligible question); keep the protection
 assertions: a repeated answer is unchanged and has no outlier record.
+
+## Adjudication of Dispute 5 (2026-11-08)
+
+### Point 1: outliers after availability at revisits — upheld; exercise relocation
+
+`outlierTargetsLeaveReplayedNumbersAloneAndMayChangeQuestionsAfterAvailability`
+is wrong under the Clarification of spec 13 Amendment 7 and spec 14
+Amendment 10 (Targets, J3 and J6). At rate 1 every submission is a target,
+each target is a found first visit, and no revisit can occur. Reducing the
+rate alone would not justify its positive assertion either: the original
+fixture offers eligible numeric questions at every target, so those outliers
+have no reason to move to revisits.
+
+Renamed it to
+`relocatedOutliersLeaveReplayedNumbersAloneAndChangeQuestionsAfterAvailability`.
+It now uses 160 submissions and an outlier rate of 0.5, leaving non-target
+interviews available for failed visits and revisits. The identity question's
+constraint accepts only 10–20 at a first visit and permits outliers at later
+visits; its ordinary drawing range remains 10–20. The question after
+availability is relevant only at revisits. Consequently no target has an
+eligible outlier question, and spec 14 Amendment 2 requires attempted
+relocation to later non-target submissions. Amendment 10 J3 preserves those
+submissions' own visit outcomes.
+
+The test requires an actual outlier on `after` at a revisit, checks that every
+problem record is such an outlier and matches the stored answer, and retains
+the checks that each revisit's identity equals its household's first answer
+and has no new problem record. Its constraint would allow an identity outlier
+at a revisit, so replay protection is necessary. No particular target numbers
+or random draw sequence are assumed.
+
+### Point 2: a revisit with only replayed identification — upheld; retain protection
+
+`aRevisitWithOnlyAReplayedNumericCandidateGetsNoOutlierRecordForIt` has the
+same invalid rate-one precondition. It now also uses 160 submissions, rate
+0.5, and the identity constraint described above. There is no post-availability
+numeric question. Targets cannot accept outliers, and relocation cannot change
+the only numeric candidate at a revisit because it is replayed identification.
+The survey id and visit number remain protected by their own spec rules.
+
+Removed the original positive assertion requiring an outlier on a first
+visit, which is incompatible with this relocation fixture. The test instead
+requires an empty answer key, while retaining first-answer equality and no
+record for every revisited identity. Both corrected tests retain the helper's
+requirement of at least ten revisits, so protection cannot pass vacuously.
+The first test supplies the positive control that relocated outliers can
+actually reach an unprotected question at a revisit.
+
+Earlier adjudications remain unchanged. No new spec assumption is needed;
+the superseded interpretation in questions-file point 57 is corrected by
+the clarification, as recorded in an appended note there.
+
+### Verification
+
+Ran `.\mvnw.cmd -o -q test`; Maven failed at `testCompile`. A diagnostic
+`-e test-compile` run exited 1 and confirmed `java.nio.file.AccessDeniedException`
+for `.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`. The full Maven
+suite could not run; this limitation is also recorded in the questions file.
+
+Adapted the existing offline diagnostic compiler and JUnit launcher under
+`.codex-runs/fieldwork-dispute5/`. All twelve Amendment 7 test/support sources
+compiled successfully with `--release 17` against the existing compiled
+project APIs. JUnit ran all 64 cases in the six `FieldworkAmendment7*Test`
+classes: all passed, none skipped or aborted, and no containers failed.
+This supplements, but does not establish, a successful Maven build. Logs are
+`maven-test.log`, `maven-detail.log`, `memory-compile.log` and `junit.log`
+in that diagnostic directory. `git diff --check` also passed.
+
+No production source was read or changed, no dependency or build configuration
+was changed, and no commit was made.
