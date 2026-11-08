@@ -121,6 +121,7 @@ setting.
 {synopt:{cmd:otherCodes}}the values your team uses for "Other", used by the fault {bf:other}{p_end}
 {synopt:{cmd:otherRate}}how often honest enumerators choose "Other" when a question offers it (default 0.03){p_end}
 {synopt:{cmd:formUpdate}}a new version of the form deployed during fieldwork: its {cmd:date}, and the {cmd:previousVersion} used before it{p_end}
+{synopt:{cmd:visits}}visit outcomes and revisits: the availability question and how often households are found late or never; see {help ctosim##visits:Visit outcomes and revisits}{p_end}
 {synopt:{cmd:speedViolationRate}}probability of a speed violation on a field with a minimum time (default 0.1){p_end}
 {synopt:{cmd:repeats}}number of instances of repeats without a count (default 1 to 3){p_end}
 {synopt:{cmd:integerRange}, {cmd:decimalRange}}default bounds of numbers (0-100, 0-1000){p_end}
@@ -510,6 +511,62 @@ with the columns:{p_end}
 {phang2}{cmd:. save `answers'}{p_end}
 {phang2}{cmd:. restore}{p_end}
 {phang2}{cmd:. merge 1:1 key using `answers', keepusing(problem check) nogenerate}{p_end}
+
+
+{marker visits}{...}
+{title:Visit outcomes and revisits}
+
+{pstd}
+Not every household is found at the first visit. The {cmd:visits} key of the
+configuration file simulates failed visits and revisits; without it, every
+visit finds its household.{p_end}
+
+{phang2}- {cmd:field} names the availability question, the question of the form that says whether the household was found; it is required. The simulator never guesses which question holds availability: name it yourself.{p_end}
+{phang2}- {cmd:available} is the value of the availability question for a household found; available defaults to "1".{p_end}
+{phang2}- {cmd:number} is an optional setting that names the visit number question, answered 1 at the first visit, 2 at the second, and so on.{p_end}
+{phang2}- {cmd:revisitRate} is the share of households found only after one or more failed visits; its default is 10%.{p_end}
+{phang2}- {cmd:unreachedRate} is the share of households never found; its default is 2.5%.{p_end}
+{phang2}- {cmd:maxVisits} is the maximum number of visits made to one household; it defaults to 3.{p_end}
+{phang2}- {cmd:final} is an optional list of final values: reasons such as a household that has moved, after which the household is not visited again.{p_end}
+
+{pstd}
+A failed visit answers the availability question with another of its values,
+drawn among the values the question offers. After a failed visit, the rest of
+the form follows the form's own logic, so a form that ends when the household
+is not available ends there. With final values, a household found later never
+gets a final value: only a household never found can get one, and a household
+with a final value is not visited again.{p_end}
+
+{pstd}
+A household not found is revisited on a later day. A household is revisited
+by the same enumerator, who revisits waiting households first. A household is
+revisited with the same survey id. A household is revisited at the same place.
+Households still waiting at the end of the simulation, because the planned
+interviews ran out, are reported in a warning.{p_end}
+
+{pstd}
+For example, {cmd:"visits": {"field": "consent_avail", "available": "1", "number": "visit_no", "final": ["5", "6"]}}
+for a question {cmd:consent_avail} whose value 1 means found, and whose values
+5 and 6 mean moved and deceased.{p_end}
+
+{pstd}
+To check the tracking, IPA's {cmd:ipatracksurvey} counts completed interviews
+through its {cmd:outcome()} option: {cmd:outcome()} takes the availability
+question and its available value, for example
+{cmd:outcome(consent_avail, 1)}.{p_end}
+
+{pstd}
+A revisited household's id appears in several submissions, which
+{cmd:ipacheckids} flags as duplicate ids. For revisited households,
+{cmd:ipacheckids} does not flag their ids if the check keeps only the visits
+where the household was found, for example by running it after
+{cmd:keep if consent_avail == 1}. They are visits of the same household, not
+problems: the answer key does not list revisited households or their repeated
+ids.{p_end}
+
+{pstd}
+Replacement households are not simulated: a household never found is not
+replaced by another one.{p_end}
 
 
 {marker fakepreload}{...}
