@@ -686,3 +686,27 @@ A question the revisit asks but the first visit did not, and every
 question after the availability question, is answered as before. The id
 question and its upper questions keep the rule of Amendment 5.
 `walk(number, visit)` outside `walkAll()` is not affected.
+
+Clarification (Amendment 7): assumptions 53–58 of the questions file are
+reviewed one by one. The repeated questions are those answered before the
+first answer to the availability question, in walk order, outside any
+repeat at any depth; what happens when the first visit never answers the
+availability question, and to values kept without being answered (defaults,
+calculations, read-only questions), is not prescribed (53, confirmed). A
+question left blank by the missing rate is a recorded blank; a question the
+first visit skipped has no recorded answer; the recorded answers are always
+the first visit's, and the revisit's relevance decides what is asked (54,
+confirmed). A recorded answer belongs to a question, not to a name shared by
+questions of different groups, and to a household of the plan, not to an id
+string (55, confirmed). A rejected answer falls back to the revisit's own
+configuration and choices without changing the recorded answer; wording,
+counts and random streams are not prescribed (56, confirmed). The recorded
+answer is the one actually given at the first visit, with any fault it
+received, and its repetition is neither changed nor recorded; questions
+after the availability question stay open to faults and outliers (57,
+confirmed). The outlier part of 57 is completed by spec 14, Amendment 10:
+a problem's target always finds its household at its first visit and is
+never a revisit, so with an outlier rate of 1 every submission is a target
+and the plan has no revisit; an outlier reaches a revisit only when it is
+moved there from a target with no eligible question. No random-stream
+equivalence with a standalone walk is required (58, confirmed).
