@@ -1101,3 +1101,25 @@ Everything not mentioned here is unchanged.
   roster shortening.
 - **Records.** Failed visits and revisits have no record in the answer
   key. Counts of problems are still computed from `N`.
+
+Clarification (Amendment 10): assumptions J1–J7 of the questions file are
+reviewed one by one. "Target" means a target of a problem of the table,
+not a submission of a faulty enumerator: enumerator faults apply to failed
+visits and revisits like any other submission, and their records stay in
+the answer key, which must describe every change made to the data; the
+Records bullet means that a failed visit or a revisit is not a problem in
+itself (J1, assumption confirmed and completed). A `resent` copy repeats
+its original's instance and visit, so the copy of a successful revisit
+keeps that revisit's visit number; a `reinterview` is a new first visit
+(J2, confirmed). A reserved target keeps its fresh, found first visit
+even when its problem falls back to an ordinary interview; an outlier
+moved to a later submission does not make it a target, and that
+submission keeps its own outcome (J3, settled). The queue order of spec
+13, Amendment 5 is kept: a target takes no waiting household, which is
+revisited at the enumerator's next non-target interview (J4, confirmed).
+The two questions are protected in every role, in each answered instance
+and in their fallback; which rule wins when the same question is named by
+`visits` and by consent is left open (J5, confirmed). Counts use `N` with
+the earlier rounding, and the visit rates do not change which submissions
+are targets (J6, confirmed). No new error, warning or answer-key label is
+added (J7, confirmed).
