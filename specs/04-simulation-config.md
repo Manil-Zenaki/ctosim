@@ -875,3 +875,13 @@ configuration and changes no other setting (82); the record validates and
 normalises nothing (83); every copy keeps `visits()` (84); the earlier
 diagnostic conventions apply, a sum above 1 being reported at `visits`
 (85).
+
+Clarification (Amendment 16): assumptions 86–89 of the questions file are
+reviewed one by one and confirmed: final values are exact strings, compared
+after JSON decoding, with no trimming or conversion, and an omitted or
+empty list gives an empty list (86); a wrong container is reported at
+`visits.final`, a bad element, a repeat or a value equal to `available`
+at its own zero-based index (87); the seven-argument constructor checks
+nothing, the six-argument one gives an empty list, and the parser's list
+is unmodifiable (88); `final` changes no other key or default, is not
+checked against the form, and every copy keeps the plan (89).

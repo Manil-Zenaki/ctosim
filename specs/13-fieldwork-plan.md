@@ -638,3 +638,17 @@ value on the seed, the number and the offered values (46); warnings need
 the named fields and numbers only, the two configuration warnings follow
 the earlier ones in either order, and the waiting warning counts
 households (47).
+
+Clarification (Amendment 6): assumptions 48–52 of the questions file are
+reviewed one by one and confirmed: a revisited household whose only
+reasons are final takes one of them and is still found later (48); a
+final value can be drawn at any failed visit of an unreached household,
+including its last, and only an accepted final answer at the availability
+question ends the household; rejected answers, skipped or repeated
+availability questions are not prescribed (49); final values are compared
+as exact strings with the choices offered at that visit, after removing
+`available` and the special values, and a final value the question does
+not offer ends nothing (50); an ended household leaves the queue at once,
+is not counted by the waiting warning, and the next interviews go to new
+households, which take the next ids (51); the draws stay uniform and
+seeded as in Amendment 5 (52).
