@@ -966,3 +966,194 @@ the changed test separately; it does not establish a successful Maven build.
 The directory contains `maven-test.log`, `maven-detail.log`,
 `memory-compile.log` and `junit.log`. No production source was read, no
 dependency or build configuration was changed, and no commit was made.
+
+## Amendment 5 additions
+
+This run adds only `FieldworkAmendment5WalkTest`, `FieldworkAmendment5PlanTest`,
+`FieldworkAmendment5CascadeTest`, `FieldworkAmendment5RandomnessTest`, their new
+support class and four CSV fixtures in `fieldwork-plan/amendment5/`.
+Previously committed tests and fixtures are retained unchanged. Expectations
+come from Amendment 5 and the contracts it incorporates; no production source
+or public implementation bodies were read.
+
+### 41. What does "each question ... that the walker answers" include?
+
+**Question:** Do visit answers overwrite existing defaults/calculations, or
+answer irrelevant/read-only elements? Are expressions and conditional rules
+also overrides replaced by visit answers?
+
+**Assumption:** Do not change the walker's definition of an answered question:
+irrelevant and read-only questions stay unanswered. Tests use initially empty,
+writable questions; defaults, calculates and nonquestion targets remain open.
+Once a question is answered, "its override" includes fixed values, weights,
+expressions and applicable conditional rules. All answered repeat instances
+and separately grouped questions of the same name receive the injections.
+The available code is exact, even if it is listed as a special code; special
+code exclusion is stated only for failed visits. A non-select question offers
+no failure choices and therefore uses the stated fallback. No interpretation
+of select-multiple availability or a field shared with consent/id is imposed.
+
+**Tests:** `FieldworkAmendment5WalkTest`, especially the repetition, grouped
+questions, override, relevance, exact-code and no-offered-values cases;
+`failedAvailabilityUsesTheChoicesOfferedAfterEarlierAnswers` checks a filtered
+search list rather than inferring its offered values from the unfiltered CSV.
+
+### 42. Validation and rejected answers
+
+**Question:** May the Visit constructor reject an invalid attempt? Does
+maxVisits constrain externally supplied attempts? What changes after the
+engine refuses an injected answer?
+
+**Assumption:** An invalid construction or its subsequent walk may throw
+IllegalArgumentException, as in the earlier validation tests. The explicit
+Visit validation rule has only a lower bound; positive attempts above the
+configured maximum, including Integer.MAX_VALUE, remain legal. maxVisits
+limits planned households, not the standalone public Visit argument. Normal
+fallback covers conversion, offered-choice and constraint rejection; warning
+tests require the field and attempted value without specifying retry counts
+or wording. For no eligible failure value there is no attempted value to name.
+Whether failed injection changes a household's already planned outcome or
+queue is not specified and is not tested: plan fixtures accept the injections.
+
+**Tests:** validation, whole-number and fallback cases in
+`FieldworkAmendment5WalkTest`; all scheduling tests use accepted status and
+attempt answers.
+
+### 43. Household identity and ID exhaustion
+
+**Question:** What identifies a household when IDs are absent, unallocatable
+or reused? Does a cascade revisit still have a null Visit.id? Does deliberately
+revisiting an ID count toward the cascade's reused-ID warning?
+
+**Assumption:** A household is a planned entity, not a distinct ID string.
+No configured ID is required for visits; duplicate static IDs do not merge
+households. A first cascade visit keeps Amendment 2's null Visit.id, while a
+revisit carries its accepted first answer, following Amendment 5's explicit
+"the visit's id() is the household's". Such a revisit does not newly receive
+an ID or create an exhaustion count. For an unallocatable text ID the visits
+remain null and the existing no-pool warning remains; tests do not prescribe
+the text generator's answers across those revisits. IDs skipped by relevance,
+rejected first IDs and repeated cascade ID questions remain unspecified.
+
+**Tests:** household-based static pool/cycle tests, missing-ID/no-pool tests,
+`waitingWarningComesAfterOverflowAndHouseholdIdExhaustionWarnings`, and the
+cascade replay, first-receipt and reused-ID-count tests.
+
+### 44. Final scheduling day and the waiting queue
+
+**Question:** When scheduling rolls to another day, should a tentative new
+household or revisit be kept, even if another household is now due? Are waits
+measured by calendar dates or workday indices?
+
+**Assumption:** Apply the explicit final-day rule: select the earliest latest
+visit among that enumerator's households waiting from an earlier workday,
+and only otherwise admit a new household. Re-evaluate after ordinary duration
+or travel rollover. Workdays retain the original definition relative to
+config.start, including across midnight. The oracle tracks waiting households
+only from observed successful/failed visits, their attempt numbers and their
+last submission positions. It never peeks at implementation state or predicts
+a random draw. A terminal failure is not waiting.
+
+**Tests:** `FieldworkAmendment5PlanTest.checkQueue`, quota/long-form/midnight
+cases, `aMovePastClosingRechecksWaitingHouseholdsOnTheFinalScheduledDay`, and
+`onlyATripStrictlyPastClosingMovesARevisitToTheNextDay` (where a later failure
+must not displace the household with an older latest visit).
+
+### 45. Trip charges and day/place transitions
+
+**Question:** Is a first revisit of a new day charged for the previous day's
+journey? Are trip charges added to, or substituted for, Amendment 4's located
+move charge when both describe the same journey? Does a later revisit change
+the place of the day established by its first interview?
+
+**Assumption:** Leave these intersections open. Exact charge assertions are
+for same-day revisit-to-revisit trips, using household coordinates and the
+number-only ordinary gap measured in a run with coincident locations. They
+do not combine an ordinary new-household village move with a revisit charge.
+A trip pushed past closing follows "first interview ... next day" with its
+0..60-minute opening draw; exactly closing remains today under the retained
+When rule. Additional checks cover the explicitly stated first-revisit
+village center and restoration of every revisited household's cascade place.
+No rule for a subsequent revisit changing that day's place is inferred.
+
+**Tests:** trip tests in `FieldworkAmendment5CascadeTest` and
+`newHouseholdsUseTheFirstRevisitsPointAsThatDaysVillage`. The tests cover
+distances guaranteed below/at the 3 km bound and guaranteed above it. They
+do not force exactly 3000.000000 m: the API does not expose a setter for a
+planned household point, and no displacement distribution is specified.
+The closing boundary is tested at minus one second, exactly, and plus one
+second by varying a relevant question's minimum duration. The delay is based
+on public observations and does not prescribe any particular RNG sequence.
+
+### 46. Independent randomness and statistical checks
+
+**Question:** Which changes may affect the new random draws, and how should
+outcome proportions be measured in a submission-limited plan?
+
+**Assumption:** Household outcomes depend on seed and first submission number
+apart from other draws, as stated. Failure choices depend on seed and the
+submission number given the same offered set, not earlier unrelated answers
+or attempt number. Tests compare full replays, fresh loads, locale/time-zone
+changes, longer-plan prefixes and fixtures with extra unrelated questions.
+Quota one isolates outcomes from differing interview durations. Different
+seeds need change a sequence, not every individual visit.
+
+For statistics, group by unique household IDs, excluding only an unfinished
+last household when necessary. The stopping boundary can censor at most one
+household with quota one. Rates are checked on completed households, not on
+visits; successful revisit attempts have a uniform distribution over 2..max.
+Fixed seeds and seven-binomial-standard-deviation tolerances (plus two) avoid
+fragile exact frequencies. Tests exercise maxVisits 2, 5 and 10 and the
+zero/unit/sum-one probability boundaries. Revisit location checks require
+exact coordinate reuse, not merely a second nearby draw.
+
+**Tests:** `FieldworkAmendment5RandomnessTest`, boundary outcome tests in
+`FieldworkAmendment5PlanTest`, and the uniform failed-choice test in
+`FieldworkAmendment5WalkTest`.
+
+### 47. New warning counts and ordering
+
+**Question:** What prose is required, which warning comes first when both
+configured question names are absent, and are waits counted as households,
+failed visits or remaining attempts?
+
+**Assumption:** Require exact named fields and numeric tokens, not prose.
+Both absent-name warnings follow pre-existing configuration warnings, without
+requiring an order between those two. Missing availability disables failed
+visits; missing visit number alone does not. Final waiting counts count
+households with future planned attempts, including a just-failed first visit,
+and exclude found households and terminal failures. One aggregate waiting
+warning follows overflow, ID exhaustion and missing village-column warnings.
+The missing-availability case with an existing visit-number question is not
+assigned an extra number-answer oracle beyond attempt 1 in visits().
+
+**Tests:** configuration and runtime warning cases in
+`FieldworkAmendment5PlanTest`, `waitingWarningFollowsMissingVillageColumnWarnings`,
+and replay/reset checks in `FieldworkAmendment5RandomnessTest`.
+
+### Amendment 5 build verification
+
+The requested `.\mvnw.cmd -o -q test-compile` was run and failed at
+testCompile. The diagnostic `-e` run identifies
+`java.nio.file.AccessDeniedException` for
+`.tools/m2/commons-io/commons-io/2.5/commons-io-2.5.jar`.
+Logs are `.codex-runs/fieldwork-amendment5/test-compile.log` and
+`test-compile-detail.log`. No dependency repository was copied, no drive
+mapped, and no build configuration or production code was modified.
+
+A supplementary offline compiler driver, adapted from the existing test
+diagnostics, successfully compiled all ten required test/support sources
+with `--release 17` against the existing compiled public APIs and cached
+JUnit 5 dependencies. It reads class bytes, not production source. Log:
+`.codex-runs/fieldwork-amendment5/memory-compile.log`. This is source compilation
+evidence, not a successful Maven build. Runtime checks cannot exercise most
+new expectations yet because the existing parser rejects the `visits` key.
+
+The diagnostic JUnit run discovered **89 cases from 58 test methods**:
+3 passed, 86 failed, none skipped or aborted, and no failed containers.
+Of the failures, 83 reject the unimplemented `visits` configuration key;
+the other three show that nonpositive attempts are not yet rejected.
+Log: `.codex-runs/fieldwork-amendment5/junit.log`. These expected failures
+do not validate assertions hidden behind the configuration error.
+A separate fixture probe loaded both simple duration variants and three
+cascade/delay variants successfully (`fixtures.log` in the same directory).
